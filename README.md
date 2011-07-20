@@ -44,5 +44,3 @@ To test the API I created a simple example (io.s4.example). It does the followin
 - Count by user, gender, age.
 - Print partial counts.
 
-(still debugging so don't try it yet.)
-

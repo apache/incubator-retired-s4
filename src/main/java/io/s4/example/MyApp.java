@@ -47,7 +47,7 @@ final public class MyApp extends App {
      * properties file. (Saved under "src/main/resources".) All configuration
      * details are done in Module.java.
      * 
-     * The application graph itself is done in this Class. However, developers
+     * The application graph itself is created in this Class. However, developers
      * may provide tools for creating apps which will generate the objects.
      * 
      * IMPORTANT: we create a graph of PE prototypes. The prototype is a class
