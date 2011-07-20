@@ -14,11 +14,20 @@
  * License. See accompanying LICENSE file. 
  */
 package io.s4;
+
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 
-
+/*
+ * The Key class is used to get the value of the key on a specific type of
+ * event. This is done to abstract all the complexity required to get the 
+ * value. The method for getting the value is implemented in a method of 
+ * an object of type KeyFinder<T>.
+ * 
+ * The application programmer provides the events and the corresponding 
+ * finders. The framework will use it to key on events.
+ */
 public class Key<T extends Event> {
 
     final private KeyFinder<T> finder;
@@ -28,14 +37,14 @@ public class Key<T extends Event> {
         this.finder = finder;
         this.separator = separator;
     }
-    
+
     public List<String> getList(T event) {
         return finder.get(event);
     }
-    
+
     public String get(T event) {
         List<String> keys = getList(event);
-        
+
         return StringUtils.join(keys, separator);
     }
 }

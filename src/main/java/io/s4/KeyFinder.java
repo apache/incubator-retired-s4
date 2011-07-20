@@ -17,6 +17,11 @@ package io.s4;
 
 import java.util.List;
 
+/*  
+ * The KeyFinder returns a list with one or more String values 
+ * (One value for single keys, and more than one value for 
+ * composite keys.) 
+ * */
 public interface KeyFinder<T extends Event> {
 
     public List<String> get(T event);

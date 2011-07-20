@@ -25,7 +25,14 @@ public abstract class ProcessingElement  implements Cloneable {
     final private App app;
     final private Map<String, ProcessingElement> peInstances = new HashMap<String, ProcessingElement>();
 
-    @Inject
+    /*
+     * Base class for implementing processing in S4. All instances are organized as follows. 
+     * A PE prototype is a special type of instance that defines the topology of the graph 
+     * and manages the creation and destruction of the actual instances that do the processing.
+     * PE instances are clones of the prototype. PE instance variables should be initialized in
+     * the initPEInstance() method. Be aware that Class variables are simply copied to the clones,
+     * even references.
+     */
     public ProcessingElement(App app) {
 
         this.app = app;
@@ -39,7 +46,7 @@ public abstract class ProcessingElement  implements Cloneable {
         return app;
     }
 
-    public void handleInputEvent(Event event) {
+    synchronized public void handleInputEvent(Event event) {
 
         processInputEvent(event);
     }
@@ -51,7 +58,7 @@ public abstract class ProcessingElement  implements Cloneable {
 
     abstract protected void initPEInstance();
 
-    public ProcessingElement getInstanceForKey(String id) {
+    synchronized public ProcessingElement getInstanceForKey(String id) {
 
         /* Check if instance for key exists, otherwise create one. */
         ProcessingElement pe = peInstances.get(id);

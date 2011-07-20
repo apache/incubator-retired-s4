@@ -15,63 +15,114 @@
  */
 package io.s4.example;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.name.Named;
+
 import io.s4.App;
 import io.s4.ProcessingElement;
 import io.s4.Stream;
 
-// each stream can have its own thread for testing
-// use blocking queue
+/*
+ * This is an sample application to test a new A4 API. 
+ * See README file for details.
+ * 
+ * */
 
 final public class MyApp extends App {
 
-    /* Build the application graph. */
+    private static Logger logger = Logger.getLogger(MyApp.class);
 
-    /* PE that prints counts to console. */
-    final private ProcessingElement printPE = new PrintPE(this);
+    final private int interval;
+    private ProcessingElement generateUserEventPE;
 
-    /* Streams that output count events by user, gender, and age. */
-    final private Stream<CountEvent> userCountStream = new Stream<CountEvent>(
-            "User Count Stream", new CountKeyFinder(), printPE);
-    final private Stream<CountEvent> genderCountStream = new Stream<CountEvent>(
-            "Gender Count Stream", new CountKeyFinder(), printPE);
-    final private Stream<CountEvent> ageCountStream = new Stream<CountEvent>(
-            "Age Count Stream", new CountKeyFinder(), printPE);
-
-    /* PEs that count events by user, gender, and age. */
-    final private ProcessingElement userCountPE = new CounterPE(this,
-            userCountStream);
-    final private ProcessingElement genderCountPE = new CounterPE(this,
-            genderCountStream);
-    final private ProcessingElement ageCountPE = new CounterPE(this,
-            ageCountStream);
-
-    /* Streams that output user events keyed on user, gender, and age. */
-    final private Stream<UserEvent> userStream = new Stream<UserEvent>(
-            "User Stream", new UserIDKeyFinder(), userCountPE);
-    final private Stream<UserEvent> genderStream = new Stream<UserEvent>(
-            "Gender Stream", new GenderKeyFinder(), genderCountPE);
-    final private Stream<UserEvent> ageStream = new Stream<UserEvent>(
-            "Age Stream", new AgeKeyFinder(), ageCountPE);
-
-    final private ProcessingElement generateUserEventPE = new
-    GenerateUserEventPE(this, userStream, genderStream, ageStream);
-
-    @Override
-    protected void create() {
-
+    /*
+     * We use Guice to pass parameters to the application. This is just a
+     * trivial example where we get the value for the variable interval from a
+     * properties file. (Saved under "src/main/resources".) All configuration
+     * details are done in Module.java.
+     * 
+     * The application graph itself is done in this Class. However, developers
+     * may provide tools for creating apps which will generate the objects.
+     * 
+     * IMPORTANT: we create a graph of PE prototypes. The prototype is a class
+     * instance that is used as a prototype from which all PE instance will be
+     * created. The prototype itself is not used as an instance. (Except when
+     * the PE is of type Singleton PE). To create a data structure for each PE
+     * instance you must do in the method ProcessingElement.initPEInstance().
+     */
+    @Inject
+    public MyApp(@Named("pe.counter.interval") int interval) {
+        this.interval = interval;
     }
 
+    /*
+     * Build the application graph using POJOs. Don't like it? Write a nice
+     * tool.
+     * @see io.s4.App#init()
+     */
+    @SuppressWarnings("unchecked")
     @Override
     protected void init() {
 
+        /* PE that prints counts to console. */
+        ProcessingElement printPE = new PrintPE(this);
+
+        /* Streams that output count events by user, gender, and age. */
+        Stream<CountEvent> userCountStream = new Stream<CountEvent>(
+                "User Count Stream", new CountKeyFinder(), printPE);
+        Stream<CountEvent> genderCountStream = new Stream<CountEvent>(
+                "Gender Count Stream", new CountKeyFinder(), printPE);
+        Stream<CountEvent> ageCountStream = new Stream<CountEvent>(
+                "Age Count Stream", new CountKeyFinder(), printPE);
+
+        /* PEs that count events by user, gender, and age. */
+        ProcessingElement userCountPE = new CounterPE(this, interval,
+                userCountStream);
+        ProcessingElement genderCountPE = new CounterPE(this, interval,
+                genderCountStream);
+        ProcessingElement ageCountPE = new CounterPE(this, interval,
+                ageCountStream);
+
+        /* Streams that output user events keyed on user, gender, and age. */
+        Stream<UserEvent> userStream = new Stream<UserEvent>("User Stream",
+                new UserIDKeyFinder(), userCountPE);
+        Stream<UserEvent> genderStream = new Stream<UserEvent>("Gender Stream",
+                new GenderKeyFinder(), genderCountPE);
+        Stream<UserEvent> ageStream = new Stream<UserEvent>("Age Stream",
+                new AgeKeyFinder(), ageCountPE);
+
+        generateUserEventPE = new GenerateUserEventPE(this, userStream,
+                genderStream, ageStream);
     }
-    
-    public static void main(String[] args){
-       
-        MyApp myApp = new MyApp();
-        
-        for(int i=0; i<1000; i++) {
-            myApp.generateUserEventPE.sendEvent();
+
+    /*
+     * Create and send 1000 dummy events of type UserEvent.
+     * @see io.s4.App#start()
+     */
+    @Override
+    protected void start() {
+
+        for (int i = 0; i < 1000; i++) {
+            generateUserEventPE.sendEvent();
         }
+    }
+
+    public static void main(String[] args) {
+
+        /* Set up logger basic configuration. */
+        BasicConfigurator.configure();
+        logger.setLevel(Level.TRACE);
+        logger.info("Start application.");
+
+        Injector injector = Guice.createInjector(new Module());
+        MyApp myApp = injector.getInstance(MyApp.class);
+        myApp.init();
+        myApp.start();
     }
 }

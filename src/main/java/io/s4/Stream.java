@@ -18,7 +18,11 @@ package io.s4;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.apache.log4j.Logger;
+
 public class Stream<T extends Event> implements Runnable {
+    
+    private static Logger logger = Logger.getLogger(Stream.class);
 
     final static private String DEFAULT_SEPARATOR = "^";
     final static private int CAPACITY = 1000;
@@ -27,6 +31,10 @@ public class Stream<T extends Event> implements Runnable {
     final private ProcessingElement[] targetPEs;
     final private BlockingQueue<T> queue = new ArrayBlockingQueue<T>(CAPACITY);
 
+    /* Streams send event of a given type using a specific key to target 
+     * processing elements.
+     * 
+     */
     public Stream(String name, KeyFinder<T> finder,
             ProcessingElement... processingElements) {
         this.name = name;
@@ -38,11 +46,14 @@ public class Stream<T extends Event> implements Runnable {
          * TODO: This is only for prototyping. Comm layer will take care of this
          * in the real implementation.
          */
-        new Thread(this).start();
+        logger.trace("Start thread for stream " + name);
+        new Thread(this, name).start();
     }
 
     public void put(T event) {
         try {
+            //System.out.println("Remaining capacity in stream " + name + ":" + queue.remainingCapacity());
+            //System.out.println("PUT: " + event);
             queue.put(event);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -76,7 +87,10 @@ public class Stream<T extends Event> implements Runnable {
         while(true) {
             try {
                 /* Get oldest event in queue. */
+                logger.trace("Take event from stream " + this.name);
                 T event = queue.take();
+                //System.out.println("TAKE: " + event);
+
                 
                 /* Send event to each target PE. */
                 for(int i=0; i<targetPEs.length; i++) {

@@ -15,6 +15,11 @@
  */
 package io.s4;
 
+/*
+ * This is provided for cases where we want to process all events in 
+ * a given node without a key. If the application class extends this class, 
+ * then you will not be able to use it with keys limiting reusability.
+ */
 public abstract class SingletonPE extends ProcessingElement {
 
     public SingletonPE(App app) {

@@ -23,39 +23,51 @@ import io.s4.Stream;
 public class CounterPE extends ProcessingElement {
 
     final private Stream<CountEvent> countStream;
-    
-    public CounterPE(App app, Stream<CountEvent> countStream) {
+    private int interval;
+
+    public CounterPE(App app, int interval, Stream<CountEvent> countStream) {
         super(app);
         this.countStream = countStream;
+        this.interval = interval;
     }
 
     private long counter = 0;
 
-	/* (non-Javadoc)
-	 * @see io.s4.ProcessingElement#processInputEvent(io.s4.Event)
-	 */
-	@Override
-	protected void processInputEvent(Event event) {
+    /*
+     * (non-Javadoc)
+     * 
+     * @see io.s4.ProcessingElement#processInputEvent(io.s4.Event)
+     */
+    @Override
+    protected void processInputEvent(Event event) {
 
-	    counter += 1;
-	}
+        counter += 1;
 
-	/* (non-Javadoc)
-	 * @see io.s4.ProcessingElement#sendOutputEvent()
-	 */
-	@Override
-	public void sendEvent() {
-		
-        CountEvent countEvent = new CountEvent(countStream.getName(), counter);
-        countStream.put(countEvent);
-	}
+        if (counter % interval == 0) {
+            CountEvent countEvent = new CountEvent(countStream.getName(),
+                    counter);
+            countStream.put(countEvent);
+        }
+    }
 
-	/* (non-Javadoc)
-	 * @see io.s4.ProcessingElement#init()
-	 */
-	@Override
-	protected void initPEInstance() {
-		// TODO Auto-generated method stub
-		
-	}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see io.s4.ProcessingElement#sendOutputEvent()
+     */
+    @Override
+    public void sendEvent() {
+
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see io.s4.ProcessingElement#init()
+     */
+    @Override
+    protected void initPEInstance() {
+        // TODO Auto-generated method stub
+
+    }
 }

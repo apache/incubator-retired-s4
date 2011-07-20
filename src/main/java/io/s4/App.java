@@ -18,34 +18,20 @@ package io.s4;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * Container base class to hold all processing elements. We will implement administrative methods here. 
+ */
 public abstract class App {
-		
-	private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
-	
-	protected abstract void create();
-	
-	private void createInternal() {
-		
-		// create something;
-		
-		// create concrete class
-		create();
-	}
-	
-	protected abstract void init();
 
-	private void initInternal() {
-		
-		// init something
-		
-		// init concrete class
-		init();
-		
-	}
-	
-	void addPEPrototype(ProcessingElement pePrototype) {
-		
-		pePrototypes.add(pePrototype);
-		
-	}
+    private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
+
+    protected abstract void start();
+
+    protected abstract void init();
+
+    void addPEPrototype(ProcessingElement pePrototype) {
+
+        pePrototypes.add(pePrototype);
+
+    }
 }

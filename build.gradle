@@ -14,13 +14,17 @@
  * License. See accompanying LICENSE file. 
  */
 
+ /*
+  * To run type: "gradlew run"
+  */
+ 
 /* Include handy Gradle plugins. */
 apply plugin: 'eclipse'
 apply plugin: 'java'
 apply plugin: "application"
 
 /* Main application to run ... */
-mainClassName = "io.s4.Main"
+mainClassName = "io.s4.example.MyApp"
 
 /* Set a version number for your app. */
  version = new Version(major: 0, minor: 1, releaseType: 'SNAPSHOT')
