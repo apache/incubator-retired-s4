@@ -13,29 +13,22 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4;
+package io.s4.example;
+
+import io.s4.KeyFinder;
+
+import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+public class GenderKeyFinder implements KeyFinder<UserEvent> {
 
-
-public class Key<T extends Event> {
-
-    final private KeyFinder<T> finder;
-    final private String separator;
-
-    public Key(KeyFinder<T> finder, String separator) {
-        this.finder = finder;
-        this.separator = separator;
-    }
-    
-    public List<String> getList(T event) {
-        return finder.get(event);
-    }
-    
-    public String get(T event) {
-        List<String> keys = getList(event);
+    public List<String> get(UserEvent event) {
         
-        return StringUtils.join(keys, separator);
+        List<String> results = new ArrayList<String>();
+                
+        /* Retrieve the gender and add it to the list. */
+        results.add(Character.toString(event.getGender()));
+        
+        return results;   
     }
 }

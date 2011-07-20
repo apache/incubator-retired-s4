@@ -13,29 +13,35 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4;
-import java.util.List;
+package io.s4.example;
 
-import org.apache.commons.lang.StringUtils;
+import io.s4.Event;
 
+public class CountEvent extends Event {
 
-public class Key<T extends Event> {
+    final private String key;
+    final private long count;
+    
+    CountEvent(String key, long count) {
+        this.key = key;
+        this.count = count;
+    }
 
-    final private KeyFinder<T> finder;
-    final private String separator;
+    /**
+     * @return the key
+     */
+    public String getKey() {
+        return key;
+    }
 
-    public Key(KeyFinder<T> finder, String separator) {
-        this.finder = finder;
-        this.separator = separator;
+    /**
+     * @return the count
+     */
+    public long getCount() {
+        return count;
     }
     
-    public List<String> getList(T event) {
-        return finder.get(event);
-    }
-    
-    public String get(T event) {
-        List<String> keys = getList(event);
-        
-        return StringUtils.join(keys, separator);
+    public String toString() {
+        return "Key: " + key + ", Count: " + count;
     }
 }

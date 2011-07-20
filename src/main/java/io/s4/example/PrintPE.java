@@ -13,29 +13,34 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4;
-import java.util.List;
+package io.s4.example;
 
-import org.apache.commons.lang.StringUtils;
+import io.s4.App;
+import io.s4.Event;
+import io.s4.ProcessingElement;
 
-
-public class Key<T extends Event> {
-
-    final private KeyFinder<T> finder;
-    final private String separator;
-
-    public Key(KeyFinder<T> finder, String separator) {
-        this.finder = finder;
-        this.separator = separator;
-    }
+public class PrintPE extends ProcessingElement {
     
-    public List<String> getList(T event) {
-        return finder.get(event);
+
+    public PrintPE(App app) {
+        super(app);
     }
-    
-    public String get(T event) {
-        List<String> keys = getList(event);
+
+    @Override
+    protected void processInputEvent(Event event) {
         
-        return StringUtils.join(keys, separator);
+        System.out.println(event.toString());
+    }
+
+    @Override
+    public void sendEvent() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    protected void initPEInstance() {
+        // TODO Auto-generated method stub
+
     }
 }

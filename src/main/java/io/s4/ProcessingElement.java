@@ -1,60 +1,84 @@
+/*
+ * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the
+ * License. See accompanying LICENSE file. 
+ */
 package io.s4;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.google.inject.Inject;
 
-public abstract class ProcessingElement {
+public abstract class ProcessingElement  implements Cloneable {
 
-	final private App app;
-	private List<Stream> inputStreams;
-	private List<Stream> outputStreams;
+    final private App app;
+    final private Map<String, ProcessingElement> peInstances = new HashMap<String, ProcessingElement>();
 
-	@Inject
-	public ProcessingElement(App app) {
-	
-		this.app = app;
-		app.addProcessingElement(this);
-	}
-	
-	
-	public ProcessingElement setInput(Stream stream, Key key) {
+    @Inject
+    public ProcessingElement(App app) {
 
-		inputStreams.add(stream);
-		
-		return this;
-	}
+        this.app = app;
+        app.addPEPrototype(this);
+    }
 
-	public ProcessingElement setOutput(Stream stream) {
+    /**
+     * @return the app
+     */
+    public App getApp() {
+        return app;
+    }
 
-		outputStreams.add(stream);
-		
-		return this;
-	}
+    public void handleInputEvent(Event event) {
 
-	
-	/**
-	 * @return the app
-	 */
-	public App getApp() {
-		return app;
-	}
+        processInputEvent(event);
+    }
 
+    abstract protected void processInputEvent(Event event);
 
-	 public void processInputEvent(Event event) {
-	     
-	     // map event event_type to processInputEvent(EVENT_TYPE)
-	     
-	     // the method gets auto-generated
-	 }
+    abstract public void sendEvent(); // consider having several output
+                                      // policies...
 
-	abstract public void sendOutputEvent();
+    abstract protected void initPEInstance();
 
-	abstract public void init();
-	
-	// TODO: Change equals and hashCode in ProcessingElement and 
-	// Stream so we can use sets as collection and make sure there are no duplicate prototypes. 
-	// Great article: http://www.artima.com/lejava/articles/equality.html
-	
+    public ProcessingElement getInstanceForKey(String id) {
+
+        /* Check if instance for key exists, otherwise create one. */
+        ProcessingElement pe = peInstances.get(id);
+        if (pe == null) {
+            /* PE instance for key does not yet exist, cloning one. */
+            pe = (ProcessingElement) this.clone();
+            pe.initPEInstance();
+            peInstances.put(id, pe);
+        }
+        return pe;
+    }
+
+    /**
+     * This method exists simply to make <code>clone()</code> protected.
+     */
+    protected Object clone() {
+        try {
+            Object clone = super.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // TODO: Change equals and hashCode in ProcessingElement and
+    // Stream so we can use sets as collection and make sure there are no
+    // duplicate prototypes.
+    // Great article: http://www.artima.com/lejava/articles/equality.html
 
 }
