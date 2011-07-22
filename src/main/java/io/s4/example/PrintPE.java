@@ -43,4 +43,10 @@ public class PrintPE extends ProcessingElement {
         // TODO Auto-generated method stub
 
     }
+
+    @Override
+    protected void removeInstanceForKey(String id) {
+
+        System.out.println("Removing PE instance of type " + this.getClass().getName() + " for key " + id);
+    }
 }

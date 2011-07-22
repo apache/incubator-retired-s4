@@ -47,8 +47,9 @@ final public class MyApp extends App {
      * properties file. (Saved under "src/main/resources".) All configuration
      * details are done in Module.java.
      * 
-     * The application graph itself is created in this Class. However, developers
-     * may provide tools for creating apps which will generate the objects.
+     * The application graph itself is created in this Class. However,
+     * developers may provide tools for creating apps which will generate the
+     * objects.
      * 
      * IMPORTANT: we create a graph of PE prototypes. The prototype is a class
      * instance that is used as a prototype from which all PE instance will be
@@ -64,6 +65,7 @@ final public class MyApp extends App {
     /*
      * Build the application graph using POJOs. Don't like it? Write a nice
      * tool.
+     * 
      * @see io.s4.App#init()
      */
     @SuppressWarnings("unchecked")
@@ -74,11 +76,11 @@ final public class MyApp extends App {
         ProcessingElement printPE = new PrintPE(this);
 
         /* Streams that output count events by user, gender, and age. */
-        Stream<CountEvent> userCountStream = new Stream<CountEvent>(
+        Stream<CountEvent> userCountStream = new Stream<CountEvent>(this,
                 "User Count Stream", new CountKeyFinder(), printPE);
-        Stream<CountEvent> genderCountStream = new Stream<CountEvent>(
+        Stream<CountEvent> genderCountStream = new Stream<CountEvent>(this,
                 "Gender Count Stream", new CountKeyFinder(), printPE);
-        Stream<CountEvent> ageCountStream = new Stream<CountEvent>(
+        Stream<CountEvent> ageCountStream = new Stream<CountEvent>(this,
                 "Age Count Stream", new CountKeyFinder(), printPE);
 
         /* PEs that count events by user, gender, and age. */
@@ -90,11 +92,11 @@ final public class MyApp extends App {
                 ageCountStream);
 
         /* Streams that output user events keyed on user, gender, and age. */
-        Stream<UserEvent> userStream = new Stream<UserEvent>("User Stream",
-                new UserIDKeyFinder(), userCountPE);
-        Stream<UserEvent> genderStream = new Stream<UserEvent>("Gender Stream",
-                new GenderKeyFinder(), genderCountPE);
-        Stream<UserEvent> ageStream = new Stream<UserEvent>("Age Stream",
+        Stream<UserEvent> userStream = new Stream<UserEvent>(this,
+                "User Stream", new UserIDKeyFinder(), userCountPE);
+        Stream<UserEvent> genderStream = new Stream<UserEvent>(this,
+                "Gender Stream", new GenderKeyFinder(), genderCountPE);
+        Stream<UserEvent> ageStream = new Stream<UserEvent>(this, "Age Stream",
                 new AgeKeyFinder(), ageCountPE);
 
         generateUserEventPE = new GenerateUserEventPE(this, userStream,
@@ -103,14 +105,32 @@ final public class MyApp extends App {
 
     /*
      * Create and send 1000 dummy events of type UserEvent.
+     * 
      * @see io.s4.App#start()
      */
     @Override
     protected void start() {
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 200; i++) {
             generateUserEventPE.sendEvent();
         }
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        System.out.println("Done. Closing...");
+        removeAll();
+
+    }
+
+    @Override
+    protected void close() {
+        System.out.println("Bye.");
+
     }
 
     public static void main(String[] args) {

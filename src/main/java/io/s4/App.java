@@ -23,15 +23,58 @@ import java.util.List;
  */
 public abstract class App {
 
-    private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
+    final private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
+    final private List<Stream<? extends Event>> streams = new ArrayList<Stream<? extends Event>>();
+
+    /**
+     * @return the pePrototypes
+     */
+    public List<ProcessingElement> getPePrototypes() {
+        return pePrototypes;
+    }
 
     protected abstract void start();
 
     protected abstract void init();
 
+    protected abstract void close();
+
+    public void removeAll() {
+
+        for (ProcessingElement pe : pePrototypes) {
+
+            /* Remove all instances. */
+            pe.removeAll();
+
+        }
+
+        for (Stream<? extends Event> stream : streams) {
+
+            /* Close all streams. */
+            stream.close();
+        }
+
+        /* Give prototype a chance to clean up after itself. */
+        close();
+
+        /* Finally remove from App. */
+        pePrototypes.clear();
+        streams.clear();
+    }
+
     void addPEPrototype(ProcessingElement pePrototype) {
 
         pePrototypes.add(pePrototype);
 
+    }
+
+    void addStream(Stream<? extends Event> stream) {
+
+        streams.add(stream);
+
+    }
+
+    public List<Stream<? extends Event>> getStreams() {
+        return streams;
     }
 }

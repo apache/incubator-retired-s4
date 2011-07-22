@@ -21,7 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import org.apache.log4j.Logger;
 
 public class Stream<T extends Event> implements Runnable {
-    
+
     private static Logger logger = Logger.getLogger(Stream.class);
 
     final static private String DEFAULT_SEPARATOR = "^";
@@ -30,13 +30,16 @@ public class Stream<T extends Event> implements Runnable {
     final private Key<T> key;
     final private ProcessingElement[] targetPEs;
     final private BlockingQueue<T> queue = new ArrayBlockingQueue<T>(CAPACITY);
+    final private Thread thread;
 
-    /* Streams send event of a given type using a specific key to target 
+    /*
+     * Streams send event of a given type using a specific key to target
      * processing elements.
-     * 
      */
-    public Stream(String name, KeyFinder<T> finder,
+    public Stream(App app, String name, KeyFinder<T> finder,
             ProcessingElement... processingElements) {
+        
+        app.addStream(this);        
         this.name = name;
         this.key = new Key<T>(finder, DEFAULT_SEPARATOR);
         this.targetPEs = processingElements;
@@ -47,13 +50,15 @@ public class Stream<T extends Event> implements Runnable {
          * in the real implementation.
          */
         logger.trace("Start thread for stream " + name);
-        new Thread(this, name).start();
+        thread = new Thread(this, name);
+        thread.start();
     }
 
     public void put(T event) {
         try {
-            //System.out.println("Remaining capacity in stream " + name + ":" + queue.remainingCapacity());
-            //System.out.println("PUT: " + event);
+            // System.out.println("Remaining capacity in stream " + name + ":" +
+            // queue.remainingCapacity());
+            // System.out.println("PUT: " + event);
             queue.put(event);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -82,30 +87,33 @@ public class Stream<T extends Event> implements Runnable {
         return targetPEs;
     }
 
+    public void close() {
+        thread.interrupt();
+    }
+
     @Override
     public void run() {
-        while(true) {
+        while (true) {
             try {
                 /* Get oldest event in queue. */
                 logger.trace("Take event from stream " + this.name);
                 T event = queue.take();
-                //System.out.println("TAKE: " + event);
+                // System.out.println("TAKE: " + event);
 
-                
                 /* Send event to each target PE. */
-                for(int i=0; i<targetPEs.length; i++) {
-                    
+                for (int i = 0; i < targetPEs.length; i++) {
+
                     /* STEP 1: find the PE instance for key. */
-                    ProcessingElement pe = targetPEs[i].getInstanceForKey(key.get(event));
-                    
+                    ProcessingElement pe = targetPEs[i].getInstanceForKey(key
+                            .get(event));
+
                     /* STEP 2: pass event to PE instance. */
                     pe.handleInputEvent(event);
                 }
-                
-                
+
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                System.out.println("Closing stream " + name);
+                return;
             }
         }
     }

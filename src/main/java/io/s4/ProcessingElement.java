@@ -15,23 +15,23 @@
  */
 package io.s4;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.inject.Inject;
-
-public abstract class ProcessingElement  implements Cloneable {
+public abstract class ProcessingElement implements Cloneable {
 
     final private App app;
-    final private Map<String, ProcessingElement> peInstances = new HashMap<String, ProcessingElement>();
+    final private Map<String, ProcessingElement> peInstances = new ConcurrentHashMap<String, ProcessingElement>();
+    private String id=""; // PE instance id
 
     /*
-     * Base class for implementing processing in S4. All instances are organized as follows. 
-     * A PE prototype is a special type of instance that defines the topology of the graph 
-     * and manages the creation and destruction of the actual instances that do the processing.
-     * PE instances are clones of the prototype. PE instance variables should be initialized in
-     * the initPEInstance() method. Be aware that Class variables are simply copied to the clones,
-     * even references.
+     * Base class for implementing processing in S4. All instances are organized
+     * as follows. A PE prototype is a special type of instance that defines the
+     * topology of the graph and manages the creation and destruction of the
+     * actual instances that do the processing. PE instances are clones of the
+     * prototype. PE instance variables should be initialized in the
+     * initPEInstance() method. Be aware that Class variables are simply copied
+     * to the clones, even references.
      */
     public ProcessingElement(App app) {
 
@@ -58,6 +58,41 @@ public abstract class ProcessingElement  implements Cloneable {
 
     abstract protected void initPEInstance();
 
+    abstract protected void removeInstanceForKey(String id);
+
+    private void removeInstanceForKeyInternal(String id) {
+
+        if (id == null)
+            return;
+        
+        /* First let the PE instance clean after itself. */
+        removeInstanceForKey(id);
+
+        /* Remove PE instance. */
+        peInstances.remove(id);
+    }
+
+    protected void removeAll() {
+
+        /* Remove all the instances. */
+        for (Map.Entry<String, ProcessingElement> entry : peInstances
+                .entrySet()) {
+
+            String key = entry.getKey();
+
+            if (key != null)
+                removeInstanceForKeyInternal(key);
+        }
+
+        
+
+        /*
+         * TODO: This object (the PE prototype) may still be referenced by other
+         * objects at this point. For example a stream object may still be
+         * referencing PEs.
+         */
+    }
+
     synchronized public ProcessingElement getInstanceForKey(String id) {
 
         /* Check if instance for key exists, otherwise create one. */
@@ -67,8 +102,24 @@ public abstract class ProcessingElement  implements Cloneable {
             pe = (ProcessingElement) this.clone();
             pe.initPEInstance();
             peInstances.put(id, pe);
+            pe.id = id;
         }
         return pe;
+    }
+
+    /**
+     * Unique ID for a PE instance.
+     * @return the id
+     */
+    public String getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(String id) {
+        this.id = id;
     }
 
     /**

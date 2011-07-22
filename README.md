@@ -30,6 +30,7 @@ In this version:
 
 - Everything is a POJO.
 - Key framework classes (io.s4) are:
+  - Event: all messages sent between PEs inherit from Event.
   - ProcessingElement: base class for PEs.
   - Stream: takes an Event subclass as the parameter type for the stream.  A stream holds references to the target PEs. Streams are the edges between PEs.
   - Key: is a helper class that can return the value of a key for a specific type of event. For each type of event, one will create a KeyFinder class that knows how to get the value from the Event class.
@@ -37,6 +38,8 @@ In this version:
 
 Note that when we create a PE in App, we are really creating a prototype of the PE. The actual PE instances get created every time a node receives an event that is dispatched to a specific PE prototype. The first PE has Map that holds the instances by a specific key. PE instances are clones which means that we don't call the constructor. Instead we provide an init method. Also, the instance variables are cloned. This means that references are also copied. If you wanted to have a List per PE instance, you would have to create it in the init method. This design pattern, makes thing very simple and efficient but has the downside that programmers have to understand how instances are created via clone.
 
+For now we identify PEs using a composite string produced by KeyFinder. We must also pass the raw data types used to create the composite key. Need to think how to do this with type safety in mind.
+ 
 To test the API I created a simple example (io.s4.example). It does the following:
 
 - Generate dummy events (UserEvent).
