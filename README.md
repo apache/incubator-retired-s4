@@ -47,6 +47,10 @@ To test the API I created a simple example (io.s4.example). It does the followin
 - Count by user, gender, age.
 - Print partial counts.
 
+The following diagram shows the application graph:
+
+![S4 Objects](https://github.com/leoneu/s4-piper/raw/master/etc/s4-conter-example.png)
+
 In following diagram I show how Classes, PE Prototypes, PE instances, and Streams are related.
 
 ![S4 Objects](https://github.com/leoneu/s4-piper/raw/master/etc/s4-objects-example.png)
