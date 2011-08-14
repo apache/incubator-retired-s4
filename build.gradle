@@ -24,7 +24,9 @@ apply plugin: 'java'
 apply plugin: "application"
 
 /* Main application to run ... */
-mainClassName = "io.s4.example.MyApp"
+//mainClassName = "io.s4.example.counter.MyApp"
+mainClassName = "io.s4.example.kmeans.Main"
+
 
 /* Set a version number for your app. */
  version = new Version(major: 0, minor: 1, releaseType: 'SNAPSHOT')
@@ -36,7 +38,6 @@ mainClassName = "io.s4.example.MyApp"
  gson:               'com.google.code.gson:gson:1.6',
  guice:              'com.google.inject:guice:3.0',
  guice_grapher:      'com.google.inject:guice-grapher:3.0',
- log4j:              'log4j:log4j:1.2.15',
  flexjson:           'net.sf.flexjson:flexjson:2.1',
  bcel:               'org.apache.bcel:bcel:5.2',
  jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
@@ -44,11 +45,13 @@ mainClassName = "io.s4.example.MyApp"
  reflectasm:         'com.esotericsoftware:reflectasm:0.8',
  minlog:             'com.esotericsoftware:minlog:1.2',
  asm:                'asm:asm:3.2',
- commons_logging:    'commons-logging:commons-logging:1.1.1',
  commons_io:         'commons-io:commons-io:2.0.1',
  commons_config:     'commons-configuration:commons-configuration:1.6',
  commons_codec:      'commons-codec:commons-codec:1.4',
  commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
+ slf4j:              'org.slf4j:slf4j-api:1.6.1',
+ logback_core:       'ch.qos.logback:logback-core:0.9.29',
+ logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
  junit:              'junit:junit:4.4'
  ]
 
@@ -72,8 +75,9 @@ dependencies {
 	compile( libraries.guice )
     compile( libraries.json)
 	compile( libraries.gson)
-	compile( libraries.log4j )
-	compile( libraries.commons_logging )
+	compile( libraries.slf4j )
+	compile( libraries.logback_core )
+	compile( libraries.logback_classic )
 	compile( libraries.commons_io )
 	compile( libraries.commons_config )
 	compile( libraries.commons_codec )

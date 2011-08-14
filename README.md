@@ -40,19 +40,11 @@ Note that when we create a PE in App, we are really creating a prototype of the 
 
 For now we identify PEs using a composite string produced by KeyFinder. We must also pass the raw data types used to create the composite key. Need to think how to do this with type safety in mind.
  
-To test the API I created a simple example (io.s4.example). It does the following:
+ 
+Examples:
 
-- Generate dummy events (UserEvent).
-- Key events by user, gender, age.
-- Count by user, gender, age.
-- Print partial counts.
-
-The following diagram shows the application graph:
-
-![S4 Objects](https://github.com/leoneu/s4-piper/raw/master/etc/s4-counter-example.png)
-
-In following diagram I show how Classes, PE Prototypes, PE instances, and Streams are related.
-
-![S4 Objects](https://github.com/leoneu/s4-piper/raw/master/etc/s4-objects-example.png)
+* io.s4.example.counter - Generates dummy events that are counted using various keys. 
+* io.s4.example.kmeans - Shows how to use S4 in batch mode. We generate random data which is clustered using a standard k-means algorithm.
+ 
 
 

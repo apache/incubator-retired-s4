@@ -15,106 +15,135 @@
  */
 package io.s4;
 
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-import org.apache.log4j.Logger;
-
 public class Stream<T extends Event> implements Runnable {
 
-    private static Logger logger = Logger.getLogger(Stream.class);
+	final static private String DEFAULT_SEPARATOR = "^";
+	final static private int CAPACITY = 1000;
+	final private String name;
+	final private Key<T> key;
+	final private ProcessingElement[] targetPEs;
+	final private BlockingQueue<T> queue = new ArrayBlockingQueue<T>(CAPACITY);
+	final private Thread thread;
 
-    final static private String DEFAULT_SEPARATOR = "^";
-    final static private int CAPACITY = 1000;
-    final private String name;
-    final private Key<T> key;
-    final private ProcessingElement[] targetPEs;
-    final private BlockingQueue<T> queue = new ArrayBlockingQueue<T>(CAPACITY);
-    final private Thread thread;
+	/*
+	 * Streams send event of a given type using a specific key to target
+	 * processing elements.
+	 */
+	public Stream(App app, String name, KeyFinder<T> finder,
+			ProcessingElement... processingElements) {
 
-    /*
-     * Streams send event of a given type using a specific key to target
-     * processing elements.
-     */
-    public Stream(App app, String name, KeyFinder<T> finder,
-            ProcessingElement... processingElements) {
-        
-        app.addStream(this);        
-        this.name = name;
-        this.key = new Key<T>(finder, DEFAULT_SEPARATOR);
-        this.targetPEs = processingElements;
+		app.addStream(this);
+		this.name = name;
 
-        /* Start streaming. */
-        /*
-         * TODO: This is only for prototyping. Comm layer will take care of this
-         * in the real implementation.
-         */
-        logger.trace("Start thread for stream " + name);
-        thread = new Thread(this, name);
-        thread.start();
-    }
+		if (finder == null) {
+			this.key = null;
+		} else {
+			this.key = new Key<T>(finder, DEFAULT_SEPARATOR);
+		}
+		this.targetPEs = processingElements;
 
-    public void put(T event) {
-        try {
-            // System.out.println("Remaining capacity in stream " + name + ":" +
-            // queue.remainingCapacity());
-            // System.out.println("PUT: " + event);
-            queue.put(event);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            System.exit(-1);
-        }
-    }
+		/* Start streaming. */
+		/*
+		 * TODO: This is only for prototyping. Comm layer will take care of this
+		 * in the real implementation.
+		 */
+		// logger.trace("Start thread for stream " + name);
+		thread = new Thread(this, name);
+		thread.start();
+	}
 
-    /**
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
+	/*
+	 * This constructor will create a broadcast stream. That is, the events will
+	 * be sent to all the PE instances.
+	 */
+	public Stream(App app, String name, ProcessingElement... processingElements) {
+		this(app, name, null, processingElements);
+	}
 
-    /**
-     * @return the key
-     */
-    public Key<T> getKey() {
-        return key;
-    }
+	public void put(T event) {
+		try {
+			// System.out.println("Remaining capacity in stream " + name + ":" +
+			// queue.remainingCapacity());
+			// System.out.println("PUT: " + event);
+			queue.put(event);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+	}
 
-    /**
-     * @return the list of target processing elements.
-     */
-    public ProcessingElement[] getTargetPEs() {
-        return targetPEs;
-    }
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
 
-    public void close() {
-        thread.interrupt();
-    }
+	/**
+	 * @return the key
+	 */
+	public Key<T> getKey() {
+		return key;
+	}
 
-    @Override
-    public void run() {
-        while (true) {
-            try {
-                /* Get oldest event in queue. */
-                logger.trace("Take event from stream " + this.name);
-                T event = queue.take();
-                // System.out.println("TAKE: " + event);
+	/**
+	 * @return the list of target processing elements.
+	 */
+	public ProcessingElement[] getTargetPEs() {
+		return targetPEs;
+	}
 
-                /* Send event to each target PE. */
-                for (int i = 0; i < targetPEs.length; i++) {
+	public void close() {
+		thread.interrupt();
+	}
 
-                    /* STEP 1: find the PE instance for key. */
-                    ProcessingElement pe = targetPEs[i].getInstanceForKey(key
-                            .get(event));
+	@Override
+	public void run() {
+		while (true) {
+			try {
+				/* Get oldest event in queue. */
+				// logger.trace("Take event from stream " + this.name);
+				T event = queue.take();
+				// System.out.println("TAKE: " + event);
 
-                    /* STEP 2: pass event to PE instance. */
-                    pe.handleInputEvent(event);
-                }
+				/* Send event to each target PE. */
+				for (int i = 0; i < targetPEs.length; i++) {
 
-            } catch (InterruptedException e) {
-                System.out.println("Closing stream " + name);
-                return;
-            }
-        }
-    }
+					if (key == null) {
+						
+						/* Broadcast to all PE instances! */
+						
+						/* STEP 1: find all PE instances. */
+						
+						List<ProcessingElement> pes = targetPEs[i].getAllInstances();
+						
+						/* STEP 2: iterate and pass event to PE instance. */
+						for(ProcessingElement pe : pes) {
+														
+							pe.handleInputEvent(event);
+						}
+
+					} else {
+						
+						/* We have a key, send to target PE. */
+						
+						/* STEP 1: find the PE instance for key. */
+						ProcessingElement pe = targetPEs[i]
+								.getInstanceForKey(key.get(event));
+
+						/* STEP 2: pass event to PE instance. */
+						pe.handleInputEvent(event);
+					}
+				}
+
+			} catch (InterruptedException e) {
+				System.out.println("Closing stream " + name);
+				return;
+			}
+		}
+	}
 }

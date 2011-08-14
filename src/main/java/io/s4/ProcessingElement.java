@@ -15,14 +15,17 @@
  */
 package io.s4;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class ProcessingElement implements Cloneable {
 
-    final private App app;
-    final private Map<String, ProcessingElement> peInstances = new ConcurrentHashMap<String, ProcessingElement>();
-    private String id=""; // PE instance id
+    final protected App app;
+    final protected Map<String, ProcessingElement> peInstances = new ConcurrentHashMap<String, ProcessingElement>();
+    protected String id=""; // PE instance id
+    final protected ProcessingElement pePrototype;
 
     /*
      * Base class for implementing processing in S4. All instances are organized
@@ -37,6 +40,11 @@ public abstract class ProcessingElement implements Cloneable {
 
         this.app = app;
         app.addPEPrototype(this);
+        
+        /* Only the PE Prototype uses the constructor. The PEPrototype 
+         * field will be cloned by the instances and point to the prototype. 
+         * */
+        this.pePrototype = this;
     }
 
     /**
@@ -60,7 +68,7 @@ public abstract class ProcessingElement implements Cloneable {
 
     abstract protected void removeInstanceForKey(String id);
 
-    private void removeInstanceForKeyInternal(String id) {
+    protected void removeInstanceForKeyInternal(String id) {
 
         if (id == null)
             return;
@@ -107,6 +115,11 @@ public abstract class ProcessingElement implements Cloneable {
         return pe;
     }
 
+    synchronized protected List<ProcessingElement> getAllInstances() {
+    	
+    	return new ArrayList<ProcessingElement>(peInstances.values());
+    }
+    
     /**
      * Unique ID for a PE instance.
      * @return the id
