@@ -20,7 +20,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class ProcessingElement implements Cloneable {
+
+	Logger logger = LoggerFactory.getLogger(ProcessingElement.class);
 
     final protected App app;
     final protected Map<String, ProcessingElement> peInstances = new ConcurrentHashMap<String, ProcessingElement>();
@@ -54,6 +59,11 @@ public abstract class ProcessingElement implements Cloneable {
         return app;
     }
 
+    public int getNumPEInstances() {
+    	
+    	return peInstances.size();
+    }
+    
     synchronized public void handleInputEvent(Event event) {
 
         processInputEvent(event);
@@ -111,6 +121,8 @@ public abstract class ProcessingElement implements Cloneable {
             pe.initPEInstance();
             peInstances.put(id, pe);
             pe.id = id;
+            
+            logger.trace("Num PE instances: {}.", getNumPEInstances());
         }
         return pe;
     }

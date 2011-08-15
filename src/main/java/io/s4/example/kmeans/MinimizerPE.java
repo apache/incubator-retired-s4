@@ -32,7 +32,7 @@ public class MinimizerPE extends ProcessingElement {
 	final private Stream<ObsEvent> assignmentStream;
 	private int numEventsReceived = 0;
 	private float minDistance = Float.MAX_VALUE;
-	private int minClusterID;
+	private int hypID;
 
 	public MinimizerPE(App app, int numClusters, Stream<ObsEvent> assignmentStream) {
 		super(app);
@@ -48,14 +48,14 @@ public class MinimizerPE extends ProcessingElement {
 		
 		if(inEvent.getDistance() < minDistance) {
 			minDistance = inEvent.getDistance();
-			minClusterID = inEvent.getClassId();
+			hypID = inEvent.getHypId();
 		}
 		
 		if( ++numEventsReceived == numClusters) {
 			
 			/* Got all the distances. Send class id with minimum distance. */
 			ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs,
-					minDistance, minClusterID);
+					minDistance, inEvent.getClassId(), hypID);
 			
 			logger.trace("IN: " + inEvent.toString());
 			logger.trace("OUT: " + outEvent.toString());

@@ -32,6 +32,8 @@ public class kMeansTrainer extends App {
 	private float[][] initialCentroids;
 	private Stream<ObsEvent> obsStream;
 
+	private ClusterPE clusterPE;
+
 	public kMeansTrainer(int numClusters, int vectorSize, long numVectors,
 			float[][] initialCentroids) {
 		super();
@@ -41,12 +43,11 @@ public class kMeansTrainer extends App {
 		this.initialCentroids = initialCentroids;
 	}
 
-	public void injectData(int index, float[] obs) {	
-		ObsEvent obsEvent = new ObsEvent(index, obs, -1.0f, -1);
+	public void injectData(ObsEvent obsEvent) {
 		logger.trace("Inject: " + obsEvent.toString());
-			obsStream.put(obsEvent);
+		obsStream.put(obsEvent);
 	}
-	
+
 	@Override
 	protected void start() {
 
@@ -55,11 +56,11 @@ public class kMeansTrainer extends App {
 	@Override
 	protected void init() {
 
-		ClusterPE clusterPE = new ClusterPE(this, numClusters, vectorSize,
-				numVectors, initialCentroids);
+		clusterPE = new ClusterPE(this, numClusters, vectorSize, numVectors,
+				initialCentroids);
 
 		Stream<ObsEvent> assignmentStream = new Stream<ObsEvent>(this,
-				"Assignment Stream", new ClusterIDKeyFinder(), clusterPE);
+				"Assignment Stream", new HypIDKeyFinder(), clusterPE);
 
 		MinimizerPE minimizerPE = new MinimizerPE(this, numClusters,
 				assignmentStream);
@@ -73,16 +74,25 @@ public class kMeansTrainer extends App {
 		 */
 		clusterPE.setStream(distanceStream);
 
-		/* This stream will send events of type ObsEvent to ALL the PE 
-		 * instances in clusterPE. 
-		 * */
-		obsStream = new Stream<ObsEvent>(this, "Observation Stream",
-				clusterPE);
+		/*
+		 * This stream will send events of type ObsEvent to ALL the PE instances
+		 * in clusterPE.
+		 */
+		obsStream = new Stream<ObsEvent>(this, "Observation Stream", clusterPE);
 	}
 
 	@Override
 	protected void close() {
 		// TODO Auto-generated method stub
 
+	}
+
+	public long getObsCount() {
+
+		return clusterPE.getObsCount();
+	}
+
+	public void remove() {
+		removeAll();
 	}
 }

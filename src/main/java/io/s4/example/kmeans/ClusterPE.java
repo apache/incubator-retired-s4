@@ -31,6 +31,7 @@ public class ClusterPE extends ProcessingElement {
 
 	Logger logger = LoggerFactory.getLogger(ClusterPE.class);
 
+	final private int numClusters;
 	final private int vectorSize;
 	final private long numVectors;
 	private Stream<ObsEvent> distanceStream;
@@ -38,13 +39,17 @@ public class ClusterPE extends ProcessingElement {
 	private float[] centroid;
 	private long obsCount = 0;
 	private float[] obsSum;
+	private float totalDistance = 0f;
+	private int[][] confusionMatrix;
 
 	public ClusterPE(App app, int numClusters, int vectorSize, long numVectors,
 			float[][] centroids) {
 		super(app);
+		this.numClusters = numClusters;
 		this.vectorSize = vectorSize;
 		this.numVectors = numVectors;
 
+		confusionMatrix = new int[numClusters][numClusters];
 		/*
 		 * The ClusterPE instances are not event driven. That is they are
 		 * created here before events start to flow.
@@ -60,22 +65,23 @@ public class ClusterPE extends ProcessingElement {
 	}
 
 	public void setStream(Stream<ObsEvent> distanceStream) {
-		
+
 		/* Init prototype. */
 		this.distanceStream = distanceStream;
-		
-		/* We also need to set the stream in the instances 
-		 * we created in the constructor. 
-		 * */
+
+		/*
+		 * We also need to set the stream in the instances we created in the
+		 * constructor.
+		 */
 		List<ProcessingElement> pes = this.getAllInstances();
-		
+
 		/* STEP 2: iterate and pass event to PE instance. */
-		for(ProcessingElement pe : pes) {
-										
-			((ClusterPE)pe).distanceStream = distanceStream;
+		for (ProcessingElement pe : pes) {
+
+			((ClusterPE) pe).distanceStream = distanceStream;
 		}
 	}
-	
+
 	public void setClusterId(int clusterId) {
 		this.clusterId = clusterId;
 	}
@@ -84,22 +90,50 @@ public class ClusterPE extends ProcessingElement {
 		this.centroid = centroid;
 	}
 
-	synchronized private void updateTotalObsCount() {
-				
-		/* Total obs count. We use the obsCount field in the prototype. */
+	public long getObsCount() {
+		return obsCount;
+	}
+
+	synchronized private void updateTotalStats(ObsEvent event) {
+
+		/* Update global stats in the prototype in the prototype. */
 		ClusterPE clusterPEPrototype = (ClusterPE) pePrototype;
 		clusterPEPrototype.obsCount++;
+		clusterPEPrototype.totalDistance += event.getDistance();
+		clusterPEPrototype.confusionMatrix[event.getClassId()][event.getHypId()] += 1;
 
-		logger.trace("ClusterID: " + clusterId + ", Count: " +  clusterPEPrototype.obsCount);
+		logger.trace("Index: " + event.getIndex() + ", Label: "
+				+ event.getClassId() + ", Hyp: " + event.getHypId()
+				+ ", Total Count: " + clusterPEPrototype.obsCount
+				+ ", Total Dist: " + clusterPEPrototype.totalDistance);
+
+		/* Log info. */
+		if (clusterPEPrototype.obsCount % 10000 == 0) {
+			logger.info("Processed {} events", clusterPEPrototype.obsCount);
+			logger.info("Average distance is {}.",
+					clusterPEPrototype.totalDistance
+							/ clusterPEPrototype.obsCount);
+		}
 
 		if (clusterPEPrototype.obsCount == numVectors) {
 
 			/* Done processing training set. */
 
-			logger.trace(">>> ClusterID: " + clusterId + ", Final Count: " +  clusterPEPrototype.obsCount);
+			logger.info("Final Count: {}.", clusterPEPrototype.obsCount);
+			logger.info("Final Average Distance: {}.",
+					clusterPEPrototype.totalDistance
+							/ clusterPEPrototype.obsCount);
 
-			/* Reset global count. */
-			clusterPEPrototype.obsCount = 0;
+			for (int i = 0; i < numClusters; i++)
+				for (int j = 0; j < numClusters; j++) {
+					
+					Object[] paramArray = { i, j,
+							clusterPEPrototype.confusionMatrix[i][j] };
+					
+					logger.info(
+							"Final Count of class {} classified as {}: {}.",
+							paramArray);
+				}
 
 			/* Update centroids. */
 			for (Map.Entry<String, ProcessingElement> entry : peInstances
@@ -110,6 +144,11 @@ public class ClusterPE extends ProcessingElement {
 				pe.updateCentroid();
 
 			}
+
+			/* Reset global stats. */
+			clusterPEPrototype.obsCount = 0;
+			clusterPEPrototype.totalDistance = 0f;
+			clusterPEPrototype.confusionMatrix = new int[numClusters][numClusters];
 		}
 	}
 
@@ -154,7 +193,7 @@ public class ClusterPE extends ProcessingElement {
 			/* Process raw event. */
 			float dist = distance(obs);
 			ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs, dist,
-					clusterId);
+					inEvent.getClassId(), clusterId);
 			logger.trace("IN: " + inEvent.toString());
 			logger.trace("OUT: " + outEvent.toString());
 			distanceStream.put(outEvent);
@@ -167,8 +206,14 @@ public class ClusterPE extends ProcessingElement {
 			/* Update obs count for this class. */
 			obsCount++;
 
-			/* Update total obs count. */
-			updateTotalObsCount();
+			/* Log info. */
+			if (obsCount % 1000 == 0) {
+				logger.info("Labeled {} events with class id {}", obsCount,
+						clusterId);
+			}
+
+			/* Update total obs count and distance. */
+			updateTotalStats(inEvent);
 
 			for (int i = 0; i < vectorSize; i++) {
 				obsSum[i] += obs[i];

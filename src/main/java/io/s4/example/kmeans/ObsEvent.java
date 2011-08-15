@@ -24,36 +24,61 @@ public class ObsEvent extends Event {
 	final private float distance;
 	final private long index;
 	final private int classId;
-	
-	public ObsEvent(long index, float[] obsVector, float distance, int classId) {
+	final private int hypId;
+
+	public ObsEvent(long index, float[] obsVector, float distance, int classId,
+			int hypId) {
 		this.obsVector = obsVector;
 		this.distance = distance;
 		this.index = index;
 		this.classId = classId;
+		this.hypId = hypId;
 	}
 
+	/**
+	 * @return the observed data vector.
+	 */
 	public float[] getObsVector() {
 		return obsVector;
 	}
 
+	/**
+	 * @return the distance between the observed vector and the class centroid.
+	 *         Use -1.0 when unknown.
+	 */
 	public float getDistance() {
 		return distance;
 	}
 
+	/**
+	 * @return the index of the data vector.
+	 */
 	public long getIndex() {
 		return index;
 	}
-	
+
+	/**
+	 * @return the true class of the vector.
+	 */
 	public int getClassId() {
 		return classId;
 	}
-	
+
+	/**
+	 * @return the hypothesized class of the vector. Use -1 when unknown.
+	 */
+	public int getHypId() {
+		return hypId;
+	}
+
 	public String toString() {
-		
-		StringBuilder vector = new StringBuilder();;
-		for(int i=0; i < obsVector.length; i++) {
+
+		StringBuilder vector = new StringBuilder();
+		;
+		for (int i = 0; i < obsVector.length; i++) {
 			vector.append(obsVector[i] + " ");
 		}
-        return "Idx: " + index + ", Label: " + classId + ", Dist: " + distance + ", Obs: " + vector.toString();
-    }
+		return "Idx: " + index + ", Class: " + classId + ", Hyp:" + hypId
+				+ ", Dist: " + distance + ", Obs: " + vector.toString();
+	}
 }

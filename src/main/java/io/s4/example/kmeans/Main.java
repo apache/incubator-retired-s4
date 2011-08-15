@@ -16,6 +16,11 @@
  */
 package io.s4.example.kmeans;
 
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+
 public class Main {
 
 	
@@ -24,6 +29,9 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
+		Logger root = (Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+		root.setLevel(Level.DEBUG);
+		
 		DataController dataController = new DataController();
 		dataController.start();
 	}

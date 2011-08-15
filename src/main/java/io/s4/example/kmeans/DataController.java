@@ -25,9 +25,12 @@ import org.slf4j.LoggerFactory;
 
 public class DataController {
 
-	final private String TRAIN_FILENAME = "/covtype-train-1000.data.gz";
+	// final private String TRAIN_FILENAME = "/covtype-train-1000.data.gz"; //
+	// small file for debugging.
+	final private String TRAIN_FILENAME = "/covtype-train.data.gz";
 	final private String TEST_FILENAME = "/covtype-test.data.gz";
 	final private int MAX_NUM_CLASSES = 10;
+	final private int NUM_ITERATIONS = 10;
 	final private long numTrainVectors;
 	final private long numTestVectors;
 	private int vectorSize;
@@ -56,15 +59,33 @@ public class DataController {
 
 			logger.info("Init app.");
 			app.init();
-			
-			injectData(app, TRAIN_FILENAME);
-			
+
+			for (int i = 0; i < NUM_ITERATIONS; i++) {
+				logger.info("Starting iteration {}.", i);
+				injectData(app, TRAIN_FILENAME);
+
+				/*
+				 * Make sure all the data has been processed. ClusterPE will
+				 * reset the total count after all the data is processed so we
+				 * wait until the count is equal to zero.
+				 */
+				while (app.getObsCount() > 0) {
+					Thread.sleep(100);
+				}
+			}
+
+			/* Done. */
+			app.remove();
+
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			logger.error(e.getMessage());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
 	}
 
@@ -76,13 +97,17 @@ public class DataController {
 		for (String line : data) {
 
 			String[] result = line.split("\\s");
+			
+			/* Class ID range starts in 1, shift to start in zero. */
+			int classID = Integer.parseInt(result[0]) - 1;
 
 			float[] vector = new float[vectorSize];
 			for (int j = 0; j < vectorSize; j++) {
 
 				vector[j] = Float.parseFloat(result[j + 1]);
 			}
-			app.injectData(count++, vector);
+			ObsEvent obsEvent = new ObsEvent(count++, vector, -1.0f, classID, -1);
+			app.injectData(obsEvent);
 		}
 		data.close();
 	}
