@@ -49,11 +49,7 @@ Clearly, estimating the k-means centroids requires batch processing. That is we 
 
 ![S4 Counter](https://github.com/leoneu/s4-piper/raw/master/etc/s4-kmeans-example.png)
 
-We choose to use the same EventType to communicate across Processing Elements:
-
-<script src="https://gist.github.com/1148118.js?file=ObsEvent.java"></script>
-
-The event is immutable and can only be created using the constructor. The fields are:
+We choose to use events of type ObsEvent to communicate between Processing Elements. The event is immutable and can only be created using the constructor. The fields are:
 
 * _obsVector_ is the observation vecotr. The size of the float array should be the same for all the vectors.
 * _distance_ is the euclidean distance between the vector and the centroid.
@@ -61,6 +57,7 @@ The event is immutable and can only be created using the constructor. The fields
 * _classId_ is the true class for the vector as it was labeled in the original data set.
 * _hypId_ is the hypothesized class for the vector after using the classification algorithm.
 
- 
+Also notice that the graph has a loop. This creates a minor challenge to create the application graph. To solve 
+this problem we added a setter method to set the distanceStream in ClusterPE.
 
 
