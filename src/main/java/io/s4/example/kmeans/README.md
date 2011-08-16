@@ -57,6 +57,25 @@ We choose to use events of type ObsEvent to communicate between Processing Eleme
 * _classId_ is the true class for the vector as it was labeled in the original data set.
 * _hypId_ is the hypothesized class for the vector after using the classification algorithm.
 
+Here is a snippet of ObsEvent.java:
+
+	public class ObsEvent extends Event {
+
+		final private float[] obsVector;
+		final private float distance;
+		final private long index;
+		final private int classId;
+		final private int hypId;
+
+		public ObsEvent(long index, float[] obsVector, float distance, int classId,
+				int hypId) {
+			this.obsVector = obsVector;
+			this.distance = distance;
+			this.index = index;
+			this.classId = classId;
+			this.hypId = hypId;
+		}
+	
 Also notice that the graph has a loop. This creates a minor challenge to create the application graph. To solve 
 this problem we added a setter method to set the distanceStream in ClusterPE.
 
