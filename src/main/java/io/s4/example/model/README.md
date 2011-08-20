@@ -37,16 +37,15 @@ Forest Cover Types:
 
 Class Distribution
 
-Number of records of Spruce-Fir: 	211840 
-Number of records of Lodgepole Pine: 	283301 
-Number of records of Ponderosa Pine: 	 35754 
-Number of records of Cottonwood/Willow:   2747 
-Number of records of Aspen: 		  9493 
-Number of records of Douglas-fir: 	 17367 
-Number of records of Krummholz: 	 20510 	
-Number of records of other: 		     0 	
-		
-Total records:				581012
+Number of records of Spruce-Fir         211840 
+Number of records of Lodgepole Pine     283301 
+Number of records of Ponderosa Pine     35754 
+Number of records of Cottonwood/Willow  2747 
+Number of records of Aspen              9493 
+Number of records of Douglas-fir        17367 
+Number of records of Krummholz          20510 	
+ 		
+Total records                           581012
 </pre>
 
 Here are the steps I used to download and prepare the data files. The files are located in the project under src/main/resources/.
@@ -132,6 +131,8 @@ For most classes the accuracy is better than chance (1/7 => 14%). As expected, a
 the mean of each class is not very good at explaining the data. We can do better with
 a probabilistic model.
 
+           0     1     2     3     4     5     6
+        ----------------------------------------
     0:  13.2  19.2   7.2   0.0  24.0   3.0  33.4
     1:  11.5  19.7   9.9   0.8  27.9   5.9  24.2
     2:   1.9   4.2  23.5  37.3   7.3  25.7   0.0
