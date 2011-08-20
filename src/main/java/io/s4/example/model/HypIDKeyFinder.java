@@ -1,11 +1,11 @@
-package io.s4.example.kmeans;
+package io.s4.example.model;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import io.s4.KeyFinder;
 
-public class ClusterIDKeyFinder implements
+public class HypIDKeyFinder implements
 		KeyFinder<ObsEvent> {
 
 	@Override
@@ -14,7 +14,7 @@ public class ClusterIDKeyFinder implements
 		List<String> results = new ArrayList<String>();
         
         /* Retrieve the user ID and add it to the list. */
-        results.add(Integer.toString(event.getClassId()));
+        results.add(Integer.toString(event.getHypId()));
         
         return results;   
 	}

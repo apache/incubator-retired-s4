@@ -15,11 +15,18 @@
  */
 package io.s4;
 
+import io.s4.example.model.Controller;
+
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Stream<T extends Event> implements Runnable {
+
+	Logger logger = LoggerFactory.getLogger(Stream.class);
 
 	final static private String DEFAULT_SEPARATOR = "^";
 	final static private int CAPACITY = 1000;
@@ -141,7 +148,7 @@ public class Stream<T extends Event> implements Runnable {
 				}
 
 			} catch (InterruptedException e) {
-				System.out.println("Closing stream " + name);
+				logger.info("Closing stream {}.", name);
 				return;
 			}
 		}

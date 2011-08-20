@@ -14,7 +14,7 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4.example.kmeans;
+package io.s4.example.model;
 
 import io.s4.Event;
 
@@ -25,14 +25,16 @@ public class ObsEvent extends Event {
 	final private long index;
 	final private int classId;
 	final private int hypId;
+	final private boolean isTraining;
 
 	public ObsEvent(long index, float[] obsVector, float distance, int classId,
-			int hypId) {
+			int hypId, boolean isTraining) {
 		this.obsVector = obsVector;
 		this.distance = distance;
 		this.index = index;
 		this.classId = classId;
 		this.hypId = hypId;
+		this.isTraining = isTraining;
 	}
 
 	/**
@@ -71,14 +73,21 @@ public class ObsEvent extends Event {
 		return hypId;
 	}
 
+	/**
+	 * @return true if this is training data.
+	 */
+	public boolean isTraining() {
+		return isTraining;
+	}
+	
 	public String toString() {
 
 		StringBuilder vector = new StringBuilder();
-		;
 		for (int i = 0; i < obsVector.length; i++) {
 			vector.append(obsVector[i] + " ");
 		}
 		return "Idx: " + index + ", Class: " + classId + ", Hyp:" + hypId
-				+ ", Dist: " + distance + ", Obs: " + vector.toString();
+				+ ", Dist: " + distance + ", isTraining: " + isTraining + ", Obs: " + vector.toString();
 	}
+
 }

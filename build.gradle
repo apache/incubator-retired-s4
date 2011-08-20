@@ -25,7 +25,7 @@ apply plugin: "application"
 
 /* Main application to run ... */
 //mainClassName = "io.s4.example.counter.MyApp"
-mainClassName = "io.s4.example.kmeans.Main"
+mainClassName = "io.s4.example.model.Main"
 
 
 /* Set a version number for your app. */
@@ -52,6 +52,7 @@ mainClassName = "io.s4.example.kmeans.Main"
  slf4j:              'org.slf4j:slf4j-api:1.6.1',
  logback_core:       'ch.qos.logback:logback-core:0.9.29',
  logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
+ ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
  junit:              'junit:junit:4.4'
  ]
 
@@ -82,6 +83,7 @@ dependencies {
 	compile( libraries.commons_config )
 	compile( libraries.commons_codec )
 	compile( libraries.commons_httpclient )
+	compile( libraries.ejml )
 	testCompile( libraries.junit )
 }
 
@@ -94,9 +96,8 @@ manifest.mainAttributes(
     'Implementation-Vendor-Id': 'io.s4'
 )
 
-/* Bug workaround. */
 eclipseClasspath {
-    downloadSources = false; // required for eclipseClasspath to work
+    eclipse.classpath.downloadSources  = false; // is this still needed?
 }
 
 /* Generates the gradlew scripts.

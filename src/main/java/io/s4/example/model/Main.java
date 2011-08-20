@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
+ * Copyright (c) 2011 The S4 Project, http://s4.io.
+ * All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +14,25 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4.example;
+package io.s4.example.model;
 
-import io.s4.KeyFinder;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 
-public class AgeKeyFinder implements KeyFinder<UserEvent> {
+public class Main {
 
-    public List<String> get(UserEvent event) {
-        
-        List<String> results = new ArrayList<String>();
-                
-        /* Retrieve the age and add it to the list. */
-        results.add(Integer.toString(event.getAge()));
-        
-        return results;   
-    }
+	
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+
+		Logger root = (Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+		root.setLevel(Level.TRACE);
+		
+		Controller dataController = new Controller();
+		dataController.start();
+	}
 }

@@ -14,7 +14,7 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4.example.kmeans;
+package io.s4.example.model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,31 +22,29 @@ import org.slf4j.LoggerFactory;
 import io.s4.App;
 import io.s4.Stream;
 
-public class kMeansTrainer extends App {
+public class MyApp extends App {
 
-	Logger logger = LoggerFactory.getLogger(kMeansTrainer.class);
+	Logger logger = LoggerFactory.getLogger(MyApp.class);
 
-	private int numClusters;
+	private int numClasses;
 	private int vectorSize;
 	private long numVectors;
-	private float[][] initialCentroids;
 	private Stream<ObsEvent> obsStream;
 
-	private ClusterPE clusterPE;
+	private ModelPE modelPE;
 
-	public kMeansTrainer(int numClusters, int vectorSize, long numVectors,
-			float[][] initialCentroids) {
+	public MyApp(int numClasses, int vectorSize, long numVectors) {
 		super();
-		this.numClusters = numClusters;
+		this.numClasses = numClasses;
 		this.vectorSize = vectorSize;
 		this.numVectors = numVectors;
-		this.initialCentroids = initialCentroids;
 	}
 
 	public void injectData(ObsEvent obsEvent) {
 		logger.trace("Inject: " + obsEvent.toString());
 		obsStream.put(obsEvent);
 	}
+
 
 	@Override
 	protected void start() {
@@ -56,13 +54,12 @@ public class kMeansTrainer extends App {
 	@Override
 	protected void init() {
 
-		clusterPE = new ClusterPE(this, numClusters, vectorSize, numVectors,
-				initialCentroids);
+		modelPE = new ModelPE(this, vectorSize, numVectors);
 
 		Stream<ObsEvent> assignmentStream = new Stream<ObsEvent>(this,
-				"Assignment Stream", new HypIDKeyFinder(), clusterPE);
+				"Assignment Stream", new HypIDKeyFinder(), modelPE);
 
-		MinimizerPE minimizerPE = new MinimizerPE(this, numClusters,
+		MinimizerPE minimizerPE = new MinimizerPE(this, numClasses,
 				assignmentStream);
 
 		Stream<ObsEvent> distanceStream = new Stream<ObsEvent>(this,
@@ -72,13 +69,20 @@ public class kMeansTrainer extends App {
 		 * There is a loop in this graph so we need to set the stream at the
 		 * end. Is there a cleaner way to do this?
 		 */
-		clusterPE.setStream(distanceStream);
+		modelPE.setStream(distanceStream);
+
+		//obsStream = new Stream<ObsEvent>(this, "Observation Stream", new ClassIDKeyFinder(), modelPE);
+		obsStream = new Stream<ObsEvent>(this, "Observation Stream", modelPE);
 
 		/*
 		 * This stream will send events of type ObsEvent to ALL the PE instances
-		 * in clusterPE.
+		 * in clusterPE. We use it to mark the end of the train set.
 		 */
-		obsStream = new Stream<ObsEvent>(this, "Observation Stream", clusterPE);
+		
+		/* Create PE instances for the models so we can send the obsEvents to ALL the models. */
+		for(int i=0; i<numClasses; i++) {
+			modelPE.getInstanceForKey(String.valueOf(i));
+		}
 	}
 
 	@Override
@@ -89,7 +93,7 @@ public class kMeansTrainer extends App {
 
 	public long getObsCount() {
 
-		return clusterPE.getObsCount();
+		return modelPE.getObsCount();
 	}
 
 	public void remove() {

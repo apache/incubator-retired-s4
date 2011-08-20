@@ -78,7 +78,7 @@ public abstract class ProcessingElement implements Cloneable {
 
     abstract protected void removeInstanceForKey(String id);
 
-    protected void removeInstanceForKeyInternal(String id) {
+    private void removeInstanceForKeyInternal(String id) {
 
         if (id == null)
             return;
@@ -111,6 +111,10 @@ public abstract class ProcessingElement implements Cloneable {
          */
     }
 
+    protected void close() {
+		removeInstanceForKeyInternal(id);
+    }
+    
     synchronized public ProcessingElement getInstanceForKey(String id) {
 
         /* Check if instance for key exists, otherwise create one. */
@@ -118,10 +122,10 @@ public abstract class ProcessingElement implements Cloneable {
         if (pe == null) {
             /* PE instance for key does not yet exist, cloning one. */
             pe = (ProcessingElement) this.clone();
-            pe.initPEInstance();
             peInstances.put(id, pe);
             pe.id = id;
-            
+            pe.initPEInstance();
+
             logger.trace("Num PE instances: {}.", getNumPEInstances());
         }
         return pe;

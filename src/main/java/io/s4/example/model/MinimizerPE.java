@@ -14,7 +14,7 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4.example.kmeans;
+package io.s4.example.model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ public class MinimizerPE extends ProcessingElement {
 
 	Logger logger = LoggerFactory.getLogger(MinimizerPE.class);
 
-	final private int numClusters;
+	final private int numClasses;
 	final private Stream<ObsEvent> assignmentStream;
 	private int numEventsReceived = 0;
 	private float minDistance = Float.MAX_VALUE;
@@ -36,7 +36,7 @@ public class MinimizerPE extends ProcessingElement {
 
 	public MinimizerPE(App app, int numClusters, Stream<ObsEvent> assignmentStream) {
 		super(app);
-		this.numClusters = numClusters;
+		this.numClasses = numClusters;
 		this.assignmentStream = assignmentStream;
 	}
 
@@ -51,11 +51,11 @@ public class MinimizerPE extends ProcessingElement {
 			hypID = inEvent.getHypId();
 		}
 		
-		if( ++numEventsReceived == numClusters) {
+		if( ++numEventsReceived == numClasses) {
 			
 			/* Got all the distances. Send class id with minimum distance. */
 			ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs,
-					minDistance, inEvent.getClassId(), hypID);
+					minDistance, inEvent.getClassId(), hypID, false);
 			
 			logger.trace("IN: " + inEvent.toString());
 			logger.trace("OUT: " + outEvent.toString());
@@ -63,7 +63,7 @@ public class MinimizerPE extends ProcessingElement {
 			assignmentStream.put(outEvent);
 			
 			/*  This PE instance is no longer needed. */
-			removeInstanceForKeyInternal(this.id);
+			close();
 		}
 		
 		
