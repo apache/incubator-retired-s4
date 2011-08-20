@@ -11,19 +11,19 @@ forest with a type of cover and ten measurements (Elevation, Aspect, Slope, etc.
 vectors in the data set. 
 
 <pre>
-Name					Data Type	Measurement			Description
+Name                                    Data Type       Measurement        Description
 
-Cover_Type (7 types)	integer		1 to 7				Forest Cover Type designation
-Elevation               quantitative	meters				Elevation in meters
-Aspect					quantitative	azimuth				Aspect in degrees azimuth
-Slope					quantitative	degrees				Slope in degrees
-Horizontal_Distance_To_Hydrology	quantitative	meters				Horz Dist to nearest surface water features
-Vertical_Distance_To_Hydrology		quantitative	meters				Vert Dist to nearest surface water features
-Horizontal_Distance_To_Roadways		quantitative	meters				Horz Dist to nearest roadway
-Hillshade_9am 				quantitative	0 to 255 index			Hillshade index at 9am, summer solstice
-Hillshade_Noon				quantitative	0 to 255 index			Hillshade index at noon, summer soltice
-Hillshade_3pm				quantitative	0 to 255 index			Hillshade index at 3pm, summer solstice
-Horizontal_Distance_To_Fire_Points	quantitative	meters				Horz Dist to nearest wildfire ignition points
+Cover_Type (7 types)                    integer         1 to 7             Forest Cover Type designation
+Elevation                               quantitative    meters             Elevation in meters
+Aspect                                  quantitative    azimuth            Aspect in degrees azimuth
+Slope                                   quantitative    degrees            Slope in degrees
+Horizontal_Distance_To_Hydrology        quantitative    meters             Horz Dist to nearest surface water features
+Vertical_Distance_To_Hydrology          quantitative    meters             Vert Dist to nearest surface water features
+Horizontal_Distance_To_Roadways         quantitative    meters             Horz Dist to nearest roadway
+Hillshade_9am                           quantitative    0 to 255 index     Hillshade index at 9am, summer solstice
+Hillshade_Noon                          quantitative    0 to 255 index     Hillshade index at noon, summer soltice
+Hillshade_3pm                           quantitative    0 to 255 index     Hillshade index at 3pm, summer solstice
+Horizontal_Distance_To_Fire_Points      quantitative    meters             Horz Dist to nearest wildfire ignition points
 
 
 Forest Cover Types:	
@@ -126,18 +126,18 @@ this problem we added a setter method to set the distanceStream in ClusterPE.
 * Send ObsEvent with HypID back to ModelPE instance using ClassID as key.
 * Update results
 
-We compute the confusion matrix where a row corresponds to a class and columns to hypotheses. The results are shown in percent. 
-The diagonal shows the accuracy of the classifier for each class. For most classes the accuracy is better than chance (1/7 => 14%).
-As expected, a model that is just using the mean of each class is not very good at explaining the data. We can do better than this with
+We compute the confusion matrix where a row corresponds to a class and columns to hypotheses. 
+The results are shown in percent. The diagonal shows the accuracy of the classifier for each class. 
+For most classes the accuracy is better than chance (1/7 => 14%). As expected, a model that only uses
+the mean of each class is not very good at explaining the data. We can do better with
 a probabilistic model.
 
-<code>
-0:  **13.2**  19.2   7.2   0.0  24.0   3.0  33.4
-1:  11.5  **19.7**   9.9   0.8  27.9   5.9  24.2
-2:   1.9   4.2  **23.5**  37.3   7.3  25.7   0.0
-3:   0.0   0.0   5.6  **50.4**   0.0  43.9   0.0
-4:   3.4  11.7  21.8   0.1  **44.8**  15.3   2.9
-5:   0.8   9.3  22.5  29.0  10.1  **28.3**   0.0
-6:   9.3   9.5   3.7   0.0  25.8   1.7  **50.0**
-</code>
+    0:  13.2  19.2   7.2   0.0  24.0   3.0  33.4
+    1:  11.5  19.7   9.9   0.8  27.9   5.9  24.2
+    2:   1.9   4.2  23.5  37.3   7.3  25.7   0.0
+    3:   0.0   0.0   5.6  50.4   0.0  43.9   0.0
+    4:   3.4  11.7  21.8   0.1  44.8  15.3   2.9
+    5:   0.8   9.3  22.5  29.0  10.1  28.3   0.0
+    6:   9.3   9.5   3.7   0.0  25.8   1.7  50.0
+
 
