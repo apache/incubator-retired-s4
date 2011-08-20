@@ -13,8 +13,8 @@ vectors in the data set.
 <pre>
 Name					Data Type	Measurement			Description
 
-Cover_Type (7 types)			integer		1 to 7				Forest Cover Type designation
-Elevation				quantitative	meters				Elevation in meters
+Cover_Type (7 types)	integer		1 to 7				Forest Cover Type designation
+Elevation               quantitative	meters				Elevation in meters
 Aspect					quantitative	azimuth				Aspect in degrees azimuth
 Slope					quantitative	degrees				Slope in degrees
 Horizontal_Distance_To_Hydrology	quantitative	meters				Horz Dist to nearest surface water features
@@ -122,5 +122,22 @@ this problem we added a setter method to set the distanceStream in ClusterPE.
 ### Testing
 
 * Compute the euclidean distance between each observation and the centroids.
-* Select the id of the class with the smallest distance (the hypothesized class for that observation).
+* Select model id such that we minimize distance between the observed vector and the model.
+* Send ObsEvent with HypID back to ModelPE instance using ClassID as key.
+* Update results
+
+We compute the confusion matrix where a row corresponds to a class and columns to hypotheses. The results are shown in percent. 
+The diagonal shows the accuracy of the classifier for each class. For most classes the accuracy is better than chance (1/7 => 14%).
+As expected, a model that is just using the mean of each class is not very good at explaining the data. We can do better than this with
+a probabilistic model.
+
+<code>
+0:  **13.2**  19.2   7.2   0.0  24.0   3.0  33.4
+1:  11.5  **19.7**   9.9   0.8  27.9   5.9  24.2
+2:   1.9   4.2  **23.5**  37.3   7.3  25.7   0.0
+3:   0.0   0.0   5.6  **50.4**   0.0  43.9   0.0
+4:   3.4  11.7  21.8   0.1  **44.8**  15.3   2.9
+5:   0.8   9.3  22.5  29.0  10.1  **28.3**   0.0
+6:   9.3   9.5   3.7   0.0  25.8   1.7  **50.0**
+</code>
 

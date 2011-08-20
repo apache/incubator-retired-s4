@@ -113,9 +113,7 @@ public class Stream<T extends Event> implements Runnable {
 		while (true) {
 			try {
 				/* Get oldest event in queue. */
-				// logger.trace("Take event from stream " + this.name);
 				T event = queue.take();
-				// System.out.println("TAKE: " + event);
 
 				/* Send event to each target PE. */
 				for (int i = 0; i < targetPEs.length; i++) {

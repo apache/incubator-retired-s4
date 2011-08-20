@@ -32,18 +32,20 @@ public class ModelPE extends ProcessingElement {
 
 	final private int vectorSize;
 	final private long numVectors;
+	final private int numClasses;
 	private Stream<ObsEvent> distanceStream;
 	private int modelId;
 	private float[] centroid;
 	private long obsCount = 0;
 	private float[] obsSum;
 	private long totalCount = 0;
-	private Map<Integer, Integer> confusionRow;
+	private int[] confusionRow;
 
-	public ModelPE(App app, int vectorSize, long numVectors) {
+	public ModelPE(App app, int vectorSize, long numVectors, int numClasses) {
 		super(app);
 		this.vectorSize = vectorSize;
 		this.numVectors = numVectors;
+		this.numClasses = numClasses;
 	}
 
 	public void setStream(Stream<ObsEvent> distanceStream) {
@@ -58,25 +60,7 @@ public class ModelPE extends ProcessingElement {
 
 	private void updateStats(ObsEvent event) {
 
-		/* Update global stats in the prototype in the prototype. */
-		// ModelPE clusterPEPrototype = (ModelPE) pePrototype;
-		// clusterPEPrototype.obsCount++;
-		// clusterPEPrototype.totalDistance += event.getDistance();
-		// clusterPEPrototype.confusionMatrix[event.getClassId()][event.getHypId()]
-		// += 1;
-
-		// logger.trace("Index: " + event.getIndex() + ", Label: "
-		// + event.getClassId() + ", Hyp: " + event.getHypId()
-		// + ", Total Count: " + clusterPEPrototype.obsCount
-		// + ", Total Dist: " + clusterPEPrototype.totalDistance);
-
-		/* Log info. */
-		// if (obsCount % 10000 == 0) {
-		// logger.info("Processed {} events", obsCount);
-		// logger.info("Average distance is {}.",
-		// clusterPEPrototype.totalDistance
-		// / clusterPEPrototype.obsCount);
-		// }
+		logger.trace("TRAINING: ModelID: {}, {}", modelId, event.toString());
 
 		float[] obs = event.getObsVector();
 		for (int i = 0; i < vectorSize; i++) {
@@ -123,6 +107,24 @@ public class ModelPE extends ProcessingElement {
 		totalCount = 0;
 	}
 
+	private void updateResults(ObsEvent event) {
+		confusionRow[event.getHypId()] += 1;
+		obsCount++;
+
+		if (logger.isTraceEnabled()) {
+
+			String s = String.format("RESULTS for model %2d:",
+					event.getClassId());
+			StringBuilder sb = new StringBuilder(s);
+			for (int i = 0; i < numClasses; i++) {
+				float pct = (float) confusionRow[i] / (float) obsCount * 100f;
+				s = String.format("%6.1f", pct);
+				sb.append(s);
+			}
+			logger.trace(sb.toString());
+		}
+	}
+
 	/*
 	 * 
 	 * @see io.s4.ProcessingElement#processInputEvent(io.s4.Event)
@@ -153,10 +155,8 @@ public class ModelPE extends ProcessingElement {
 			/* Check if the event belongs to this class. */
 			if (inEvent.getClassId() == modelId) {
 
-				logger.trace("TRAINING: ModelID: {}, {}", modelId,
-						inEvent.toString());
-
 				updateStats(inEvent);
+
 			} else {
 
 				/* Not needed to compute the mean vector. */
@@ -172,16 +172,13 @@ public class ModelPE extends ProcessingElement {
 				ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs, dist,
 						inEvent.getClassId(), modelId, false);
 
-				logger.trace("SCORING: ModelID: {}, {}", modelId,
-						outEvent.toString());
-
 				distanceStream.put(outEvent);
-				
+
 			} else {
 
-				/* Go the hypothesis. */
-				logger.trace("RESULT: class: {} hyp: {}", inEvent.getClassId(),
-						inEvent.getHypId());
+				/* Got the hypothesis. */
+				updateResults(inEvent);
+
 			}
 		}
 	}
@@ -201,7 +198,7 @@ public class ModelPE extends ProcessingElement {
 		this.obsSum = new float[vectorSize];
 		this.centroid = new float[vectorSize]; // we could do sum in place but
 												// for now lets use two vectors.
-		this.confusionRow = new HashMap<Integer, Integer>();
+		this.confusionRow = new int[numClasses];
 	}
 
 	@Override

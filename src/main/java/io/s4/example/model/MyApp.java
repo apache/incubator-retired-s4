@@ -54,10 +54,10 @@ public class MyApp extends App {
 	@Override
 	protected void init() {
 
-		modelPE = new ModelPE(this, vectorSize, numVectors);
+		modelPE = new ModelPE(this, vectorSize, numVectors, numClasses);
 
 		Stream<ObsEvent> assignmentStream = new Stream<ObsEvent>(this,
-				"Assignment Stream", new HypIDKeyFinder(), modelPE);
+				"Assignment Stream", new ClassIDKeyFinder(), modelPE);
 
 		MinimizerPE minimizerPE = new MinimizerPE(this, numClasses,
 				assignmentStream);
