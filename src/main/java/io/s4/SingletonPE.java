@@ -40,9 +40,8 @@ public abstract class SingletonPE extends ProcessingElement {
 
     abstract protected void processInputEvent(Event event);
 
-    
     abstract public void sendEvent();
-    
+
     /*
      * Don't let subclasses override this method. It is not needed. All
      * initialization should be done by the concrete PE constructor.

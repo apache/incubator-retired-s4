@@ -26,65 +26,65 @@ import io.s4.Stream;
 
 public class MinimizerPE extends ProcessingElement {
 
-	Logger logger = LoggerFactory.getLogger(MinimizerPE.class);
+    Logger logger = LoggerFactory.getLogger(MinimizerPE.class);
 
-	final private int numClasses;
-	final private Stream<ObsEvent> assignmentStream;
-	private int numEventsReceived = 0;
-	private float minDistance = Float.MAX_VALUE;
-	private int hypID;
+    final private int numClasses;
+    final private Stream<ObsEvent> assignmentStream;
+    private int numEventsReceived = 0;
+    private float minDistance = Float.MAX_VALUE;
+    private int hypID;
 
-	public MinimizerPE(App app, int numClusters, Stream<ObsEvent> assignmentStream) {
-		super(app);
-		this.numClasses = numClusters;
-		this.assignmentStream = assignmentStream;
-	}
+    public MinimizerPE(App app, int numClusters,
+            Stream<ObsEvent> assignmentStream) {
+        super(app);
+        this.numClasses = numClusters;
+        this.assignmentStream = assignmentStream;
+    }
 
-	@Override
-	protected void processInputEvent(Event event) {
+    @Override
+    protected void processInputEvent(Event event) {
 
-		ObsEvent inEvent = (ObsEvent) event;
-		float[] obs = inEvent.getObsVector();
-		
-		if(inEvent.getDistance() < minDistance) {
-			minDistance = inEvent.getDistance();
-			hypID = inEvent.getHypId();
-		}
-		
-		if( ++numEventsReceived == numClasses) {
-			
-			/* Got all the distances. Send class id with minimum distance. */
-			ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs,
-					minDistance, inEvent.getClassId(), hypID, false);
-			
-			logger.trace("IN: " + inEvent.toString());
-			logger.trace("OUT: " + outEvent.toString());
-			
-			assignmentStream.put(outEvent);
-			
-			/*  This PE instance is no longer needed. */
-			close();
-		}
-		
-		
-	}
+        ObsEvent inEvent = (ObsEvent) event;
+        float[] obs = inEvent.getObsVector();
 
-	@Override
-	public void sendEvent() {
-		// TODO Auto-generated method stub
+        if (inEvent.getDistance() < minDistance) {
+            minDistance = inEvent.getDistance();
+            hypID = inEvent.getHypId();
+        }
 
-	}
+        if (++numEventsReceived == numClasses) {
 
-	@Override
-	protected void removeInstanceForKey(String id) {
-		// TODO Auto-generated method stub
+            /* Got all the distances. Send class id with minimum distance. */
+            ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs,
+                    minDistance, inEvent.getClassId(), hypID, false);
 
-	}
+            logger.trace("IN: " + inEvent.toString());
+            logger.trace("OUT: " + outEvent.toString());
 
-	@Override
-	protected void initPEInstance() {
-		// TODO Auto-generated method stub
-		
-	}
+            assignmentStream.put(outEvent);
+
+            /* This PE instance is no longer needed. */
+            close();
+        }
+
+    }
+
+    @Override
+    public void sendEvent() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    protected void removeInstanceForKey(String id) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    protected void initPEInstance() {
+        // TODO Auto-generated method stub
+
+    }
 
 }

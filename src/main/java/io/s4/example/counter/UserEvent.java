@@ -20,12 +20,12 @@ import io.s4.Event;
 import java.util.List;
 
 public class UserEvent extends Event {
-        
+
     final private String userID;
     final private int age;
-    final private char gender;  
+    final private char gender;
     final private List<String> favorites;
-    
+
     UserEvent(String userID, int age, List<String> favorites, char gender) {
         this.userID = userID;
         this.age = age;
@@ -39,21 +39,21 @@ public class UserEvent extends Event {
     public String getUserID() {
         return userID;
     }
-    
+
     /**
      * @return the age
      */
     public int getAge() {
         return age;
     }
-    
+
     /**
      * @return the favorites
      */
     public List<String> getFavorites() {
         return favorites;
     }
-    
+
     /**
      * @return the gender
      */

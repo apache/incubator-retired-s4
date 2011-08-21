@@ -25,11 +25,11 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ProcessingElement implements Cloneable {
 
-	Logger logger = LoggerFactory.getLogger(ProcessingElement.class);
+    Logger logger = LoggerFactory.getLogger(ProcessingElement.class);
 
     final protected App app;
     final protected Map<String, ProcessingElement> peInstances = new ConcurrentHashMap<String, ProcessingElement>();
-    protected String id=""; // PE instance id
+    protected String id = ""; // PE instance id
     final protected ProcessingElement pePrototype;
 
     /*
@@ -45,10 +45,11 @@ public abstract class ProcessingElement implements Cloneable {
 
         this.app = app;
         app.addPEPrototype(this);
-        
-        /* Only the PE Prototype uses the constructor. The PEPrototype 
-         * field will be cloned by the instances and point to the prototype. 
-         * */
+
+        /*
+         * Only the PE Prototype uses the constructor. The PEPrototype field
+         * will be cloned by the instances and point to the prototype.
+         */
         this.pePrototype = this;
     }
 
@@ -60,10 +61,10 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     public int getNumPEInstances() {
-    	
-    	return peInstances.size();
+
+        return peInstances.size();
     }
-    
+
     synchronized public void handleInputEvent(Event event) {
 
         processInputEvent(event);
@@ -82,7 +83,7 @@ public abstract class ProcessingElement implements Cloneable {
 
         if (id == null)
             return;
-        
+
         /* First let the PE instance clean after itself. */
         removeInstanceForKey(id);
 
@@ -102,8 +103,6 @@ public abstract class ProcessingElement implements Cloneable {
                 removeInstanceForKeyInternal(key);
         }
 
-        
-
         /*
          * TODO: This object (the PE prototype) may still be referenced by other
          * objects at this point. For example a stream object may still be
@@ -112,9 +111,9 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     protected void close() {
-		removeInstanceForKeyInternal(id);
+        removeInstanceForKeyInternal(id);
     }
-    
+
     synchronized public ProcessingElement getInstanceForKey(String id) {
 
         /* Check if instance for key exists, otherwise create one. */
@@ -132,12 +131,13 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     synchronized protected List<ProcessingElement> getAllInstances() {
-    	
-    	return new ArrayList<ProcessingElement>(peInstances.values());
+
+        return new ArrayList<ProcessingElement>(peInstances.values());
     }
-    
+
     /**
      * Unique ID for a PE instance.
+     * 
      * @return the id
      */
     public String getId() {
@@ -145,7 +145,8 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     /**
-     * @param id the id to set
+     * @param id
+     *            the id to set
      */
     public void setId(String id) {
         this.id = id;

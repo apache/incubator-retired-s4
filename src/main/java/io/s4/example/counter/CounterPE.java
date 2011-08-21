@@ -40,12 +40,12 @@ public class CounterPE extends ProcessingElement {
      */
     @Override
     protected void processInputEvent(Event event) {
-        
+
         counter += 1;
 
         if (counter % interval == 0) {
-            CountEvent countEvent = new CountEvent(countStream.getName() + ": " + getId(),
-                    counter);
+            CountEvent countEvent = new CountEvent(countStream.getName() + ": "
+                    + getId(), counter);
             countStream.put(countEvent);
         }
     }
@@ -74,7 +74,8 @@ public class CounterPE extends ProcessingElement {
     @Override
     protected void removeInstanceForKey(String id) {
 
-        System.out.println("Removing PE instance of type " + this.getClass().getName() + " for key " + id);
-        
+        System.out.println("Removing PE instance of type "
+                + this.getClass().getName() + " for key " + id);
+
     }
 }

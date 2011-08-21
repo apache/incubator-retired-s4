@@ -23,12 +23,12 @@ import java.util.List;
 public class AgeKeyFinder implements KeyFinder<UserEvent> {
 
     public List<String> get(UserEvent event) {
-        
+
         List<String> results = new ArrayList<String>();
-                
+
         /* Retrieve the age and add it to the list. */
         results.add(Integer.toString(event.getAge()));
-        
-        return results;   
+
+        return results;
     }
 }

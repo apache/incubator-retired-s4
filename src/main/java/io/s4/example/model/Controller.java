@@ -29,159 +29,159 @@ import org.slf4j.LoggerFactory;
  */
 public class Controller {
 
-	// final private String TRAIN_FILENAME = "/covtype-train-1000.data.gz"; //
-	// small file for debugging.
-	final private String TRAIN_FILENAME = "/covtype-train.data.gz";
-	final private String TEST_FILENAME = "/covtype-test.data.gz";
-	final private long numTrainVectors;
-	final private long numTestVectors;
-	private int vectorSize;
-	private int numClasses;
+    // final private String TRAIN_FILENAME = "/covtype-train-1000.data.gz"; //
+    // small file for debugging.
+    final private String TRAIN_FILENAME = "/covtype-train.data.gz";
+    final private String TEST_FILENAME = "/covtype-test.data.gz";
+    final private long numTrainVectors;
+    final private long numTestVectors;
+    private int vectorSize;
+    private int numClasses;
 
-	Logger logger = LoggerFactory.getLogger(Controller.class);
+    Logger logger = LoggerFactory.getLogger(Controller.class);
 
-	public Controller() {
+    public Controller() {
 
-		this.numTrainVectors = getNumLines(TRAIN_FILENAME);
-		this.numTestVectors = getNumLines(TEST_FILENAME);
+        this.numTrainVectors = getNumLines(TRAIN_FILENAME);
+        this.numTestVectors = getNumLines(TEST_FILENAME);
 
-		logger.info("Number of test vectors is " + numTestVectors);
-		logger.info("Number of train vectors is " + numTrainVectors);
-	}
+        logger.info("Number of test vectors is " + numTestVectors);
+        logger.info("Number of train vectors is " + numTrainVectors);
+    }
 
-	public void start() {
+    public void start() {
 
-		logger.info("Processing file: " + TRAIN_FILENAME);
-		try {
+        logger.info("Processing file: " + TRAIN_FILENAME);
+        try {
 
-			/* Get vector size and number of classes from data set. */
-			getDataSetInfo(TRAIN_FILENAME);
+            /* Get vector size and number of classes from data set. */
+            getDataSetInfo(TRAIN_FILENAME);
 
-			MyApp app = new MyApp(numClasses, vectorSize, numTrainVectors);
+            MyApp app = new MyApp(numClasses, vectorSize, numTrainVectors);
 
-			logger.info("Init app.");
-			app.init();
+            logger.info("Init app.");
+            app.init();
 
-			/* For now we only need one iteration. */
-			for (int i = 0; i < 1; i++) {
-				logger.info("Starting iteration {}.", i);
-				injectData(app, true, TRAIN_FILENAME);
+            /* For now we only need one iteration. */
+            for (int i = 0; i < 1; i++) {
+                logger.info("Starting iteration {}.", i);
+                injectData(app, true, TRAIN_FILENAME);
 
-				/*
-				 * Make sure all the data has been processed. ModelPE will reset
-				 * the total count after all the data is processed so we wait
-				 * until the count is equal to zero. TODO
-				 */
-					Thread.sleep(10000);
-					logger.info("End of iteration {}.", i);
-			}
-			
-			/* Start testing. */
-			logger.info("Start testing.");
-			injectData(app, false, TEST_FILENAME);
+                /*
+                 * Make sure all the data has been processed. ModelPE will reset
+                 * the total count after all the data is processed so we wait
+                 * until the count is equal to zero. TODO
+                 */
+                Thread.sleep(10000);
+                logger.info("End of iteration {}.", i);
+            }
 
-			/* Done. */
-			app.remove();
+            /* Start testing. */
+            logger.info("Start testing.");
+            injectData(app, false, TEST_FILENAME);
 
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			logger.error(e.getMessage());
-		} catch (IOException e) {
-			e.printStackTrace();
-			logger.error(e.getMessage());
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			logger.error(e.getMessage());
-		}
-	}
+            /* Done. */
+            app.remove();
 
-	private void injectData(MyApp app, boolean isTraining, String filename)
-			throws FileNotFoundException, IOException {
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            logger.error(e.getMessage());
+        }
+    }
 
-		DataFile data = new DataFile(filename);
-		int count = 0;
-		for (String line : data) {
+    private void injectData(MyApp app, boolean isTraining, String filename)
+            throws FileNotFoundException, IOException {
 
-			String[] result = line.split("\\s");
+        DataFile data = new DataFile(filename);
+        int count = 0;
+        for (String line : data) {
 
-			/* Class ID range starts in 1, shift to start in zero. */
-			int classID = Integer.parseInt(result[0]) - 1;
+            String[] result = line.split("\\s");
 
-			float[] vector = new float[vectorSize];
-			for (int j = 0; j < vectorSize; j++) {
+            /* Class ID range starts in 1, shift to start in zero. */
+            int classID = Integer.parseInt(result[0]) - 1;
 
-				vector[j] = Float.parseFloat(result[j + 1]);
-			}
-			ObsEvent obsEvent = new ObsEvent(count++, vector, -1.0f, classID,
-					-1, isTraining);
-			app.injectData(obsEvent);
-		}
-		data.close();
-	}
+            float[] vector = new float[vectorSize];
+            for (int j = 0; j < vectorSize; j++) {
 
-	private void getDataSetInfo(String filename) throws FileNotFoundException,
-			IOException {
+                vector[j] = Float.parseFloat(result[j + 1]);
+            }
+            ObsEvent obsEvent = new ObsEvent(count++, vector, -1.0f, classID,
+                    -1, isTraining);
+            app.injectData(obsEvent);
+        }
+        data.close();
+    }
 
-		Map<Integer, Long> countsPerClass = new HashMap<Integer, Long>();
+    private void getDataSetInfo(String filename) throws FileNotFoundException,
+            IOException {
 
-		DataFile data = new DataFile(filename);
+        Map<Integer, Long> countsPerClass = new HashMap<Integer, Long>();
 
-		for (String line : data) {
+        DataFile data = new DataFile(filename);
 
-			String[] result = line.split("\\s");
+        for (String line : data) {
 
-			/* Format is: label val1 val2 ... valN */
-			if (vectorSize == 0) {
-				vectorSize = result.length - 1;
-			}
+            String[] result = line.split("\\s");
 
-			/* Class ID range starts in 1, shift to start in zero. */
-			int classID = Integer.parseInt(result[0]) - 1;
+            /* Format is: label val1 val2 ... valN */
+            if (vectorSize == 0) {
+                vectorSize = result.length - 1;
+            }
 
-			/* Count num vectors per class. */
-			if (!countsPerClass.containsKey(classID)) {
-				countsPerClass.put(classID, 1L);
-			} else {
-				long count = countsPerClass.get(classID) + 1;
-				countsPerClass.put(classID, count);
-			}
-		}
-		data.close();
+            /* Class ID range starts in 1, shift to start in zero. */
+            int classID = Integer.parseInt(result[0]) - 1;
 
-		/* Summary. */
-		numClasses = countsPerClass.size();
-		logger.info("Number of classes is " + numClasses);
-		logger.info("Vector size is " + vectorSize);
+            /* Count num vectors per class. */
+            if (!countsPerClass.containsKey(classID)) {
+                countsPerClass.put(classID, 1L);
+            } else {
+                long count = countsPerClass.get(classID) + 1;
+                countsPerClass.put(classID, count);
+            }
+        }
+        data.close();
 
-		for (Map.Entry<Integer, Long> entry : countsPerClass.entrySet()) {
+        /* Summary. */
+        numClasses = countsPerClass.size();
+        logger.info("Number of classes is " + numClasses);
+        logger.info("Vector size is " + vectorSize);
 
-			int key = entry.getKey();
-			long val = entry.getValue();
+        for (Map.Entry<Integer, Long> entry : countsPerClass.entrySet()) {
 
-			logger.info("Num vectors for class ID: " + key + " is " + val);
-		}
-	}
+            int key = entry.getKey();
+            long val = entry.getValue();
 
-	/*
-	 * @return Returns the number of lines in a text file.
-	 */
-	private long getNumLines(String filename) {
+            logger.info("Num vectors for class ID: " + key + " is " + val);
+        }
+    }
 
-		long count = 0;
-		try {
-			DataFile data = new DataFile(filename);
+    /*
+     * @return Returns the number of lines in a text file.
+     */
+    private long getNumLines(String filename) {
 
-			for (@SuppressWarnings("unused")
-			String line : data) {
-				count++;
-			}
-			data.close();
+        long count = 0;
+        try {
+            DataFile data = new DataFile(filename);
 
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return count;
-	}
+            for (@SuppressWarnings("unused")
+            String line : data) {
+                count++;
+            }
+            data.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return count;
+    }
 }

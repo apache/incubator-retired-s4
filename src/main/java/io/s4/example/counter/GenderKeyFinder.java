@@ -23,12 +23,12 @@ import java.util.List;
 public class GenderKeyFinder implements KeyFinder<UserEvent> {
 
     public List<String> get(UserEvent event) {
-        
+
         List<String> results = new ArrayList<String>();
-                
+
         /* Retrieve the gender and add it to the list. */
         results.add(Character.toString(event.getGender()));
-        
-        return results;   
+
+        return results;
     }
 }

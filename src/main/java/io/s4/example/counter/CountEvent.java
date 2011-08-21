@@ -21,7 +21,7 @@ public class CountEvent extends Event {
 
     final private String key;
     final private long count;
-    
+
     CountEvent(String key, long count) {
         this.key = key;
         this.count = count;
@@ -40,7 +40,7 @@ public class CountEvent extends Event {
     public long getCount() {
         return count;
     }
-    
+
     public String toString() {
         return "Key: " + key + ", Count: " + count;
     }

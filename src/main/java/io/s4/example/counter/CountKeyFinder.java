@@ -23,12 +23,12 @@ import io.s4.KeyFinder;
 public class CountKeyFinder implements KeyFinder<CountEvent> {
 
     public List<String> get(CountEvent event) {
-        
+
         List<String> results = new ArrayList<String>();
-                
+
         /* Retrieve the user ID and add it to the list. */
         results.add(event.getKey());
-        
-        return results;   
+
+        return results;
     }
 }

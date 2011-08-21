@@ -88,9 +88,9 @@ Our first approach will be to estimate the mean vector for each of the cover typ
 
 We choose to use events of type ObsEvent to communicate between Processing Elements. The event is immutable and can only be created using the constructor. The fields are:
 
-* _obsVector_ is the observation vecotr. The size of the float array should be the same for all the vectors.
-* _distance_ is the euclidean distance between the vector and the centroid.
-* _index_ is a unique identifider for the event. 
+* _obsVector_ is the observation vector. The size of the float array should be the same for all the vectors.
+* _distance_ is the Euclidean distance between the vector and the centroid.
+* _index_ is a unique identifier for the event. 
 * _classId_ is the true class for the vector as it was labeled in the original data set.
 * _hypId_ is the hypothesized class for the vector after using the classification algorithm.
 * _isTraining_ is a boolean to differentiate between train and test modes.

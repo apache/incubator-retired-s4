@@ -23,12 +23,12 @@ import java.util.List;
 public class UserIDKeyFinder implements KeyFinder<UserEvent> {
 
     public List<String> get(UserEvent event) {
-        
+
         List<String> results = new ArrayList<String>();
-                
+
         /* Retrieve the user ID and add it to the list. */
         results.add(event.getUserID());
-        
-        return results;   
+
+        return results;
     }
 }

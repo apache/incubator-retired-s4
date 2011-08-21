@@ -21,43 +21,43 @@ import java.util.zip.GZIPInputStream;
 import java.io.*;
 
 public class DataFile implements Iterable<String> {
-	private BufferedReader reader;
+    private BufferedReader reader;
 
-	public DataFile(String filePath) throws FileNotFoundException, IOException {
+    public DataFile(String filePath) throws FileNotFoundException, IOException {
 
-		InputStream is = this.getClass().getResourceAsStream(filePath);
+        InputStream is = this.getClass().getResourceAsStream(filePath);
 
-		GZIPInputStream gzip = new GZIPInputStream(is);
+        GZIPInputStream gzip = new GZIPInputStream(is);
 
-		this.reader = new BufferedReader(new InputStreamReader(gzip));
-	}
+        this.reader = new BufferedReader(new InputStreamReader(gzip));
+    }
 
-	public void close() throws IOException {
-		reader.close();
-	}
+    public void close() throws IOException {
+        reader.close();
+    }
 
-	public Iterator<String> iterator() {
-		return new FileIterator();
-	}
+    public Iterator<String> iterator() {
+        return new FileIterator();
+    }
 
-	private class FileIterator implements Iterator<String> {
-		private String currentLine;
+    private class FileIterator implements Iterator<String> {
+        private String currentLine;
 
-		public boolean hasNext() {
-			try {
-				currentLine = reader.readLine();
-			} catch (Exception ex) {
-				currentLine = null;
-			}
+        public boolean hasNext() {
+            try {
+                currentLine = reader.readLine();
+            } catch (Exception ex) {
+                currentLine = null;
+            }
 
-			return currentLine != null;
-		}
+            return currentLine != null;
+        }
 
-		public String next() {
-			return currentLine;
-		}
+        public String next() {
+            return currentLine;
+        }
 
-		public void remove() {
-		}
-	}
+        public void remove() {
+        }
+    }
 }

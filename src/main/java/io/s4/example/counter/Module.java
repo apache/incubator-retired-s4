@@ -26,7 +26,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.name.Names;
 
-
 /**
  * Configures the controller.
  * 
@@ -66,6 +65,6 @@ public class Module extends AbstractModule {
 
         bind(MyApp.class);
         bind(Integer.class).annotatedWith(Names.named("pe.counter.interval"))
-        .toInstance(config.getInt("pe.counter.interval"));
+                .toInstance(config.getInt("pe.counter.interval"));
     }
 }

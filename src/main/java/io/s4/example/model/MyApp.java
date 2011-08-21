@@ -24,79 +24,82 @@ import io.s4.Stream;
 
 public class MyApp extends App {
 
-	Logger logger = LoggerFactory.getLogger(MyApp.class);
+    Logger logger = LoggerFactory.getLogger(MyApp.class);
 
-	private int numClasses;
-	private int vectorSize;
-	private long numVectors;
-	private Stream<ObsEvent> obsStream;
+    private int numClasses;
+    private int vectorSize;
+    private long numVectors;
+    private Stream<ObsEvent> obsStream;
 
-	private ModelPE modelPE;
+    private ModelPE modelPE;
 
-	public MyApp(int numClasses, int vectorSize, long numVectors) {
-		super();
-		this.numClasses = numClasses;
-		this.vectorSize = vectorSize;
-		this.numVectors = numVectors;
-	}
+    public MyApp(int numClasses, int vectorSize, long numVectors) {
+        super();
+        this.numClasses = numClasses;
+        this.vectorSize = vectorSize;
+        this.numVectors = numVectors;
+    }
 
-	public void injectData(ObsEvent obsEvent) {
-		logger.trace("Inject: " + obsEvent.toString());
-		obsStream.put(obsEvent);
-	}
+    public void injectData(ObsEvent obsEvent) {
+        logger.trace("Inject: " + obsEvent.toString());
+        obsStream.put(obsEvent);
+    }
 
+    @Override
+    protected void start() {
 
-	@Override
-	protected void start() {
+    }
 
-	}
+    @Override
+    protected void init() {
 
-	@Override
-	protected void init() {
+        modelPE = new ModelPE(this, vectorSize, numVectors, numClasses);
 
-		modelPE = new ModelPE(this, vectorSize, numVectors, numClasses);
+        Stream<ObsEvent> assignmentStream = new Stream<ObsEvent>(this,
+                "Assignment Stream", new ClassIDKeyFinder(), modelPE);
 
-		Stream<ObsEvent> assignmentStream = new Stream<ObsEvent>(this,
-				"Assignment Stream", new ClassIDKeyFinder(), modelPE);
+        MinimizerPE minimizerPE = new MinimizerPE(this, numClasses,
+                assignmentStream);
 
-		MinimizerPE minimizerPE = new MinimizerPE(this, numClasses,
-				assignmentStream);
+        Stream<ObsEvent> distanceStream = new Stream<ObsEvent>(this,
+                "Distance Stream", new ObsIndexKeyFinder(), minimizerPE);
 
-		Stream<ObsEvent> distanceStream = new Stream<ObsEvent>(this,
-				"Distance Stream", new ObsIndexKeyFinder(), minimizerPE);
+        /*
+         * There is a loop in this graph so we need to set the stream at the
+         * end. Is there a cleaner way to do this?
+         */
+        modelPE.setStream(distanceStream);
 
-		/*
-		 * There is a loop in this graph so we need to set the stream at the
-		 * end. Is there a cleaner way to do this?
-		 */
-		modelPE.setStream(distanceStream);
+        // obsStream = new Stream<ObsEvent>(this, "Observation Stream", new
+        // ClassIDKeyFinder(), modelPE);
+        obsStream = new Stream<ObsEvent>(this, "Observation Stream", modelPE);
 
-		//obsStream = new Stream<ObsEvent>(this, "Observation Stream", new ClassIDKeyFinder(), modelPE);
-		obsStream = new Stream<ObsEvent>(this, "Observation Stream", modelPE);
+        /*
+         * This stream will send events of type ObsEvent to ALL the PE instances
+         * in clusterPE. We use it to mark the end of the train set.
+         */
 
-		/*
-		 * This stream will send events of type ObsEvent to ALL the PE instances
-		 * in clusterPE. We use it to mark the end of the train set.
-		 */
-		
-		/* Create PE instances for the models so we can send the obsEvents to ALL the models. */
-		for(int i=0; i<numClasses; i++) {
-			modelPE.getInstanceForKey(String.valueOf(i));
-		}
-	}
+        /*
+         * Create PE instances for the models so we can send the obsEvents to
+         * ALL the models.
+         */
+        for (int i = 0; i < numClasses; i++) {
+            modelPE.getInstanceForKey(String.valueOf(i));
+        }
+    }
 
-	@Override
-	protected void close() {
-		// TODO Auto-generated method stub
+    @Override
+    protected void close() {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	public long getObsCount() {
+    public long getObsCount() {
 
-		return modelPE.getObsCount();
-	}
+        return modelPE.getObsCount();
+    }
 
-	public void remove() {
-		removeAll();
-	}
+    public void remove() {
+        removeAll();
+    }
 }

@@ -20,7 +20,6 @@ import io.s4.Event;
 import io.s4.ProcessingElement;
 
 public class PrintPE extends ProcessingElement {
-    
 
     public PrintPE(App app) {
         super(app);
@@ -28,7 +27,7 @@ public class PrintPE extends ProcessingElement {
 
     @Override
     protected void processInputEvent(Event event) {
-        
+
         System.out.println(event.toString());
     }
 
@@ -47,6 +46,7 @@ public class PrintPE extends ProcessingElement {
     @Override
     protected void removeInstanceForKey(String id) {
 
-        System.out.println("Removing PE instance of type " + this.getClass().getName() + " for key " + id);
+        System.out.println("Removing PE instance of type "
+                + this.getClass().getName() + " for key " + id);
     }
 }
