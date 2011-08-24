@@ -13,7 +13,7 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4;
+package io.s4.core;
 
 import java.util.List;
 

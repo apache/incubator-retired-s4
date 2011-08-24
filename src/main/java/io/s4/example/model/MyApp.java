@@ -19,12 +19,12 @@ package io.s4.example.model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.s4.App;
-import io.s4.Stream;
+import io.s4.core.App;
+import io.s4.core.Stream;
 
 public class MyApp extends App {
 
-    Logger logger = LoggerFactory.getLogger(MyApp.class);
+    private static final Logger logger = LoggerFactory.getLogger(MyApp.class);
 
     private int numClasses;
     private int vectorSize;
@@ -32,6 +32,7 @@ public class MyApp extends App {
     private Stream<ObsEvent> obsStream;
 
     private ModelPE modelPE;
+    Stream<ObsEvent> assignmentStream;
 
     public MyApp(int numClasses, int vectorSize, long numVectors) {
         super();
@@ -40,9 +41,15 @@ public class MyApp extends App {
         this.numVectors = numVectors;
     }
 
-    public void injectData(ObsEvent obsEvent) {
+    public void injectToAll(ObsEvent obsEvent) {
         logger.trace("Inject: " + obsEvent.toString());
         obsStream.put(obsEvent);
+    }
+
+    public void injectByKey(ObsEvent obsEvent) {
+
+        logger.trace("Inject: " + obsEvent.toString());
+        assignmentStream.put(obsEvent);
     }
 
     @Override
@@ -55,8 +62,8 @@ public class MyApp extends App {
 
         modelPE = new ModelPE(this, vectorSize, numVectors, numClasses);
 
-        Stream<ObsEvent> assignmentStream = new Stream<ObsEvent>(this,
-                "Assignment Stream", new ClassIDKeyFinder(), modelPE);
+        assignmentStream = new Stream<ObsEvent>(this, "Assignment Stream",
+                new ClassIDKeyFinder(), modelPE);
 
         MinimizerPE minimizerPE = new MinimizerPE(this, numClasses,
                 assignmentStream);
@@ -69,23 +76,10 @@ public class MyApp extends App {
          * end. Is there a cleaner way to do this?
          */
         modelPE.setStream(distanceStream);
-
+        modelPE.setOutputIntervalInEvents(10);
         // obsStream = new Stream<ObsEvent>(this, "Observation Stream", new
         // ClassIDKeyFinder(), modelPE);
         obsStream = new Stream<ObsEvent>(this, "Observation Stream", modelPE);
-
-        /*
-         * This stream will send events of type ObsEvent to ALL the PE instances
-         * in clusterPE. We use it to mark the end of the train set.
-         */
-
-        /*
-         * Create PE instances for the models so we can send the obsEvents to
-         * ALL the models.
-         */
-        for (int i = 0; i < numClasses; i++) {
-            modelPE.getInstanceForKey(String.valueOf(i));
-        }
     }
 
     @Override

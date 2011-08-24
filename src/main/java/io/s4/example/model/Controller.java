@@ -21,51 +21,74 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
+import org.slf4j.Logger;
+
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 
 /*
  * Train a classifier, run a test, compute the accuracy of the classifier.
  */
 public class Controller {
 
-    // final private String TRAIN_FILENAME = "/covtype-train-1000.data.gz"; //
-    // small file for debugging.
-    final private String TRAIN_FILENAME = "/covtype-train.data.gz";
-    final private String TEST_FILENAME = "/covtype-test.data.gz";
+    private static final Logger logger = LoggerFactory
+            .getLogger(Controller.class);
+
+    final private String trainFilename;
+    final private String testFilename;
     final private long numTrainVectors;
     final private long numTestVectors;
     private int vectorSize;
     private int numClasses;
 
-    Logger logger = LoggerFactory.getLogger(Controller.class);
+    @Inject
+    public Controller(@Named("model.train_data") String trainFilename,
+            @Named("model.test_data") String testFilename,
+            @Named("model.logger.level") String logLevel) {
 
-    public Controller() {
-
-        this.numTrainVectors = getNumLines(TRAIN_FILENAME);
-        this.numTestVectors = getNumLines(TEST_FILENAME);
+        this.trainFilename = trainFilename;
+        this.testFilename = testFilename;
+        this.numTrainVectors = getNumLines(trainFilename);
+        this.numTestVectors = getNumLines(testFilename);
 
         logger.info("Number of test vectors is " + numTestVectors);
         logger.info("Number of train vectors is " + numTrainVectors);
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
+                .getLogger(Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.toLevel(logLevel));
     }
 
     public void start() {
 
-        logger.info("Processing file: " + TRAIN_FILENAME);
+        logger.info("Processing file: " + trainFilename);
         try {
 
             /* Get vector size and number of classes from data set. */
-            getDataSetInfo(TRAIN_FILENAME);
+            getDataSetInfo(trainFilename);
 
             MyApp app = new MyApp(numClasses, vectorSize, numTrainVectors);
 
             logger.info("Init app.");
             app.init();
 
+            /* Initialize modelPEs by injecting events. */
+            for (int i = 0; i < numClasses; i++) {
+                ObsEvent obsEvent = new ObsEvent(-1, new float[vectorSize],
+                        -1.0f, i, -1, true);
+                app.injectByKey(obsEvent);
+            }
+
+            // TODO this is temporary until we have a direct REST API to PEs.
+            Thread.sleep(10000);
+            logger.info("Created model PEs.");
+
             /* For now we only need one iteration. */
             for (int i = 0; i < 1; i++) {
                 logger.info("Starting iteration {}.", i);
-                injectData(app, true, TRAIN_FILENAME);
+                injectData(app, true, trainFilename);
 
                 /*
                  * Make sure all the data has been processed. ModelPE will reset
@@ -76,9 +99,10 @@ public class Controller {
                 logger.info("End of iteration {}.", i);
             }
 
+            // while count not zero wait
             /* Start testing. */
             logger.info("Start testing.");
-            injectData(app, false, TEST_FILENAME);
+            injectData(app, false, testFilename);
 
             /* Done. */
             app.remove();
@@ -114,7 +138,7 @@ public class Controller {
             }
             ObsEvent obsEvent = new ObsEvent(count++, vector, -1.0f, classID,
                     -1, isTraining);
-            app.injectData(obsEvent);
+            app.injectToAll(obsEvent);
         }
         data.close();
     }

@@ -19,15 +19,16 @@ package io.s4.example.model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.s4.App;
-import io.s4.Event;
-import io.s4.ProcessingElement;
-import io.s4.Stream;
+import io.s4.core.App;
+import io.s4.core.Event;
+import io.s4.core.ProcessingElement;
+import io.s4.core.Stream;
 
 public class MinimizerPE extends ProcessingElement {
 
-    Logger logger = LoggerFactory.getLogger(MinimizerPE.class);
-
+    private static final Logger logger = LoggerFactory
+            .getLogger(MinimizerPE.class);
+    
     final private int numClasses;
     final private Stream<ObsEvent> assignmentStream;
     private int numEventsReceived = 0;
@@ -70,19 +71,19 @@ public class MinimizerPE extends ProcessingElement {
     }
 
     @Override
-    public void sendEvent() {
+    public void processOutputEvent(Event event) {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    protected void removeInstanceForKey(String id) {
+    protected void onRemove() {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    protected void initPEInstance() {
+    protected void onCreate() {
         // TODO Auto-generated method stub
 
     }

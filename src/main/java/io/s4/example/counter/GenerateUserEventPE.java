@@ -19,10 +19,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import io.s4.App;
-import io.s4.Event;
-import io.s4.SingletonPE;
-import io.s4.Stream;
+import io.s4.core.App;
+import io.s4.core.Event;
+import io.s4.core.SingletonPE;
+import io.s4.core.Stream;
 
 public class GenerateUserEventPE extends SingletonPE {
 
@@ -46,7 +46,7 @@ public class GenerateUserEventPE extends SingletonPE {
     }
 
     @Override
-    public void sendEvent() {
+    public void processOutputEvent(Event event) {
         List<String> favorites = new ArrayList<String>();
         favorites.add("dulce de leche");
         favorites.add("strawberry");
@@ -64,11 +64,7 @@ public class GenerateUserEventPE extends SingletonPE {
     }
 
     @Override
-    protected void removeInstanceForKey(String id) {
-
-        System.out.println("Removing PE instance of type "
-                + this.getClass().getName() + " for key " + id);
-
+    protected void onRemove() {
     }
 
     static int pickRandom(int numElements) {

@@ -3,7 +3,7 @@ package io.s4.example.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.s4.KeyFinder;
+import io.s4.core.KeyFinder;
 
 public class ClassIDKeyFinder implements KeyFinder<ObsEvent> {
 

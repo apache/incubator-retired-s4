@@ -15,7 +15,7 @@
  */
 package io.s4.example.counter;
 
-import io.s4.Event;
+import io.s4.core.Event;
 
 public class CountEvent extends Event {
 

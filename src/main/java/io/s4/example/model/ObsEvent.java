@@ -16,7 +16,7 @@
  */
 package io.s4.example.model;
 
-import io.s4.Event;
+import io.s4.core.Event;
 
 public class ObsEvent extends Event {
 

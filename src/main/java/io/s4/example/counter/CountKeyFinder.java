@@ -18,7 +18,7 @@ package io.s4.example.counter;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.s4.KeyFinder;
+import io.s4.core.KeyFinder;
 
 public class CountKeyFinder implements KeyFinder<CountEvent> {
 

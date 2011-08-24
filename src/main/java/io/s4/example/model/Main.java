@@ -16,22 +16,19 @@
  */
 package io.s4.example.model;
 
-import org.slf4j.LoggerFactory;
-
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 
 public class Main {
-
+    
     /**
      * @param args
      */
     public static void main(String[] args) {
 
-        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.TRACE);
+        Injector injector = Guice.createInjector(new Module());
 
-        Controller dataController = new Controller();
-        dataController.start();
+        Controller controller = injector.getInstance(Controller.class);
+        controller.start();
     }
 }

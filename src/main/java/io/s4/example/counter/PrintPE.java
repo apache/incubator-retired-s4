@@ -15,9 +15,9 @@
  */
 package io.s4.example.counter;
 
-import io.s4.App;
-import io.s4.Event;
-import io.s4.ProcessingElement;
+import io.s4.core.App;
+import io.s4.core.Event;
+import io.s4.core.ProcessingElement;
 
 public class PrintPE extends ProcessingElement {
 
@@ -32,21 +32,19 @@ public class PrintPE extends ProcessingElement {
     }
 
     @Override
-    public void sendEvent() {
+    public void processOutputEvent(Event event) {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    protected void initPEInstance() {
+    protected void onCreate() {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    protected void removeInstanceForKey(String id) {
+    protected void onRemove() {
 
-        System.out.println("Removing PE instance of type "
-                + this.getClass().getName() + " for key " + id);
     }
 }

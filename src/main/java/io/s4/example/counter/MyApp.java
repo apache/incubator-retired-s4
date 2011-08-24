@@ -20,9 +20,9 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Named;
 
-import io.s4.App;
-import io.s4.ProcessingElement;
-import io.s4.Stream;
+import io.s4.core.App;
+import io.s4.core.ProcessingElement;
+import io.s4.core.Stream;
 
 /*
  * This is an sample application to test a new A4 API. 
@@ -106,7 +106,7 @@ final public class MyApp extends App {
     protected void start() {
 
         for (int i = 0; i < 200; i++) {
-            generateUserEventPE.sendEvent();
+            generateUserEventPE.processOutputEvent(null);
         }
 
         try {

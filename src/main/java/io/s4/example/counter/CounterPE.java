@@ -15,10 +15,10 @@
  */
 package io.s4.example.counter;
 
-import io.s4.App;
-import io.s4.Event;
-import io.s4.ProcessingElement;
-import io.s4.Stream;
+import io.s4.core.App;
+import io.s4.core.Event;
+import io.s4.core.ProcessingElement;
+import io.s4.core.Stream;
 
 public class CounterPE extends ProcessingElement {
 
@@ -56,7 +56,7 @@ public class CounterPE extends ProcessingElement {
      * @see io.s4.ProcessingElement#sendOutputEvent()
      */
     @Override
-    public void sendEvent() {
+    public void processOutputEvent(Event event) {
 
     }
 
@@ -66,16 +66,13 @@ public class CounterPE extends ProcessingElement {
      * @see io.s4.ProcessingElement#init()
      */
     @Override
-    protected void initPEInstance() {
+    protected void onCreate() {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    protected void removeInstanceForKey(String id) {
-
-        System.out.println("Removing PE instance of type "
-                + this.getClass().getName() + " for key " + id);
+    protected void onRemove() {
 
     }
 }

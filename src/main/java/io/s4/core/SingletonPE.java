@@ -13,7 +13,7 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4;
+package io.s4.core;
 
 /*
  * This is provided for cases where we want to process all events in 
@@ -40,14 +40,14 @@ public abstract class SingletonPE extends ProcessingElement {
 
     abstract protected void processInputEvent(Event event);
 
-    abstract public void sendEvent();
+    abstract public void processOutputEvent(Event event);
 
     /*
      * Don't let subclasses override this method. It is not needed. All
      * initialization should be done by the concrete PE constructor.
      */
     @Override
-    final protected void initPEInstance() {
+    final protected void onCreate() {
         // TODO Auto-generated method stub
 
     }

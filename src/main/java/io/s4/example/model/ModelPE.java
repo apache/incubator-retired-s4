@@ -19,14 +19,14 @@ package io.s4.example.model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.s4.App;
-import io.s4.Event;
-import io.s4.ProcessingElement;
-import io.s4.Stream;
+import io.s4.core.App;
+import io.s4.core.Event;
+import io.s4.core.ProcessingElement;
+import io.s4.core.Stream;
 
 public class ModelPE extends ProcessingElement {
 
-    Logger logger = LoggerFactory.getLogger(ModelPE.class);
+    private static final Logger logger = LoggerFactory.getLogger(ModelPE.class);
 
     final private int vectorSize;
     final private long numVectors;
@@ -108,19 +108,6 @@ public class ModelPE extends ProcessingElement {
     private void updateResults(ObsEvent event) {
         confusionRow[event.getHypId()] += 1;
         obsCount++;
-
-        if (logger.isTraceEnabled()) {
-
-            String s = String.format("RESULTS for model %2d:",
-                    event.getClassId());
-            StringBuilder sb = new StringBuilder(s);
-            for (int i = 0; i < numClasses; i++) {
-                float pct = (float) confusionRow[i] / (float) obsCount * 100f;
-                s = String.format("%6.1f", pct);
-                sb.append(s);
-            }
-            logger.trace(sb.toString());
-        }
     }
 
     /*
@@ -139,6 +126,14 @@ public class ModelPE extends ProcessingElement {
 
         /* Estimate model parameters using the training data. */
         if (inEvent.isTraining()) {
+
+            /*
+             * Ignore events with negative index. They are just used to create
+             * the PE.
+             */
+            if (inEvent.getIndex() < 0) {
+                return;
+            }
 
             if (++totalCount == numVectors) {
 
@@ -176,19 +171,31 @@ public class ModelPE extends ProcessingElement {
 
                 /* Got the hypothesis. */
                 updateResults(inEvent);
-
             }
         }
     }
 
     @Override
-    public void sendEvent() {
-        // TODO Auto-generated method stub
+    public void processOutputEvent(Event event) {
 
+        ObsEvent inEvent = (ObsEvent) event;
+
+        if (inEvent.isTraining() || inEvent.getHypId() < 0)
+            return;
+
+        String s = String
+                .format("RESULTS for model %2d:", inEvent.getClassId());
+        StringBuilder sb = new StringBuilder(s);
+        for (int i = 0; i < numClasses; i++) {
+            float pct = (float) confusionRow[i] / (float) obsCount * 100f;
+            sb.append(String.format("%6.1f", pct));
+        }
+        sb.append(String.format(" Count:  %6d", obsCount));
+        logger.info(sb.toString());
     }
 
     @Override
-    protected void initPEInstance() {
+    protected void onCreate() {
 
         this.modelId = Integer.parseInt(id);
 
@@ -200,7 +207,7 @@ public class ModelPE extends ProcessingElement {
     }
 
     @Override
-    protected void removeInstanceForKey(String id) {
+    protected void onRemove() {
         // TODO Auto-generated method stub
 
     }
