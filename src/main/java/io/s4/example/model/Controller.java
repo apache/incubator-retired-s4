@@ -82,6 +82,7 @@ public class Controller {
             }
 
             // TODO this is temporary until we have a direct REST API to PEs.
+            logger.info("WAITING 10 seconds");
             Thread.sleep(10000);
             logger.info("Created model PEs.");
 
@@ -95,6 +96,7 @@ public class Controller {
                  * the total count after all the data is processed so we wait
                  * until the count is equal to zero. TODO
                  */
+                logger.info("WAITING 10 seconds");
                 Thread.sleep(10000);
                 logger.info("End of iteration {}.", i);
             }
@@ -104,6 +106,9 @@ public class Controller {
             logger.info("Start testing.");
             injectData(app, false, testFilename);
 
+            logger.info("WAITING 10 seconds");
+            Thread.sleep(10000);
+            
             /* Done. */
             app.remove();
 

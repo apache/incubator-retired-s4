@@ -88,13 +88,15 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     synchronized protected void handleInputEvent(Event event) {
-         // protected void handleInputEvent(Event event) { // we get deadlock when synchronized
-
+//protected void handleInputEvent(Event event) { // we get deadlock when
+                                                   // synchronized
         eventCount++;
-        processInputEvent(event);
+
+            //System.out.println("XXX: " +  id + "  |  " + eventCount);
+            processInputEvent(event);
 
         if (isOutput()) {
-            processOutputEvent(event);
+           processOutputEvent(event);
         }
     }
 

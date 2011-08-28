@@ -5,4 +5,9 @@ the Apache License, Version 2.0, in this case for the S4 project.
 
    This product includes software developed by
    Yahoo! Inc. (www.yahoo.com)
-   Copyright (c) 2010 Yahoo! Inc.  All rights reserved.
+   Copyright (c) 2010, 2011 Yahoo! Inc.  All rights reserved.
+
+   This product includes software developed by
+   The S4 Project community (http://s4.io)
+   Copyright (c) 2011 The S4 Project  All rights reserved.
+   
