@@ -71,11 +71,10 @@ public class Stream<T extends Event> implements Runnable {
 
     public void put(T event) {
         try {
-            // System.out.println("Remaining capacity in stream " + name + ":" +
-            // queue.remainingCapacity());
-            // System.out.println("PUT: " + event);
-            if(queue.remainingCapacity() < 150 )
+            if(queue.remainingCapacity() < 150 ) {
                 logger.debug("Remaining capacity: " + queue.remainingCapacity());
+                Thread.sleep(500);
+            }
             queue.put(event);
         } catch (InterruptedException e) {
             e.printStackTrace();

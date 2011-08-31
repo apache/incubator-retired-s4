@@ -21,16 +21,16 @@ import io.s4.core.Event;
 public class ObsEvent extends Event {
 
     final private float[] obsVector;
-    final private float distance;
+    final private float prob;
     final private long index;
     final private int classId;
     final private int hypId;
     final private boolean isTraining;
 
-    public ObsEvent(long index, float[] obsVector, float distance, int classId,
+    public ObsEvent(long index, float[] obsVector, float prob, int classId,
             int hypId, boolean isTraining) {
         this.obsVector = obsVector;
-        this.distance = distance;
+        this.prob = prob;
         this.index = index;
         this.classId = classId;
         this.hypId = hypId;
@@ -45,11 +45,10 @@ public class ObsEvent extends Event {
     }
 
     /**
-     * @return the distance between the observed vector and the class centroid.
-     *         Use -1.0 when unknown.
+     * @return the probability of this event.
      */
-    public float getDistance() {
-        return distance;
+    public float getProb() {
+        return prob;
     }
 
     /**
@@ -87,7 +86,7 @@ public class ObsEvent extends Event {
             vector.append(obsVector[i] + " ");
         }
         return "Idx: " + index + ", Class: " + classId + ", Hyp:" + hypId
-                + ", Dist: " + distance + ", isTraining: " + isTraining
+                + ", Prob: " + prob + ", isTraining: " + isTraining
                 + ", Obs: " + vector.toString();
     }
 

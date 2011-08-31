@@ -1,7 +1,9 @@
 S4-Piper Design
 ===============
 
-The goal of this project is to incorporate feedback from various users and create a prototype with a cleaner, simpler API. The base classes are the foundation on top of which higher level layers and tools can be built. For example, one could write a domain specific language to create the application graph. Look at this as the foundation and not as the end product.
+The goal of this project is to incorporate feedback from various users and create a prototype with a cleaner, simpler API. 
+The base classes are the foundation on top of which higher level layers and tools can be built. For example, one could write 
+a domain specific language to create the application graph. Look at this as the foundation and not as the end product.
 
 Here is a list of ideas:
 

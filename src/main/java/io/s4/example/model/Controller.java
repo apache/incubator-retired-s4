@@ -77,7 +77,7 @@ public class Controller {
             /* Initialize modelPEs by injecting events. */
             for (int i = 0; i < numClasses; i++) {
                 ObsEvent obsEvent = new ObsEvent(-1, new float[vectorSize],
-                        -1.0f, i, -1, true);
+                        -Float.MAX_VALUE, i, -1, true);
                 app.injectByKey(obsEvent);
             }
 
@@ -106,8 +106,8 @@ public class Controller {
             logger.info("Start testing.");
             injectData(app, false, testFilename);
 
-            logger.info("WAITING 10 seconds");
-            Thread.sleep(10000);
+            logger.info("WAITING 30 seconds");
+            Thread.sleep(30000);
             
             /* Done. */
             app.remove();
@@ -141,7 +141,7 @@ public class Controller {
 
                 vector[j] = Float.parseFloat(result[j + 1]);
             }
-            ObsEvent obsEvent = new ObsEvent(count++, vector, -1.0f, classID,
+            ObsEvent obsEvent = new ObsEvent(count++, vector, -Float.MAX_VALUE, classID,
                     -1, isTraining);
             app.injectToAll(obsEvent);
         }

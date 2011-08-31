@@ -170,7 +170,7 @@ public class MatrixOps {
     }
     
     /** Convert an array of doubles to a matrix. A new matrix is created. */
-    public static D1Matrix64F arrayToMatrix(double[] data) {
+    public static D1Matrix64F doubleArrayToMatrix(double[] data) {
 
         DenseMatrix64F tmp = new DenseMatrix64F(data.length, 1);
         for (int i = 0; i < data.length; i++) {
@@ -180,7 +180,7 @@ public class MatrixOps {
     }
  
     /** Convert an array of doubles to a matrix passed as a parameter. */
-    public static D1Matrix64F arrayToMatrix(double[] data, D1Matrix64F mat) {
+    public static D1Matrix64F doubleArrayToMatrix(double[] data, D1Matrix64F mat) {
 
         for (int i = 0; i < data.length; i++) {
             mat.set(i, data[i]);
@@ -188,5 +188,23 @@ public class MatrixOps {
         return mat;
     }
     
+    /** Convert an array of floats to a matrix. A new matrix is created. */
+    public static D1Matrix64F floatArrayToMatrix(float[] data) {
+
+        DenseMatrix64F tmp = new DenseMatrix64F(data.length, 1);
+        for (int i = 0; i < data.length; i++) {
+            tmp.set(i, data[i]);
+        }
+        return tmp;
+    }
+ 
+    /** Convert an array of doubles to a matrix passed as a parameter. */
+    public static D1Matrix64F floatArrayToMatrix(float[] data, D1Matrix64F mat) {
+
+        for (int i = 0; i < data.length; i++) {
+            mat.set(i, data[i]);
+        }
+        return mat;
+    }
 }
 

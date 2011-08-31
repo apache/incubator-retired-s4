@@ -65,7 +65,7 @@ public class MyApp extends App {
         assignmentStream = new Stream<ObsEvent>(this, "Assignment Stream",
                 new ClassIDKeyFinder(), modelPE);
 
-        MinimizerPE minimizerPE = new MinimizerPE(this, numClasses,
+        MaximizerPE minimizerPE = new MaximizerPE(this, numClasses,
                 assignmentStream);
 
         Stream<ObsEvent> distanceStream = new Stream<ObsEvent>(this,

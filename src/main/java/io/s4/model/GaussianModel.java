@@ -25,6 +25,9 @@ import org.ejml.ops.CommonOps;
 /**
  * A multivariate Gaussian model with parameters mean (mu) and variance (sigma
  * squared). Only diagonal covariance matrices are supported.
+ * 
+ * @author Leo Neumeyer
+ *
  */
 public class GaussianModel extends Model {
 
@@ -126,6 +129,19 @@ public class GaussianModel extends Model {
         return const2 - CommonOps.elementSum(tmpArray) / 2.0;
     }
 
+    /**
+     * @param obs
+     *            the observed data vector.
+     * @return the log probability.
+     */
+    public double logProb(float[] obs) {
+
+        CommonOps.sub(mean, MatrixOps.floatArrayToMatrix(obs), tmpArray);
+        MatrixOps.elementSquare(tmpArray);
+        CommonOps.elementDiv(tmpArray, variance);
+        return const2 - CommonOps.elementSum(tmpArray) / 2.0;
+    }
+    
     /*
      * (non-Javadoc)
      * 
@@ -133,9 +149,15 @@ public class GaussianModel extends Model {
      */
     public double evaluate(double[] obs) {
 
-        return evaluate(MatrixOps.arrayToMatrix(obs));
+        return evaluate(MatrixOps.doubleArrayToMatrix(obs));
     }
 
+    /** Evaluate using float array. */
+    public double evaluate(float[] obs) {
+
+        return evaluate(MatrixOps.floatArrayToMatrix(obs));
+    }
+    
     /**
      * @param obs
      *            the observed data vector.
@@ -153,10 +175,17 @@ public class GaussianModel extends Model {
      */
     public void update(double[] obs) {
 
-        update(MatrixOps.arrayToMatrix(obs));
+        update(MatrixOps.doubleArrayToMatrix(obs));
 
     }
 
+    /** Update using float array. */
+    public void update(float[] obs) {
+
+        update(MatrixOps.floatArrayToMatrix(obs));
+
+    }
+    
     /**
      * Update sufficient statistics.
      * 

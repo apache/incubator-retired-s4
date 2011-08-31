@@ -23,6 +23,7 @@ import io.s4.core.App;
 import io.s4.core.Event;
 import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
+import io.s4.model.GaussianModel;
 
 public class ModelPE extends ProcessingElement {
 
@@ -33,11 +34,14 @@ public class ModelPE extends ProcessingElement {
     final private int numClasses;
     private Stream<ObsEvent> distanceStream;
     private int modelId;
-    private float[] centroid;
+    private double[] mean;
+    private double[] variance;
+    private double logPriorProb;
     private long obsCount = 0;
-    private float[] obsSum;
+    //private float[] obsSum;
     private long totalCount = 0;
     private int[] confusionRow;
+    private GaussianModel gm;
 
     public ModelPE(App app, int vectorSize, long numVectors, int numClasses) {
         super(app);
@@ -60,10 +64,12 @@ public class ModelPE extends ProcessingElement {
 
         logger.trace("TRAINING: ModelID: {}, {}", modelId, event.toString());
 
-        float[] obs = event.getObsVector();
-        for (int i = 0; i < vectorSize; i++) {
-            obsSum[i] += obs[i];
-        }
+        //float[] obs = event.getObsVector();
+        gm.update(event.getObsVector());
+        
+//        for (int i = 0; i < vectorSize; i++) {
+//            obsSum[i] += obs[i];
+//        }
 
         obsCount++;
 
@@ -81,7 +87,7 @@ public class ModelPE extends ProcessingElement {
 
         float sumSq = 0f;
         for (int i = 0; i < vectorSize; i++) {
-            float diff = centroid[i] - obs[i];
+            float diff = (float)mean[i] - obs[i];
             sumSq += diff * diff;
         }
         return (float) Math.sqrt(sumSq);
@@ -89,20 +95,26 @@ public class ModelPE extends ProcessingElement {
 
     private void updateModel() {
 
-        for (int i = 0; i < vectorSize; i++) {
-            centroid[i] = obsSum[i] / obsCount;
-            obsSum[i] = 0f;
-        }
+        gm.estimate();
+        
+        mean = gm.getMean();
+        variance = gm.getVariance();
+        logPriorProb = Math.log(gm.getNumSamples() / (double)numVectors);
+//        for (int i = 0; i < vectorSize; i++) {
+//            mean[i] = obsSum[i] / obsCount;
+//            obsSum[i] = 0f;
+//        }
 
         /* Print mean vector. */
-        StringBuilder vector = new StringBuilder();
-        for (int i = 0; i < vectorSize; i++) {
-            vector.append(centroid[i] + " ");
-        }
-        logger.info("Update mean for model {} is: {}", modelId, vector);
+//        StringBuilder vector = new StringBuilder();
+//        for (int i = 0; i < vectorSize; i++) {
+//            vector.append(mean[i] + " ");
+//        }
+        logger.info("Update params for model {} is: {}", modelId, gm.toString());
 
         obsCount = 0;
         totalCount = 0;
+        gm.clearStatistics();
     }
 
     private void updateResults(ObsEvent event) {
@@ -161,7 +173,8 @@ public class ModelPE extends ProcessingElement {
             if (inEvent.getHypId() < 0) {
                 /* Score observed vector and send it to the minimizer. */
 
-                float dist = distance(obs);
+                //float dist = distance(obs);
+                float dist = (float)(gm.logProb(obs) + logPriorProb);
                 ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs, dist,
                         inEvent.getClassId(), modelId, false);
 
@@ -199,10 +212,13 @@ public class ModelPE extends ProcessingElement {
 
         this.modelId = Integer.parseInt(id);
 
+        /* Initialize model. */
+        this.gm = new GaussianModel(vectorSize, true);
+
         /* Create an array for each PE instance. */
-        this.obsSum = new float[vectorSize];
-        this.centroid = new float[vectorSize]; // we could do sum in place but
-                                               // for now lets use two vectors.
+        //this.obsSum = new float[vectorSize];
+        this.mean = new double[vectorSize];
+        this.variance = new double[vectorSize];
         this.confusionRow = new int[numClasses];
     }
 
