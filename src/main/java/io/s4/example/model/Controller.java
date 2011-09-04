@@ -16,10 +16,13 @@
  */
 package io.s4.example.model;
 
+import io.s4.model.Model;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
 
@@ -41,18 +44,28 @@ public class Controller {
     final private String testFilename;
     final private long numTrainVectors;
     final private long numTestVectors;
-    private int vectorSize;
+    final private int numIterations;
+    final private int outputInterval;
+    final private Model model;
+    final private int vectorSize;
     private int numClasses;
 
     @Inject
-    public Controller(@Named("model.train_data") String trainFilename,
-            @Named("model.test_data") String testFilename,
+    private Controller(@Named("model.train_data") String trainFilename,
+            @Named("model.test_data") String testFilename, Model model,
+            @Named("model.vector_size") int vectorSize,
+            @Named("model.num_iterations") int numIterations,
+            @Named("model.output_interval_in_seconds") int outputInterval,
             @Named("model.logger.level") String logLevel) {
 
         this.trainFilename = trainFilename;
         this.testFilename = testFilename;
         this.numTrainVectors = getNumLines(trainFilename);
         this.numTestVectors = getNumLines(testFilename);
+        this.numIterations = numIterations;
+        this.vectorSize = vectorSize;
+        this.outputInterval = outputInterval;
+        this.model = model;
 
         logger.info("Number of test vectors is " + numTestVectors);
         logger.info("Number of train vectors is " + numTrainVectors);
@@ -69,7 +82,8 @@ public class Controller {
             /* Get vector size and number of classes from data set. */
             getDataSetInfo(trainFilename);
 
-            MyApp app = new MyApp(numClasses, vectorSize, numTrainVectors);
+            MyApp app = new MyApp(numClasses, numTrainVectors, model,
+                    outputInterval, TimeUnit.SECONDS);
 
             logger.info("Init app.");
             app.init();
@@ -86,8 +100,7 @@ public class Controller {
             Thread.sleep(10000);
             logger.info("Created model PEs.");
 
-            /* For now we only need one iteration. */
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < numIterations; i++) {
                 logger.info("Starting iteration {}.", i);
                 injectData(app, true, trainFilename);
 
@@ -108,7 +121,7 @@ public class Controller {
 
             logger.info("WAITING 30 seconds");
             Thread.sleep(30000);
-            
+
             /* Done. */
             app.remove();
 
@@ -141,8 +154,8 @@ public class Controller {
 
                 vector[j] = Float.parseFloat(result[j + 1]);
             }
-            ObsEvent obsEvent = new ObsEvent(count++, vector, -Float.MAX_VALUE, classID,
-                    -1, isTraining);
+            ObsEvent obsEvent = new ObsEvent(count++, vector, -Float.MAX_VALUE,
+                    classID, -1, isTraining);
             app.injectToAll(obsEvent);
         }
         data.close();
@@ -160,8 +173,10 @@ public class Controller {
             String[] result = line.split("\\s");
 
             /* Format is: label val1 val2 ... valN */
-            if (vectorSize == 0) {
-                vectorSize = result.length - 1;
+            if (vectorSize != result.length - 1) {
+                throw new IllegalArgumentException("vectorSize: (" + vectorSize
+                        + ") does not match number of columns in data file ("
+                        + (result.length - 1) + ").");
             }
 
             /* Class ID range starts in 1, shift to start in zero. */

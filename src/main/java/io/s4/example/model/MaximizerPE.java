@@ -24,7 +24,7 @@ import io.s4.core.Event;
 import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
 
-public class MaximizerPE extends ProcessingElement {
+final public class MaximizerPE extends ProcessingElement {
 
     private static final Logger logger = LoggerFactory
             .getLogger(MaximizerPE.class);

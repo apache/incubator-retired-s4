@@ -53,6 +53,7 @@ mainClassName = "io.s4.example.model.Main"
  logback_core:       'ch.qos.logback:logback-core:0.9.29',
  logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
  ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
+ jcip:               'net.jcip:jcip-annotations:1.0',
  junit:              'junit:junit:4.4'
  ]
 
@@ -84,6 +85,7 @@ dependencies {
 	compile( libraries.commons_codec )
 	compile( libraries.commons_httpclient )
 	compile( libraries.ejml )
+	compile( libraries.jcip )
 	testCompile( libraries.junit )
 }
 

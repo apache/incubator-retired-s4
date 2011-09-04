@@ -15,6 +15,10 @@
  */
 package io.s4.example.model;
 
+import io.s4.model.GaussianMixtureModel;
+import io.s4.model.Model;
+import io.s4.model.GaussianMixtureModel.TrainMethod;
+
 import java.io.InputStream;
 
 import org.apache.commons.configuration.ConfigurationConverter;
@@ -62,6 +66,13 @@ public class Module extends AbstractModule {
     protected void configure() {
         if (config == null)
             loadProperties(binder());
+
+        int vectorSize = config.getInt("model.vector_size");
+        int numGaussians = config.getInt("model.num_gaussians");
+
+        bind(Model.class).toInstance(
+                new GaussianMixtureModel(vectorSize, numGaussians,
+                        TrainMethod.STEP));
 
     }
 }

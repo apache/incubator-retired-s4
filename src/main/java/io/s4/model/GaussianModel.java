@@ -112,10 +112,17 @@ public class GaussianModel extends Model {
             sumx = new DenseMatrix64F(numElements, 1);
             sumxsq = new DenseMatrix64F(numElements, 1);
             clearStatistics();
+        } else {
+            setTrain(false);
         }
 
     }
 
+    public Model create() {
+
+        return new GaussianModel(numElements, mean, variance, isTrain);
+    }
+    
     /**
      * @param obs
      *            the observed data vector.
@@ -142,28 +149,41 @@ public class GaussianModel extends Model {
         return const2 - CommonOps.elementSum(tmpArray) / 2.0;
     }
     
+    /**
+     * @param obs
+     *            the observed data vector.
+     * @return the log probability.
+     */
+    public double logProb(double[] obs) {
+
+        CommonOps.sub(mean, MatrixOps.doubleArrayToMatrix(obs), tmpArray);
+        MatrixOps.elementSquare(tmpArray);
+        CommonOps.elementDiv(tmpArray, variance);
+        return const2 - CommonOps.elementSum(tmpArray) / 2.0;
+    }
+    
     /*
      * (non-Javadoc)
      * 
      * @see io.s4.model.Model#evaluate(double[])
      */
-    public double evaluate(double[] obs) {
+    public double prob(double[] obs) {
 
-        return evaluate(MatrixOps.doubleArrayToMatrix(obs));
+        return prob(MatrixOps.doubleArrayToMatrix(obs));
     }
 
     /** Evaluate using float array. */
-    public double evaluate(float[] obs) {
+    public double prob(float[] obs) {
 
-        return evaluate(MatrixOps.floatArrayToMatrix(obs));
+        return prob(MatrixOps.floatArrayToMatrix(obs));
     }
     
     /**
      * @param obs
      *            the observed data vector.
-     * @return teh probability.
+     * @return the probability.
      */
-    public double evaluate(D1Matrix64F obs) {
+    public double prob(D1Matrix64F obs) {
 
         return Math.exp(logProb(obs));
     }
@@ -212,7 +232,7 @@ public class GaussianModel extends Model {
      * @param weight
      *            the weight assigned to this observation.
      */
-    public void update(D1Matrix64F data, float weight) {
+    public void update(D1Matrix64F data, double weight) {
 
         if (isTrain() == true) {
 
@@ -292,6 +312,19 @@ public class GaussianModel extends Model {
 
         DenseMatrix64F tmp = new DenseMatrix64F(variance);
         return tmp.getData();
+    }
+
+    
+    public void setMean(D1Matrix64F mean) {
+        this.mean = mean;
+    }
+
+    public void setVariance(D1Matrix64F variance) {
+        this.variance = variance;
+        
+        /* Update log Gaussian constant. */
+        MatrixOps.elementLog(this.variance, tmpArray);
+        const2 = const1 - CommonOps.elementSum(tmpArray) / 2.0;
     }
 
     /** @return the standard deviation (sigma) of the Gaussian density. */

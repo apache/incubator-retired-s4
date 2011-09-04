@@ -16,29 +16,36 @@
  */
 package io.s4.example.model;
 
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.s4.core.App;
 import io.s4.core.Stream;
+import io.s4.model.Model;
 
 public class MyApp extends App {
 
     private static final Logger logger = LoggerFactory.getLogger(MyApp.class);
 
-    private int numClasses;
-    private int vectorSize;
-    private long numVectors;
+    final private int numClasses;
+    final private long numVectors;
+    final private int outputInterval;
+    final private TimeUnit timeUnit;
+    final private Model model;
     private Stream<ObsEvent> obsStream;
 
     private ModelPE modelPE;
     Stream<ObsEvent> assignmentStream;
 
-    public MyApp(int numClasses, int vectorSize, long numVectors) {
+    MyApp(int numClasses, long numVectors, Model model, int outputInterval, TimeUnit timeUnit) {
         super();
         this.numClasses = numClasses;
-        this.vectorSize = vectorSize;
         this.numVectors = numVectors;
+        this.model = model;
+        this.outputInterval = outputInterval;
+        this.timeUnit = timeUnit;
     }
 
     public void injectToAll(ObsEvent obsEvent) {
@@ -59,8 +66,12 @@ public class MyApp extends App {
 
     @Override
     protected void init() {
+        
+        MetricsPE metricsPE = new MetricsPE(this);
+        
+        Stream<ResultEvent> resultStream = new Stream<ResultEvent>(this, "Result Stream", new ResultKeyFinder(), metricsPE);
 
-        modelPE = new ModelPE(this, vectorSize, numVectors, numClasses);
+        modelPE = new ModelPE(this, model, numVectors);
 
         assignmentStream = new Stream<ObsEvent>(this, "Assignment Stream",
                 new ClassIDKeyFinder(), modelPE);
@@ -75,8 +86,9 @@ public class MyApp extends App {
          * There is a loop in this graph so we need to set the stream at the
          * end. Is there a cleaner way to do this?
          */
-        modelPE.setStream(distanceStream);
-        modelPE.setOutputIntervalInEvents(10);
+        modelPE.setStream(distanceStream, resultStream);
+        //modelPE.setOutputIntervalInEvents(10); // output every 10 events
+        metricsPE.setOutputInterval(outputInterval, timeUnit); //output every 5 seconds
         // obsStream = new Stream<ObsEvent>(this, "Observation Stream", new
         // ClassIDKeyFinder(), modelPE);
         obsStream = new Stream<ObsEvent>(this, "Observation Stream", modelPE);

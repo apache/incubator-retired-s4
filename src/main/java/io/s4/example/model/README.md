@@ -82,7 +82,7 @@ Here are the steps I used to download and prepare the data files. The files are 
 The modeling package (io.s4.model) provides a basic interface for implementing probabilistic models. The main methods are:
 
 * **update()** - updates sufficient statistics given an observation vector.
-* **estimate()** - estimates model parameters using teh sufficient statistics.
+* **estimate()** - estimates model parameters using the sufficient statistics.
 * **evaluate()** - computes the probability.
 
 The first implementation is a Gaussian model which we use in this example to classify the tree cover given the features.
@@ -177,4 +177,42 @@ When we run the classifier using the probabilistic model (just one Gaussian dist
 
 This is a big improvement given how simple our model is. There are still significant errors for some cover types. For example and 38.9% of 
 type 3 is classified as type 2 and 68.8% of class 4 is classified as class 1, etc. We need a better model to improve accuracy.
+
+* numComponents = 3
+
+<pre>
+           0     1     2     3     4     5     6
+        ----------------------------------------
+    0:  60.3  12.8   0.6   0.0   7.1   1.1  18.2
+    1:  28.0  34.1   3.0   0.1  24.2   6.1   4.6
+    2:   0.0   1.4  35.3  21.5  12.6  29.2   0.0
+    3:   0.0   0.0  10.0  79.3   0.0  10.8   0.0
+    4:   0.4  18.1   1.1   0.0  71.9   8.5   0.0
+    5:   0.0   3.8  20.5  14.9   8.8  52.0   0.0
+    6:  18.8   0.2   0.6   0.0   0.5   0.0  79.9
+</pre>
+
+<pre>
+           0     1     2     3     4     5     6
+        ----------------------------------------
+    0:  
+    1:  
+    2:   
+    3:   
+    4:  
+    5:  
+    6:  
+</pre>
+
+<pre>
+           0     1     2     3     4     5     6
+        ----------------------------------------
+    0:  
+    1:  
+    2:   
+    3:   
+    4:  
+    5:  
+    6:  
+</pre>
 

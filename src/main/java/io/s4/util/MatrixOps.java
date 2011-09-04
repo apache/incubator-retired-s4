@@ -16,6 +16,8 @@
  */
 package io.s4.util;
 
+import java.util.Random;
+
 import org.ejml.data.D1Matrix64F;
 import org.ejml.data.DenseMatrix64F;
 
@@ -32,15 +34,15 @@ public class MatrixOps {
      * <br>
      * a<sub>ij</sub> = log(a<sub>ij</sub>)
      * </p>
-     *
-     * @param a The matrix on which we perform the log.  Modified.
+     * 
+     * @param a
+     *            The matrix on which we perform the log. Modified.
      */
-    public static void elementLog( D1Matrix64F a )
-    {
+    public static void elementLog(D1Matrix64F a) {
         final int size = a.getNumElements();
 
-        for( int i = 0; i < size; i++ ) {
-            a.set( i , Math.log(a.get(i)) );
+        for (int i = 0; i < size; i++) {
+            a.set(i, Math.log(a.get(i)));
         }
     }
 
@@ -50,19 +52,64 @@ public class MatrixOps {
      * <br>
      * b<sub>ij</sub> = log(a<sub>ij</sub>)
      * </p>
-     *
-     * @param a The matrix on which we perform the log. Not Modified.
-     * @param b Where the results of the operation are stored. Modified.
+     * 
+     * @param a
+     *            The matrix on which we perform the log. Not Modified.
+     * @param b
+     *            Where the results of the operation are stored. Modified.
      */
-    public static void elementLog( D1Matrix64F a , D1Matrix64F b)
-    {
-        if( a.numRows != b.numRows || a.numCols != b.numCols )
-            throw new IllegalArgumentException("Matrices must have the same shape");
+    public static void elementLog(D1Matrix64F a, D1Matrix64F b) {
+        if (a.numRows != b.numRows || a.numCols != b.numCols)
+            throw new IllegalArgumentException(
+                    "Matrices must have the same shape");
 
         final int size = a.getNumElements();
 
-        for( int i = 0; i < size; i++ ) {
-            b.set( i , Math.log(a.get(i)) );
+        for (int i = 0; i < size; i++) {
+            b.set(i, Math.log(a.get(i)));
+        }
+    }
+
+    /**
+     * <p>
+     * Performs an in-place element by element exponential function.<br>
+     * <br>
+     * a<sub>ij</sub> = exp(a<sub>ij</sub>)
+     * </p>
+     * 
+     * @param a
+     *            The matrix on which we perform the exponentiation. Modified.
+     */
+    public static void elementExp(D1Matrix64F a) {
+        final int size = a.getNumElements();
+
+        for (int i = 0; i < size; i++) {
+            a.set(i, Math.exp(a.get(i)));
+        }
+    }
+
+    /**
+     * <p>
+     * Performs an element by element natural exponential function.<br>
+     * <br>
+     * b<sub>ij</sub> = exp(a<sub>ij</sub>)
+     * </p>
+     * 
+     * @param a
+     *            The matrix on which we perform the exponentiation. Not
+     *            Modified.
+     * @param b
+     *            Where the results of the operation are stored. Modified.
+     */
+    public static void elementExp(D1Matrix64F a, D1Matrix64F b) {
+        if (a.numRows != b.numRows || a.numCols != b.numCols)
+            throw new IllegalArgumentException(
+                    "Matrices must have the same shape");
+
+        final int size = a.getNumElements();
+
+        for (int i = 0; i < size; i++) {
+            b.set(i, Math.exp(a.get(i)));
         }
     }
 
@@ -72,15 +119,15 @@ public class MatrixOps {
      * <br>
      * a<sub>ij</sub> = a<sub>ij</sub>^2
      * </p>
-     *
-     * @param a The matrix on which we perform the square.  Modified.
+     * 
+     * @param a
+     *            The matrix on which we perform the square. Modified.
      */
-    public static void elementSquare( D1Matrix64F a )
-    {
+    public static void elementSquare(D1Matrix64F a) {
         final int size = a.getNumElements();
 
-        for( int i = 0; i < size; i++ ) {
-            a.set( i , a.get(i) * a.get(i) );
+        for (int i = 0; i < size; i++) {
+            a.set(i, a.get(i) * a.get(i));
         }
     }
 
@@ -90,37 +137,39 @@ public class MatrixOps {
      * <br>
      * b<sub>ij</sub> = a<sub>ij</sub>^2
      * </p>
-     *
-     * @param a The matrix on which we perform the square. Not Modified.
-     * @param b Where the results of the operation are stored. Modified.
+     * 
+     * @param a
+     *            The matrix on which we perform the square. Not Modified.
+     * @param b
+     *            Where the results of the operation are stored. Modified.
      */
-    public static void elementSquare( D1Matrix64F a , D1Matrix64F b)
-    {
-        if( a.numRows != b.numRows || a.numCols != b.numCols )
-            throw new IllegalArgumentException("Matrices must have the same shape");
+    public static void elementSquare(D1Matrix64F a, D1Matrix64F b) {
+        if (a.numRows != b.numRows || a.numCols != b.numCols)
+            throw new IllegalArgumentException(
+                    "Matrices must have the same shape");
 
         final int size = a.getNumElements();
 
-        for( int i = 0; i < size; i++ ) {
-            b.set( i , a.get(i) * a.get(i) );
+        for (int i = 0; i < size; i++) {
+            b.set(i, a.get(i) * a.get(i));
         }
     }
-    
+
     /**
      * <p>
      * Performs an in-place element by element square root operation.<br>
      * <br>
      * a<sub>ij</sub> = sqrt(a<sub>ij</sub>)
      * </p>
-     *
-     * @param a The matrix on which we perform the square root.  Modified.
+     * 
+     * @param a
+     *            The matrix on which we perform the square root. Modified.
      */
-    public static void elementSquareRoot( D1Matrix64F a )
-    {
+    public static void elementSquareRoot(D1Matrix64F a) {
         final int size = a.getNumElements();
 
-        for( int i = 0; i < size; i++ ) {
-            a.set( i , Math.sqrt(a.get(i)) );
+        for (int i = 0; i < size; i++) {
+            a.set(i, Math.sqrt(a.get(i)));
         }
     }
 
@@ -130,45 +179,51 @@ public class MatrixOps {
      * <br>
      * b<sub>ij</sub> = sqrt(<sub>ij</sub>)
      * </p>
-     *
-     * @param a The matrix on which we perform the square root. Not Modified.
-     * @param b Where the results of the operation are stored. Modified.
+     * 
+     * @param a
+     *            The matrix on which we perform the square root. Not Modified.
+     * @param b
+     *            Where the results of the operation are stored. Modified.
      */
-    public static void elementSquareRoot( D1Matrix64F a , D1Matrix64F b)
-    {
-        if( a.numRows != b.numRows || a.numCols != b.numCols )
-            throw new IllegalArgumentException("Matrices must have the same shape");
+    public static void elementSquareRoot(D1Matrix64F a, D1Matrix64F b) {
+        if (a.numRows != b.numRows || a.numCols != b.numCols)
+            throw new IllegalArgumentException(
+                    "Matrices must have the same shape");
 
         final int size = a.getNumElements();
 
-        for( int i = 0; i < size; i++ ) {
-            b.set( i , Math.sqrt(a.get(i)) );
+        for (int i = 0; i < size; i++) {
+            b.set(i, Math.sqrt(a.get(i)));
         }
     }
-    
+
     /**
      * <p>
      * Set a floor value for the matrix elements.<br>
-     *
-     * @param floor The minimum element value.
-     * @param a The input matrix. Not Modified.
-     * @param b Matrix whose elements with values less than floor are set to floor. Modified.
+     * 
+     * @param floor
+     *            The minimum element value.
+     * @param a
+     *            The input matrix. Not Modified.
+     * @param b
+     *            Matrix whose elements with values less than floor are set to
+     *            floor. Modified.
      */
-    public static void elementFloor( double floor, D1Matrix64F a , D1Matrix64F b)
-    {
-        if( a.numRows != b.numRows || a.numCols != b.numCols )
-            throw new IllegalArgumentException("Matrices must have the same shape");
+    public static void elementFloor(double floor, D1Matrix64F a, D1Matrix64F b) {
+        if (a.numRows != b.numRows || a.numCols != b.numCols)
+            throw new IllegalArgumentException(
+                    "Matrices must have the same shape");
 
         final int size = a.getNumElements();
 
-        for( int i = 0; i < size; i++ ) {
-            if(a.get(i) < floor)
+        for (int i = 0; i < size; i++) {
+            if (a.get(i) < floor)
                 b.set(i, floor);
             else
                 b.set(i, a.get(i));
         }
     }
-    
+
     /** Convert an array of doubles to a matrix. A new matrix is created. */
     public static D1Matrix64F doubleArrayToMatrix(double[] data) {
 
@@ -178,7 +233,7 @@ public class MatrixOps {
         }
         return tmp;
     }
- 
+
     /** Convert an array of doubles to a matrix passed as a parameter. */
     public static D1Matrix64F doubleArrayToMatrix(double[] data, D1Matrix64F mat) {
 
@@ -187,7 +242,7 @@ public class MatrixOps {
         }
         return mat;
     }
-    
+
     /** Convert an array of floats to a matrix. A new matrix is created. */
     public static D1Matrix64F floatArrayToMatrix(float[] data) {
 
@@ -197,7 +252,7 @@ public class MatrixOps {
         }
         return tmp;
     }
- 
+
     /** Convert an array of doubles to a matrix passed as a parameter. */
     public static D1Matrix64F floatArrayToMatrix(float[] data, D1Matrix64F mat) {
 
@@ -206,5 +261,24 @@ public class MatrixOps {
         }
         return mat;
     }
-}
 
+    /**
+     * Create a random vector using the mean and variance of a Gaussian
+     * distribution.
+     */
+    public static D1Matrix64F createRandom(long seed, D1Matrix64F mean, D1Matrix64F variance) {
+        if (mean.numRows != variance.numRows || mean.numCols != variance.numCols)
+            throw new IllegalArgumentException(
+                    "Matrices must have the same shape");
+
+        final int size = mean.getNumElements();
+        DenseMatrix64F mat = new DenseMatrix64F(size, 1);
+        Random random = new Random(seed);   
+        
+        for (int i = 0; i < size; i++) {
+            mat.set(i, mean.get(i) + random.nextGaussian() * Math.sqrt(variance.get(i)));
+        }
+        
+        return mat;
+    }
+}

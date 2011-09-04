@@ -16,9 +16,11 @@
  */
 package io.s4.example.model;
 
+import net.jcip.annotations.Immutable;
 import io.s4.core.Event;
 
-public class ObsEvent extends Event {
+@Immutable
+final public class ObsEvent extends Event {
 
     final private float[] obsVector;
     final private float prob;

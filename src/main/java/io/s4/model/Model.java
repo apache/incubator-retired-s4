@@ -37,13 +37,29 @@ abstract public class Model {
     }
 
     /**
+     * Return an instance of this model initialized with the same parameters as its parent.
+     * 
+     * @return a copy of the parent model.
+     */
+    abstract public Model create();
+
+    /**
      * Compute the probability of the observed vector.
      * 
      * @param obs
      *            An observed data vector.
      * @return the probability.
      */
-    abstract public double evaluate(double[] obs);
+    abstract public double prob(float[] obs);
+
+    /**
+     * Compute the log probability of the observed vector.
+     * 
+     * @param obs
+     *            An observed data vector.
+     * @return the log probability.
+     */
+    abstract public double logProb(float[] obs);
 
     /**
      * Update sufficient statistics/
@@ -51,7 +67,7 @@ abstract public class Model {
      * @param obs
      *            An observed data vector.
      */
-    abstract public void update(double[] obs);
+    abstract public void update(float[] obs);
 
     /** Estimate model parameters. */
     abstract public void estimate();
@@ -72,7 +88,7 @@ abstract public class Model {
         this.isTrain = isTrain;
     }
 
-    /**  @return model name. */
+    /** @return model name. */
     public String getName() {
         return name;
     }

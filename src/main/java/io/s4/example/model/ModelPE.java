@@ -16,6 +16,8 @@
  */
 package io.s4.example.model;
 
+import net.jcip.annotations.ThreadSafe;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,37 +25,41 @@ import io.s4.core.App;
 import io.s4.core.Event;
 import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
-import io.s4.model.GaussianModel;
+import io.s4.model.Model;
 
-public class ModelPE extends ProcessingElement {
+@ThreadSafe
+final public class ModelPE extends ProcessingElement {
 
     private static final Logger logger = LoggerFactory.getLogger(ModelPE.class);
 
-    final private int vectorSize;
     final private long numVectors;
-    final private int numClasses;
+    private Model model;
     private Stream<ObsEvent> distanceStream;
+    private Stream<ResultEvent> resultStream;
     private int modelId;
-    private double[] mean;
-    private double[] variance;
     private double logPriorProb;
     private long obsCount = 0;
-    //private float[] obsSum;
     private long totalCount = 0;
-    private int[] confusionRow;
-    private GaussianModel gm;
 
-    public ModelPE(App app, int vectorSize, long numVectors, int numClasses) {
+    public ModelPE(App app, Model model, long numVectors) {
         super(app);
-        this.vectorSize = vectorSize;
+        this.model = model;
         this.numVectors = numVectors;
-        this.numClasses = numClasses;
     }
 
-    public void setStream(Stream<ObsEvent> distanceStream) {
+    /**
+     * @return the number of training vectors.
+     */
+    public long getNumVectors() {
+        return numVectors;
+    }
+
+    public void setStream(Stream<ObsEvent> distanceStream,
+            Stream<ResultEvent> resultStream) {
 
         /* Init prototype. */
         this.distanceStream = distanceStream;
+        this.resultStream = resultStream;
     }
 
     public long getObsCount() {
@@ -63,63 +69,29 @@ public class ModelPE extends ProcessingElement {
     private void updateStats(ObsEvent event) {
 
         logger.trace("TRAINING: ModelID: {}, {}", modelId, event.toString());
-
-        //float[] obs = event.getObsVector();
-        gm.update(event.getObsVector());
-        
-//        for (int i = 0; i < vectorSize; i++) {
-//            obsSum[i] += obs[i];
-//        }
+        model.update(event.getObsVector());
 
         obsCount++;
 
         /* Log info. */
-        if (obsCount % 1000 == 0) {
+        if (obsCount % 10000 == 0) {
             logger.info("Trained model using {} events with class id {}",
                     obsCount, modelId);
         }
     }
 
-    /*
-     * Compute Euclidean distance between an observed vectors and the centroid.
-     */
-    private float distance(float[] obs) {
+    private void estimateModel() {
 
-        float sumSq = 0f;
-        for (int i = 0; i < vectorSize; i++) {
-            float diff = (float)mean[i] - obs[i];
-            sumSq += diff * diff;
-        }
-        return (float) Math.sqrt(sumSq);
-    }
+        model.estimate();
 
-    private void updateModel() {
-
-        gm.estimate();
-        
-        mean = gm.getMean();
-        variance = gm.getVariance();
-        logPriorProb = Math.log(gm.getNumSamples() / (double)numVectors);
-//        for (int i = 0; i < vectorSize; i++) {
-//            mean[i] = obsSum[i] / obsCount;
-//            obsSum[i] = 0f;
-//        }
-
-        /* Print mean vector. */
-//        StringBuilder vector = new StringBuilder();
-//        for (int i = 0; i < vectorSize; i++) {
-//            vector.append(mean[i] + " ");
-//        }
-        logger.info("Update params for model {} is: {}", modelId, gm.toString());
+        logPriorProb = Math.log((double) totalCount / (double) numVectors);
+        logger.info("Update params for model {} is: {}", modelId,
+                model.toString());
 
         obsCount = 0;
         totalCount = 0;
-        gm.clearStatistics();
-    }
+        model.clearStatistics();
 
-    private void updateResults(ObsEvent event) {
-        confusionRow[event.getHypId()] += 1;
-        obsCount++;
     }
 
     /*
@@ -150,7 +122,7 @@ public class ModelPE extends ProcessingElement {
             if (++totalCount == numVectors) {
 
                 /* End of training stream. */
-                updateModel();
+                estimateModel();
 
                 /* Could send ack here. */
 
@@ -171,10 +143,9 @@ public class ModelPE extends ProcessingElement {
         } else { // scoring
 
             if (inEvent.getHypId() < 0) {
-                /* Score observed vector and send it to the minimizer. */
+                /* Score observed vector and send it to the maximizer. */
 
-                //float dist = distance(obs);
-                float dist = (float)(gm.logProb(obs) + logPriorProb);
+                float dist = (float) (model.logProb(obs) + logPriorProb);
                 ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs, dist,
                         inEvent.getClassId(), modelId, false);
 
@@ -182,29 +153,20 @@ public class ModelPE extends ProcessingElement {
 
             } else {
 
-                /* Got the hypothesis. */
-                updateResults(inEvent);
+                /* Send out result. */
+                if (resultStream != null) {
+                    ResultEvent resultEvent = new ResultEvent(
+                            inEvent.getIndex(), inEvent.getClassId(),
+                            inEvent.getHypId());
+
+                    resultStream.put(resultEvent);
+                }
             }
         }
     }
 
     @Override
     public void processOutputEvent(Event event) {
-
-        ObsEvent inEvent = (ObsEvent) event;
-
-        if (inEvent.isTraining() || inEvent.getHypId() < 0)
-            return;
-
-        String s = String
-                .format("RESULTS for model %2d:", inEvent.getClassId());
-        StringBuilder sb = new StringBuilder(s);
-        for (int i = 0; i < numClasses; i++) {
-            float pct = (float) confusionRow[i] / (float) obsCount * 100f;
-            sb.append(String.format("%6.1f", pct));
-        }
-        sb.append(String.format(" Count:  %6d", obsCount));
-        logger.info(sb.toString());
     }
 
     @Override
@@ -212,20 +174,17 @@ public class ModelPE extends ProcessingElement {
 
         this.modelId = Integer.parseInt(id);
 
-        /* Initialize model. */
-        this.gm = new GaussianModel(vectorSize, true);
-
-        /* Create an array for each PE instance. */
-        //this.obsSum = new float[vectorSize];
-        this.mean = new double[vectorSize];
-        this.variance = new double[vectorSize];
-        this.confusionRow = new int[numClasses];
+        /*
+         * Initialize model. When a new PE instance is created we use the
+         * reference to the model in the PE prototype (initial value in variable
+         * model) to create a new model for this PE instance (final value in
+         * variable model).
+         */
+        model = model.create();
     }
 
     @Override
     protected void onRemove() {
-        // TODO Auto-generated method stub
 
     }
-
 }

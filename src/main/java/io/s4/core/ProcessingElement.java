@@ -17,12 +17,21 @@ package io.s4.core;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+
+import net.jcip.annotations.ThreadSafe;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @author Leo Neumeyer
+ * 
+ */
 public abstract class ProcessingElement implements Cloneable {
 
     private static final Logger logger = LoggerFactory
@@ -32,8 +41,14 @@ public abstract class ProcessingElement implements Cloneable {
     final protected ConcurrentMap<String, ProcessingElement> peInstances = new ConcurrentHashMap<String, ProcessingElement>();
     protected String id = ""; // PE instance id
     final protected ProcessingElement pePrototype;
-    private int outputIntervalInEvents = 1;
+    private int outputIntervalInEvents = 0;
+    private long outputIntervalinMilliseconds = 0;
     private int eventCount = 0;
+    private Timer timer;
+    private boolean isTimedOutput = false;
+    private boolean isPrototype = true;
+    private boolean isThreadSafe = false;
+    private boolean isFirst = true;
 
     /*
      * Base class for implementing processing in S4. All instances are organized
@@ -87,25 +102,90 @@ public abstract class ProcessingElement implements Cloneable {
         this.outputIntervalInEvents = outputIntervalInEvents;
     }
 
-    synchronized protected void handleInputEvent(Event event) {
-//protected void handleInputEvent(Event event) { // we get deadlock when
-                                                   // synchronized
-        eventCount++;
+    /**
+     * The method {#processOutputEvent()} is called when an input event arrives
+     * and the time since the last input event is greater than this interval.
+     * 
+     * @param timeUnit
+     * @return interval in timeUnit
+     */
+    public long getOutputInterval(TimeUnit timeUnit) {
+        return timeUnit.convert(outputIntervalinMilliseconds,
+                TimeUnit.MILLISECONDS);
+    }
 
-            //System.out.println("XXX: " +  id + "  |  " + eventCount);
+    /**
+     * The method {#processOutputEvent()} is called when an input event arrives
+     * and the time since the last input event is greater than this interval.
+     * 
+     * @param timeUnit
+     * @param interval
+     *            in timeUnit
+     */
+    public void setOutputInterval(long interval, TimeUnit timeUnit) {
+        outputIntervalinMilliseconds = TimeUnit.MILLISECONDS.convert(interval,
+                timeUnit);
+
+        /* We only allow timers in the PE prototype, not in the instances. */
+        if (!isPrototype)
+            return;
+
+        if (timer != null)
+            timer.cancel();
+
+        timer = new Timer();
+        timer.schedule(new PETask(), 0, outputIntervalinMilliseconds);
+    }
+
+    /**
+     * Set to true if the concrete PE class has the {@link ThreadSafe}
+     * annotation. The default is false (no annotation). In general, application
+     * developers don't need to worry about thread safety in the concrete PEs.
+     * In some cases the PE needs to be thread safe to avoid deadlocks. For
+     * example , if the application graph has cycles and the queues are allowed
+     * to block, then some critical PEs with multiple incoming streams need to
+     * be made thread safe to avoid locking the entire PE instance.
+     * 
+     * @return true if the PE implementation is considered thread safe.
+     */
+    public boolean isThreadSafe() {
+        return isThreadSafe;
+    }
+
+    protected void handleInputEvent(Event event) {
+
+        Object object;
+        if (isThreadSafe) {
+            object = new Object(); // a dummy object TODO improve this.
+        } else {
+            object = this;
+        }
+
+        synchronized (object) {
+            eventCount++;
+
             processInputEvent(event);
 
-        if (isOutput()) {
-           processOutputEvent(event);
+            if (isOutput()) {
+                processOutputEvent(event);
+            }
         }
     }
 
     private boolean isOutput() {
 
-        // TODO implement time-based policy using a timer.
-
+        /*
+         * Output event at regular intervals based on the number of input
+         * events.
+         */
         if (outputIntervalInEvents > 0
                 && (eventCount % outputIntervalInEvents == 0)) {
+            return true;
+        }
+
+        /* Output event based on time since the last input event. */
+        if (isTimedOutput) {
+            isTimedOutput = false;
             return true;
         }
 
@@ -114,9 +194,7 @@ public abstract class ProcessingElement implements Cloneable {
 
     abstract protected void processInputEvent(Event event);
 
-    abstract public void processOutputEvent(Event event); // consider having
-                                                          // several output
-    // policies...
+    abstract public void processOutputEvent(Event event);
 
     /**
      * This method is called after a PE instance is created. Use it to
@@ -133,6 +211,9 @@ public abstract class ProcessingElement implements Cloneable {
     abstract protected void onRemove();
 
     private void removeInstanceForKeyInternal(String id) {
+
+        if (timer != null)
+            timer.cancel();
 
         if (id == null)
             return;
@@ -174,6 +255,9 @@ public abstract class ProcessingElement implements Cloneable {
         if (pe == null) {
             /* PE instance for key does not yet exist, cloning one. */
             pe = (ProcessingElement) this.clone();
+            pe.isPrototype = false;
+            if (isFirst)
+                onCreateInternal(pe);
 
             /*
              * The thread safe method putIfAbsent will most likely return null.
@@ -195,6 +279,29 @@ public abstract class ProcessingElement implements Cloneable {
             logger.trace("Num PE instances: {}.", getNumPEInstances());
         }
         return pe;
+    }
+
+    /*
+     * Called when we create the first PE instance. TODO: Would be better to do
+     * this as part of the PE lifecycle after PE construction.
+     */
+    private void onCreateInternal(ProcessingElement pe) {
+
+        isFirst = false;
+
+        logger.trace("OnCreateInternal");
+
+        /*
+         * If PE class has the @ThreadSafe annotation, then we set isThtreadSafe
+         * to true in the prototype so all future PE instances inherit the
+         * setting.
+         */
+        if (pe.getClass().isAnnotationPresent(ThreadSafe.class) == true) {
+            pe.isThreadSafe = true;
+            isThreadSafe = true;
+
+            logger.trace("Annotated with @ThreadSafe");
+        }
     }
 
     protected Collection<ProcessingElement> getAllInstances() {
@@ -237,4 +344,17 @@ public abstract class ProcessingElement implements Cloneable {
     // duplicate prototypes.
     // Great article: http://www.artima.com/lejava/articles/equality.html
 
+    public class PETask extends TimerTask {
+
+        @Override
+        public void run() {
+
+            for (Map.Entry<String, ProcessingElement> entry : peInstances
+                    .entrySet()) {
+
+                ProcessingElement peInstance = entry.getValue();
+                peInstance.isTimedOutput = true;
+            }
+        }
+    }
 }
