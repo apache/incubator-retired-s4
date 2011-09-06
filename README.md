@@ -45,8 +45,8 @@ For now we identify PEs using a composite string produced by KeyFinder. We must 
  
 Examples:
 
-* io.s4.example.counter - Generates dummy events that are counted using various keys. 
-* io.s4.example.kmeans - Shows how to use S4 in batch mode. We generate random data which is clustered using a standard k-means algorithm.
+* [io.s4.example.counter](https://github.com/leoneu/s4-piper/tree/master/src/main/java/io/s4/example/counter) - Generates dummy events that are counted using various keys. 
+* [io.s4.example.model](https://github.com/leoneu/s4-piper/tree/master/src/main/java/io/s4/example/model) - Training and testing a probabilistic classifier.
  
 
 
