@@ -98,9 +98,9 @@ manifest.mainAttributes(
     'Implementation-Vendor-Id': 'io.s4'
 )
 
-eclipseClasspath {
-    eclipse.classpath.downloadSources  = false; // is this still needed?
-}
+//eclipseClasspath {
+//    eclipse.classpath.downloadSources  = false; // is this still needed?
+//}
 
 /* Generates the gradlew scripts.
 http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */ 

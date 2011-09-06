@@ -379,6 +379,9 @@ observations per second. If we look at the ObsEvent class, the effective number 
 
 This results in an injected data rate of 90,000 x 480 bits/sec = 43 mbps
 
+On an Ubuntu machine with an Intel Core i7-860 processor the average time per observation-iteration was 
+8 microseconds or about 30% faster running at a data rate of 56 mbps.
+
 This is just to get an idea of the execution speed before even thinking about how to optimize. The throughput will vary 
 greatly depending on the complexity of the algorithm and the hardware configuration.
 
