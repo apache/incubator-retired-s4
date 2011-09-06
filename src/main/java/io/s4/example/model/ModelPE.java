@@ -40,6 +40,7 @@ final public class ModelPE extends ProcessingElement {
     private double logPriorProb;
     private long obsCount = 0;
     private long totalCount = 0;
+    private int iteration = 0;
 
     public ModelPE(App app, Model model, long numVectors) {
         super(app);
@@ -54,6 +55,14 @@ final public class ModelPE extends ProcessingElement {
         return numVectors;
     }
 
+    /**
+     * Set the output streams.
+     * 
+     * @param distanceStream
+     *            sends an {@link ObsEvent} to the {@link MaximizerPE}.
+     * @param resultStream
+     *            sends a {@link ResultEvent} to the {@link MetricsPE}.
+     */
     public void setStream(Stream<ObsEvent> distanceStream,
             Stream<ResultEvent> resultStream) {
 
@@ -62,15 +71,25 @@ final public class ModelPE extends ProcessingElement {
         this.resultStream = resultStream;
     }
 
+    /**
+     * @return number of observation vectors used in training iteration.
+     */
     public long getObsCount() {
         return obsCount;
+    }
+
+    /**
+     * @return current iteration.
+     */
+    public int getIteration() {
+        return iteration;
     }
 
     private void updateStats(ObsEvent event) {
 
         logger.trace("TRAINING: ModelID: {}, {}", modelId, event.toString());
         model.update(event.getObsVector());
-
+        
         obsCount++;
 
         /* Log info. */
@@ -84,7 +103,9 @@ final public class ModelPE extends ProcessingElement {
 
         model.estimate();
 
-        logPriorProb = Math.log((double) totalCount / (double) numVectors);
+        double prob = (double) obsCount / numVectors;
+        logPriorProb = Math.log(prob);
+        logger.info("Prior prob: {}", prob);
         logger.info("Update params for model {} is: {}", modelId,
                 model.toString());
 
@@ -92,6 +113,8 @@ final public class ModelPE extends ProcessingElement {
         totalCount = 0;
         model.clearStatistics();
 
+        /* Ready to start next iteration. */
+        iteration++;
     }
 
     /*
@@ -144,10 +167,13 @@ final public class ModelPE extends ProcessingElement {
 
             if (inEvent.getHypId() < 0) {
                 /* Score observed vector and send it to the maximizer. */
-
                 float dist = (float) (model.logProb(obs) + logPriorProb);
                 ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs, dist,
                         inEvent.getClassId(), modelId, false);
+
+                logger.trace(inEvent.getIndex() + " " + inEvent.getClassId()
+                        + " " + modelId + " " + model.logProb(obs) + " "
+                        + logPriorProb + " " + dist);
 
                 distanceStream.put(outEvent);
 

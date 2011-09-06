@@ -120,36 +120,32 @@ public class GaussianMixtureModel extends Model {
     /*
      * This method is used in {@link TrainMethod#STEP} Convert to a mixture with
      * N components. This method guarantees that the data structures are created
-     * and that all teh variables are set for starting a new training iteration.
+     * and that all the variables are set for starting a new training iteration.
      */
     private void increaseNumComponents(int newNumComponents) {
 
         /*
-         * For now we are going to use the first Gaussian distribution of the
-         * parent GMM to create the children.
+         * We use the Gaussian distribution of the parent GMM to create the
+         * children.
          */
 
-        /* Get mean and variance from parent. */
+        /* Get mean and variance from parent before we allocate resized data structures. */
         D1Matrix64F mean = MatrixOps.doubleArrayToMatrix(this.components[0]
                 .getMean());
         D1Matrix64F variance = MatrixOps.doubleArrayToMatrix(this.components[0]
                 .getVariance());
 
+        /* Throw away all previous data structures. */
+        allocateTrainDataStructures(newNumComponents);
+
         /*
          * Create new mixture components. Abandon the old ones. We already got
          * the mean and variance in the previous step.
          */
-        components = new GaussianModel[newNumComponents];
         for (int i = 0; i < newNumComponents; i++) {
-            this.components[i] = new GaussianModel(numElements,
-                    MatrixOps.createRandom(i, mean, variance), variance, true);
+            components[i].setMean(MatrixOps.createRandom(i, mean, variance));
+            components[i].setVariance(new DenseMatrix64F(variance));
         }
-
-        /* Create new weight arrays. */
-        weights = new DenseMatrix64F(newNumComponents, 1);
-        CommonOps.set(this.weights, 1.0 / newNumComponents);
-
-        allocateTrainDataStructures(newNumComponents);
     }
 
     /* Thread safe internal logProb method. Must pass temp array. */

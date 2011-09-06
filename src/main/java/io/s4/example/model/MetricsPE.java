@@ -28,7 +28,8 @@ import io.s4.core.ProcessingElement;
 
 final public class MetricsPE extends ProcessingElement {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetricsPE.class);
+    private static final Logger logger = LoggerFactory
+            .getLogger(MetricsPE.class);
 
     private Map<Integer, HashMap<Integer, MutableInt>> counts;
     private long totalCount = 0;
@@ -57,10 +58,6 @@ final public class MetricsPE extends ProcessingElement {
             counts.get(classID).put(hypID, value);
         }
         value.inc();
-
-        /* Print results. */
-        // System.out.println(">>>>> " + classID + "  " + hypID + "  " +
-        // value.get());
     }
 
     @Override
@@ -75,13 +72,16 @@ final public class MetricsPE extends ProcessingElement {
 
     @Override
     protected void onRemove() {
-        // TODO Auto-generated method stub
+    }
 
+    /** @return number of data vectors processed. */
+    public long getCount() {
+        return totalCount;
     }
 
     public String toString() {
         StringBuilder report = new StringBuilder();
-        report.append("\n\nConfusion Matrix:\n");
+        report.append("\n\nConfusion Matrix [%]:\n");
         report.append("\n      ");
         for (int i = 0; i < numClasses; i++) {
             report.append(String.format("%6d", i));
@@ -100,8 +100,17 @@ final public class MetricsPE extends ProcessingElement {
             for (Map.Entry<Integer, MutableInt> hypEntry : hypCounts.entrySet()) {
                 int hypID = hypEntry.getKey();
                 long count = hypEntry.getValue().get();
+
+                /*
+                 * Because of timing, it is possible to have a hypId that was
+                 * not counted in numClasses yet. In this case we bail out and
+                 * without producing a report.
+                 */
+                if (hypID > (numClasses - 1))
+                    return "Insufficient data.";
+
                 sortedCounts[hypID] = (float) count / totalCountForClass * 100f;
-                if(classID == hypID)
+                if (classID == hypID)
                     truePositives += count;
             }
             for (int i = 0; i < numClasses; i++) {
@@ -110,7 +119,9 @@ final public class MetricsPE extends ProcessingElement {
 
             report.append("\n");
         }
-        report.append(String.format("\nAccuracy: %6.1f%% - Num Observations: %6d\n", (float)truePositives / totalCount * 100f, totalCount));
+        report.append(String.format(
+                "\nAccuracy: %6.1f%% - Num Observations: %6d\n",
+                (float) truePositives / totalCount * 100f, totalCount));
 
         return report.toString();
     }

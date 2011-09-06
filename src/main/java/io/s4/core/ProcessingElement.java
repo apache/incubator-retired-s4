@@ -16,6 +16,7 @@
 package io.s4.core;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -248,7 +249,12 @@ public abstract class ProcessingElement implements Cloneable {
         removeInstanceForKeyInternal(id);
     }
 
-    protected ProcessingElement getInstanceForKey(String id) {
+    /**
+     * This method is designed to be used within the package. We make it
+     * package-private. The returned instances are all in the same JVM. Do not
+     * use it to access remote objects.
+     */
+    ProcessingElement getInstanceForKey(String id) {
 
         /* Check if instance for key exists, otherwise create one. */
         ProcessingElement pe = peInstances.get(id);
@@ -281,6 +287,52 @@ public abstract class ProcessingElement implements Cloneable {
         return pe;
     }
 
+    /**
+     * Get all the local instances. See notes in
+     * {@link #getInstanceForKey(String) getLocalInstanceForKey}
+     */
+    Collection<ProcessingElement> getInstances() {
+
+        return peInstances.values();
+    }
+
+    /**
+     * This method returns a remote PE instance for key. TODO: not implemented
+     * for cluster configuration yet, use it only in single node configuration.
+     * for testing apps.
+     * 
+     * @return pe instance for key. Null if if doesn't exist.
+     */
+    public ProcessingElement getRemoteInstancesForKey() {
+
+        logger.warn("The getRemoteInstancesForKey() method is not implemented. Use "
+                + "it to test your app in single node configuration only. Should work "
+                + "transparently for remote objects once it is implemented.");
+
+        ProcessingElement pe = peInstances.get(id);
+        return pe;
+    }
+
+    /**
+     * This method returns a map of PE instances for this prototype in the
+     * network. This could be an expensive operation. TODO: not implemented for
+     * cluster configuration yet, use it only in single node configuration. for
+     * testing apps.
+     */
+    public Map<String, ProcessingElement> getRemoteInstances() {
+
+        logger.warn("The getRemoteInstances() method is not implemented. Use "
+                + "it to test your app in single node configuration only. Should work "
+                + "transparently for remote objects once it is implemented.");
+
+        /*
+         * For now we just return a copy as a placeholder. We need to
+         * implement a custom map capable of working on an S4 cluster as
+         * efficiently as possible.
+         */
+        return new HashMap<String, ProcessingElement>(peInstances);
+    }
+
     /*
      * Called when we create the first PE instance. TODO: Would be better to do
      * this as part of the PE lifecycle after PE construction.
@@ -302,12 +354,6 @@ public abstract class ProcessingElement implements Cloneable {
 
             logger.trace("Annotated with @ThreadSafe");
         }
-    }
-
-    protected Collection<ProcessingElement> getAllInstances() {
-
-        // return new ArrayList<ProcessingElement>(peInstances.values());
-        return peInstances.values();
     }
 
     /**

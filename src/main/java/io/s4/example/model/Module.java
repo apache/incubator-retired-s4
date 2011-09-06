@@ -15,9 +15,7 @@
  */
 package io.s4.example.model;
 
-import io.s4.model.GaussianMixtureModel;
 import io.s4.model.Model;
-import io.s4.model.GaussianMixtureModel.TrainMethod;
 
 import java.io.InputStream;
 
@@ -70,9 +68,17 @@ public class Module extends AbstractModule {
         int vectorSize = config.getInt("model.vector_size");
         int numGaussians = config.getInt("model.num_gaussians");
 
+        /*
+         * Here we bind a specific Model implementation. This one is the
+         * GaussianMixtureModel
+         */
         bind(Model.class).toInstance(
-                new GaussianMixtureModel(vectorSize, numGaussians,
-                        TrainMethod.STEP));
+                new io.s4.model.GaussianMixtureModel(vectorSize, numGaussians,
+                        io.s4.model.GaussianMixtureModel.TrainMethod.STEP));
+
+        /* Alternatively, we could bind to the GaussianModel. */
+        // bind(Model.class).toInstance(
+        // new io.s4.model.GaussianModel(vectorSize, true));
 
     }
 }

@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.s4.core.App;
+import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
 import io.s4.model.Model;
 
@@ -37,9 +38,12 @@ public class MyApp extends App {
     private Stream<ObsEvent> obsStream;
 
     private ModelPE modelPE;
+    private MetricsPE metricsPE;
     Stream<ObsEvent> assignmentStream;
+    private String report;
 
-    MyApp(int numClasses, long numVectors, Model model, int outputInterval, TimeUnit timeUnit) {
+    MyApp(int numClasses, long numVectors, Model model, int outputInterval,
+            TimeUnit timeUnit) {
         super();
         this.numClasses = numClasses;
         this.numVectors = numVectors;
@@ -66,10 +70,11 @@ public class MyApp extends App {
 
     @Override
     protected void init() {
-        
-        MetricsPE metricsPE = new MetricsPE(this);
-        
-        Stream<ResultEvent> resultStream = new Stream<ResultEvent>(this, "Result Stream", new ResultKeyFinder(), metricsPE);
+
+        metricsPE = new MetricsPE(this);
+
+        Stream<ResultEvent> resultStream = new Stream<ResultEvent>(this,
+                "Result Stream", new ResultKeyFinder(), metricsPE);
 
         modelPE = new ModelPE(this, model, numVectors);
 
@@ -87,11 +92,69 @@ public class MyApp extends App {
          * end. Is there a cleaner way to do this?
          */
         modelPE.setStream(distanceStream, resultStream);
-        //modelPE.setOutputIntervalInEvents(10); // output every 10 events
-        metricsPE.setOutputInterval(outputInterval, timeUnit); //output every 5 seconds
+        // modelPE.setOutputIntervalInEvents(10); // output every 10 events
+        metricsPE.setOutputInterval(outputInterval, timeUnit); // output every 5
+                                                               // seconds
         // obsStream = new Stream<ObsEvent>(this, "Observation Stream", new
         // ClassIDKeyFinder(), modelPE);
         obsStream = new Stream<ObsEvent>(this, "Observation Stream", modelPE);
+    }
+
+    /** @return true if modelPE is initialized. */
+    public boolean isInited() {
+        if (modelPE.getRemoteInstances().size() == numClasses)
+            return true;
+        else
+            return false;
+    }
+
+    /**
+     * Check if a training iteration is completed.
+     * 
+     * @param iteration
+     * @return true when a training iteration is completed.
+     */
+    public boolean isTrained(int iteration) {
+
+        int sum = 0;
+        for (ProcessingElement pe : modelPE.getRemoteInstances().values()) {
+            sum += ((ModelPE) pe).getIteration();
+        }
+        if (sum < iteration * numClasses)
+            return false;
+        else
+            return true;
+    }
+
+    /**
+     * Check if a test is complete.
+     * 
+     * @param number
+     *            of test vectors.
+     * @return true when testing is complete.
+     */
+    public boolean isTested(long numTestVectors) {
+
+        long count = 0;
+        MetricsPE mpe = null;
+        for (ProcessingElement pe : metricsPE.getRemoteInstances().values()) {
+            mpe = (MetricsPE) pe;
+            count = mpe.getCount();
+        }
+        if (count < numTestVectors) {
+            return false;
+        } else {
+            report = mpe.toString();
+            return true;
+        }
+    }
+
+    /**
+     * @return a metrics report.
+     */
+    public String getReport() {
+
+        return report;
     }
 
     @Override

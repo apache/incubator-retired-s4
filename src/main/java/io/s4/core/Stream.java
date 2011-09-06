@@ -125,7 +125,7 @@ public class Stream<T extends Event> implements Runnable {
                         /* STEP 1: find all PE instances. */
 
                         Collection<ProcessingElement> pes = targetPEs[i]
-                                .getAllInstances();
+                                .getInstances();
 
                         /* STEP 2: iterate and pass event to PE instance. */
                         for (ProcessingElement pe : pes) {

@@ -88,40 +88,41 @@ public class Controller {
             logger.info("Init app.");
             app.init();
 
-            /* Initialize modelPEs by injecting events. */
+            /* Initialize modelPEs by injecting one dummy events per class. */
             for (int i = 0; i < numClasses; i++) {
                 ObsEvent obsEvent = new ObsEvent(-1, new float[vectorSize],
                         -Float.MAX_VALUE, i, -1, true);
                 app.injectByKey(obsEvent);
             }
 
-            // TODO this is temporary until we have a direct REST API to PEs.
-            logger.info("WAITING 10 seconds");
-            Thread.sleep(10000);
-            logger.info("Created model PEs.");
+            /* Wait until the app is initialized. */
+            while(!app.isInited()) {
+                Thread.sleep(1);
+            }
 
             for (int i = 0; i < numIterations; i++) {
                 logger.info("Starting iteration {}.", i);
                 injectData(app, true, trainFilename);
 
                 /*
-                 * Make sure all the data has been processed. ModelPE will reset
-                 * the total count after all the data is processed so we wait
-                 * until the count is equal to zero. TODO
+                 * Make sure all the data has been processed.
                  */
-                logger.info("WAITING 10 seconds");
-                Thread.sleep(10000);
-                logger.info("End of iteration {}.", i);
+                while(!app.isTrained(i)) {
+                    Thread.sleep(5);
+                }
             }
 
-            // while count not zero wait
             /* Start testing. */
             logger.info("Start testing.");
             injectData(app, false, testFilename);
 
-            logger.info("WAITING 30 seconds");
-            Thread.sleep(30000);
-
+            while(!app.isTested(numTestVectors)) {
+                Thread.sleep(5);
+            }
+            
+            /* Print final report. */
+            logger.info(app.getReport());
+            
             /* Done. */
             app.remove();
 

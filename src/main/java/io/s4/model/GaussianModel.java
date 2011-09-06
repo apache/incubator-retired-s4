@@ -27,7 +27,7 @@ import org.ejml.ops.CommonOps;
  * squared). Only diagonal covariance matrices are supported.
  * 
  * @author Leo Neumeyer
- *
+ * 
  */
 public class GaussianModel extends Model {
 
@@ -120,9 +120,9 @@ public class GaussianModel extends Model {
 
     public Model create() {
 
-        return new GaussianModel(numElements, mean, variance, isTrain);
+        return new GaussianModel(numElements, isTrain);
     }
-    
+
     /**
      * @param obs
      *            the observed data vector.
@@ -143,12 +143,9 @@ public class GaussianModel extends Model {
      */
     public double logProb(float[] obs) {
 
-        CommonOps.sub(mean, MatrixOps.floatArrayToMatrix(obs), tmpArray);
-        MatrixOps.elementSquare(tmpArray);
-        CommonOps.elementDiv(tmpArray, variance);
-        return const2 - CommonOps.elementSum(tmpArray) / 2.0;
+        return logProb(MatrixOps.floatArrayToMatrix(obs));
     }
-    
+
     /**
      * @param obs
      *            the observed data vector.
@@ -156,12 +153,9 @@ public class GaussianModel extends Model {
      */
     public double logProb(double[] obs) {
 
-        CommonOps.sub(mean, MatrixOps.doubleArrayToMatrix(obs), tmpArray);
-        MatrixOps.elementSquare(tmpArray);
-        CommonOps.elementDiv(tmpArray, variance);
-        return const2 - CommonOps.elementSum(tmpArray) / 2.0;
+        return logProb(MatrixOps.doubleArrayToMatrix(obs));
     }
-    
+
     /*
      * (non-Javadoc)
      * 
@@ -177,7 +171,7 @@ public class GaussianModel extends Model {
 
         return prob(MatrixOps.floatArrayToMatrix(obs));
     }
-    
+
     /**
      * @param obs
      *            the observed data vector.
@@ -205,7 +199,7 @@ public class GaussianModel extends Model {
         update(MatrixOps.floatArrayToMatrix(obs));
 
     }
-    
+
     /**
      * Update sufficient statistics.
      * 
@@ -232,15 +226,15 @@ public class GaussianModel extends Model {
      * @param weight
      *            the weight assigned to this observation.
      */
-    public void update(D1Matrix64F data, double weight) {
+    public void update(D1Matrix64F obs, double weight) {
 
         if (isTrain() == true) {
 
             /* Update sufficient statistics. */
-            CommonOps.scale(weight, data, tmpArray);
+            CommonOps.scale(weight, obs, tmpArray);
             CommonOps.add(tmpArray, sumx, sumx);
 
-            MatrixOps.elementSquare(data, tmpArray);
+            MatrixOps.elementSquare(obs, tmpArray);
             CommonOps.scale(weight, tmpArray);
             CommonOps.add(tmpArray, sumxsq, sumxsq);
 
@@ -314,14 +308,13 @@ public class GaussianModel extends Model {
         return tmp.getData();
     }
 
-    
     public void setMean(D1Matrix64F mean) {
         this.mean = mean;
     }
 
     public void setVariance(D1Matrix64F variance) {
         this.variance = variance;
-        
+
         /* Update log Gaussian constant. */
         MatrixOps.elementLog(this.variance, tmpArray);
         const2 = const1 - CommonOps.elementSum(tmpArray) / 2.0;

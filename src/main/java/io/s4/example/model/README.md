@@ -1,13 +1,37 @@
-Modeling Framework for S4
-=========================
+# Modeling Framework for S4
 
-In this package we implemented an application that can estimate model parameters in batch mode and run the 
-model in streaming mode. To evaluate the application we use a [publicly available labeled data set to predict 
+## The Pattern Recognition Problem
+
+In this example we show how to design a pluggable modeling framework in S4. The task is to classify incoming objects into 
+well defined categories. Each object is represented by an observation vector that represents the object, also called 
+features of the object. The variability and consistency of the features within a category and between categories will 
+determine the accuracy of the classifier. Because it is impossible to achieve perfect accuracy in real-world systems, 
+we use probabilistic models to classify the objects. So instead of just assigning a category to each object, the model will 
+provide the probability that the object belongs to a category. The final decision may depend on several factors, for example,
+the cost of wrongly assign a categories to an object may not be the same for all categories. In this example, we assume that 
+the cost is the same for all categories and simply select the category whose model has the highest probability. 
+
+To learn more read "Pattern Classification" by R. Duda, P. Hart, and D. Stork.
+
+## The Approach 
+ 
+In this example we implemented an application that uses a train data set to estimate model parameters. Because most estimation 
+algorithms learn iteratively, we inject the train data set several times until a stop condition is achieved. To train the models,
+we run S4 in batch mode. That is, we push the data at the highest possible speed and when a queue fill up, we let the system block 
+until more space in the queues become available. In other words, no event data is lost in this process. To achieve this, we remove all 
+latency constraints and let the process run for as long as needed until all the data is processed. This approach is quite similar 
+to MapReduce except that the data is injected sequentially from a single source.
+
+Once the model parameters are estimated we are ready to run a test. In real-time applications, we would have no control over the speed of the
+incoming data vectors. If we didn't have sufficient computing resources to process all the data within the time constraints, we would be 
+forced to either lose some of the data (load shedding) or switch to a less complex classification algorithm.
+
+## The Forest Cover Data Set
+
+To evaluate the application we use a [publicly available labeled data set to predict 
 forest cover type](http://kdd.ics.uci.edu/databases/covertype/covertype.html).
 For details about the data set please download the paper published by the author of this work. 
 ([PDF](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.128.2475&rep=rep1&type=pdf))
-
-## The Forest Cover Data Set
 
 Here is a description of the data. There are 7 types of forest cover. Each observation vector represents an area of 
 forest with a type of cover and ten measurements (Elevation, Aspect, Slope, etc.) There is a total of 581,012 observation
@@ -77,16 +101,35 @@ Here are the steps I used to download and prepare the data files. The files are 
 	#  100000 covtype-test.data
 	#  581012 total
 
-## Probabilistic Models
+## Implementation of the Probabilistic Models
 
-The modeling package (io.s4.model) provides a basic interface for implementing probabilistic models. The main methods are:
+The modeling package [io.s4.model](https://github.com/leoneu/s4-piper/tree/master/src/main/java/io/s4/model) provides 
+a basic interface for implementing probabilistic models. The main methods are:
 
 * **update()** - updates sufficient statistics given an observation vector.
 * **estimate()** - estimates model parameters using the sufficient statistics.
-* **evaluate()** - computes the probability.
+* **prob()** - computes the probability.
 
-The first implementation is a Gaussian model which we use in this example to classify the tree cover given the features.
+The abstract class [io.s4.model.Model](https://github.com/leoneu/s4-piper/tree/master/src/main/java/io/s4/model/Model.java)
+is used to build the models. There are no dependencies with any specific implementation of a 
+model because the code only uses Model to estimate and run the classifier.
 
+There are two concrete implementation of Model:
+
+ * [Gaussian Model](https://github.com/leoneu/s4-piper/blob/master/src/main/java/io/s4/model/GaussianModel.java) a single
+   Gaussian distribution with parameters _mean_ and _variance_.
+   use in this example to classify the tree cover given the features.
+ * [Gaussian Mixture Model](https://github.com/leoneu/s4-piper/blob/master/src/main/java/io/s4/model/GaussianMixtureModel.java) 
+   A mixture of Gaussian distributions with parameters _mixture weights_ and each Gaussian component with parameters _mean_ and
+   _variance_.
+
+More model implementations are can be implemented and thanks to the nice object oriented design, swapping models is as easy as
+editing one line of code in the [Guice](http://code.google.com/p/google-guice/) 
+[Module](https://github.com/leoneu/s4-piper/blob/master/src/main/java/io/s4/example/model/Module.java). (search for Model).
+
+As an application developer you will not have to worry about how the distributed processing work. Scientist can focus on writing
+model code and dropping it in the right place. Moreover, the same framework can be used to run experiments in batch mode and to
+deploy in a real-time production environment with zero code changes.
 
 ## Application Graph
 
@@ -142,77 +185,150 @@ this problem we added a setter method to set the distanceStream in ClusterPE.
 * Send ObsEvent with HypID back to ModelPE instance using ClassID as key.
 * Update results
 
-We compute the confusion matrix where a row corresponds to a class and columns to hypotheses. 
-The results are shown in percent. The diagonal shows the accuracy of the classifier for each class. 
+We compute the confusion matrix where a row corresponds to the true category and columns to hypotheses. The diagonal 
+shows the percentage of observations that were correctly categorized and the off-diagonal numbers are all the mistakes. 
 
-Here is confusion matrix when we only estimate the mean of each class,
-For most classes the accuracy is better than chance (1/7 => 14%). As expected, a model that only uses
-the mean of each class is not very good at explaining the data. We can do better with
-a probabilistic model.
+We first run the classifier using the Gaussian model, that is we model each class using a Gaussian probability density 
+function for which we need to estimate its parameters (mean and variance). 
+
+To run the experiment, we bind the Model type to the GaussianModel class in Module.java as follows:
 
 <pre>
-           0     1     2     3     4     5     6
-        ----------------------------------------
-    0:  13.2  19.2   7.2   0.0  24.0   3.0  33.4
-    1:  11.5  19.7   9.9   0.8  27.9   5.9  24.2
-    2:   1.9   4.2  23.5  37.3   7.3  25.7   0.0
-    3:   0.0   0.0   5.6  50.4   0.0  43.9   0.0
-    4:   3.4  11.7  21.8   0.1  44.8  15.3   2.9
-    5:   0.8   9.3  22.5  29.0  10.1  28.3   0.0
-    6:   9.3   9.5   3.7   0.0  25.8   1.7  50.0
+    protected void configure() {
+        if (config == null)
+            loadProperties(binder());
+
+        int vectorSize = config.getInt("model.vector_size");
+        int numGaussians = config.getInt("model.num_gaussians");
+
+        bind(Model.class).toInstance(
+        new io.s4.model.GaussianModel(vectorSize, true));
+
+    }
 </pre>
-When we run the classifier using the probabilistic model (just one Gaussian distribution per cover type) We get the following confusion matrix:
 
-<pre>
+With this binding the GaussianModel instance will be injected in the Controller constructor.
+
+Next, we edit the properties file as follows:
+
+   model.train_data = /covtype-train.data.gz 
+   model.test_data = /covtype-test.data.gz
+   model.logger.level = DEBUG
+   model.num_iterations = 1
+   model.vector_size = 10
+   model.output_interval_in_seconds = 2
+
+In the properties file we configure the data sets for training and testing, the logger level, the number of iterations 
+(we only need one iteration to estimate the mean and variance), the vector size which is 10 for this data set and
+how often we want to print partial results. A final result will be printed by the controller at the end of the experiment.
+
+To run using Gradle, make sure you set the Main class in build.gradle to:
+
+    mainClassName = "io.s4.example.model.Main"
+
+To run the experiment type:
+
+   gradlew run
+   
+   
+ and after a few seconds we get the result:
+ 
+    Confusion Matrix [%]:
+
            0     1     2     3     4     5     6
         ----------------------------------------
-    0:  67.4  25.2   0.7   0.0   1.0   0.3   5.5 
+    0:  67.4  25.2   0.7   0.0   1.0   0.3   5.5
     1:  24.1  65.8   4.6   0.0   2.3   1.9   1.4
-    2:   0.0  19.7  64.2   3.7   0.3  12.0   0.0
-    3:   0.0   0.4  38.9  48.8   0.0  11.8   0.0
-    4:   0.0  68.8   4.8   0.0  24.2   2.2   0.0 
-    5:   0.0  18.3  47.4   2.3   0.5  31.5   0.0
+    2:   0.0  19.6  64.3   3.7   0.3  12.0   0.0
+    3:   0.0   0.4  38.6  48.8   0.0  12.2   0.0
+    4:   0.0  69.0   4.8   0.0  24.0   2.2   0.0
+    5:   0.0  18.3  47.3   2.3   0.5  31.5   0.0
     6:  70.5   0.6   0.7   0.0   0.0   0.0  28.2
-</pre>
 
-This is a big improvement given how simple our model is. There are still significant errors for some cover types. For example and 38.9% of 
-type 3 is classified as type 2 and 68.8% of class 4 is classified as class 1, etc. We need a better model to improve accuracy.
+    Accuracy:   63.1% - Num Observations: 100000
 
-* numComponents = 3
+The observation vectors are correctly categorized in an independent data set at a rate of 63.1%. Note that 85% of the observations 
+are in categories 0 and 1. The classifier learned this fact and relied on the prior probabilities to optimize the overall accuracy 
+of the classifier. That's why accuracy is higher for these categories. For example, only 3.5% of the observations are in category 6
+so the low accuracy of 28.2% has little impact on the overall accuracy. Depending on the application, this may or may not be the right
+optimization approach.
 
-<pre>
-           0     1     2     3     4     5     6
-        ----------------------------------------
-    0:  60.3  12.8   0.6   0.0   7.1   1.1  18.2
-    1:  28.0  34.1   3.0   0.1  24.2   6.1   4.6
-    2:   0.0   1.4  35.3  21.5  12.6  29.2   0.0
-    3:   0.0   0.0  10.0  79.3   0.0  10.8   0.0
-    4:   0.4  18.1   1.1   0.0  71.9   8.5   0.0
-    5:   0.0   3.8  20.5  14.9   8.8  52.0   0.0
-    6:  18.8   0.2   0.6   0.0   0.5   0.0  79.9
-</pre>
+Next we, want to try the more sophisticated GaussianMixtureModel. We changed the properties file as follows:
 
-<pre>
-           0     1     2     3     4     5     6
-        ----------------------------------------
-    0:  
-    1:  
-    2:   
-    3:   
-    4:  
-    5:  
-    6:  
-</pre>
+   model.train_data = /covtype-train.data.gz 
+   model.test_data = /covtype-test.data.gz
+   model.logger.level = DEBUG
+   model.num_gaussians = 1
+   model.num_iterations = 2
+   model.vector_size = 10
+   model.output_interval_in_seconds = 2
+
+Note that we are only using 1 Gaussian per mixture which is equivalent to using the GaussianModel so we expect the results to be identical. 
+We need 2 iterations because the model uses the first pass to estimate the mean and variance of the data. This is only useful when using 
+more than one mixture component.  
+
+We changed the Module class as follows:
 
 <pre>
-           0     1     2     3     4     5     6
-        ----------------------------------------
-    0:  
-    1:  
-    2:   
-    3:   
-    4:  
-    5:  
-    6:  
+    protected void configure() {
+        if (config == null)
+            loadProperties(binder());
+
+        int vectorSize = config.getInt("model.vector_size");
+        int numGaussians = config.getInt("model.num_gaussians");
+
+        bind(Model.class).toInstance(
+                new io.s4.model.GaussianMixtureModel(vectorSize, numGaussians,
+                        io.s4.model.GaussianMixtureModel.TrainMethod.STEP));
+    }
 </pre>
 
+and we run the experiment again:
+
+   gradlew run
+
+The result is identical (after I spent a day debugging :-):
+
+    Confusion Matrix [%]:
+
+           0     1     2     3     4     5     6
+        ----------------------------------------
+    0:  67.4  25.2   0.7   0.0   1.0   0.3   5.5
+    1:  24.1  65.8   4.6   0.0   2.3   1.9   1.4
+    2:   0.0  19.6  64.3   3.7   0.3  12.0   0.0
+    3:   0.0   0.4  38.6  48.8   0.0  12.2   0.0
+    4:   0.0  69.0   4.8   0.0  24.0   2.2   0.0
+    5:   0.0  18.3  47.3   2.3   0.5  31.5   0.0
+    6:  70.5   0.6   0.7   0.0   0.0   0.0  28.2
+
+    Accuracy:   63.1% - Num Observations: 100000
+
+
+Now let's increase the number of mixture components to 2 per category:
+
+    Confusion Matrix [%]:
+
+           0     1     2     3     4     5     6
+        ----------------------------------------
+    0:  66.4  27.8   0.1   0.0   1.5   0.4   3.8
+    1:  24.9  63.3   3.6   0.1   4.5   3.0   0.6
+    2:   0.0  13.1  65.7   8.2   1.0  12.0   0.0
+    3:   0.0   0.4  17.0  80.9   0.0   1.7   0.0
+    4:   5.1  50.0   3.0   0.0  37.2   4.7   0.0
+    5:   0.0  15.8  39.4   7.5   1.0  36.3   0.0
+    6:  71.4   1.1   0.0   0.0   0.0   0.0  27.6
+
+    Accuracy:   62.2% - Num Observations: 100000
+
+Teh overall accuracy went down from 63.1% to 62.2%. However, we can see a dramatic improvement in category 3 
+(from 48.8% to 80.9%) at the cost of a slight degradation in categories 0 and 1. Clearly, using two Gaussians 
+per category helped category three. 
+
+To improve the accuracy of the classifier, one could do some additional analysis and come up with an improved 
+model until the accuracy is acceptable for the target application. For example, why are so many category 6 
+classified as 0? Maybe we need a different number of mixtures per category to allocate more parameters to the 
+categories with more training data and fewer to the other ones. Give it a try and let me know. I will add any
+models that gets a better overall accuracy than this one.
+
+Please share your feedback at:
+http://groups.google.com/group/s4-project/topics
