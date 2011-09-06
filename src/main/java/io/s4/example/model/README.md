@@ -138,9 +138,7 @@ As an application developer you don't have to worry about how distributed proces
 model code and dropping it in the right place. Moreover, the same code can be used to run experiments in batch mode and to
 deploy in a real-time production environment.
 
-## Application Graph
-
-### Training
+## Training
 
 Here is the basic structure of the program:
 
@@ -190,7 +188,7 @@ of the application. The real work is done by the processing element instances th
 Notice that the application graph has a cycle (events go from ModelPE to MaximizerPE and back). This creates a minor challenge to create the 
 application graph. To solve this problem we added a setter method to set the distanceStream in ClusterPE.
 
-### Testing
+## Testing
 
 For testing we follow the following steps:
 
@@ -204,7 +202,7 @@ For testing we follow the following steps:
   to true categories and columns to hypotheses. The diagonal 
   shows the percentage of observations that were correctly categorized and the off-diagonal numbers are the errors. 
 
-### Experiments
+## Experiments
 
 We first run the classifier using the Gaussian model, that is, we model each class using a Gaussian probability density 
 function for which we need to estimate its parameters (mean and variance). 
@@ -325,6 +323,16 @@ The result is identical as expected:
 
 Now let's increase the number of mixture components to two Gaussian distributions per category:
 
+
+   model.train_data = /covtype-train.data.gz 
+   model.test_data = /covtype-test.data.gz
+   model.logger.level = DEBUG
+   model.num_gaussians = 2
+   model.num_iterations = 6
+   model.vector_size = 10
+   model.output_interval_in_seconds = 2
+
+
     Confusion Matrix [%]:
 
            0     1     2     3     4     5     6
@@ -348,6 +356,32 @@ model until the accuracy is acceptable for the target application. For example, 
 classified as category 0? Maybe we need a different number of mixtures per category to allocate more parameters to the 
 categories with more training data and fewer to the other ones. Give it a try and let me know. I will add any
 models that get better overall accuracy than this one.
+
+## Performance
+
+I tested the execution speed on a single node configuration in a MacBook air with a Core i5 CPU and 4GB of RAM. The data
+is read from the solid state disk and uncompressed using gzip in every iteration. Initialization time is 
+excluded from the measurements. Because I used only one node and all the data is local, there is no network overhead
+involved.
+
+The following results are for the GaussianMixture Model with 2 components per mixture and 6 iterations.
+
+    Total training time was 33 seconds.
+    Training time per observation was 69 microseconds.
+    Training time per observation per iteration was 11 microseconds.
+    Total testing time was 4 seconds.
+    Testing time per observation was 8 microseconds.
+    
+Based on this number, the data rate at which we injected data for training was (1/11 microseconds) or 90,000 
+observations per second. If we look at the ObsEvent class, the effective number of bits transmitted per event is:
+
+    10 x float + 1 x float + 2 x int + 1 x long = 11 x 32 + 2 x 32 + 1 x 64 = 480 bits / observation
+
+This results in an injected data rate of 90,000 x 480 bits/sec = 43 mbps
+
+This is just to get an idea of the execution speed before even thinking about how to optimize. The throughput will vary 
+greatly depending on the complexity of the algorithm and the hardware configuration.
+
 
 Please share your feedback at:
 http://groups.google.com/group/s4-project/topics

@@ -100,6 +100,7 @@ public class Controller {
                 Thread.sleep(1);
             }
 
+            long start = System.nanoTime();
             for (int i = 0; i < numIterations; i++) {
                 logger.info("Starting iteration {}.", i);
                 injectData(app, true, trainFilename);
@@ -111,10 +112,15 @@ public class Controller {
                     Thread.sleep(5);
                 }
             }
+            long stop = System.nanoTime();
+            long trainTime = stop - start;
 
             /* Start testing. */
             logger.info("Start testing.");
+            start = System.nanoTime();
             injectData(app, false, testFilename);
+            stop = System.nanoTime();
+            long testTime = stop - start;
 
             while(!app.isTested(numTestVectors)) {
                 Thread.sleep(5);
@@ -122,6 +128,13 @@ public class Controller {
             
             /* Print final report. */
             logger.info(app.getReport());
+            
+            /* Print timing info. */
+            logger.info("Total training time was {} seconds.", trainTime / 1000000000);
+            logger.info("Training time per observation was {} microseconds.", trainTime / numTrainVectors / 1000);
+            logger.info("Training time per observation per iteration was {} microseconds.", trainTime / numTrainVectors / numIterations / 1000);
+            logger.info("Total testing time was {} seconds.", testTime / 1000000000);
+            logger.info("Testing time per observation was {} microseconds.", testTime / numTrainVectors / 1000);
             
             /* Done. */
             app.remove();
