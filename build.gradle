@@ -22,6 +22,7 @@
 apply plugin: 'eclipse'
 apply plugin: 'java'
 apply plugin: "application"
+apply plugin: "maven"
 
 /* Main application to run ... */
 //mainClassName = "io.s4.example.counter.MyApp"
@@ -49,6 +50,7 @@ mainClassName = "io.s4.example.model.Main"
  commons_config:     'commons-configuration:commons-configuration:1.6',
  commons_codec:      'commons-codec:commons-codec:1.4',
  commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
+ commons_coll:       'net.sourceforge.collections:collections-generic:4.01', // Use this lib until the commons collection with Generics is released.
  slf4j:              'org.slf4j:slf4j-api:1.6.1',
  logback_core:       'ch.qos.logback:logback-core:0.9.29',
  logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
@@ -84,6 +86,7 @@ dependencies {
 	compile( libraries.commons_config )
 	compile( libraries.commons_codec )
 	compile( libraries.commons_httpclient )
+	compile( libraries.commons_coll )
 	compile( libraries.ejml )
 	compile( libraries.jcip )
 	testCompile( libraries.junit )

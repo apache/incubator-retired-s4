@@ -17,14 +17,46 @@ package io.s4.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Container base class to hold all processing elements. We will implement administrative methods here. 
  */
 public abstract class App {
-    
+
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
+
     final private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
     final private List<Stream<? extends Event>> streams = new ArrayList<Stream<? extends Event>>();
+    final private ClockType clockType;
+
+    /**
+     * The internal clock can be configured as "wall clock" or "event clock".
+     * The wall clock computes time from the system clock while the
+     * "event clock" uses the most recently seen event time stamp. TODO:
+     * implement event clock functionality.
+     */
+    public enum ClockType {
+        WALL_CLOCK, EVENT_CLOCK
+    };
+
+    /** The no args constructor sets the clock type to "Wall Clock". */
+    protected App() {
+        this.clockType = ClockType.WALL_CLOCK;
+    }
+
+    /** Explicitly sets the clock type. */
+    protected App(ClockType clockType) {
+        this.clockType = clockType;
+
+        if (clockType == ClockType.EVENT_CLOCK) {
+            logger.error("Event clock not implemented yet.");
+            System.exit(1);
+        }
+    }
 
     /**
      * @return the pePrototypes
@@ -76,5 +108,31 @@ public abstract class App {
 
     public List<Stream<? extends Event>> getStreams() {
         return streams;
+    }
+
+    /**
+     * The internal clock is configured as "wall clock" or "event clock" when this object is created.
+     * 
+     * @return the App time in milliseconds.
+     */
+    public long getTime() {
+        return System.currentTimeMillis();
+    }
+
+    /**
+     * The internal clock is configured as "wall clock" or "event clock" when this object is created.
+     * 
+     * @param timeUnit
+     * @return the App time in timeUnit
+     */
+    public long getTime(TimeUnit timeUnit) {
+        return timeUnit.convert(getTime(), TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * @return the clock type.
+     */
+    public ClockType getClockType() {
+        return clockType;
     }
 }

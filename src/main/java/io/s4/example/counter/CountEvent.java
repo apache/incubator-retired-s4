@@ -27,6 +27,13 @@ public class CountEvent extends Event {
         this.count = count;
     }
 
+    CountEvent(String key, long count, long time) {
+        super(time);
+        this.key = key;
+        this.count = count;
+    }
+
+   
     /**
      * @return the key
      */

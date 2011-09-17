@@ -17,5 +17,25 @@ package io.s4.core;
 
 public abstract class Event {
 
-    // the base class can implement getJSON and other common methods.
+    final private long time;
+
+    /** Default constructor sets time using system time. */
+    protected Event() {
+        this.time = System.currentTimeMillis();
+    }
+
+    /**
+     * This constructor explicitly sets the time. Event that need to explicitly
+     * set the time must call {super(time)}
+     */
+    protected Event(long time) {
+        this.time = time;
+    }
+
+    /**
+     * @return the time
+     */
+    public long getTime() {
+        return time;
+    }
 }
