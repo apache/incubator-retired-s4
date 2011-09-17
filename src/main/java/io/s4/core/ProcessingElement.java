@@ -442,7 +442,18 @@ public abstract class ProcessingElement implements Cloneable {
 
                 if (!isOutputOnEvent) {
                     /* Call output method asynchronously using a fake event. */
-                    peInstance.handleInputEvent(new TimerEvent());
+
+                    Object object;
+                    if (isThreadSafe) {
+                        object = new Object(); // a dummy object TODO improve
+                                               // this.
+                    } else {
+                        object = this;
+                    }
+
+                    synchronized (object) {
+                        peInstance.processOutputEvent(new TimerEvent());
+                    }
                 }
             }
         }

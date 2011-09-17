@@ -1,17 +1,19 @@
 package io.s4.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
-import net.jcip.annotations.ThreadSafe;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
 
+import junit.framework.Assert;
 import junit.framework.TestCase;
 
 public class TestOutputPolicies extends TestCase {
@@ -20,6 +22,14 @@ public class TestOutputPolicies extends TestCase {
             .getLogger(TestOutputPolicies.class);
 
     static int[] values = { 111, 222, 333, 444, 555 };
+    static Map<String, Long> results = new HashMap<String, Long>();
+    static {
+        results.put("111", 37l);
+        results.put("222", 39l);
+        results.put("333", 36l);
+        results.put("444", 47l);
+        results.put("555", 41l);
+    }
 
     public void testTimeInterval() {
 
@@ -36,6 +46,7 @@ public class TestOutputPolicies extends TestCase {
     public class MyApp extends App {
 
         private GenerateTestEventPE generateTestEventPE;
+        private CounterPE counterPE;
 
         /*
          * Build the application graph using POJOs. Don't like it? Write a nice
@@ -47,9 +58,9 @@ public class TestOutputPolicies extends TestCase {
         @Override
         protected void init() {
 
-            ProcessingElement counterPE = new CounterPE(this);
+            counterPE = new CounterPE(this);
 
-            //counterPE.setOutputIntervalInEvents(1);
+            // counterPE.setOutputIntervalInEvents(1);
             counterPE.setOutputInterval(20, TimeUnit.MILLISECONDS, false);
 
             Stream<TestEvent> testStream = new Stream<TestEvent>(this,
@@ -62,7 +73,7 @@ public class TestOutputPolicies extends TestCase {
         @Override
         protected void start() {
 
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 200; i++) {
                 generateTestEventPE.processOutputEvent(null);
                 try {
                     Thread.sleep(10);
@@ -75,11 +86,21 @@ public class TestOutputPolicies extends TestCase {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
 
-            System.out.println("Done. Closing...");
+            logger.info("Check results.");
+            Collection<ProcessingElement> pes = counterPE.getInstances();
+
+            for (ProcessingElement pe : pes) {
+                counterPE = (CounterPE) pe;
+                logger.info("Final count for {} is {}.", pe.id,
+                        counterPE.getCount());
+                Assert.assertEquals(results.get(pe.id).longValue(),
+                        counterPE.getCount());
+            }
+
+            logger.info("Start to close resources...");
             removeAll();
 
         }
@@ -94,7 +115,7 @@ public class TestOutputPolicies extends TestCase {
     public class GenerateTestEventPE extends SingletonPE {
 
         final private Stream<TestEvent>[] targetStreams;
-        final private Random generator = new Random();
+        final private Random generator = new Random(100);
         private int count = 0;
 
         public GenerateTestEventPE(App app, Stream<TestEvent>... targetStreams) {
@@ -156,6 +177,10 @@ public class TestOutputPolicies extends TestCase {
         @Override
         protected void onRemove() {
 
+        }
+
+        public long getCount() {
+            return counter;
         }
     }
 
