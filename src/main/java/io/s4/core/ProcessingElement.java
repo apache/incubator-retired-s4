@@ -32,6 +32,13 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Leo Neumeyer
  * 
+ *         Base class for implementing processing in S4. All instances are
+ *         organized as follows. A PE prototype is a special type of instance
+ *         that defines the topology of the graph and manages the creation and
+ *         destruction of the actual instances that do the processing. PE
+ *         instances are clones of the prototype. To initialize PE instance
+ *         variables implement the {@link #onCreate()} method. Be aware that
+ *         Class variables are simply copied to the clones, even references.
  */
 public abstract class ProcessingElement implements Cloneable {
 
@@ -47,19 +54,11 @@ public abstract class ProcessingElement implements Cloneable {
     private int eventCount = 0;
     private Timer timer;
     private boolean isTimedOutput = false;
+    private boolean isOutputOnEvent = true;
     private boolean isPrototype = true;
     private boolean isThreadSafe = false;
     private boolean isFirst = true;
 
-    /*
-     * Base class for implementing processing in S4. All instances are organized
-     * as follows. A PE prototype is a special type of instance that defines the
-     * topology of the graph and manages the creation and destruction of the
-     * actual instances that do the processing. PE instances are clones of the
-     * prototype. PE instance variables should be initialized in the
-     * initPEInstance() method. Be aware that Class variables are simply copied
-     * to the clones, even references.
-     */
     public ProcessingElement(App app) {
 
         this.app = app;
@@ -86,26 +85,39 @@ public abstract class ProcessingElement implements Cloneable {
 
     /**
      * @return the outputIntervalInEvents - the number of input events after
-     *         which we call {#processOutputEvent()}. Set to zero to stop
-     *         calling the output method.
+     *         which we call {@link #processOutputEvent(Event)}.
      */
     public int getOutputIntervalInEvents() {
         return outputIntervalInEvents;
     }
 
     /**
+     * Set an event-based policy to call {@link #processOutputEvent(Event)}. The
+     * output method will be called as follows:
+     * 
+     * <ul>
+     * <li>An input event arrived.
+     * <li>There have been <tt>N</tt> input events since the last time the
+     * output method was called.
+     * <li>The value of <tt>N</tt> is set by this method.
+     * <li>When <tt>N=0</tt> the event-based policy is disabled.
+     * <li>The event- and time-based policies are not mutually exclusive, they
+     * can overlap.
+     * </ul>
+     * 
      * @param outputIntervalInEvents
      *            - the number of input events after which we call
-     *            {#processOutputEvent()}. Set to zero to stop calling the
-     *            output method.
+     *            {@link #processOutputEvent(Event)}. Set to zero to stop
+     *            calling the output method.
      */
     public void setOutputIntervalInEvents(int outputIntervalInEvents) {
         this.outputIntervalInEvents = outputIntervalInEvents;
     }
 
     /**
-     * The method {#processOutputEvent()} is called when an input event arrives
-     * and the time since the last input event is greater than this interval.
+     * The method {@link #processOutputEvent(Event)} is called when an input
+     * event arrives and the time since the last input event is greater than
+     * this interval.
      * 
      * @param timeUnit
      * @return interval in timeUnit
@@ -116,14 +128,33 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     /**
-     * The method {#processOutputEvent()} is called when an input event arrives
-     * and the time since the last input event is greater than this interval.
+     * Set a time-based policy to call {@link #processOutputEvent(Event)}. The
+     * time based policy and the event-based policy are not mutually exclusive.
+     * There are two modes:
      * 
-     * @param timeUnit
+     * <ol>
+     * <li>When {@code onEvent==true} method {@link #processOutputEvent(Event)}
+     * is only when an input event arrives *and* the time since the last input
+     * event is greater than this interval.
+     * 
+     * <li>When {@code onEvent==false} method {@link #processOutputEvent(Event)}
+     * is called periodically whether or not an input event has arrived. Because
+     * the method will be called forever for every PE in the prototype you
+     * should use this setting it with caution.
+     * </ol>
+     * 
+     * If {@code interval==0} the time-based policy is disabled.
+     * 
      * @param interval
      *            in timeUnit
+     * @param timeUnit
+     *            the timeUnit of interval
+     * @param onEvent
+     *            selects event-time policy mode.
+     * 
      */
-    public void setOutputInterval(long interval, TimeUnit timeUnit) {
+    public void setOutputInterval(long interval, TimeUnit timeUnit,
+            boolean onEvent) {
         outputIntervalinMilliseconds = TimeUnit.MILLISECONDS.convert(interval,
                 timeUnit);
 
@@ -134,6 +165,12 @@ public abstract class ProcessingElement implements Cloneable {
         if (timer != null)
             timer.cancel();
 
+        if (interval == 0) {
+            isTimedOutput = false;
+            return;
+        }
+
+        isOutputOnEvent = onEvent;
         timer = new Timer();
         timer.schedule(new PETask(), 0, outputIntervalinMilliseconds);
     }
@@ -175,18 +212,18 @@ public abstract class ProcessingElement implements Cloneable {
 
     private boolean isOutput() {
 
-        /*
-         * Output event at regular intervals based on the number of input
-         * events.
-         */
-        if (outputIntervalInEvents > 0
-                && (eventCount % outputIntervalInEvents == 0)) {
+        /* Handle time-based policies. */
+        if (isTimedOutput) {
+            isTimedOutput = false;
             return true;
         }
 
-        /* Output event based on time since the last input event. */
-        if (isTimedOutput) {
-            isTimedOutput = false;
+        /*
+         * Handle event-based policy. Output event at regular intervals based on
+         * the number of input events.
+         */
+        if (outputIntervalInEvents > 0
+                && (eventCount % outputIntervalInEvents == 0)) {
             return true;
         }
 
@@ -213,9 +250,6 @@ public abstract class ProcessingElement implements Cloneable {
 
     private void removeInstanceForKeyInternal(String id) {
 
-        if (timer != null)
-            timer.cancel();
-
         if (id == null)
             return;
 
@@ -227,6 +261,12 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     protected void removeAll() {
+
+        /* Close resources in prototype. */
+        if (timer != null) {
+            timer.cancel();
+            logger.info("Timer stopped.");
+        }
 
         /* Remove all the instances. */
         for (Map.Entry<String, ProcessingElement> entry : peInstances
@@ -326,9 +366,9 @@ public abstract class ProcessingElement implements Cloneable {
                 + "transparently for remote objects once it is implemented.");
 
         /*
-         * For now we just return a copy as a placeholder. We need to
-         * implement a custom map capable of working on an S4 cluster as
-         * efficiently as possible.
+         * For now we just return a copy as a placeholder. We need to implement
+         * a custom map capable of working on an S4 cluster as efficiently as
+         * possible.
          */
         return new HashMap<String, ProcessingElement>(peInstances);
     }
@@ -385,12 +425,10 @@ public abstract class ProcessingElement implements Cloneable {
         }
     }
 
-    // TODO: Change equals and hashCode in ProcessingElement and
-    // Stream so we can use sets as collection and make sure there are no
-    // duplicate prototypes.
-    // Great article: http://www.artima.com/lejava/articles/equality.html
+    private class PETask extends TimerTask {
 
-    public class PETask extends TimerTask {
+        protected class TimerEvent extends Event {
+        }
 
         @Override
         public void run() {
@@ -399,7 +437,13 @@ public abstract class ProcessingElement implements Cloneable {
                     .entrySet()) {
 
                 ProcessingElement peInstance = entry.getValue();
+
                 peInstance.isTimedOutput = true;
+
+                if (!isOutputOnEvent) {
+                    /* Call output method asynchronously using a fake event. */
+                    peInstance.handleInputEvent(new TimerEvent());
+                }
             }
         }
     }
