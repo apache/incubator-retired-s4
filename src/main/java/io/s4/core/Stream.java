@@ -15,7 +15,7 @@
  */
 package io.s4.core;
 
-import io.s4.comm.ReceiverListenerNonParam;
+import io.s4.comm.ReceiverListener;
 import io.s4.comm.Receiver;
 import io.s4.comm.Sender;
 
@@ -26,7 +26,7 @@ import java.util.concurrent.BlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Stream<T extends Event> implements Runnable, ReceiverListenerNonParam {
+public class Stream<T extends Event> implements Runnable, ReceiverListener {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
 

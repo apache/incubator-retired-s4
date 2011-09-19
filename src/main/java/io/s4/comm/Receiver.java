@@ -9,7 +9,7 @@ import io.s4.serialize.SerializerDeserializer;
 public class Receiver implements Runnable {
     private Listener listener;
     private SerializerDeserializer serDeser;
-    private Set<ReceiverListenerNonParam> listeners = new HashSet<ReceiverListenerNonParam>();
+    private Set<ReceiverListener> listeners = new HashSet<ReceiverListener>();
     
     public Receiver(Listener listener, SerializerDeserializer serDeser) {
         this.listener = listener;
@@ -17,11 +17,11 @@ public class Receiver implements Runnable {
         new Thread(this).start();
     }
     
-    public void addListener(ReceiverListenerNonParam listener) {
+    public void addListener(ReceiverListener listener) {
         listeners.add(listener);
     }
     
-    public void removeListener(ReceiverListenerNonParam listener) {
+    public void removeListener(ReceiverListener listener) {
         listeners.remove(listener);
     }
     
@@ -32,7 +32,7 @@ public class Receiver implements Runnable {
             Object event = serDeser.deserialize(message);
             //System.out.println("ReceiverNonParam: Receiving event " + event);
             
-            for (ReceiverListenerNonParam listener : listeners) {
+            for (ReceiverListener listener : listeners) {
                 //System.out.println("ReceiverNonParam: Calling receiver listener " + listener);
                 listener.receiveEvent((Event)event);
             }
