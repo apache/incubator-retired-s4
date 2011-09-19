@@ -304,7 +304,6 @@ public abstract class ProcessingElement implements Cloneable {
      * @return pe instance for key. Null if if doesn't exist.
      */
     public ProcessingElement getRemoteInstancesForKey() {
-
         logger.warn("The getRemoteInstancesForKey() method is not implemented. Use "
                 + "it to test your app in single node configuration only. Should work "
                 + "transparently for remote objects once it is implemented.");

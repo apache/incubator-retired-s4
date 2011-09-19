@@ -41,7 +41,8 @@ mainClassName = "io.s4.example.model.Main"
  flexjson:           'net.sf.flexjson:flexjson:2.1',
  bcel:               'org.apache.bcel:bcel:5.2',
  jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
- kryo:               'com.esotericsoftware:kryo:1.01',
+ kryo:               'com.googlecode:kryo:1.04',
+ netty:              'org.jboss.netty:netty:3.2.5.Final',
  reflectasm:         'com.esotericsoftware:reflectasm:0.8',
  minlog:             'com.esotericsoftware:minlog:1.2',
  asm:                'asm:asm:3.2',
@@ -75,7 +76,9 @@ repositories {
 /* Dependencies. */
 dependencies {
 	compile( libraries.guice )
-    compile( libraries.json)
+        compile( libraries.json)
+	compile( libraries.kryo)
+	compile( libraries.netty)
 	compile( libraries.gson)
 	compile( libraries.slf4j )
 	compile( libraries.logback_core )
