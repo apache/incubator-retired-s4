@@ -50,7 +50,7 @@ public abstract class ProcessingElement implements Cloneable {
     protected String id = ""; // PE instance id
     final protected ProcessingElement pePrototype;
     private int outputIntervalInEvents = 0;
-    private long outputIntervalinMilliseconds = 0;
+    private long outputIntervalInMilliseconds = 0;
     private int eventCount = 0;
     private Timer timer;
     private boolean isTimedOutput = false;
@@ -123,7 +123,7 @@ public abstract class ProcessingElement implements Cloneable {
      * @return interval in timeUnit
      */
     public long getOutputInterval(TimeUnit timeUnit) {
-        return timeUnit.convert(outputIntervalinMilliseconds,
+        return timeUnit.convert(outputIntervalInMilliseconds,
                 TimeUnit.MILLISECONDS);
     }
 
@@ -155,7 +155,7 @@ public abstract class ProcessingElement implements Cloneable {
      */
     public void setOutputInterval(long interval, TimeUnit timeUnit,
             boolean onEvent) {
-        outputIntervalinMilliseconds = TimeUnit.MILLISECONDS.convert(interval,
+        outputIntervalInMilliseconds = TimeUnit.MILLISECONDS.convert(interval,
                 timeUnit);
 
         /* We only allow timers in the PE prototype, not in the instances. */
@@ -172,7 +172,7 @@ public abstract class ProcessingElement implements Cloneable {
 
         isOutputOnEvent = onEvent;
         timer = new Timer();
-        timer.schedule(new PETask(), 0, outputIntervalinMilliseconds);
+        timer.schedule(new PETask(), 0, outputIntervalInMilliseconds);
     }
 
     /**

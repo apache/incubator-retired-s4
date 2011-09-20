@@ -29,6 +29,8 @@ public class TestCircularFifoBuffer extends TestCase {
             Assert.assertEquals(j + 100, num.intValue());
             j++;
         }
+        System.out.println("\nLeast recent value: " + circularBuffer.get());
+        Assert.assertEquals(105, circularBuffer.get().intValue());
         System.out.println("\n");
         
         circularBuffer.clear();
