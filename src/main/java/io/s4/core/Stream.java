@@ -32,6 +32,7 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
 
     final static private String DEFAULT_SEPARATOR = "^";
     final static private int CAPACITY = 1000;
+    private static int idCounter = 0;
     final private String name;
     final private Key<T> key;
     final private ProcessingElement[] targetPEs;
@@ -39,6 +40,7 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
     final private Thread thread;
     final private Sender sender;
     final private Receiver receiver;
+    final private int id;
 
     /*
      * Streams send event of a given type using a specific key to target
@@ -46,7 +48,10 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
      */
     public Stream(App app, String name, KeyFinder<T> finder, Sender sender,
             Receiver receiver, ProcessingElement... processingElements) {
-
+        synchronized (Stream.class) {
+            id = idCounter++;
+        }
+        
         app.addStream(this);
         this.name = name;
 
@@ -81,8 +86,14 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
 
     public void put(T event) {
         try {
-            event.setTargetStreamName(name);
-            sender.send(key.get(event), event);
+            event.setTargetStreamId(this.id);
+            if (key != null) {
+                sender.send(key.get(event), event);
+            }
+            else {
+                // no key, send to all partitions
+                sender.send(event);
+            }
             // maybe have sender return some code if the event belongs to this node
             if (event == null) { // for now, don't run the code in the following blocks
                 queue.put(event);
@@ -96,7 +107,7 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
 
     public void receiveEvent(Event event) {
         // TODO: better method for determining if a stream should use an event
-        if (!event.getTargetStreamName().equals(name)) {
+        if (event.getTargetStreamId() != this.id) {
             return;
         }
         try {

@@ -19,14 +19,14 @@ public abstract class Event {
 
     // the base class can implement getJSON and other common methods.
     
-    // TODO: temporary kludge to get around the stream lookup problem
-    private String targetStreamName;
+    private int targetStreamId;
 
-    public String getTargetStreamName() {
-        return targetStreamName;
+    public int getTargetStreamId() {
+        return targetStreamId;
     }
 
-    public void setTargetStreamName(String targetStreamName) {
-        this.targetStreamName = targetStreamName;
+    public void setTargetStreamId(int targetStreamId) {
+        this.targetStreamId = targetStreamId;
     }
+
 }

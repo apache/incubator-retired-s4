@@ -26,4 +26,12 @@ public class Sender {
         byte[] blob = serDeser.serialize(event);
         emitter.send(partition, blob);
     }
+    
+    public void send(Event event) {
+        // send to all partitions
+        byte[] blob = serDeser.serialize(event);
+        for (int i = 0; i < emitter.getPartitionCount(); i++) {
+            emitter.send(i, blob);
+        }
+    }
 }

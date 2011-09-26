@@ -28,6 +28,12 @@ import io.s4.comm.Receiver;
 import io.s4.comm.Sender;
 import io.s4.comm.loopback.LoopBackEmitter;
 import io.s4.comm.loopback.LoopBackListener;
+import io.s4.comm.netty.NettyEmitter;
+import io.s4.comm.netty.NettyListener;
+import io.s4.comm.topology.Assignment;
+import io.s4.comm.topology.AssignmentFromFile;
+import io.s4.comm.topology.Topology;
+import io.s4.comm.topology.TopologyFromFile;
 import io.s4.core.App;
 import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
@@ -80,10 +86,26 @@ public class MyApp extends App {
     @Override
     protected void init() {
         // TODO: probably the wrong place to create commlayer stuff
-        LoopBackListener lBlistener = new LoopBackListener();
-        Emitter lBemitter = new LoopBackEmitter(lBlistener);
-        QueueingEmitter emitter = new QueueingEmitter(lBemitter, 8000);
-        QueueingListener listener = new QueueingListener(lBlistener, 8000);
+        // TODO: probably the wrong place to create commlayer stuff
+        String clusterName = "s4";
+        String configFilename = "clusters.xml";
+        
+        Assignment assignment = new AssignmentFromFile(clusterName, configFilename);
+        Topology topology = new TopologyFromFile(clusterName, configFilename);
+        
+        NettyListener listener = new NettyListener(assignment);
+        NettyEmitter emitter = new NettyEmitter(topology);
+        
+        //UDPListener llListener = new UDPListener(assignment, 0);
+        //UDPEmitter llEmitter = new UDPEmitter(topology);
+        
+        //LoopBackListener llListener = new LoopBackListener();
+        //Emitter llEmitter = new LoopBackEmitter(lBlistener);
+        
+        //QueueingEmitter emitter = new QueueingEmitter(llEmitter, 8000);
+        //emitter.start();
+        //QueueingListener listener = new QueueingListener(llListener, 8000);
+        //listener.start();
         
         SerializerDeserializer serDeser = new KryoSerDeser();
         
