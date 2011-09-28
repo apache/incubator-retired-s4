@@ -23,12 +23,11 @@ import io.s4.core.Stream;
 public class CounterPE extends ProcessingElement {
 
     final private Stream<CountEvent> countStream;
-    private int interval;
 
     public CounterPE(App app, int interval, Stream<CountEvent> countStream) {
         super(app);
         this.countStream = countStream;
-        this.interval = interval;
+        setOutputIntervalInEvents(interval);
     }
 
     private long counter = 0;
@@ -42,12 +41,6 @@ public class CounterPE extends ProcessingElement {
     protected void processInputEvent(Event event) {
 
         counter += 1;
-
-        if (counter % interval == 0) {
-            CountEvent countEvent = new CountEvent(countStream.getName() + ": "
-                    + getId(), counter);
-            countStream.put(countEvent);
-        }
     }
 
     /*
@@ -58,6 +51,9 @@ public class CounterPE extends ProcessingElement {
     @Override
     public void processOutputEvent(Event event) {
 
+        CountEvent countEvent = new CountEvent(countStream.getName() + ": "
+                + getId(), counter);
+        countStream.put(countEvent);
     }
 
     /*
