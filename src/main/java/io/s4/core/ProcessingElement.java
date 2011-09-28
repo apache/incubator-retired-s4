@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -28,6 +27,8 @@ import net.jcip.annotations.ThreadSafe;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.MapMaker;
 
 /**
  * @author Leo Neumeyer
@@ -46,7 +47,7 @@ public abstract class ProcessingElement implements Cloneable {
             .getLogger(ProcessingElement.class);
 
     final protected App app;
-    final protected ConcurrentMap<String, ProcessingElement> peInstances = new ConcurrentHashMap<String, ProcessingElement>();
+    protected ConcurrentMap<String, ProcessingElement> peInstances;
     protected String id = ""; // PE instance id
     final protected ProcessingElement pePrototype;
     private int outputIntervalInEvents = 0;
@@ -59,16 +60,46 @@ public abstract class ProcessingElement implements Cloneable {
     private boolean isThreadSafe = false;
     private boolean isFirst = true;
 
-    public ProcessingElement(App app) {
+    /**
+     * Create a PE prototype using expiration. PE instances will be
+     * automatically removed once a fixed duration has passed since the PE's
+     * last read or write access.
+     * 
+     * 
+     * @param app
+     *            the app that contains this PE
+     * @param duration
+     *            the fixed duration
+     * @param timeUnit
+     *            the time unit
+     */
+    public ProcessingElement(App app, long duration, TimeUnit timeUnit) {
 
         this.app = app;
         app.addPEPrototype(this);
+
+        if (duration == -1)
+            peInstances = new MapMaker().makeMap();
+        else
+            peInstances = new MapMaker().expireAfterAccess(duration, timeUnit)
+                    .makeMap();
 
         /*
          * Only the PE Prototype uses the constructor. The PEPrototype field
          * will be cloned by the instances and point to the prototype.
          */
         this.pePrototype = this;
+    }
+
+    /**
+     * Create a PE prototype. The PE instance will never expire.
+     * 
+     * @param app
+     *            the app that contains this PE
+     */
+    public ProcessingElement(App app) {
+
+        this(app, -1l, TimeUnit.SECONDS);
     }
 
     /**
@@ -81,6 +112,27 @@ public abstract class ProcessingElement implements Cloneable {
     public int getNumPEInstances() {
 
         return peInstances.size();
+    }
+
+    /**
+     * Set expiration. PE instances will be automatically removed once a fixed
+     * duration has passed since the PE's last read or write access.
+     * 
+     * All existing PE instance will destroyed!
+     * 
+     * 
+     * @param duration
+     *            the fixed duration
+     * @param timeUnit
+     *            the time unit
+     */
+    public void setExpiration(long duration, TimeUnit timeUnit) {
+
+        if (!isPrototype)
+            return;
+        
+        peInstances = new MapMaker().expireAfterAccess(duration, timeUnit)
+                .makeMap();
     }
 
     /**
