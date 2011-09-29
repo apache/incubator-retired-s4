@@ -21,10 +21,25 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.s4.comm.Emitter;
+import io.s4.comm.QueueingEmitter;
+import io.s4.comm.QueueingListener;
+import io.s4.comm.Receiver;
+import io.s4.comm.Sender;
+import io.s4.comm.loopback.LoopBackEmitter;
+import io.s4.comm.loopback.LoopBackListener;
+import io.s4.comm.netty.NettyEmitter;
+import io.s4.comm.netty.NettyListener;
+import io.s4.comm.topology.Assignment;
+import io.s4.comm.topology.AssignmentFromFile;
+import io.s4.comm.topology.Topology;
+import io.s4.comm.topology.TopologyFromFile;
 import io.s4.core.App;
 import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
 import io.s4.model.Model;
+import io.s4.serialize.KryoSerDeser;
+import io.s4.serialize.SerializerDeserializer;
 
 public class MyApp extends App {
 
@@ -58,7 +73,7 @@ public class MyApp extends App {
     }
 
     public void injectByKey(ObsEvent obsEvent) {
-
+        System.out.println("Hey!!");
         logger.trace("Inject: " + obsEvent.toString());
         assignmentStream.put(obsEvent);
     }
@@ -70,22 +85,48 @@ public class MyApp extends App {
 
     @Override
     protected void init() {
+        // TODO: probably the wrong place to create commlayer stuff
+        // TODO: probably the wrong place to create commlayer stuff
+        String clusterName = "s4";
+        String configFilename = "clusters.xml";
+        
+        Assignment assignment = new AssignmentFromFile(clusterName, configFilename);
+        Topology topology = new TopologyFromFile(clusterName, configFilename);
+        
+        NettyListener listener = new NettyListener(assignment);
+        NettyEmitter emitter = new NettyEmitter(topology);
+        
+        //UDPListener llListener = new UDPListener(assignment, 0);
+        //UDPEmitter llEmitter = new UDPEmitter(topology);
+        
+        //LoopBackListener llListener = new LoopBackListener();
+        //Emitter llEmitter = new LoopBackEmitter(lBlistener);
+        
+        //QueueingEmitter emitter = new QueueingEmitter(llEmitter, 8000);
+        //emitter.start();
+        //QueueingListener listener = new QueueingListener(llListener, 8000);
+        //listener.start();
+        
+        SerializerDeserializer serDeser = new KryoSerDeser();
+        
+        Sender sender = new Sender(emitter, serDeser);
+        Receiver receiver = new Receiver(listener, serDeser);
 
         metricsPE = new MetricsPE(this);
 
         Stream<ResultEvent> resultStream = new Stream<ResultEvent>(this,
-                "Result Stream", new ResultKeyFinder(), metricsPE);
+                "Result Stream", new ResultKeyFinder(), sender, receiver, metricsPE);
 
         modelPE = new ModelPE(this, model, numVectors);
 
         assignmentStream = new Stream<ObsEvent>(this, "Assignment Stream",
-                new ClassIDKeyFinder(), modelPE);
+                new ClassIDKeyFinder(), sender, receiver, modelPE);
 
         MaximizerPE minimizerPE = new MaximizerPE(this, numClasses,
                 assignmentStream);
 
         Stream<ObsEvent> distanceStream = new Stream<ObsEvent>(this,
-                "Distance Stream", new ObsIndexKeyFinder(), minimizerPE);
+                "Distance Stream", new ObsIndexKeyFinder(), sender, receiver, minimizerPE);
 
         /*
          * There is a loop in this graph so we need to set the stream at the
@@ -97,7 +138,7 @@ public class MyApp extends App {
                                                                // seconds
         // obsStream = new Stream<ObsEvent>(this, "Observation Stream", new
         // ClassIDKeyFinder(), modelPE);
-        obsStream = new Stream<ObsEvent>(this, "Observation Stream", modelPE);
+        obsStream = new Stream<ObsEvent>(this, "Observation Stream", sender, receiver, modelPE);
     }
 
     /** @return true if modelPE is initialized. */

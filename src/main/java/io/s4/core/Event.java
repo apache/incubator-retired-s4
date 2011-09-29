@@ -18,6 +18,7 @@ package io.s4.core;
 public abstract class Event {
 
     final private long time;
+    private int targetStreamId;
 
     /** Default constructor sets time using system time. */
     protected Event() {
@@ -33,9 +34,29 @@ public abstract class Event {
     }
 
     /**
-     * @return the time
+     * @return the create time
      */
     public long getTime() {
         return time;
+    }
+
+    /**
+     * The target stream id is used to identify streams uniquely in a cluster
+     * configuration. It is not required to operate in local mode.
+     * 
+     * @return the target stream id
+     */
+    public int getTargetStreamId() {
+        return targetStreamId;
+    }
+
+    /**
+     * The target stream id is used to identify streams uniquely in a cluster
+     * configuration. It is not required to operate in local mode.
+     * 
+     * @param targetStreamId
+     */
+    public void setTargetStreamId(int targetStreamId) {
+        this.targetStreamId = targetStreamId;
     }
 }

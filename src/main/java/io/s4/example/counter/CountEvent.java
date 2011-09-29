@@ -19,8 +19,12 @@ import io.s4.core.Event;
 
 public class CountEvent extends Event {
 
-    final private String key;
-    final private long count;
+    private String key;
+    private long count;
+    
+    public CountEvent() {
+        
+    }
 
     CountEvent(String key, long count) {
         this.key = key;
@@ -49,6 +53,6 @@ public class CountEvent extends Event {
     }
 
     public String toString() {
-        return "Key: " + key + ", Count: " + count;
+        return String.format("Key: " + key + ", Count: %08d", count);
     }
 }

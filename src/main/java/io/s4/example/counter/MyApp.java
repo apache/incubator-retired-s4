@@ -15,14 +15,32 @@
  */
 package io.s4.example.counter;
 
+import io.s4.comm.loopback.LoopBackEmitter;
+import io.s4.comm.loopback.LoopBackListener;
+import io.s4.comm.netty.NettyEmitter;
+import io.s4.comm.netty.NettyListener;
+import io.s4.comm.topology.Assignment;
+import io.s4.comm.topology.AssignmentFromFile;
+import io.s4.comm.topology.Topology;
+import io.s4.comm.topology.TopologyFromFile;
+
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Named;
 
+import io.s4.comm.Emitter;
+import io.s4.comm.QueueingEmitter;
+import io.s4.comm.QueueingListener;
+import io.s4.comm.Receiver;
+import io.s4.comm.Sender;
+import io.s4.comm.udp.UDPEmitter;
+import io.s4.comm.udp.UDPListener;
 import io.s4.core.App;
 import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
+import io.s4.serialize.KryoSerDeser;
+import io.s4.serialize.SerializerDeserializer;
 
 /*
  * This is an sample application to test a new A4 API. 
@@ -34,6 +52,8 @@ final public class MyApp extends App {
 
     final private int interval;
     private ProcessingElement generateUserEventPE;
+    final private Sender sender;
+    final private Receiver receiver;
 
     /*
      * We use Guice to pass parameters to the application. This is just a
@@ -52,8 +72,10 @@ final public class MyApp extends App {
      * instance you must do in the method ProcessingElement.initPEInstance().
      */
     @Inject
-    public MyApp(@Named("pe.counter.interval") int interval) {
+    public MyApp(@Named("pe.counter.interval") int interval, Sender sender, Receiver receiver) {
         this.interval = interval;
+        this.sender = sender;
+        this.receiver = receiver;
     }
 
     /*
@@ -65,17 +87,42 @@ final public class MyApp extends App {
     @SuppressWarnings("unchecked")
     @Override
     protected void init() {
+        // TODO: probably the wrong place to create commlayer stuff
+//        String clusterName = "s4";
+//        String configFilename = "clusters.xml";
+//        
+//        Assignment assignment = new AssignmentFromFile(clusterName, configFilename);
+//        Topology topology = new TopologyFromFile(clusterName, configFilename);
+//        
+//        NettyListener llListener = new NettyListener(assignment);
+//        NettyEmitter llEmitter = new NettyEmitter(topology);
+        
+        //UDPListener llListener = new UDPListener(assignment, 0);
+        //UDPEmitter llEmitter = new UDPEmitter(topology);
+        
+        //LoopBackListener llListener = new LoopBackListener();
+        //Emitter llEmitter = new LoopBackEmitter(lBlistener);
+        
+//        QueueingEmitter emitter = new QueueingEmitter(llEmitter, 8000);
+//        emitter.start();
+//        QueueingListener listener = new QueueingListener(llListener, 8000);
+//        listener.start();
+//        
+//        SerializerDeserializer serDeser = new KryoSerDeser();
+//        
+//        Sender sender = new Sender(emitter, serDeser);
+//        Receiver receiver = new Receiver(listener, serDeser);
 
         /* PE that prints counts to console. */
         ProcessingElement printPE = new PrintPE(this);
 
         /* Streams that output count events by user, gender, and age. */
         Stream<CountEvent> userCountStream = new Stream<CountEvent>(this,
-                "User Count Stream", new CountKeyFinder(), printPE);
+                "User Count Stream", new CountKeyFinder(), sender, receiver, printPE);
         Stream<CountEvent> genderCountStream = new Stream<CountEvent>(this,
-                "Gender Count Stream", new CountKeyFinder(), printPE);
+                "Gender Count Stream", new CountKeyFinder(), sender, receiver, printPE);
         Stream<CountEvent> ageCountStream = new Stream<CountEvent>(this,
-                "Age Count Stream", new CountKeyFinder(), printPE);
+                "Age Count Stream", new CountKeyFinder(), sender, receiver, printPE);
 
         /* PEs that count events by user, gender, and age. */
         ProcessingElement userCountPE = new CounterPE(this, interval,
@@ -87,11 +134,11 @@ final public class MyApp extends App {
 
         /* Streams that output user events keyed on user, gender, and age. */
         Stream<UserEvent> userStream = new Stream<UserEvent>(this,
-                "User Stream", new UserIDKeyFinder(), userCountPE);
+                "User Stream", new UserIDKeyFinder(), sender, receiver, userCountPE);
         Stream<UserEvent> genderStream = new Stream<UserEvent>(this,
-                "Gender Stream", new GenderKeyFinder(), genderCountPE);
+                "Gender Stream", new GenderKeyFinder(), sender, receiver, genderCountPE);
         Stream<UserEvent> ageStream = new Stream<UserEvent>(this, "Age Stream",
-                new AgeKeyFinder(), ageCountPE);
+                new AgeKeyFinder(), sender, receiver, ageCountPE);
 
         generateUserEventPE = new GenerateUserEventPE(this, userStream,
                 genderStream, ageStream);
@@ -110,7 +157,7 @@ final public class MyApp extends App {
         }
 
         try {
-            Thread.sleep(1000);
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

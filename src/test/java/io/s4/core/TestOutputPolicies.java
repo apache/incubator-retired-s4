@@ -1,5 +1,10 @@
 package io.s4.core;
 
+import io.s4.comm.Receiver;
+import io.s4.comm.Sender;
+import io.s4.example.counter.Module;
+import io.s4.example.counter.MyApp;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -10,6 +15,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.name.Named;
 
 import ch.qos.logback.classic.Level;
 
@@ -37,7 +47,8 @@ public class TestOutputPolicies extends TestCase {
                 .getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.TRACE);
 
-        MyApp myApp = new MyApp();
+        Injector injector = Guice.createInjector(new Module());
+        MyApp myApp = injector.getInstance(MyApp.class);
         myApp.init();
         myApp.start();
 
@@ -47,7 +58,15 @@ public class TestOutputPolicies extends TestCase {
 
         private GenerateTestEventPE generateTestEventPE;
         private CounterPE counterPE;
-
+        final private Sender sender;
+        final private Receiver receiver;
+        
+        @Inject
+        public MyApp(Sender sender, Receiver receiver) {
+            this.sender = sender;
+            this.receiver = receiver;
+        }
+        
         /*
          * Build the application graph using POJOs. Don't like it? Write a nice
          * tool.
@@ -64,7 +83,7 @@ public class TestOutputPolicies extends TestCase {
             counterPE.setOutputInterval(20, TimeUnit.MILLISECONDS, false);
 
             Stream<TestEvent> testStream = new Stream<TestEvent>(this,
-                    "Test Stream", new TestKeyFinder(), counterPE);
+                    "Test Stream", new TestKeyFinder(), sender, receiver, counterPE);
 
             generateTestEventPE = new GenerateTestEventPE(this, testStream);
 

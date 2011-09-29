@@ -15,6 +15,19 @@
  */
 package io.s4.example.counter;
 
+import io.s4.comm.Emitter;
+import io.s4.comm.Listener;
+import io.s4.comm.QueueingEmitter;
+import io.s4.comm.QueueingListener;
+import io.s4.comm.netty.NettyEmitter;
+import io.s4.comm.netty.NettyListener;
+import io.s4.comm.topology.Assignment;
+import io.s4.comm.topology.AssignmentFromFile;
+import io.s4.comm.topology.Topology;
+import io.s4.comm.topology.TopologyFromFile;
+import io.s4.serialize.KryoSerDeser;
+import io.s4.serialize.SerializerDeserializer;
+
 import java.io.InputStream;
 
 import org.apache.commons.configuration.ConfigurationConverter;
@@ -64,6 +77,22 @@ public class Module extends AbstractModule {
             loadProperties(binder());
 
         bind(MyApp.class);
+        
+        /* Configure static assignment using a configuration file. */
+        bind(Assignment.class).to(AssignmentFromFile.class);
+        
+        /* Configure a static cluster topology using a configuration file. */
+        bind(Topology.class).to(TopologyFromFile.class);
+        
+        bind(Emitter.class).annotatedWith(Names.named("ll")).to(NettyEmitter.class);
+        bind(Listener.class).annotatedWith(Names.named("ll")).to(NettyListener.class);
+        
+        bind(Emitter.class).to(QueueingEmitter.class);
+        bind(Listener.class).to(QueueingListener.class);
+        
+        /* Use Kryo to serialize events. */
+        bind(SerializerDeserializer.class).to(KryoSerDeser.class);
+
         bind(Integer.class).annotatedWith(Names.named("pe.counter.interval"))
                 .toInstance(config.getInt("pe.counter.interval"));
     }

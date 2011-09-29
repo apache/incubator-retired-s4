@@ -20,9 +20,13 @@ import io.s4.core.Event;
 
 final public class ResultEvent extends Event {
 
-    final private long index;
-    final private int classId;
-    final private int hypId;
+    private long index;
+    private int classId;
+    private int hypId;
+    
+    public ResultEvent() {
+        
+    }
     
     public ResultEvent(long index, int classId,
             int hypId) {

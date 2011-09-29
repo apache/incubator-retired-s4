@@ -22,12 +22,16 @@ import io.s4.core.Event;
 @Immutable
 final public class ObsEvent extends Event {
 
-    final private float[] obsVector;
-    final private float prob;
-    final private long index;
-    final private int classId;
-    final private int hypId;
-    final private boolean isTraining;
+    private float[] obsVector;
+    private float prob;
+    private long index;
+    private int classId;
+    private int hypId;
+    private boolean isTraining;
+    
+    public ObsEvent() {
+        
+    }
 
     public ObsEvent(long index, float[] obsVector, float prob, int classId,
             int hypId, boolean isTraining) {

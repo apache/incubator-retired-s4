@@ -15,6 +15,10 @@
  */
 package io.s4.core;
 
+import io.s4.comm.ReceiverListener;
+import io.s4.comm.Receiver;
+import io.s4.comm.Sender;
+
 import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -22,25 +26,32 @@ import java.util.concurrent.BlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Stream<T extends Event> implements Runnable {
+public class Stream<T extends Event> implements Runnable, ReceiverListener {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
 
     final static private String DEFAULT_SEPARATOR = "^";
     final static private int CAPACITY = 1000;
+    private static int idCounter = 0;
     final private String name;
     final private Key<T> key;
     final private ProcessingElement[] targetPEs;
     final private BlockingQueue<T> queue = new ArrayBlockingQueue<T>(CAPACITY);
     final private Thread thread;
+    final private Sender sender;
+    final private Receiver receiver;
+    final private int id;
 
     /*
      * Streams send event of a given type using a specific key to target
      * processing elements.
      */
-    public Stream(App app, String name, KeyFinder<T> finder,
-            ProcessingElement... processingElements) {
-
+    public Stream(App app, String name, KeyFinder<T> finder, Sender sender,
+            Receiver receiver, ProcessingElement... processingElements) {
+        synchronized (Stream.class) {
+            id = idCounter++;
+        }
+        
         app.addStream(this);
         this.name = name;
 
@@ -49,6 +60,8 @@ public class Stream<T extends Event> implements Runnable {
         } else {
             this.key = new Key<T>(finder, DEFAULT_SEPARATOR);
         }
+        this.sender = sender;
+        this.receiver = receiver;
         this.targetPEs = processingElements;
 
         /* Start streaming. */
@@ -59,23 +72,32 @@ public class Stream<T extends Event> implements Runnable {
         // logger.trace("Start thread for stream " + name);
         thread = new Thread(this, name);
         thread.start();
+        this.receiver.addListener(this);
     }
 
     /*
      * This constructor will create a broadcast stream. That is, the events will
      * be sent to all the PE instances.
      */
-    public Stream(App app, String name, ProcessingElement... processingElements) {
-        this(app, name, null, processingElements);
+    public Stream(App app, String name, Sender sender, Receiver receiver,
+            ProcessingElement... processingElements) {
+        this(app, name, null, sender, receiver, processingElements);
     }
 
     public void put(T event) {
         try {
-//            if(queue.remainingCapacity() < 150 ) {
-//                logger.debug("Remaining capacity: " + queue.remainingCapacity());
-//                Thread.sleep(50);
-//            }
-            queue.put(event);
+            event.setTargetStreamId(this.id);
+            if (key != null) {
+                sender.send(key.get(event), event);
+            }
+            else {
+                // no key, send to all partitions
+                sender.send(event);
+            }
+            // maybe have sender return some code if the event belongs to this node
+            if (event == null) { // for now, don't run the code in the following blocks
+                queue.put(event);
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
             logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
@@ -83,6 +105,20 @@ public class Stream<T extends Event> implements Runnable {
         }
     }
 
+    public void receiveEvent(Event event) {
+        // TODO: better method for determining if a stream should use an event
+        if (event.getTargetStreamId() != this.id) {
+            return;
+        }
+        try {
+            queue.put((T)event);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
+            System.exit(-1);
+        }
+    }
+    
     /**
      * @return the name
      */
@@ -148,6 +184,7 @@ public class Stream<T extends Event> implements Runnable {
 
             } catch (InterruptedException e) {
                 logger.info("Closing stream {}.", name);
+                receiver.removeListener(this);
                 return;
             }
         }

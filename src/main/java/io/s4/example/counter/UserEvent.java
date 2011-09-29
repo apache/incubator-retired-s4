@@ -21,10 +21,14 @@ import java.util.List;
 
 public class UserEvent extends Event {
 
-    final private String userID;
-    final private int age;
-    final private char gender;
-    final private List<String> favorites;
+    private String userID;
+    private int age;
+    private char gender;
+    private List<String> favorites;
+    
+    public UserEvent() {
+        
+    }
 
     UserEvent(String userID, int age, List<String> favorites, char gender) {
         this.userID = userID;

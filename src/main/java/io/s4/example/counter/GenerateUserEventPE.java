@@ -30,7 +30,7 @@ public class GenerateUserEventPE extends SingletonPE {
     static int[] ages = { 25, 2, 33, 6, 67 };
     static char[] genders = { 'f', 'm' };
     final private Stream<UserEvent>[] targetStreams;
-    final private Random generator = new Random();
+    final private Random generator = new Random(22);
 
     public GenerateUserEventPE(App app, Stream<UserEvent>... targetStreams) {
         super(app);
