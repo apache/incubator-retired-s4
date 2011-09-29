@@ -1,9 +1,12 @@
-package io.s4.core;
+package io.s4.core.test002;
 
-import io.s4.comm.Receiver;
-import io.s4.comm.Sender;
-import io.s4.example.counter.Module;
-import io.s4.example.counter.MyApp;
+import io.s4.core.App;
+import io.s4.core.Event;
+import io.s4.core.KeyFinder;
+import io.s4.core.ProcessingElement;
+import io.s4.core.SingletonPE;
+import io.s4.core.Stream;
+import io.s4.core.StreamFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,23 +16,15 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import junit.framework.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.name.Named;
 
-import ch.qos.logback.classic.Level;
+public class MyApp extends App {
 
-import junit.framework.Assert;
-import junit.framework.TestCase;
-
-public class TestOutputPolicies extends TestCase {
-
-    private static final Logger logger = LoggerFactory
-            .getLogger(TestOutputPolicies.class);
+    private static final Logger logger = LoggerFactory.getLogger(MyApp.class);
 
     static int[] values = { 111, 222, 333, 444, 555 };
     static Map<String, Long> results = new HashMap<String, Long>();
@@ -41,94 +36,76 @@ public class TestOutputPolicies extends TestCase {
         results.put("555", 41l);
     }
 
-    public void testTimeInterval() {
+    private GenerateTestEventPE generateTestEventPE;
+    private CounterPE counterPE;
+    @Inject
+    private StreamFactory streamFactory;
 
-        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
-                .getLogger(Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.TRACE);
-
-        Injector injector = Guice.createInjector(new Module());
-        MyApp myApp = injector.getInstance(MyApp.class);
-        myApp.init();
-        myApp.start();
+    public MyApp() {
 
     }
 
-    public class MyApp extends App {
+    /*
+     * Build the application graph using POJOs. Don't like it? Write a nice
+     * tool.
+     * 
+     * @see io.s4.App#init()
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    protected void init() {
 
-        private GenerateTestEventPE generateTestEventPE;
-        private CounterPE counterPE;
-        final private Sender sender;
-        final private Receiver receiver;
-        
-        @Inject
-        public MyApp(Sender sender, Receiver receiver) {
-            this.sender = sender;
-            this.receiver = receiver;
-        }
-        
-        /*
-         * Build the application graph using POJOs. Don't like it? Write a nice
-         * tool.
-         * 
-         * @see io.s4.App#init()
-         */
-        @SuppressWarnings("unchecked")
-        @Override
-        protected void init() {
+        counterPE = new CounterPE(this);
 
-            counterPE = new CounterPE(this);
+        // counterPE.setOutputIntervalInEvents(1);
+        counterPE.setOutputInterval(20, TimeUnit.MILLISECONDS, false);
 
-            // counterPE.setOutputIntervalInEvents(1);
-            counterPE.setOutputInterval(20, TimeUnit.MILLISECONDS, false);
+        Stream<TestEvent> testStream = streamFactory.create(this,
+                "Test Stream", new TestKeyFinder(), counterPE);
 
-            Stream<TestEvent> testStream = new Stream<TestEvent>(this,
-                    "Test Stream", new TestKeyFinder(), sender, receiver, counterPE);
+        generateTestEventPE = new GenerateTestEventPE(this, testStream);
 
-            generateTestEventPE = new GenerateTestEventPE(this, testStream);
+    }
 
-        }
+    @Override
+    protected void start() {
 
-        @Override
-        protected void start() {
-
-            for (int i = 0; i < 200; i++) {
-                generateTestEventPE.processOutputEvent(null);
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage());
-                    e.printStackTrace();
-                }
-            }
-
+        for (int i = 0; i < 200; i++) {
+            generateTestEventPE.processOutputEvent(null);
             try {
-                Thread.sleep(1000);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
+                logger.error(e.getMessage());
                 e.printStackTrace();
             }
-
-            logger.info("Check results.");
-            Collection<ProcessingElement> pes = counterPE.getInstances();
-
-            for (ProcessingElement pe : pes) {
-                counterPE = (CounterPE) pe;
-                logger.info("Final count for {} is {}.", pe.id,
-                        counterPE.getCount());
-                Assert.assertEquals(results.get(pe.id).longValue(),
-                        counterPE.getCount());
-            }
-
-            logger.info("Start to close resources...");
-            removeAll();
-
         }
 
-        @Override
-        protected void close() {
-            System.out.println("Bye.");
-
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+
+        logger.info("Check results.");
+        Collection<ProcessingElement> pes = counterPE.getInstances();
+
+        for (ProcessingElement pe : pes) {
+            counterPE = (CounterPE) pe;
+            logger.info("Final count for {} is {}.", pe.getId(),
+                    counterPE.getCount());
+            Assert.assertEquals(results.get(pe.getId()).longValue(),
+                    counterPE.getCount());
+        }
+
+        logger.info("Start to close resources...");
+        removeAll();
+
+    }
+
+    @Override
+    protected void close() {
+        System.out.println("Bye.");
+
     }
 
     public class GenerateTestEventPE extends SingletonPE {
@@ -143,8 +120,8 @@ public class TestOutputPolicies extends TestCase {
         }
 
         /* 
-         * 
-         */
+             * 
+             */
         @Override
         protected void processInputEvent(Event event) {
 

@@ -39,6 +39,7 @@ mainClassName = "io.s4.example.model.Main"
  guava:              'com.google.guava:guava:r09',
  gson:               'com.google.code.gson:gson:1.6',
  guice:              'com.google.inject:guice:3.0',
+ guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
  guice_grapher:      'com.google.inject:guice-grapher:3.0',
  flexjson:           'net.sf.flexjson:flexjson:2.1',
  bcel:               'org.apache.bcel:bcel:5.2',
@@ -80,7 +81,8 @@ repositories {
 dependencies {
 	compile( libraries.guava )
 	compile( libraries.guice )
-        compile( libraries.json)
+	compile( libraries.guice_assist )
+    compile( libraries.json)
 	compile( libraries.kryo)
 	compile( libraries.netty)
 	compile( libraries.gson)

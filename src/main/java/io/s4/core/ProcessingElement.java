@@ -346,7 +346,7 @@ public abstract class ProcessingElement implements Cloneable {
      * package-private. The returned instances are all in the same JVM. Do not
      * use it to access remote objects.
      */
-    ProcessingElement getInstanceForKey(String id) {
+    public ProcessingElement getInstanceForKey(String id) {
 
         /* Check if instance for key exists, otherwise create one. */
         ProcessingElement pe = peInstances.get(id);
@@ -383,7 +383,7 @@ public abstract class ProcessingElement implements Cloneable {
      * Get all the local instances. See notes in
      * {@link #getInstanceForKey(String) getLocalInstanceForKey}
      */
-    Collection<ProcessingElement> getInstances() {
+    public Collection<ProcessingElement> getInstances() {
 
         return peInstances.values();
     }

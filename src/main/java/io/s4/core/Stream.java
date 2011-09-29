@@ -26,6 +26,9 @@ import java.util.concurrent.BlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
+
 public class Stream<T extends Event> implements Runnable, ReceiverListener {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
@@ -46,12 +49,14 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
      * Streams send event of a given type using a specific key to target
      * processing elements.
      */
-    public Stream(App app, String name, KeyFinder<T> finder, Sender sender,
-            Receiver receiver, ProcessingElement... processingElements) {
+    @Inject
+    public Stream(@Assisted App app, @Assisted String name,
+            @Assisted KeyFinder<T> finder, Sender sender, Receiver receiver,
+            @Assisted ProcessingElement... processingElements) {
         synchronized (Stream.class) {
             id = idCounter++;
         }
-        
+
         app.addStream(this);
         this.name = name;
 
@@ -89,18 +94,21 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
             event.setTargetStreamId(this.id);
             if (key != null) {
                 sender.send(key.get(event), event);
-            }
-            else {
+            } else {
                 // no key, send to all partitions
                 sender.send(event);
             }
-            // maybe have sender return some code if the event belongs to this node
-            if (event == null) { // for now, don't run the code in the following blocks
+            // maybe have sender return some code if the event belongs to this
+            // node
+            if (event == null) { // for now, don't run the code in the following
+                                 // blocks
                 queue.put(event);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
-            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
+            logger.error(
+                    "Interrupted while waiting to put an event in the queue: {}.",
+                    e.getMessage());
             System.exit(-1);
         }
     }
@@ -111,14 +119,16 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
             return;
         }
         try {
-            queue.put((T)event);
+            queue.put((T) event);
         } catch (InterruptedException e) {
             e.printStackTrace();
-            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
+            logger.error(
+                    "Interrupted while waiting to put an event in the queue: {}.",
+                    e.getMessage());
             System.exit(-1);
         }
     }
-    
+
     /**
      * @return the name
      */

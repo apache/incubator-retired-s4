@@ -1,9 +1,4 @@
-package io.s4.core;
-
-import io.s4.comm.Receiver;
-import io.s4.comm.Sender;
-import io.s4.example.counter.Module;
-import io.s4.example.counter.MyApp;
+package io.s4.core.test001;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,19 +10,22 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-
-import ch.qos.logback.classic.Level;
-
 import junit.framework.Assert;
-import junit.framework.TestCase;
 
-public class TestPEExpiration extends TestCase {
+import com.google.inject.Inject;
 
+import io.s4.core.App;
+import io.s4.core.Event;
+import io.s4.core.KeyFinder;
+import io.s4.core.ProcessingElement;
+import io.s4.core.SingletonPE;
+import io.s4.core.Stream;
+import io.s4.core.StreamFactory;
+
+public class MyApp extends App {
+    
     private static final Logger logger = LoggerFactory
-            .getLogger(TestPEExpiration.class);
+            .getLogger(MyApp.class);
 
     static int[] values = { 111, 222, 111, 222, 111, 222, 333 };
     static Map<String, Long> results = new HashMap<String, Long>();
@@ -38,95 +36,78 @@ public class TestPEExpiration extends TestCase {
         results.put("444", 47l);
         results.put("555", 41l);
     }
+    
+    private GenerateTestEventPE generateTestEventPE;
+    private CounterPE counterPE;
+    @Inject
+    private StreamFactory streamFactory;
 
-    public void testTimeInterval() {
-
-        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
-                .getLogger(Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.TRACE);
-
-        Injector injector = Guice.createInjector(new Module());
-        MyApp myApp = injector.getInstance(MyApp.class);
-        myApp.init();
-        myApp.start();
+    public MyApp() {
 
     }
 
-    public class MyApp extends App {
+    @SuppressWarnings("unchecked")
+    @Override
+    protected void init() {
 
-        private GenerateTestEventPE generateTestEventPE;
-        private CounterPE counterPE;
-        final private Sender sender;
-        final private Receiver receiver;
-        
-        @Inject
-        public MyApp(Sender sender, Receiver receiver) {
-            this.sender = sender;
-            this.receiver = receiver;
-        }
-        
-        @SuppressWarnings("unchecked")
-        @Override
-        protected void init() {
+        counterPE = new CounterPE(this);
 
-            counterPE = new CounterPE(this);
+        counterPE.setExpiration(50l, TimeUnit.MILLISECONDS);
+        counterPE.setOutputInterval(20, TimeUnit.MILLISECONDS, false);
 
-            counterPE.setExpiration(50l, TimeUnit.MILLISECONDS);
-            counterPE.setOutputInterval(20, TimeUnit.MILLISECONDS, false);
+        Stream<TestEvent> testStream = streamFactory.create(this,
+                "Test Stream", new TestKeyFinder(), counterPE);
 
-            Stream<TestEvent> testStream = new Stream<TestEvent>(this,
-                    "Test Stream", new TestKeyFinder(), sender, receiver, counterPE);
+        generateTestEventPE = new GenerateTestEventPE(this, testStream);
 
-            generateTestEventPE = new GenerateTestEventPE(this, testStream);
+    }
 
-        }
+    @Override
+    protected void start() {
 
-        @Override
-        protected void start() {
-
-            for (int i = 0; i < 280; i++) {
-                generateTestEventPE.processOutputEvent(null);
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage());
-                    e.printStackTrace();
-                }
-            }
-            
-            // Verify that there is a count of 1 in pe 333 because it expires in every cycle.
-            CounterPE cpe = (CounterPE)counterPE.getInstanceForKey("333");
-            long peCount = cpe.getCount();
-            logger.info("Count in pe 333 is " + peCount);
-            Assert.assertEquals(1l, peCount);
-
+        for (int i = 0; i < 280; i++) {
+            generateTestEventPE.processOutputEvent(null);
             try {
-                Thread.sleep(1000);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
+                logger.error(e.getMessage());
                 e.printStackTrace();
             }
-
-            logger.info("Check results.");
-            Collection<ProcessingElement> pes = counterPE.getInstances();
-
-            for (ProcessingElement pe : pes) {
-                counterPE = (CounterPE) pe;
-                logger.info("Final count for {} is {}.", pe.id,
-                        counterPE.getCount());
-            }
-
-            logger.info("Start to close resources...");
-            removeAll();
-
         }
 
-        @Override
-        protected void close() {
-            System.out.println("Bye.");
+        // Verify that there is a count of 1 in pe 333 because it expires in
+        // every cycle.
+        CounterPE cpe = (CounterPE) counterPE.getInstanceForKey("333");
+        long peCount = cpe.getCount();
+        logger.info("Count in pe 333 is " + peCount);
+        Assert.assertEquals(1l, peCount);
 
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+
+        logger.info("Check results.");
+        Collection<ProcessingElement> pes = counterPE.getInstances();
+
+        for (ProcessingElement pe : pes) {
+            counterPE = (CounterPE) pe;
+            logger.info("Final count for {} is {}.", pe.getId(),
+                    counterPE.getCount());
+        }
+
+        logger.info("Start to close resources...");
+        removeAll();
+
     }
 
+    @Override
+    protected void close() {
+        System.out.println("Bye.");
+
+    }
+    
     public class GenerateTestEventPE extends SingletonPE {
 
         final private Stream<TestEvent>[] targetStreams;
@@ -148,9 +129,8 @@ public class TestPEExpiration extends TestCase {
         @Override
         public void processOutputEvent(Event event) {
 
-            
-            int indexValue = count % values.length; //generator.nextInt(values.length);
-            
+            int indexValue = count % values.length; // generator.nextInt(values.length);
+
             int value = values[indexValue];
             String key = String.valueOf(value);
 
@@ -237,3 +217,4 @@ public class TestPEExpiration extends TestCase {
 
     }
 }
+
