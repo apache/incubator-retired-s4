@@ -25,12 +25,11 @@ import com.google.inject.Inject;
 import io.s4.comm.topology.Assignment;
 import io.s4.comm.topology.ClusterNode;
 import io.s4.comm.Listener;
-import io.s4.core.Stream;
 
 public class NettyListener implements Listener {
     private BlockingQueue<byte[]> handoffQueue = new SynchronousQueue<byte[]>();
     private ClusterNode node;
-    private static final Logger logger = LoggerFactory.getLogger(Stream.class);
+    private static final Logger logger = LoggerFactory.getLogger(NettyListener.class);
     
     @Inject
     public NettyListener(Assignment assignment) {

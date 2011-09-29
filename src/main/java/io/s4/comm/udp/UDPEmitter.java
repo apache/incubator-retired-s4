@@ -8,6 +8,8 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.inject.Inject;
+
 import io.s4.comm.topology.ClusterNode;
 import io.s4.comm.topology.Topology;
 import io.s4.comm.topology.TopologyChangeListener;
@@ -24,6 +26,7 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
         return messageDropInQueueCount;
     }
     
+    @Inject
     public UDPEmitter(Topology topology) {
         this.topology = topology;
         topology.addListener(this);

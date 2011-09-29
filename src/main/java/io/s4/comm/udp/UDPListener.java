@@ -6,6 +6,8 @@ import java.net.DatagramSocket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 
+import com.google.inject.Inject;
+
 import io.s4.comm.topology.Assignment;
 import io.s4.comm.topology.ClusterNode;
 import io.s4.comm.Listener;
@@ -19,10 +21,15 @@ public class UDPListener implements Listener, Runnable {
     private BlockingQueue<byte[]> handoffQueue = new SynchronousQueue<byte[]>();
     private ClusterNode node;
 
+    @Inject
+    public UDPListener(Assignment assignment) {
+        this(assignment, -1);
+    }
+
     public UDPListener(Assignment assignment, int UDPBufferSize) {
         // wait for an assignment
         node = assignment.assignPartition();
-        
+
         try {
             socket = new DatagramSocket(node.getPort());
             if (UDPBufferSize > 0) {
@@ -41,13 +48,12 @@ public class UDPListener implements Listener, Runnable {
             while (!Thread.interrupted()) {
                 socket.receive(datagram);
                 byte[] data = new byte[datagram.getLength()];
-                System.arraycopy(datagram.getData(), datagram.getOffset(), data, 0,
-                        data.length);
+                System.arraycopy(datagram.getData(), datagram.getOffset(),
+                        data, 0, data.length);
                 datagram.setLength(BUFFER_LENGTH);
                 try {
                     handoffQueue.put(data);
-                }
-                catch (InterruptedException ie) {
+                } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
             }
@@ -55,7 +61,7 @@ public class UDPListener implements Listener, Runnable {
             throw new RuntimeException(e);
         }
     }
-    
+
     public byte[] recv() {
         try {
             return handoffQueue.take();
@@ -63,7 +69,7 @@ public class UDPListener implements Listener, Runnable {
             throw new RuntimeException(e);
         }
     }
-    
+
     public int getPartitionId() {
         return node.getPartition();
     }

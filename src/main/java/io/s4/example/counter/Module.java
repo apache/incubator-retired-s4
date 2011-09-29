@@ -17,14 +17,12 @@ package io.s4.example.counter;
 
 import io.s4.comm.Emitter;
 import io.s4.comm.Listener;
-import io.s4.comm.QueueingEmitter;
-import io.s4.comm.QueueingListener;
-import io.s4.comm.netty.NettyEmitter;
-import io.s4.comm.netty.NettyListener;
 import io.s4.comm.topology.Assignment;
 import io.s4.comm.topology.AssignmentFromFile;
 import io.s4.comm.topology.Topology;
 import io.s4.comm.topology.TopologyFromFile;
+import io.s4.comm.udp.UDPEmitter;
+import io.s4.comm.udp.UDPListener;
 import io.s4.serialize.KryoSerDeser;
 import io.s4.serialize.SerializerDeserializer;
 
@@ -84,11 +82,19 @@ public class Module extends AbstractModule {
         /* Configure a static cluster topology using a configuration file. */
         bind(Topology.class).to(TopologyFromFile.class);
         
-        bind(Emitter.class).annotatedWith(Names.named("ll")).to(NettyEmitter.class);
-        bind(Listener.class).annotatedWith(Names.named("ll")).to(NettyListener.class);
+//        bind(Emitter.class).annotatedWith(Names.named("ll")).to(NettyEmitter.class);
+//        bind(Listener.class).annotatedWith(Names.named("ll")).to(NettyListener.class);
+//        
+//        bind(Emitter.class).to(QueueingEmitter.class);
+//        bind(Listener.class).to(QueueingListener.class);
         
-        bind(Emitter.class).to(QueueingEmitter.class);
-        bind(Listener.class).to(QueueingListener.class);
+        /* Use the Netty comm layer implementation. */
+//        bind(Emitter.class).to(NettyEmitter.class);
+//        bind(Listener.class).to(NettyListener.class);
+        
+        /* Use a simple UDP comm layer implementation. */
+        bind(Emitter.class).to(UDPEmitter.class);
+        bind(Listener.class).to(UDPListener.class);
         
         /* Use Kryo to serialize events. */
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
