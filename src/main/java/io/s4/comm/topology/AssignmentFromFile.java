@@ -20,7 +20,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
 public class AssignmentFromFile implements Assignment {
-    private static final Logger logger = LoggerFactory.getLogger(Stream.class);
+    private static final Logger logger = LoggerFactory.getLogger(AssignmentFromFile.class);
     Set<Map<String, String>> processSet = new HashSet<Map<String, String>>();
     private String clusterName;
     private String clusterConfigurationFilename;

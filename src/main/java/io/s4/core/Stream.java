@@ -49,10 +49,8 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
      * Streams send event of a given type using a specific key to target
      * processing elements.
      */
-    @Inject
-    public Stream(@Assisted App app, @Assisted String name,
-            @Assisted KeyFinder<T> finder, Sender sender, Receiver receiver,
-            @Assisted ProcessingElement... processingElements) {
+    public Stream(App app, String name, KeyFinder<T> finder, Sender sender,
+            Receiver receiver, ProcessingElement... processingElements) {
         synchronized (Stream.class) {
             id = idCounter++;
         }

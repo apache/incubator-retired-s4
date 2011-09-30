@@ -21,7 +21,7 @@ import org.xml.sax.SAXParseException;
 
 
 public class ConfigParser {
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Stream.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ConfigParser.class);
 	
 	public ConfigParser() {
 	}
