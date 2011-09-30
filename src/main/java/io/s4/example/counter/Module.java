@@ -23,6 +23,8 @@ import io.s4.comm.topology.Topology;
 import io.s4.comm.topology.TopologyFromFile;
 import io.s4.comm.udp.UDPEmitter;
 import io.s4.comm.udp.UDPListener;
+import io.s4.core.DefaultHasher;
+import io.s4.core.Hasher;
 import io.s4.serialize.KryoSerDeser;
 import io.s4.serialize.SerializerDeserializer;
 
@@ -95,6 +97,9 @@ public class Module extends AbstractModule {
         /* Use a simple UDP comm layer implementation. */
         bind(Emitter.class).to(UDPEmitter.class);
         bind(Listener.class).to(UDPListener.class);
+        
+        /* The hashing function to map keys top partitions. */
+        bind(Hasher.class).to(DefaultHasher.class);
         
         /* Use Kryo to serialize events. */
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);

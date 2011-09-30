@@ -2,20 +2,20 @@ package io.s4.comm;
 
 import com.google.inject.Inject;
 
-import io.s4.core.DefaultHasher;
 import io.s4.core.Event;
 import io.s4.core.Hasher;
 import io.s4.serialize.SerializerDeserializer;
 
 public class Sender {
-    private Emitter emitter;
-    private SerializerDeserializer serDeser;
-    private Hasher hasher = new DefaultHasher();
+    final private Emitter emitter;
+    final private SerializerDeserializer serDeser;
+    final private Hasher hasher;
     
     @Inject
-    public Sender(Emitter emitter, SerializerDeserializer serDeser) {
+    public Sender(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher) {
         this.emitter = emitter;
         this.serDeser = serDeser;
+        this.hasher = hasher;
     }
     
     public void send(String hashKey, Event event) {
