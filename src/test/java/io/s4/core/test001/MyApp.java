@@ -179,30 +179,6 @@ public class MyApp extends App {
         }
     }
 
-    public class TestEvent extends Event {
-        final private String key;
-        final private long value;
-
-        TestEvent(String key, long count) {
-            this.key = key;
-            this.value = count;
-        }
-
-        /**
-         * @return the key
-         */
-        public String getKey() {
-            return key;
-        }
-
-        /**
-         * @return the count
-         */
-        public long getCount() {
-            return value;
-        }
-    }
-
     public class TestKeyFinder implements KeyFinder<TestEvent> {
 
         public List<String> get(TestEvent event) {
