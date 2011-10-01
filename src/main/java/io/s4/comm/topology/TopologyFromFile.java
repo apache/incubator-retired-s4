@@ -1,40 +1,17 @@
 package io.s4.comm.topology;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 
 public class TopologyFromFile implements Topology {
-    private String clusterName;
-    private String clusterConfigurationFilename;
+
     private Cluster cluster;
 
     @Inject
-    public TopologyFromFile(@Named("comm.cluster_name") String clusterName,
-            @Named("comm.cluster_config") String clusterConfigurationFilename, Cluster cluster) {
+    public TopologyFromFile(Cluster cluster) {
         super();
-        this.clusterName = clusterName;
-        this.clusterConfigurationFilename = clusterConfigurationFilename;
-        //readStaticConfig();
         this.cluster = cluster;
 
     }
-
-//    private void readStaticConfig() {
-//        ConfigParser parser = new ConfigParser();
-//        Config config = parser.parse(clusterConfigurationFilename);
-//
-//        // find the requested cluster
-//        for (Cluster checkCluster : config.getClusters()) {
-//            if (checkCluster.getName().equals(clusterName)) {
-//                cluster = checkCluster;
-//                break;
-//            }
-//        }
-//        if (cluster == null) {
-//            throw new RuntimeException("Cluster " + clusterName
-//                    + " not configured");
-//        }
-//    }
 
     @Override
     public Cluster getTopology() {

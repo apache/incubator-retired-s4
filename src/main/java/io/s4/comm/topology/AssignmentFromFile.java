@@ -3,15 +3,11 @@ package io.s4.comm.topology;
 
 import io.s4.comm.topology.Cluster;
 import io.s4.comm.topology.ClusterNode;
-import io.s4.core.Stream;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.InetAddress;
 import java.nio.channels.FileLock;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,19 +17,13 @@ import com.google.inject.name.Named;
 
 public class AssignmentFromFile implements Assignment {
     private static final Logger logger = LoggerFactory.getLogger(AssignmentFromFile.class);
-    Set<Map<String, String>> processSet = new HashSet<Map<String, String>>();
-    private String clusterName;
-    private String clusterConfigurationFilename;
-    private Cluster cluster;
+    final private Cluster cluster;
+    final private String lockDir;
 
     @Inject
-    public AssignmentFromFile(@Named("comm.cluster_name") String clusterName,
-            @Named("comm.cluster_config") String clusterConfigurationFilename, Cluster cluster) {
-        this.clusterName = clusterName;
-        this.clusterConfigurationFilename = clusterConfigurationFilename;
-        // read the configuration file
-        //readStaticConfig();
+    public AssignmentFromFile(Cluster cluster, @Named("cluster.lock.dir") String lockDir) {
         this.cluster = cluster;
+        this.lockDir = lockDir;
     }
     
     public ClusterNode assignPartition() {
@@ -93,8 +83,7 @@ public class AssignmentFromFile implements Assignment {
     }
 
     private String createLockFileName(ClusterNode node) {
-        String lockDir = System.getProperty("lock_dir");
-        String lockFileName = clusterName + node.getPartition();
+        String lockFileName = "s4-" + node.getPartition() + ".lock";
         if (lockDir != null && lockDir.trim().length() > 0) {
             File file = new File(lockDir);
             if (!file.exists()) {

@@ -38,7 +38,6 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
-import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 
 /**

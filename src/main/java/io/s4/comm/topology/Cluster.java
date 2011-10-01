@@ -1,7 +1,5 @@
 package io.s4.comm.topology;
 
-import io.s4.comm.netty.NettyEmitter;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,38 +11,15 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.sun.tools.corba.se.idl.InvalidArgument;
 
 @Singleton
 public class Cluster {
 
     private static final Logger logger = LoggerFactory.getLogger(Cluster.class);
 
-    public enum ClusterType {
-        S4("s4"), ADAPTER("adapter");
-
-        private final String clusterTypeString;
-
-        private ClusterType(String eventShortName) {
-            this.clusterTypeString = eventShortName;
-        }
-
-        public String toString() {
-            return clusterTypeString;
-        }
-    }
-
     List<ClusterNode> nodes = new ArrayList<ClusterNode>();
     String mode = "unicast";
     String name = "unknown";
-
-    ClusterType type = ClusterType.S4;
-
-    Cluster() {
-        this.ports = null;
-        this.hosts = null;
-        this.numNodes = 0;
-    }
 
     final private String[] hosts;
     final private String[] ports;
@@ -62,12 +37,14 @@ public class Cluster {
                     + hosts + " ports: " + ports);
             throw new IOException();
         }
-        
+
         numNodes = this.hosts.length;
-        for(int i=0; i<numNodes; i++) {
-            ClusterNode node = new ClusterNode(i, Integer.parseInt(this.ports[i]), this.hosts[i], "");
+        for (int i = 0; i < numNodes; i++) {
+            ClusterNode node = new ClusterNode(i,
+                    Integer.parseInt(this.ports[i]), this.hosts[i], "");
             nodes.add(node);
-            logger.trace("Added cluster node: " + this.hosts[i] + ":" + this.ports[i]);
+            logger.info("Added cluster node: " + this.hosts[i] + ":"
+                    + this.ports[i]);
         }
     }
 
@@ -95,19 +72,10 @@ public class Cluster {
         this.name = name;
     }
 
-    public ClusterType getType() {
-        return type;
-    }
-
-    public void setType(ClusterType type) {
-        this.type = type;
-    }
-
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append("{name=").append(name).append(",mode=").append(mode)
-                .append(",type=").append(type).append(",nodes=").append(nodes)
-                .append("}");
+                .append(",type=").append(",nodes=").append(nodes).append("}");
         return sb.toString();
     }
 

@@ -13,7 +13,7 @@ public class DefaultHasher implements Hasher {
             a = a * b;
         }
 
-        return hash;
+        return Math.abs(hash);
     }
 
 }

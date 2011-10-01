@@ -26,9 +26,6 @@ import java.util.concurrent.BlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
-
 public class Stream<T extends Event> implements Runnable, ReceiverListener {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
@@ -87,6 +84,7 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
         this(app, name, null, sender, receiver, processingElements);
     }
 
+    @SuppressWarnings("unused")
     public void put(T event) {
         try {
             event.setTargetStreamId(this.id);
