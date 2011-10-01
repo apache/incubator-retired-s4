@@ -51,8 +51,7 @@ public class CounterPE extends ProcessingElement {
     @Override
     public void processOutputEvent(Event event) {
 
-        CountEvent countEvent = new CountEvent(countStream.getName() + ": "
-                + getId(), counter);
+        CountEvent countEvent = new CountEvent(getId(), counter);
         countStream.put(countEvent);
     }
 

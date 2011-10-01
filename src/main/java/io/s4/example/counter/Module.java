@@ -19,6 +19,7 @@ import io.s4.comm.Emitter;
 import io.s4.comm.Listener;
 import io.s4.comm.topology.Assignment;
 import io.s4.comm.topology.AssignmentFromFile;
+import io.s4.comm.topology.Cluster;
 import io.s4.comm.topology.Topology;
 import io.s4.comm.topology.TopologyFromFile;
 import io.s4.comm.udp.UDPEmitter;
@@ -37,6 +38,7 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
+import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 
 /**
@@ -77,6 +79,8 @@ public class Module extends AbstractModule {
             loadProperties(binder());
 
         bind(MyApp.class);
+        
+        bind(Cluster.class);
         
         /* Configure static assignment using a configuration file. */
         bind(Assignment.class).to(AssignmentFromFile.class);

@@ -10,30 +10,31 @@ public class TopologyFromFile implements Topology {
 
     @Inject
     public TopologyFromFile(@Named("comm.cluster_name") String clusterName,
-            @Named("comm.cluster_config") String clusterConfigurationFilename) {
+            @Named("comm.cluster_config") String clusterConfigurationFilename, Cluster cluster) {
         super();
         this.clusterName = clusterName;
         this.clusterConfigurationFilename = clusterConfigurationFilename;
-        readStaticConfig();
+        //readStaticConfig();
+        this.cluster = cluster;
 
     }
 
-    private void readStaticConfig() {
-        ConfigParser parser = new ConfigParser();
-        Config config = parser.parse(clusterConfigurationFilename);
-
-        // find the requested cluster
-        for (Cluster checkCluster : config.getClusters()) {
-            if (checkCluster.getName().equals(clusterName)) {
-                cluster = checkCluster;
-                break;
-            }
-        }
-        if (cluster == null) {
-            throw new RuntimeException("Cluster " + clusterName
-                    + " not configured");
-        }
-    }
+//    private void readStaticConfig() {
+//        ConfigParser parser = new ConfigParser();
+//        Config config = parser.parse(clusterConfigurationFilename);
+//
+//        // find the requested cluster
+//        for (Cluster checkCluster : config.getClusters()) {
+//            if (checkCluster.getName().equals(clusterName)) {
+//                cluster = checkCluster;
+//                break;
+//            }
+//        }
+//        if (cluster == null) {
+//            throw new RuntimeException("Cluster " + clusterName
+//                    + " not configured");
+//        }
+//    }
 
     @Override
     public Cluster getTopology() {
