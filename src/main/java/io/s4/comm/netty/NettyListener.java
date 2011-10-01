@@ -34,7 +34,7 @@ public class NettyListener implements Listener {
     @Inject
     public NettyListener(Assignment assignment) {
         // wait for an assignment
-        node = assignment.assignPartition();
+        node = assignment.assignClusterNode();
         
         ChannelFactory factory =
             new NioServerSocketChannelFactory(

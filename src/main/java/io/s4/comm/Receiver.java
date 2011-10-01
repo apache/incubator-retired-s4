@@ -8,6 +8,16 @@ import com.google.inject.Inject;
 import io.s4.core.Event;
 import io.s4.serialize.SerializerDeserializer;
 
+/**
+ * The {@link Sender} and its counterpart {@link Receiver} are the top level
+ * classes of the communication layer. 
+ * <p>
+ * {@link Receiver} is responsible for receiving an event to a
+ * {@link ProcessingElement} instance using a hashKey.
+ * <p>
+ * Details on how the cluster is partitioned and how events are serialized and
+ * transmitted to its destination are hidden from the application developer.
+ */
 public class Receiver implements Runnable {
     private Listener listener;
     private SerializerDeserializer serDeser;

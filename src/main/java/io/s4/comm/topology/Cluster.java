@@ -12,8 +12,16 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
+/**
+ * 
+ * The S4 physical cluster implementation.
+ * 
+ */
 @Singleton
 public class Cluster {
+
+    // TODO: do we need a Cluster interface to represent different types of
+    // implementations?
 
     private static final Logger logger = LoggerFactory.getLogger(Cluster.class);
 
@@ -25,6 +33,16 @@ public class Cluster {
     final private String[] ports;
     final private int numNodes;
 
+    /**
+     * Define the hosts and corresponding ports in the cluster.
+     * 
+     * @param hosts
+     *            a comma separates list of host names.
+     * @param ports
+     *            a comma separated list of ports.
+     * @throws IOException
+     *             if number of hosts and ports don't match.
+     */
     @Inject
     Cluster(@Named("cluster.hosts") String hosts,
             @Named("cluster.ports") String ports) throws IOException {
@@ -48,27 +66,39 @@ public class Cluster {
         }
     }
 
+    /**
+     * @param node
+     */
     public void addNode(ClusterNode node) {
         nodes.add(node);
     }
 
+    /**
+     * @return a list of {@link ClusterNode} objects available in the cluster.
+     */
     public List<ClusterNode> getNodes() {
         return Collections.unmodifiableList(nodes);
     }
 
-    public String getMode() {
+    // TODO: do we need mode and name? Making provate for now.
+    
+    @SuppressWarnings("unused")
+    private String getMode() {
         return mode;
     }
 
-    public void setMode(String mode) {
+    @SuppressWarnings("unused")
+    private void setMode(String mode) {
         this.mode = mode;
     }
 
-    public String getName() {
+    @SuppressWarnings("unused")
+    private String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    @SuppressWarnings("unused")
+    private void setName(String name) {
         this.name = name;
     }
 

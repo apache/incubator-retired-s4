@@ -26,6 +26,16 @@ import java.util.concurrent.BlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * {@link Stream} and {@link ProcessingElement} objects represent the links and
+ * nodes in the application graph. A stream sends an {@link Event} object to
+ * {@link ProcessingElement} instances located anywhere in a cluster.
+ * <p>
+ * Once a stream is instantiated, it is immutable.
+ * <p>
+ * To build an application create stream objects using use the
+ * {@link StreamFactory} class.
+ */
 public class Stream<T extends Event> implements Runnable, ReceiverListener {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
@@ -42,9 +52,24 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
     final private Receiver receiver;
     final private int id;
 
-    /*
-     * Streams send event of a given type using a specific key to target
-     * processing elements.
+    /**
+     * Send events using a {@link KeyFinder<T>}. The key finder extracts the
+     * value of the key which is used to determine the target
+     * {@link io.s4.comm.topology.ClusterNode} for an event.
+     * 
+     * @param app
+     *            we always register streams with the parent application.
+     * @param name
+     *            give this stream a meaningful name in the context of your
+     *            application.
+     * @param finder
+     *            the finder object to find the value of the key in an event.
+     * @param sender
+     *            sends events to a remote destination in the cluster.
+     * @param receiver
+     *            provides events sent from remote locations in the cluster.
+     * @param processingElements
+     *            the target PE prototypes for this stream.
      */
     public Stream(App app, String name, KeyFinder<T> finder, Sender sender,
             Receiver receiver, ProcessingElement... processingElements) {
@@ -65,25 +90,38 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
         this.targetPEs = processingElements;
 
         /* Start streaming. */
-        /*
-         * TODO: This is only for prototyping. Comm layer will take care of this
-         * in the real implementation.
-         */
-        // logger.trace("Start thread for stream " + name);
         thread = new Thread(this, name);
         thread.start();
         this.receiver.addListener(this);
     }
 
-    /*
-     * This constructor will create a broadcast stream. That is, the events will
-     * be sent to all the PE instances.
+    /**
+     * Send events to all available {@link ProcessingElement} instances
+     * contained by the {@link ProcessingElement} prototypes passed to this
+     * constructor.
+     * 
+     * @param app
+     *            we always register streams with the parent application.
+     * @param name
+     *            give this stream a meaningful name in the context of your
+     *            application.
+     * @param sender
+     *            sends events to a remote destination in the cluster.
+     * @param receiver
+     *            provides events sent from remote locations in the cluster.
+     * @param processingElements
+     *            the target PE prototypes for this stream.
      */
     public Stream(App app, String name, Sender sender, Receiver receiver,
             ProcessingElement... processingElements) {
         this(app, name, null, sender, receiver, processingElements);
     }
 
+    /**
+     * Sends an event.
+     * 
+     * @param event
+     */
     @SuppressWarnings("unused")
     public void put(T event) {
         try {
@@ -109,6 +147,11 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
         }
     }
 
+    /**
+     * Implements the {@link ReceiverListener} interface. The low level
+     * {@link Receiver} object call this method when a new {@link Event} is
+     * available.
+     */
     public void receiveEvent(Event event) {
         // TODO: better method for determining if a stream should use an event
         if (event.getTargetStreamId() != this.id) {
@@ -140,12 +183,15 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
     }
 
     /**
-     * @return the list of target processing elements.
+     * @return the list of target processing element prototypes.
      */
     public ProcessingElement[] getTargetPEs() {
         return targetPEs;
     }
 
+    /**
+     * Stop and close this stream.
+     */
     public void close() {
         thread.interrupt();
     }

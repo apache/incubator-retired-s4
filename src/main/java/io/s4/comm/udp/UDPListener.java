@@ -28,7 +28,7 @@ public class UDPListener implements Listener, Runnable {
 
     public UDPListener(Assignment assignment, int UDPBufferSize) {
         // wait for an assignment
-        node = assignment.assignPartition();
+        node = assignment.assignClusterNode();
 
         try {
             socket = new DatagramSocket(node.getPort());
