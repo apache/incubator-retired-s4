@@ -12,6 +12,11 @@ import io.s4.comm.topology.Assignment;
 import io.s4.comm.topology.ClusterNode;
 import io.s4.comm.Listener;
 
+/**
+ * 
+ * Implementation of a simple UDP listener.
+ *
+ */
 public class UDPListener implements Listener, Runnable {
 
     private DatagramSocket socket;

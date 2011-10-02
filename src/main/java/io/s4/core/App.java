@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Inject;
+
 /*
  * Container base class to hold all processing elements. We will implement administrative methods here. 
  */
@@ -32,6 +34,7 @@ public abstract class App {
     final private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
     final private List<Stream<? extends Event>> streams = new ArrayList<Stream<? extends Event>>();
     final private ClockType clockType;
+    @Inject protected StreamFactory streamFactory;
 
     /**
      * The internal clock can be configured as "wall clock" or "event clock".

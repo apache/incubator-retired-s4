@@ -35,6 +35,7 @@ mainClassName = "io.s4.example.model.Main"
 
  /* All project libraries must be defined here. */
  libraries = [
+ modules:            'org.jboss.modules:jboss-modules:1.0.2.GA',
  json:               'org.json:json:20090211',
  guava:              'com.google.guava:guava:r09',
  gson:               'com.google.code.gson:gson:1.6',
@@ -79,6 +80,7 @@ repositories {
    
 /* Dependencies. */
 dependencies {
+	//compile( libraries.modules )
 	compile( libraries.guava )
 	compile( libraries.guice )
 	compile( libraries.guice_assist )

@@ -23,7 +23,6 @@ import com.google.inject.name.Named;
 import io.s4.core.App;
 import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
-import io.s4.core.StreamFactory;
 
 /*
  * This is an sample application to test a new A4 API. 
@@ -35,8 +34,6 @@ final public class MyApp extends App {
 
     final private int interval;
     private ProcessingElement generateUserEventPE;
-    @Inject private StreamFactory streamFactory;
-
 
     /*
      * We use Guice to pass parameters to the application. This is just a
