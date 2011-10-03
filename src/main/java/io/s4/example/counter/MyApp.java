@@ -101,7 +101,7 @@ final public class MyApp extends App {
     }
 
     /*
-     * Create and send 1000 dummy events of type UserEvent.
+     * Create and send 200 dummy events of type UserEvent.
      * 
      * @see io.s4.App#start()
      */

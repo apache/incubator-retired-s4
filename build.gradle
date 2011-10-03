@@ -80,10 +80,10 @@ repositories {
    
 /* Dependencies. */
 dependencies {
-	//compile( libraries.modules )
+	compile( libraries.modules )
 	compile( libraries.guava )
 	compile( libraries.guice )
-	compile( libraries.guice_assist )
+	//compile( libraries.guice_assist )
     compile( libraries.json)
 	compile( libraries.kryo)
 	compile( libraries.netty)
