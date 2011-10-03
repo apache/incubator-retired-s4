@@ -20,12 +20,10 @@ import io.s4.core.KeyFinder;
 import io.s4.core.ProcessingElement;
 import io.s4.core.SingletonPE;
 import io.s4.core.Stream;
-import io.s4.core.StreamFactory;
 
 public class MyApp extends App {
-    
-    private static final Logger logger = LoggerFactory
-            .getLogger(MyApp.class);
+
+    private static final Logger logger = LoggerFactory.getLogger(MyApp.class);
 
     static int[] values = { 111, 222, 111, 222, 111, 222, 333 };
     static Map<String, Long> results = new HashMap<String, Long>();
@@ -36,12 +34,11 @@ public class MyApp extends App {
         results.put("444", 47l);
         results.put("555", 41l);
     }
-    
+
     private GenerateTestEventPE generateTestEventPE;
     private CounterPE counterPE;
-    @Inject
-    private StreamFactory streamFactory;
 
+    @Inject
     public MyApp() {
 
     }
@@ -55,8 +52,8 @@ public class MyApp extends App {
         counterPE.setExpiration(50l, TimeUnit.MILLISECONDS);
         counterPE.setOutputInterval(20, TimeUnit.MILLISECONDS, false);
 
-        Stream<TestEvent> testStream = streamFactory.create(this,
-                "Test Stream", new TestKeyFinder(), counterPE);
+        Stream<TestEvent> testStream = createStream("Test Stream",
+                new TestKeyFinder(), counterPE);
 
         generateTestEventPE = new GenerateTestEventPE(this, testStream);
 
@@ -107,7 +104,7 @@ public class MyApp extends App {
         System.out.println("Bye.");
 
     }
-    
+
     public class GenerateTestEventPE extends SingletonPE {
 
         final private Stream<TestEvent>[] targetStreams;
@@ -193,4 +190,3 @@ public class MyApp extends App {
 
     }
 }
-

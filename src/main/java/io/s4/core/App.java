@@ -15,6 +15,9 @@
  */
 package io.s4.core;
 
+import io.s4.comm.Receiver;
+import io.s4.comm.Sender;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +37,10 @@ public abstract class App {
     final private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
     final private List<Stream<? extends Event>> streams = new ArrayList<Stream<? extends Event>>();
     final private ClockType clockType;
-    @Inject protected StreamFactory streamFactory;
+    @Inject
+    private Sender sender;
+    @Inject
+    private Receiver receiver;
 
     /**
      * The internal clock can be configured as "wall clock" or "event clock".
@@ -114,7 +120,8 @@ public abstract class App {
     }
 
     /**
-     * The internal clock is configured as "wall clock" or "event clock" when this object is created.
+     * The internal clock is configured as "wall clock" or "event clock" when
+     * this object is created.
      * 
      * @return the App time in milliseconds.
      */
@@ -123,7 +130,8 @@ public abstract class App {
     }
 
     /**
-     * The internal clock is configured as "wall clock" or "event clock" when this object is created.
+     * The internal clock is configured as "wall clock" or "event clock" when
+     * this object is created.
      * 
      * @param timeUnit
      * @return the App time in timeUnit
@@ -137,5 +145,81 @@ public abstract class App {
      */
     public ClockType getClockType() {
         return clockType;
+    }
+
+    /**
+     * @return the sender object
+     */
+    public Sender getSender() {
+        return sender;
+    }
+
+    /**
+     * @return the receiver object
+     */
+    public Receiver getReceiver() {
+        return receiver;
+    }
+
+    /**
+     * Creates a stream with a specific key finder. The event is delivered to
+     * the PE instances in the target PE prototypes by key.
+     * 
+     * <p>
+     * If the value of the key is "joe" and the target PE prototypes are
+     * AddressPE and WorkPE, the event will be delivered to the instances with
+     * key="joe" in the PE prototypes AddressPE and WorkPE.
+     * 
+     * @param name
+     *            the name of the stream
+     * @param finder
+     *            the key finder object
+     * @param processingElements
+     *            the target processing elements
+     * @return the stream
+     */
+    protected <T extends Event> Stream<T> createStream(String name,
+            KeyFinder<T> finder, ProcessingElement... processingElements) {
+
+        return new Stream<T>(this, name, finder, processingElements);
+    }
+
+    /**
+     * Creates a broadcast stream that sends the events to all the PE instances
+     * in each of the target prototypes.
+     * 
+     * <p>
+     * Keep in mind that if you had a million PE instances, the event would be
+     * delivered to all them.
+     * 
+     * @param name
+     *            the name of the stream
+     * @param processingElements
+     *            the target processing elements
+     * @return the stream
+     */
+    protected <T extends Event> Stream<T> createStream(String name,
+            ProcessingElement... processingElements) {
+
+        return new Stream<T>(this, name, processingElements);
+    }
+    
+    /**
+     * Creates a {@link ProcessingElement} prototype.
+     * 
+     * @param type the processing element type.
+     * @return the processing element prototype.
+     */
+    protected <T extends ProcessingElement> T createPE(Class<T> type) {
+
+        try {
+            Class<?>[] types = new Class<?>[]{App.class};
+            T pe = type.getDeclaredConstructor(types).newInstance(this);
+            return pe;
+            
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
     }
 }

@@ -6,7 +6,6 @@ import io.s4.core.KeyFinder;
 import io.s4.core.ProcessingElement;
 import io.s4.core.SingletonPE;
 import io.s4.core.Stream;
-import io.s4.core.StreamFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +38,6 @@ public class MyApp extends App {
     private GenerateTestEventPE generateTestEventPE;
     private CounterPE counterPE;
     @Inject
-    private StreamFactory streamFactory;
 
     public MyApp() {
 
@@ -60,7 +58,7 @@ public class MyApp extends App {
         // counterPE.setOutputIntervalInEvents(1);
         counterPE.setOutputInterval(20, TimeUnit.MILLISECONDS, false);
 
-        Stream<TestEvent> testStream = streamFactory.create(this,
+        Stream<TestEvent> testStream = createStream(
                 "Test Stream", new TestKeyFinder(), counterPE);
 
         generateTestEventPE = new GenerateTestEventPE(this, testStream);

@@ -64,15 +64,11 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
      *            application.
      * @param finder
      *            the finder object to find the value of the key in an event.
-     * @param sender
-     *            sends events to a remote destination in the cluster.
-     * @param receiver
-     *            provides events sent from remote locations in the cluster.
      * @param processingElements
      *            the target PE prototypes for this stream.
      */
-    public Stream(App app, String name, KeyFinder<T> finder, Sender sender,
-            Receiver receiver, ProcessingElement... processingElements) {
+    public Stream(App app, String name, KeyFinder<T> finder,
+            ProcessingElement... processingElements) {
         synchronized (Stream.class) {
             id = idCounter++;
         }
@@ -85,8 +81,8 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
         } else {
             this.key = new Key<T>(finder, DEFAULT_SEPARATOR);
         }
-        this.sender = sender;
-        this.receiver = receiver;
+        this.sender = app.getSender();
+        this.receiver = app.getReceiver();
         this.targetPEs = processingElements;
 
         /* Start streaming. */
@@ -105,16 +101,11 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
      * @param name
      *            give this stream a meaningful name in the context of your
      *            application.
-     * @param sender
-     *            sends events to a remote destination in the cluster.
-     * @param receiver
-     *            provides events sent from remote locations in the cluster.
      * @param processingElements
      *            the target PE prototypes for this stream.
      */
-    public Stream(App app, String name, Sender sender, Receiver receiver,
-            ProcessingElement... processingElements) {
-        this(app, name, null, sender, receiver, processingElements);
+    public Stream(App app, String name, ProcessingElement... processingElements) {
+        this(app, name, null, processingElements);
     }
 
     /**
@@ -194,6 +185,20 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
      */
     public void close() {
         thread.interrupt();
+    }
+
+    /**
+     * @return the sender object
+     */
+    public Sender getSender() {
+        return sender;
+    }
+
+    /**
+     * @return the receiver object
+     */
+    public Receiver getReceiver() {
+        return receiver;
     }
 
     @Override

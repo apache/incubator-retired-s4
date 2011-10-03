@@ -21,11 +21,10 @@ import com.google.inject.Injector;
 import com.google.inject.name.Named;
 
 import io.s4.core.App;
-import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
 
 /*
- * This is an sample application to test a new A4 API. 
+ * This is a sample application to test a new S4 API. 
  * See README file for details.
  * 
  * */
@@ -33,7 +32,7 @@ import io.s4.core.Stream;
 final public class MyApp extends App {
 
     final private int interval;
-    private ProcessingElement generateUserEventPE;
+    private GenerateUserEventPE generateUserEventPE;
 
     /*
      * We use Guice to pass parameters to the application. This is just a
@@ -67,33 +66,38 @@ final public class MyApp extends App {
     protected void init() {
 
         /* PE that prints counts to console. */
-        ProcessingElement printPE = new PrintPE(this);
+        PrintPE printPE = createPE(PrintPE.class);
 
-        Stream<CountEvent> userCountStream = streamFactory.create(this,
-                        "User Count Stream", new CountKeyFinder(), printPE);
-        Stream<CountEvent> genderCountStream = streamFactory.create(this,
+        Stream<CountEvent> userCountStream = createStream("User Count Stream",
+                new CountKeyFinder(), printPE);
+        Stream<CountEvent> genderCountStream = createStream(
                 "Gender Count Stream", new CountKeyFinder(), printPE);
-        Stream<CountEvent> ageCountStream = streamFactory.create(this,
-                "Age Count Stream", new CountKeyFinder(), printPE);
+        Stream<CountEvent> ageCountStream = createStream("Age Count Stream",
+                new CountKeyFinder(), printPE);
 
         /* PEs that count events by user, gender, and age. */
-        ProcessingElement userCountPE = new CounterPE(this, interval,
-                userCountStream);
-        ProcessingElement genderCountPE = new CounterPE(this, interval,
-                genderCountStream);
-        ProcessingElement ageCountPE = new CounterPE(this, interval,
-                ageCountStream);
+        CounterPE userCountPE = createPE(CounterPE.class);
+        userCountPE.setOutputIntervalInEvents(interval);
+        userCountPE.setCountStream(userCountStream);
+
+        CounterPE genderCountPE = createPE(CounterPE.class);
+        genderCountPE.setOutputIntervalInEvents(interval);
+        genderCountPE.setCountStream(genderCountStream);
+
+        CounterPE ageCountPE = createPE(CounterPE.class);
+        ageCountPE.setOutputIntervalInEvents(interval);
+        ageCountPE.setCountStream(ageCountStream);
 
         /* Streams that output user events keyed on user, gender, and age. */
-        Stream<UserEvent> userStream = streamFactory.create(this,
-                "User Stream", new UserIDKeyFinder(),userCountPE);
-        Stream<UserEvent> genderStream = streamFactory.create(this,
-                "Gender Stream", new GenderKeyFinder(), genderCountPE);
-        Stream<UserEvent> ageStream = streamFactory.create(this, "Age Stream",
+        Stream<UserEvent> userStream = createStream("User Stream",
+                new UserIDKeyFinder(), userCountPE);
+        Stream<UserEvent> genderStream = createStream("Gender Stream",
+                new GenderKeyFinder(), genderCountPE);
+        Stream<UserEvent> ageStream = createStream("Age Stream",
                 new AgeKeyFinder(), ageCountPE);
 
-        generateUserEventPE = new GenerateUserEventPE(this, userStream,
-                genderStream, ageStream);
+        generateUserEventPE = createPE(GenerateUserEventPE.class);
+        generateUserEventPE.setStreams(userStream, genderStream, ageStream);
     }
 
     /*

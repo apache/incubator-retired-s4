@@ -29,17 +29,20 @@ public class GenerateUserEventPE extends SingletonPE {
     static String userIds[] = { "pepe", "jose", "tito", "mr_smith", "joe" };
     static int[] ages = { 25, 2, 33, 6, 67 };
     static char[] genders = { 'f', 'm' };
-    final private Stream<UserEvent>[] targetStreams;
+    private Stream<UserEvent>[] targetStreams;
     final private Random generator = new Random(22);
 
-    public GenerateUserEventPE(App app, Stream<UserEvent>... targetStreams) {
+    public GenerateUserEventPE(App app) {
         super(app);
-        this.targetStreams = targetStreams;
     }
 
-    /* 
-     * 
+    /**
+     * @param targetStreams the {@link UserEvent} streams.
      */
+    public void setStreams(Stream<UserEvent>... targetStreams){
+        this.targetStreams = targetStreams;
+    }
+    
     @Override
     protected void processInputEvent(Event event) {
 

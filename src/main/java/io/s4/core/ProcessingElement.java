@@ -61,37 +61,6 @@ public abstract class ProcessingElement implements Cloneable {
     private boolean isFirst = true;
 
     /**
-     * Create a PE prototype using expiration. PE instances will be
-     * automatically removed once a fixed duration has passed since the PE's
-     * last read or write access.
-     * 
-     * 
-     * @param app
-     *            the app that contains this PE
-     * @param duration
-     *            the fixed duration
-     * @param timeUnit
-     *            the time unit
-     */
-    public ProcessingElement(App app, long duration, TimeUnit timeUnit) {
-
-        this.app = app;
-        app.addPEPrototype(this);
-
-        if (duration == -1)
-            peInstances = new MapMaker().makeMap();
-        else
-            peInstances = new MapMaker().expireAfterAccess(duration, timeUnit)
-                    .makeMap();
-
-        /*
-         * Only the PE Prototype uses the constructor. The PEPrototype field
-         * will be cloned by the instances and point to the prototype.
-         */
-        this.pePrototype = this;
-    }
-
-    /**
      * Create a PE prototype. The PE instance will never expire.
      * 
      * @param app
@@ -99,7 +68,15 @@ public abstract class ProcessingElement implements Cloneable {
      */
     public ProcessingElement(App app) {
 
-        this(app, -1l, TimeUnit.SECONDS);
+        this.app = app;
+        app.addPEPrototype(this);
+
+        peInstances = new MapMaker().makeMap();
+        /*
+         * Only the PE Prototype uses the constructor. The PEPrototype field
+         * will be cloned by the instances and point to the prototype.
+         */
+        this.pePrototype = this;
     }
 
     /**
@@ -130,7 +107,7 @@ public abstract class ProcessingElement implements Cloneable {
 
         if (!isPrototype)
             return;
-        
+
         peInstances = new MapMaker().expireAfterAccess(duration, timeUnit)
                 .makeMap();
     }

@@ -21,34 +21,15 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
-
-import io.s4.comm.Emitter;
-import io.s4.comm.QueueingEmitter;
-import io.s4.comm.QueueingListener;
-import io.s4.comm.Receiver;
-import io.s4.comm.Sender;
-import io.s4.comm.loopback.LoopBackEmitter;
-import io.s4.comm.loopback.LoopBackListener;
-import io.s4.comm.netty.NettyEmitter;
-import io.s4.comm.netty.NettyListener;
-import io.s4.comm.topology.Assignment;
-import io.s4.comm.topology.AssignmentFromFile;
-import io.s4.comm.topology.Topology;
-import io.s4.comm.topology.TopologyFromFile;
 import io.s4.core.App;
 import io.s4.core.ProcessingElement;
 import io.s4.core.Stream;
-import io.s4.core.StreamFactory;
 import io.s4.model.Model;
-import io.s4.serialize.KryoSerDeser;
-import io.s4.serialize.SerializerDeserializer;
 
 public class MyApp extends App {
 
     private static final Logger logger = LoggerFactory.getLogger(MyApp.class);
 
-    @Inject private StreamFactory streamFactory;
     final private int numClasses;
     final private long numVectors;
     final private int outputInterval;
@@ -92,18 +73,18 @@ public class MyApp extends App {
 
         metricsPE = new MetricsPE(this);
 
-        Stream<ResultEvent> resultStream = streamFactory.create(this,
+        Stream<ResultEvent> resultStream = createStream(
                 "Result Stream", new ResultKeyFinder(), metricsPE);
 
         modelPE = new ModelPE(this, model, numVectors);
 
-        assignmentStream = streamFactory.create(this, "Assignment Stream",
+        assignmentStream = createStream( "Assignment Stream",
                 new ClassIDKeyFinder(), modelPE);
 
         MaximizerPE minimizerPE = new MaximizerPE(this, numClasses,
                 assignmentStream);
 
-        Stream<ObsEvent> distanceStream = streamFactory.create(this,
+        Stream<ObsEvent> distanceStream = createStream(
                 "Distance Stream", new ObsIndexKeyFinder(), minimizerPE);
 
         /*
@@ -116,7 +97,7 @@ public class MyApp extends App {
                                                                // seconds
         // obsStream = new Stream<ObsEvent>(this, "Observation Stream", new
         // ClassIDKeyFinder(), modelPE);
-        obsStream = streamFactory.create(this, "Observation Stream", modelPE);
+        obsStream = createStream( "Observation Stream", modelPE);
     }
 
     /** @return true if modelPE is initialized. */
