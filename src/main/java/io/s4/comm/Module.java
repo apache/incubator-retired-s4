@@ -75,6 +75,11 @@ public class Module extends AbstractModule {
         if (config == null)
             loadProperties(binder());
 
+        int numHosts = config.getList("cluster.hosts").size();
+        boolean isCluster = numHosts > 1 ? true : false;
+        bind(Boolean.class).annotatedWith(Names.named("isCluster"))
+                .toInstance(Boolean.valueOf(isCluster));
+
         bind(Cluster.class);
 
         /* Configure static assignment using a configuration file. */

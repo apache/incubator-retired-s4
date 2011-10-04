@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 
 /*
  * Container base class to hold all processing elements. We will implement administrative methods here. 
@@ -42,6 +43,7 @@ public abstract class App {
     private Sender sender;
     @Inject
     private Receiver receiver;
+    //@Inject private @Named("isCluster") Boolean isCluster;
 
     /**
      * The internal clock can be configured as "wall clock" or "event clock".
@@ -52,6 +54,13 @@ public abstract class App {
     public enum ClockType {
         WALL_CLOCK, EVENT_CLOCK
     };
+
+    /**
+     * @return true if the application is running in cluster mode.
+     */
+//    public boolean isCluster() {
+//        return isCluster.booleanValue();
+//    }
 
     /**
      * @return the unique app id

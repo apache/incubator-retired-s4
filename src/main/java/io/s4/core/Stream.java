@@ -117,7 +117,7 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
     @SuppressWarnings("unused")
     public void put(T event) {
         try {
-            event.setStreamId(this.id);
+            event.setStreamId(getId());
             event.setAppId(app.getId());
             if (key != null) {
                 sender.send(key.get(event), event);
@@ -147,7 +147,7 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener {
      */
     public void receiveEvent(Event event) {
         // TODO: better method for determining if a stream should use an event
-        if (event.getAppId() != app.getId() || event.getStreamId() != this.id) {
+        if (event.getAppId() != app.getId() || event.getStreamId() != getId()) {
             return;
         }
         try {

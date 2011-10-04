@@ -2,10 +2,40 @@
 
 <module xmlns="urn:jboss:module:1.0" name="helloapp">
 
-<main-class name="io.s4.core.HelloApp"/>
+<main-class name="io.s4.example.counter.MyApp"/>
 
     <resources>
-        <resource-root path="s4-piper-0.1-SNAPSHOT.jar"/>
+        <resource-root path="s4-piper-0.1-SNAPSHOT/lib/s4-piper-0.1-SNAPSHOT.jar"/>
+        <resource-root path="s4-piper-0.1-SNAPSHOT/lib/aopalliance-1.0.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/asm-3.2.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/cglib-2.2.1-v20090111.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/collections-generic-4.01.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-beanutils-1.7.0.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-beanutils-core-1.8.0.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-codec-1.4.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-collections-3.2.1.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-configuration-1.6.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-digester-1.8.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-httpclient-3.1.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-io-2.0.1.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-lang-2.4.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/commons-logging-1.1.1.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/ejml-0.17.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/gson-1.6.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/guava-r09.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/guice-3.0.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/javax.inject-1.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/jboss-modules-1.0.2.GA.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/jcip-annotations-1.0.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/json-20090211.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/kryo-1.04.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/logback-classic-0.9.29.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/logback-core-0.9.29.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/minlog-1.2.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/netty-3.2.5.Final.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/reflectasm-1.01.jar"/>
+<resource-root path="s4-piper-0.1-SNAPSHOT/lib/slf4j-api-1.6.1.jar"/>
+        
     </resources>
 
     <dependencies>
