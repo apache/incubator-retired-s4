@@ -36,7 +36,8 @@ public abstract class App {
 
     final private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
     final private List<Stream<? extends Event>> streams = new ArrayList<Stream<? extends Event>>();
-    final private ClockType clockType;
+    private ClockType clockType = ClockType.WALL_CLOCK;
+    private int id = -1;
     @Inject
     private Sender sender;
     @Inject
@@ -52,19 +53,18 @@ public abstract class App {
         WALL_CLOCK, EVENT_CLOCK
     };
 
-    /** The no args constructor sets the clock type to "Wall Clock". */
-    protected App() {
-        this.clockType = ClockType.WALL_CLOCK;
+    /**
+     * @return the unique app id
+     */
+    public int getId() {
+        return id;
     }
 
-    /** Explicitly sets the clock type. */
-    protected App(ClockType clockType) {
-        this.clockType = clockType;
-
-        if (clockType == ClockType.EVENT_CLOCK) {
-            logger.error("Event clock not implemented yet.");
-            System.exit(1);
-        }
+    /**
+     * @param id the unique id for this app
+     */
+    public void setId(int id) {
+        this.id = id;
     }
 
     /**
@@ -141,6 +141,23 @@ public abstract class App {
     }
 
     /**
+     * Set the {@link ClockType}.
+     * 
+     * @param clockType
+     *            the clockTyoe for this app must be
+     *            {@link ClockType.WALL_CLOCK} (default) or
+     *            {@link ClockType.EVENT_CLOCK}
+     */
+    public void setClockType(ClockType clockType) {
+        this.clockType = clockType;
+
+        if (clockType == ClockType.EVENT_CLOCK) {
+            logger.error("Event clock not implemented yet.");
+            System.exit(1);
+        }
+    }
+
+    /**
      * @return the clock type.
      */
     public ClockType getClockType() {
@@ -203,20 +220,21 @@ public abstract class App {
 
         return new Stream<T>(this, name, processingElements);
     }
-    
+
     /**
      * Creates a {@link ProcessingElement} prototype.
      * 
-     * @param type the processing element type.
+     * @param type
+     *            the processing element type.
      * @return the processing element prototype.
      */
     protected <T extends ProcessingElement> T createPE(Class<T> type) {
 
         try {
-            Class<?>[] types = new Class<?>[]{App.class};
+            Class<?>[] types = new Class<?>[] { App.class };
             T pe = type.getDeclaredConstructor(types).newInstance(this);
             return pe;
-            
+
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return null;

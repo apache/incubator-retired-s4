@@ -18,7 +18,8 @@ package io.s4.core;
 public abstract class Event {
 
     final private long time;
-    private int targetStreamId;
+    private int streamId;
+    private int appId;
 
     /** Default constructor sets time using system time. */
     protected Event() {
@@ -41,22 +42,51 @@ public abstract class Event {
     }
 
     /**
-     * The target stream id is used to identify streams uniquely in a cluster
+     * The stream id is used to identify streams uniquely in a cluster
      * configuration. It is not required to operate in local mode.
      * 
      * @return the target stream id
      */
-    public int getTargetStreamId() {
-        return targetStreamId;
+    public int getStreamId() {
+        return streamId;
     }
 
     /**
-     * The target stream id is used to identify streams uniquely in a cluster
+     * The stream id is used to identify streams uniquely in a cluster
      * configuration. It is not required to operate in local mode.
      * 
      * @param targetStreamId
      */
-    public void setTargetStreamId(int targetStreamId) {
-        this.targetStreamId = targetStreamId;
+    public void setStreamId(int streamId) {
+        this.streamId = streamId;
+    }
+
+    /**
+     * All events must be assigned the unique App ID of the App that owns the
+     * stream to which this event is injected. The assignment must be done
+     * automatically by the stream that receives the event. Each application
+     * has a unique ID. We use the app ID in combination with the stream
+     * ID to identify stream instances in a cluster.
+     * 
+     * 
+     * @return the unique application ID.
+     */
+    int getAppId() {
+        return appId;
+    }
+
+    /**
+     * All events must be assigned the unique App ID of the App that owns the
+     * stream to which this event is injected. The assignment must be done
+     * automatically by the stream that receives the event. Each application
+     * has a unique ID. We use the app ID in combination with the stream
+     * ID to identify stream instances in a cluster.
+     * 
+     * @param appId
+     *            a unique application identifier, typically assigned by the
+     *            deployment system.
+     */
+    void setAppId(int appId) {
+        this.appId = appId;
     }
 }
