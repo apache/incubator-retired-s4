@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<module xmlns="urn:jboss:module:1.0" name="helloapp">
+
+<main-class name="io.s4.core.HelloApp"/>
+
+    <resources>
+        <resource-root path="s4-piper-0.1-SNAPSHOT.jar"/>
+    </resources>
+
+    <dependencies>
+    </dependencies>
+</module>
