@@ -1,39 +1,39 @@
 /*
- * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
- * 
+ * Copyright 2010 the original author or authors.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 	        http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the
- * License. See accompanying LICENSE file. 
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
- /*
-  * To run type: "gradlew run"
-  */
- 
-/* Include handy Gradle plugins. */
-apply plugin: 'eclipse'
-apply plugin: 'java'
-apply plugin: "application"
-apply plugin: "maven"
+/**
+ *
+ *
+ */
 
-/* Main application to run ... */
-//mainClassName = "io.s4.example.counter.MyApp"
-mainClassName = "io.s4.example.model.Main"
+defaultTasks 'assemble'
 
+archivesBaseName = 's4'
 
-/* Set a version number for your app. */
- version = new Version(major: 0, minor: 1, releaseType: 'SNAPSHOT')
- group = 'io.s4'
+// Include Linkedin plugins.
+buildscript {
+    repositories {
+      mavenCentral()
+    }
+    dependencies {
+      classpath 'org.linkedin:org.linkedin.gradle-plugins:1.5.0'
+    }
+}
 
- /* All project libraries must be defined here. */
+/* All project libraries must be defined here. */
  libraries = [
  modules:            'org.jboss.modules:jboss-modules:1.0.2.GA',
  json:               'org.json:json:20090211',
@@ -60,15 +60,15 @@ mainClassName = "io.s4.example.model.Main"
  logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
  ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
  jcip:               'net.jcip:jcip-annotations:1.0',
- junit:              'junit:junit:4.4'
+ junit:              'junit:junit:4.10',
+ linkedin_gradle:    'org.linkedin:org.linkedin.gradle-plugins:1.5.0'
  ]
-
-/* Set Java version. */
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+ 
+allprojects {
+    group = 'io.s4'
    
-/* Search these repos to find artifacts. Gradle will download and cache. */
-repositories {
+    /* Search these repos to find artifacts. Gradle will download and cache. */
+    repositories {
     mavenLocal()
     mavenCentral()
     mavenRepo name: "gson", urls: "http://google-gson.googlecode.com/svn/mavenrepo"
@@ -76,57 +76,47 @@ repositories {
     /* Add lib dir as a repo. Some jar files that are not available 
     in a public repo are distributed in the lib dir. */
     flatDir name: 'libDir', dirs: "$rootDir/lib"
-}
-   
-/* Dependencies. */
-dependencies {
-	compile( libraries.modules )
-	compile( libraries.guava )
-	compile( libraries.guice )
-	//compile( libraries.guice_assist )
-    compile( libraries.json)
-	compile( libraries.kryo)
-	compile( libraries.netty)
-	compile( libraries.gson)
-	compile( libraries.slf4j )
-	compile( libraries.logback_core )
-	compile( libraries.logback_classic )
-	compile( libraries.commons_io )
-	compile( libraries.commons_config )
-	compile( libraries.commons_codec )
-	compile( libraries.commons_httpclient )
-	compile( libraries.commons_coll )
-	compile( libraries.ejml )
-	compile( libraries.jcip )
-	testCompile( libraries.junit )
+    }
+
+    version = this.version
 }
 
-/* Customize your jar files. */
-manifest.mainAttributes(
-    provider: 'gradle',
-    'Implementation-Url': 'http://s4.io',
-    'Implementation-Version': version,
-    'Implementation-Vendor': 'The S4 Project',
-    'Implementation-Vendor-Id': 'io.s4'
-)
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+    
+    /* Set Java version. */
+    sourceCompatibility = 1.6
+    targetCompatibility = 1.6
 
-//eclipseClasspath {
-//    eclipse.classpath.downloadSources  = false; // is this still needed?
-//}
+    dependencies {
+        
+        /* Google. */
+        compile( libraries.guava )
+        compile( libraries.guice )
+        
+        /* Logging. */
+        compile( libraries.slf4j )
+        compile( libraries.logback_core )
+        compile( libraries.logback_classic )
+        
+        /* Commons. */
+        compile( libraries.commons_io )
+        compile( libraries.commons_config )
+        compile( libraries.commons_coll )
+        
+        /* Misc. */
+        compile( libraries.jcip )
+        
+        /* Testing. */
+        testCompile( libraries.junit )
+    }
 
-/* Generates the gradlew scripts.
-http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */ 
-task wrapper(type: Wrapper) { 
-    gradleVersion = '1.0-milestone-3' 
-}
-
-class Version {
-    int major
-    int minor
-    int bugfix
-    String releaseType
- 
-    String toString() {
-        "$major.$minor-$releaseType${bugfix ?: ''}"
+    jar {
+        manifest.attributes provider: 's4'
     }
 }
+
+
+
+
