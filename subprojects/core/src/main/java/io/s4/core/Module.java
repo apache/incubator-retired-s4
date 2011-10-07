@@ -45,7 +45,7 @@ public class Module extends AbstractModule {
         if (config == null)
             loadProperties(binder());
 
-        bind(Controller.class).asEagerSingleton();
+        bind(Server.class).asEagerSingleton();
 //        bind(String.class).annotatedWith(Names.named("core.module"))
 //                .toInstance(config.getString("core.module"));
     }

@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * To build an application create stream objects using use the
  * {@link StreamFactory} class.
  */
-public class Stream<T extends Event> implements Runnable, ReceiverListener {
+public class Stream<T extends Event> implements Runnable, ReceiverListener, Streamable<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
 

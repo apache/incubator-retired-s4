@@ -1,4 +1,4 @@
-package io.s4.serialize;
+package io.s4.comm.serialize;
 
 import io.s4.base.SerializerDeserializer;
 

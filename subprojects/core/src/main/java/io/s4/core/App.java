@@ -38,7 +38,7 @@ public abstract class App {
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     final private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
-    final private List<Stream<? extends Event>> streams = new ArrayList<Stream<? extends Event>>();
+    final private List<Streamable<? extends Event>> streams = new ArrayList<Streamable<? extends Event>>();
     private ClockType clockType = ClockType.WALL_CLOCK;
     private int id = -1;
     @Inject
@@ -100,7 +100,7 @@ public abstract class App {
 
         }
 
-        for (Stream<? extends Event> stream : streams) {
+        for (Streamable<? extends Event> stream : streams) {
 
             /* Close all streams. */
             stream.close();
@@ -120,13 +120,13 @@ public abstract class App {
 
     }
 
-    void addStream(Stream<? extends Event> stream) {
+    void addStream(Streamable<? extends Event> stream) {
 
         streams.add(stream);
 
     }
 
-    public List<Stream<? extends Event>> getStreams() {
+    public List<Streamable<? extends Event>> getStreams() {
         return streams;
     }
 

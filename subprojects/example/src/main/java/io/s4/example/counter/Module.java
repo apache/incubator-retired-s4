@@ -18,6 +18,7 @@ package io.s4.example.counter;
 import io.s4.base.Emitter;
 import io.s4.base.Hasher;
 import io.s4.base.Listener;
+import io.s4.comm.serialize.KryoSerDeser;
 import io.s4.comm.topology.Assignment;
 import io.s4.comm.topology.AssignmentFromFile;
 import io.s4.comm.topology.Cluster;
@@ -26,7 +27,6 @@ import io.s4.comm.topology.TopologyFromFile;
 import io.s4.comm.udp.UDPEmitter;
 import io.s4.comm.udp.UDPListener;
 import io.s4.comm.DefaultHasher;
-import io.s4.serialize.KryoSerDeser;
 import io.s4.base.SerializerDeserializer;
 
 import java.io.InputStream;

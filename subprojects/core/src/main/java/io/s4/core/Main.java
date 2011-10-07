@@ -23,7 +23,7 @@ public class Main {
          */
         Injector injector = Guice.createInjector(new io.s4.core.Module());
 
-        Controller controller = injector.getInstance(Controller.class);
+        Server controller = injector.getInstance(Server.class);
         try {
             controller.start();
         } catch (Exception e) {

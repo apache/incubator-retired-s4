@@ -14,7 +14,12 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Named;
 
-class Controller {
+/**
+ * The Server instance coordinates activities in a cluster node including
+ * loading and unloading of applications and instantiating the communication
+ * layer.
+ */
+class Server {
 
     final private String moduleName;
     final private String logLevel;
@@ -23,14 +28,13 @@ class Controller {
      * 
      */
     @Inject
-    public Controller(@Named("comm.module") String moduleName,
+    public Server(@Named("comm.module") String moduleName,
             @Named("s4.logger_level") String logLevel) {
         this.moduleName = moduleName;
         this.logLevel = logLevel;
     }
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(Controller.class);
+    private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
     public void start() throws Exception {
 
@@ -53,23 +57,27 @@ class Controller {
         injector = Guice.createInjector(module);
 
         // HERE WE SHOULD LOOP TO CHECK IF WE NEED TO LOAD OR UNLOAD APPS.
-        
+
         logger.trace("Load HelloApp");
-        
+
         /* The root dir for the modules is called "modules". */
-        File repoRoot = new File(getClass().getClassLoader().getResource("modules").toURI());
-        
+        File repoRoot = new File(getClass().getClassLoader()
+                .getResource("modules").toURI());
+
         /* Create a module loader using the root. */
-        //ModuleLoader moduleLoader = new LocalModuleLoader(new File[] {repoRoot});
-        
+        // ModuleLoader moduleLoader = new LocalModuleLoader(new File[]
+        // {repoRoot});
+
         /* Load teh module and run! */
-        //moduleLoader.loadModule(ModuleIdentifier.fromString("helloapp")).run(new String[] {});
-        
-//        org.jboss.modules.Module mod = moduleLoader.loadModule(ModuleIdentifier.fromString("modules.helloapp"));
-//        System.out.println(mod.toString());
-//        System.out.println(mod.getClassLoader().toString());
-//        mod.run(new String[] {});
-        
+        // moduleLoader.loadModule(ModuleIdentifier.fromString("helloapp")).run(new
+        // String[] {});
+
+        // org.jboss.modules.Module mod =
+        // moduleLoader.loadModule(ModuleIdentifier.fromString("modules.helloapp"));
+        // System.out.println(mod.toString());
+        // System.out.println(mod.getClassLoader().toString());
+        // mod.run(new String[] {});
+
         // /*
         // * Create the Event Generator objects using injection. The generators
         // * will be serialized and sent to remote hosts.
