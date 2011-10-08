@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-include 'base'
-include 'core'
-include 'comm'
-include 'example'
+include 's4-base'
+include 's4-core'
+include 's4-comm'
+include 's4-example'
 
 rootProject.name = 's4'
 rootProject.children.each {project ->

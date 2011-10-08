@@ -24,10 +24,8 @@ public class EventSource<T extends Event> implements Streamable<T> {
     private static final Logger logger = LoggerFactory
             .getLogger(EventSource.class);
     final private String name;
-    final private App app;
 
     public EventSource(App app, String name) {
-        this.app = app;
         this.name = name;
         app.addStream(this);
     }
@@ -87,6 +85,8 @@ public class EventSource<T extends Event> implements Streamable<T> {
     @Override
     public void close() {
         for (Stream<T> stream : streams) {
+            logger.info("Closing stream: {} in event source: {}.",
+                    stream.getName(), getName());
             stream.close();
         }
     }

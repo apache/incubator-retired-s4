@@ -1,7 +1,6 @@
 package io.s4.core;
 
 import java.io.File;
-import java.net.URL;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,8 +60,8 @@ class Server {
         logger.trace("Load HelloApp");
 
         /* The root dir for the modules is called "modules". */
-        File repoRoot = new File(getClass().getClassLoader()
-                .getResource("modules").toURI());
+//        File repoRoot = new File(getClass().getClassLoader()
+//                .getResource("modules").toURI());
 
         /* Create a module loader using the root. */
         // ModuleLoader moduleLoader = new LocalModuleLoader(new File[]

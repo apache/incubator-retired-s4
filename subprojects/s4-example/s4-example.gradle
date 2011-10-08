@@ -15,8 +15,9 @@
  */
 
 dependencies {
-    compile project(":base")
-    compile libraries.json
- 	compile libraries.kryo
-    compile libraries.netty
+    compile project( ":s4-base" )
+    compile project( ":s4-core" )
+    compile project( ":s4-comm" )
+	compile libraries.ejml
+	compile libraries.jcip
 }

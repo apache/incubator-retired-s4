@@ -15,9 +15,5 @@
  */
 
 dependencies {
-    compile project( ":base" )
-    compile project( ":core" )
-    compile project( ":comm" )
-	compile libraries.ejml
-	compile libraries.jcip
+    compile project(":s4-base")
 }
