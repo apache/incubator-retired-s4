@@ -16,6 +16,8 @@
 package io.s4.core;
 
 import io.s4.base.Event;
+import io.s4.core.gen.OverloadDispatcher;
+import io.s4.core.gen.OverloadDispatcherGenerator;
 
 import java.util.Collection;
 import java.util.Map;
@@ -54,7 +56,7 @@ public abstract class ProcessingElement implements Cloneable {
     private static final Logger logger = LoggerFactory
             .getLogger(ProcessingElement.class);
 
-    final protected App app;
+    protected App app;
 
     /*
      * This maps holds all the instances. We make it package private to prevent
@@ -69,13 +71,20 @@ public abstract class ProcessingElement implements Cloneable {
     String id = "";
 
     /* Private fields. */
-    final private ProcessingElement pePrototype;
+    private ProcessingElement pePrototype;
     private boolean haveTriggers = false;
     private long timerIntervalInMilliseconds = 0;
+//    private int outputIntervalInEvents = 0;
+//    private long outputIntervalInMilliseconds = 0;
+//    private int eventCount = 0;
     private Timer timer;
     private boolean isPrototype = true;
     private boolean isThreadSafe = false;
     private boolean isFirst = true;
+
+    private transient OverloadDispatcher overloadDispatcher;
+    
+    protected ProcessingElement() {}
 
     /**
      * Create a PE prototype. The PE instance will never expire.
@@ -84,12 +93,20 @@ public abstract class ProcessingElement implements Cloneable {
      *            the app that contains this PE
      */
     public ProcessingElement(App app) {
-
+        OverloadDispatcherGenerator oldg = new OverloadDispatcherGenerator(this.getClass());
+        Class<?> overloadDispatcherClass = oldg.generate();
+        try {
+            overloadDispatcher = (OverloadDispatcher) overloadDispatcherClass.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        
         this.app = app;
         app.addPEPrototype(this);
 
         peInstances = CacheBuilder.newBuilder().build(
                 new CacheLoader<String, ProcessingElement>() {
+                    @Override
                     public ProcessingElement load(String key) throws Exception {
                         return createPE(key);
                     }
@@ -104,9 +121,9 @@ public abstract class ProcessingElement implements Cloneable {
         this.pePrototype = this;
     }
 
-    abstract protected void onEvent(Event event);
-
-    abstract public void onTrigger(Event event);
+//    abstract protected void onEvent(Event event);
+//
+//    abstract public void onTrigger(Event event);
 
     /**
      * This method is called by the PE timer. By default it is synchronized with
@@ -173,6 +190,7 @@ public abstract class ProcessingElement implements Cloneable {
         peInstances = CacheBuilder.newBuilder()
                 .expireAfterAccess(duration, timeUnit).maximumSize(maximumSize)
                 .build(new CacheLoader<String, ProcessingElement>() {
+                    @Override
                     public ProcessingElement load(String key) throws Exception {
                         return createPE(key);
                     }
@@ -313,11 +331,11 @@ public abstract class ProcessingElement implements Cloneable {
         synchronized (object) {
 
             /* Dispatch onEvent() method. */
-            onEvent(event);
+            overloadDispatcher.dispatchEvent(this, event);
 
             /* Dispatch onTrigger() method. */
             if (haveTriggers && isTrigger(event)) {
-                onTrigger(event);
+                overloadDispatcher.dispatchTrigger(this, event);
             }
         }
     }
@@ -496,6 +514,7 @@ public abstract class ProcessingElement implements Cloneable {
     /**
      * This method exists simply to make <code>clone()</code> protected.
      */
+    @Override
     protected Object clone() {
         try {
             Object clone = super.clone();

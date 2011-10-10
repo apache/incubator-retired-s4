@@ -39,7 +39,6 @@ final public class MetricsPE extends ProcessingElement {
         super(app);
     }
 
-    @Override
     protected void onEvent(Event event) {
 
         ResultEvent resultEvent = (ResultEvent) event;
@@ -60,7 +59,6 @@ final public class MetricsPE extends ProcessingElement {
         value.inc();
     }
 
-    @Override
     public void onTrigger(Event event) {
         logger.info(this.toString());
     }
@@ -79,6 +77,7 @@ final public class MetricsPE extends ProcessingElement {
         return totalCount;
     }
 
+    @Override
     public String toString() {
         StringBuilder report = new StringBuilder();
         report.append("\n\nConfusion Matrix [%]:\n");
