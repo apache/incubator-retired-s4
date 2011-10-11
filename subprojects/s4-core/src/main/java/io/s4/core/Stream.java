@@ -18,7 +18,6 @@ package io.s4.core;
 
 import io.s4.base.Event;
 import io.s4.core.Receiver;
-import io.s4.core.ReceiverListener;
 import io.s4.core.Sender;
 
 import java.util.Collection;
@@ -38,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * To build an application create stream objects using use the
  * {@link StreamFactory} class.
  */
-public class Stream<T extends Event> implements Runnable, ReceiverListener, Streamable<T> {
+public class Stream<T extends Event> implements Runnable, Streamable<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
 
@@ -91,7 +90,7 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener, Stre
         /* Start streaming. */
         thread = new Thread(this, name);
         thread.start();
-        this.receiver.addListener(this);
+        this.receiver.addStream(this);
     }
 
     /**
@@ -147,11 +146,8 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener, Stre
      * {@link Receiver} object call this method when a new {@link Event} is
      * available.
      */
+    @SuppressWarnings("unchecked") // Need casting because we don't know the concrete event type.
     public void receiveEvent(Event event) {
-        // TODO: better method for determining if a stream should use an event
-        if (event.getAppId() != app.getId() || event.getStreamId() != getId()) {
-            return;
-        }
         try {
             queue.put((T) event);
         } catch (InterruptedException e) {
@@ -182,6 +178,13 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener, Stre
      */
     int getId() {
         return id;
+    }
+
+    /**
+     * @return the app
+     */
+    public App getApp() {
+        return app;
     }
 
     /**
@@ -252,7 +255,7 @@ public class Stream<T extends Event> implements Runnable, ReceiverListener, Stre
 
             } catch (InterruptedException e) {
                 logger.info("Closing stream {}.", name);
-                receiver.removeListener(this);
+                receiver.removeStream(this);
                 return;
             }
         }
