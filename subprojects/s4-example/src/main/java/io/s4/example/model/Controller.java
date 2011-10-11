@@ -16,6 +16,8 @@
  */
 package io.s4.example.model;
 
+import io.s4.core.Receiver;
+import io.s4.core.Sender;
 import io.s4.model.Model;
 
 import java.io.FileNotFoundException;
@@ -49,6 +51,8 @@ public class Controller {
     final private Model model;
     final private int vectorSize;
     private int numClasses;
+    final private Sender sender;
+    final private Receiver receiver;
 
     @Inject
     private Controller(@Named("model.train_data") String trainFilename,
@@ -56,7 +60,7 @@ public class Controller {
             @Named("model.vector_size") int vectorSize,
             @Named("model.num_iterations") int numIterations,
             @Named("model.output_interval_in_seconds") int outputInterval,
-            @Named("model.logger.level") String logLevel) {
+            @Named("model.logger.level") String logLevel, Sender sender, Receiver receiver) {
 
         this.trainFilename = trainFilename;
         this.testFilename = testFilename;
@@ -66,6 +70,8 @@ public class Controller {
         this.vectorSize = vectorSize;
         this.outputInterval = outputInterval;
         this.model = model;
+        this.sender = sender;
+        this.receiver = receiver;
 
         logger.info("Number of test vectors is " + numTestVectors);
         logger.info("Number of train vectors is " + numTrainVectors);
@@ -84,6 +90,9 @@ public class Controller {
 
             MyApp app = new MyApp(numClasses, numTrainVectors, model,
                     outputInterval, TimeUnit.SECONDS);
+            
+            app.setSender(sender);
+            app.setReceiver(receiver);
 
             logger.info("Init app.");
             app.init();

@@ -23,9 +23,9 @@ public class Main {
          */
         Injector injector = Guice.createInjector(new io.s4.core.Module());
 
-        Server controller = injector.getInstance(Server.class);
+        Server server = injector.getInstance(Server.class);
         try {
-            controller.start();
+            server.start();
         } catch (Exception e) {
             logger.error("Failed to start the controller.", e);
         }

@@ -21,6 +21,8 @@ import com.google.inject.Injector;
 import com.google.inject.name.Named;
 
 import io.s4.core.App;
+import io.s4.core.Receiver;
+import io.s4.core.Sender;
 import io.s4.core.Stream;
 
 /*
@@ -134,6 +136,10 @@ final public class MyApp extends App {
 
         Injector injector = Guice.createInjector(new Module());
         MyApp myApp = injector.getInstance(MyApp.class);
+        Sender sender = injector.getInstance(Sender.class);
+        Receiver receiver = injector.getInstance(Receiver.class);
+        myApp.setSender(sender);
+        myApp.setReceiver(receiver);
         myApp.init();
         myApp.start();
     }

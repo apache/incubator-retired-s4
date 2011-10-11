@@ -28,18 +28,38 @@ final public class MaximizerPE extends ProcessingElement {
 
     private static final Logger logger = LoggerFactory
             .getLogger(MaximizerPE.class);
-    
-    final private int numClasses;
-    final private Stream<ObsEvent> assignmentStream;
+
+    private int numClasses;
+    private Stream<ObsEvent> assignmentStream;
     private int numEventsReceived = 0;
     private float maxLogProb = -Float.MAX_VALUE;
     private int hypID;
 
-    public MaximizerPE(App app, int numClusters,
-            Stream<ObsEvent> assignmentStream) {
+    public MaximizerPE(App app) {
         super(app);
-        this.numClasses = numClusters;
-        this.assignmentStream = assignmentStream;
+    }
+
+    /**
+     * @param countStream
+     *            the countStream to set
+     */
+    public void setAssignmentStream(Stream<ObsEvent> stream) {
+        assignmentStream = stream;
+    }
+
+    /**
+     * @return the numClasses
+     */
+    public int getNumClasses() {
+        return numClasses;
+    }
+
+    /**
+     * @param numClasses
+     *            the numClasses to set
+     */
+    public void setNumClasses(int numClasses) {
+        this.numClasses = numClasses;
     }
 
     @Override

@@ -58,7 +58,6 @@ public class MyApp extends App {
     }
 
     public void injectByKey(ObsEvent obsEvent) {
-        System.out.println("Hey!!");
         logger.trace("Inject: " + obsEvent.toString());
         assignmentStream.put(obsEvent);
     }
@@ -71,21 +70,24 @@ public class MyApp extends App {
     @Override
     protected void init() {
 
-        metricsPE = new MetricsPE(this);
+        metricsPE = createPE(MetricsPE.class);
 
         Stream<ResultEvent> resultStream = createStream(
                 "Result Stream", new ResultKeyFinder(), metricsPE);
 
-        modelPE = new ModelPE(this, model, numVectors);
-
+        modelPE = createPE(ModelPE.class);
+        modelPE.setModel(model);
+        modelPE.setNumVectors(numVectors);
+        
         assignmentStream = createStream( "Assignment Stream",
                 new ClassIDKeyFinder(), modelPE);
 
-        MaximizerPE minimizerPE = new MaximizerPE(this, numClasses,
-                assignmentStream);
+        MaximizerPE maximizerPE = createPE(MaximizerPE.class);
+        maximizerPE.setNumClasses(numClasses);
+        maximizerPE.setAssignmentStream(assignmentStream);
 
         Stream<ObsEvent> distanceStream = createStream(
-                "Distance Stream", new ObsIndexKeyFinder(), minimizerPE);
+                "Distance Stream", new ObsIndexKeyFinder(), maximizerPE);
 
         /*
          * There is a loop in this graph so we need to set the stream at the

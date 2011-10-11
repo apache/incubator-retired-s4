@@ -26,7 +26,7 @@ public class Main {
      */
     public static void main(String[] args) {
 
-        Injector injector = Guice.createInjector(new Module());
+        Injector injector = Guice.createInjector(new Module(), new io.s4.comm.Module());
 
         Controller controller = injector.getInstance(Controller.class);
         controller.start();

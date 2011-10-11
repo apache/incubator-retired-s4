@@ -27,8 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
 
 /*
  * Container base class to hold all processing elements. We will implement administrative methods here. 
@@ -41,9 +39,7 @@ public abstract class App {
     final private List<Streamable<? extends Event>> streams = new ArrayList<Streamable<? extends Event>>();
     private ClockType clockType = ClockType.WALL_CLOCK;
     private int id = -1;
-    @Inject
     private Sender sender;
-    @Inject
     private Receiver receiver;
     //@Inject private @Named("isCluster") Boolean isCluster;
 
@@ -190,6 +186,20 @@ public abstract class App {
     }
 
     /**
+     * @param sender the sender to set
+     */
+    public void setSender(Sender sender) {
+        this.sender = sender;
+    }
+
+    /**
+     * @param receiver the receiver to set
+     */
+    public void setReceiver(Receiver receiver) {
+        this.receiver = receiver;
+    }
+
+    /**
      * Creates a stream with a specific key finder. The event is delivered to
      * the PE instances in the target PE prototypes by key.
      * 
@@ -242,6 +252,7 @@ public abstract class App {
     protected <T extends ProcessingElement> T createPE(Class<T> type) {
 
         try {
+            // TODO: make sure this doesn't crash if PE has a constructor other than with App as argument.
             Class<?>[] types = new Class<?>[] { App.class };
             T pe = type.getDeclaredConstructor(types).newInstance(this);
             return pe;

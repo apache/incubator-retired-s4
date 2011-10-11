@@ -32,7 +32,7 @@ final public class ModelPE extends ProcessingElement {
 
     private static final Logger logger = LoggerFactory.getLogger(ModelPE.class);
 
-    final private long numVectors;
+    private long numVectors;
     private Model model;
     private Stream<ObsEvent> distanceStream;
     private Stream<ResultEvent> resultStream;
@@ -42,9 +42,14 @@ final public class ModelPE extends ProcessingElement {
     private long totalCount = 0;
     private int iteration = 0;
 
-    public ModelPE(App app, Model model, long numVectors) {
+    public ModelPE(App app) {
         super(app);
-        this.model = model;
+    }
+
+    /**
+     * @param numVectors the numVectors to set
+     */
+    public void setNumVectors(long numVectors) {
         this.numVectors = numVectors;
     }
 
@@ -53,6 +58,21 @@ final public class ModelPE extends ProcessingElement {
      */
     public long getNumVectors() {
         return numVectors;
+    }
+
+    /**
+     * @param model
+     *            the model to set
+     */
+    public void setModel(Model model) {
+        this.model = model;
+    }
+
+    /**
+     * @return the model
+     */
+    public Model getModel() {
+        return model;
     }
 
     /**
@@ -89,7 +109,7 @@ final public class ModelPE extends ProcessingElement {
 
         logger.trace("TRAINING: ModelID: {}, {}", modelId, event.toString());
         model.update(event.getObsVector());
-        
+
         obsCount++;
 
         /* Log info. */
