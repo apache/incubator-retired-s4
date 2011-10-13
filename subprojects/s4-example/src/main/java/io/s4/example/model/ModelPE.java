@@ -218,7 +218,7 @@ final public class ModelPE extends ProcessingElement {
     @Override
     protected void onCreate() {
 
-        this.modelId = Integer.parseInt(id);
+        this.modelId = Integer.parseInt(getId());
 
         /*
          * Initialize model. When a new PE instance is created we use the

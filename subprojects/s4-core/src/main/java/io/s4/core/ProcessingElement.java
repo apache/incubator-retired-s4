@@ -18,8 +18,9 @@ package io.s4.core;
 import io.s4.base.Event;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentMap;
@@ -50,10 +51,21 @@ public abstract class ProcessingElement implements Cloneable {
             .getLogger(ProcessingElement.class);
 
     final protected App app;
-    protected ConcurrentMap<String, ProcessingElement> peInstances;
-    protected ConcurrentMap<Class<? extends Event>, Trigger> triggers;
-    protected String id = ""; // PE instance id
-    final protected ProcessingElement pePrototype;
+
+    /*
+     * This maps holds all the instances. We make it package private to prevent
+     * concrete classes from updating the collection.
+     */
+    ConcurrentMap<String, ProcessingElement> peInstances;
+
+    /* This map is initialized in the prototype and cloned to instances. */
+    Map<Class<? extends Event>, Trigger> triggers;
+
+    /* PE instance id. */
+    String id = "";
+
+    /* Private fields. */
+    final private ProcessingElement pePrototype;
     private boolean haveTriggers = false;
     private long timerIntervalInMilliseconds = 0;
     private Timer timer;
@@ -94,7 +106,8 @@ public abstract class ProcessingElement implements Cloneable {
      * 
      * Override this method to implement a periodic process.
      */
-    void onTime() {}
+    void onTime() {
+    }
 
     /**
      * This method is called after a PE instance is created. Use it to
@@ -148,8 +161,8 @@ public abstract class ProcessingElement implements Cloneable {
      * 
      * <ul>
      * <li>An event of eventType arrived to the PE instance
-     * <li>numEvents have arrived since the last time this trigger
-     * was fired -OR- time since last event is greater than interval.
+     * <li>numEvents have arrived since the last time this trigger was fired
+     * -OR- time since last event is greater than interval.
      * </ul>
      * 
      * When the trigger fires, the method <tt>trigger(EventType event)</tt> is
@@ -406,10 +419,11 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     /**
-     * This method returns a map of PE instances for this prototype in the
-     * network. This could be an expensive operation. TODO: not implemented for
-     * cluster configuration yet, use it only in single node configuration. for
-     * testing apps.
+     * This method returns an immutable map that contains all the PE instances
+     * for this prototype. PE instances may be located anywhere in the cluster.
+     * Be aware that this could be an expensive operation. TODO: not implemented
+     * for cluster configuration yet, use it only in single node configuration.
+     * for testing apps.
      */
     public Map<String, ProcessingElement> getRemoteInstances() {
 
@@ -422,7 +436,7 @@ public abstract class ProcessingElement implements Cloneable {
          * a custom map capable of working on an S4 cluster as efficiently as
          * possible.
          */
-        return new HashMap<String, ProcessingElement>(peInstances);
+        return ImmutableMap.copyOf(peInstances);
     }
 
     /*
@@ -446,6 +460,12 @@ public abstract class ProcessingElement implements Cloneable {
 
             logger.trace("Annotated with @ThreadSafe");
         }
+
+        /*
+         * Each PE instance needs its own triggers map to keep track time lapsed
+         * and event count.
+         */
+        pe.triggers = Maps.newHashMap(triggers);
     }
 
     /**
@@ -463,6 +483,14 @@ public abstract class ProcessingElement implements Cloneable {
      */
     public void setId(String id) {
         this.id = id;
+    }
+
+    /**
+     * 
+     * @return the corresponding {@link ProcessingElement} for this instance.
+     */
+    public ProcessingElement getPrototype() {
+        return pePrototype;
     }
 
     /**
