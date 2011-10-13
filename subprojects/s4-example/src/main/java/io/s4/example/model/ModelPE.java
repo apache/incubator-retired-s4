@@ -146,7 +146,7 @@ final public class ModelPE extends ProcessingElement {
      * All models receive an end of training stream marker.
      */
     @Override
-    protected void processInputEvent(Event event) {
+    protected void onEvent(Event event) {
 
         ObsEvent inEvent = (ObsEvent) event;
         float[] obs = inEvent.getObsVector();
@@ -212,7 +212,7 @@ final public class ModelPE extends ProcessingElement {
     }
 
     @Override
-    public void processOutputEvent(Event event) {
+    public void onTrigger(Event event) {
     }
 
     @Override

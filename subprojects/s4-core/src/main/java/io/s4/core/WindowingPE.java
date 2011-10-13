@@ -94,9 +94,9 @@ public abstract class WindowingPE<T> extends ProcessingElement {
         this(app, 0l, null, numSlots);
     }
 
-    abstract protected void processInputEvent(Event event);
+    abstract protected void onEvent(Event event);
 
-    abstract public void processOutputEvent(Event event);
+    abstract public void onTrigger(Event event);
 
     abstract protected void onCreate();
 

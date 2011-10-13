@@ -26,13 +26,13 @@ public class PrintPE extends ProcessingElement {
     }
 
     @Override
-    protected void processInputEvent(Event event) {
+    protected void onEvent(Event event) {
 
         System.out.println(event.toString());
     }
 
     @Override
-    public void processOutputEvent(Event event) {
+    public void onTrigger(Event event) {
         // TODO Auto-generated method stub
 
     }

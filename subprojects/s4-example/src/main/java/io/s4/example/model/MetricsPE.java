@@ -40,7 +40,7 @@ final public class MetricsPE extends ProcessingElement {
     }
 
     @Override
-    protected void processInputEvent(Event event) {
+    protected void onEvent(Event event) {
 
         ResultEvent resultEvent = (ResultEvent) event;
         int classID = resultEvent.getClassId();
@@ -61,7 +61,7 @@ final public class MetricsPE extends ProcessingElement {
     }
 
     @Override
-    public void processOutputEvent(Event event) {
+    public void onTrigger(Event event) {
         logger.info(this.toString());
     }
 

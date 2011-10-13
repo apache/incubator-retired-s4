@@ -34,6 +34,7 @@ import com.google.common.collect.MapMaker;
 
 /**
  * @author Leo Neumeyer
+ * @author Matthieu Morel
  * 
  *         Base class for implementing processing in S4. All instances are
  *         organized as follows. A PE prototype is a special type of instance
@@ -50,14 +51,12 @@ public abstract class ProcessingElement implements Cloneable {
 
     final protected App app;
     protected ConcurrentMap<String, ProcessingElement> peInstances;
+    protected ConcurrentMap<Class<? extends Event>, Trigger> triggers;
     protected String id = ""; // PE instance id
     final protected ProcessingElement pePrototype;
-    private int outputIntervalInEvents = 0;
-    private long outputIntervalInMilliseconds = 0;
-    private int eventCount = 0;
+    private boolean haveTriggers = false;
+    private long timerIntervalInMilliseconds = 0;
     private Timer timer;
-    private boolean isTimedOutput = false;
-    private boolean isOutputOnEvent = true;
     private boolean isPrototype = true;
     private boolean isThreadSafe = false;
     private boolean isFirst = true;
@@ -74,12 +73,42 @@ public abstract class ProcessingElement implements Cloneable {
         app.addPEPrototype(this);
 
         peInstances = new MapMaker().makeMap();
+        triggers = new MapMaker().makeMap();
+
         /*
          * Only the PE Prototype uses the constructor. The PEPrototype field
          * will be cloned by the instances and point to the prototype.
          */
         this.pePrototype = this;
     }
+
+    abstract protected void onEvent(Event event);
+
+    abstract public void onTrigger(Event event);
+
+    /**
+     * This method is called by the PE timer. By default it is synchronized with
+     * the {@link #onEvent()} and {@link #onTrigger()} methods. To execute
+     * concurrently with other methods, the {@link ProcessingElelment} subclass
+     * must be annotated with {@link @ThreadSafe}.
+     * 
+     * Override this method to implement a periodic process.
+     */
+    void onTime() {}
+
+    /**
+     * This method is called after a PE instance is created. Use it to
+     * initialize fields that are PE instance specific. PE instances are created
+     * using {#clone()}. Fields initialized in the class constructor are shared
+     * by all PE instances.
+     */
+    abstract protected void onCreate();
+
+    /**
+     * This method is called before a PE instance is removed. Use it to close
+     * resources and clean up.
+     */
+    abstract protected void onRemove();
 
     /**
      * @return the app
@@ -115,95 +144,110 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     /**
-     * @return the outputIntervalInEvents - the number of input events after
-     *         which we call {@link #processOutputEvent(Event)}.
-     */
-    public int getOutputIntervalInEvents() {
-        return outputIntervalInEvents;
-    }
-
-    /**
-     * Set an event-based policy to call {@link #processOutputEvent(Event)}. The
-     * output method will be called as follows:
+     * This trigger is fired when the following conditions occur:
      * 
      * <ul>
-     * <li>An input event arrived.
-     * <li>There have been <tt>N</tt> input events since the last time the
-     * output method was called.
-     * <li>The value of <tt>N</tt> is set by this method.
-     * <li>When <tt>N=0</tt> the event-based policy is disabled.
-     * <li>The event- and time-based policies are not mutually exclusive, they
-     * can overlap.
+     * <li>An event of eventType arrived to the PE instance
+     * <li>numEvents have arrived since the last time this trigger
+     * was fired -OR- time since last event is greater than interval.
      * </ul>
      * 
-     * @param outputIntervalInEvents
-     *            - the number of input events after which we call
-     *            {@link #processOutputEvent(Event)}. Set to zero to stop
-     *            calling the output method.
+     * When the trigger fires, the method <tt>trigger(EventType event)</tt> is
+     * called. Where <tt>EventType</tt> matches the argument eventType.
+     * 
+     * @param eventType
+     *            - the type of event on which this trigger will fire.
+     * @param numEvents
+     *            - number of events since last trigger activation. Must be
+     *            greater than zero. (Set to one to trigger on every input
+     *            event.)
+     * @param interval
+     *            - minimum time between triggers.
+     * @param timeUnit
+     *            - the TimeUnit for the argument interval.
      */
-    public void setOutputIntervalInEvents(int outputIntervalInEvents) {
-        this.outputIntervalInEvents = outputIntervalInEvents;
+    public void setTrigger(Class<? extends Event> eventType, int numEvents,
+            long interval, TimeUnit timeUnit) {
+
+        if (!isPrototype) {
+            logger.warn("This method can only be used on the PE prototype.");
+            return;
+        }
+
+        if (eventType == null) {
+            logger.error("Argument null in setTrigger() method is not valid.");
+            return;
+        }
+
+        if (numEvents < 1) {
+            logger.error("Argument numEvents in setTrigger() method must be greater than zero.");
+            return;
+        }
+
+        /* Skip trigger checking overhead if there are no triggers. */
+        haveTriggers = true;
+
+        long intervalInMilliseconds = timeUnit.convert(interval,
+                TimeUnit.MILLISECONDS);
+
+        Trigger config = new Trigger(numEvents, intervalInMilliseconds);
+
+        triggers.put(eventType, config);
     }
 
     /**
-     * The method {@link #processOutputEvent(Event)} is called when an input
-     * event arrives and the time since the last input event is greater than
-     * this interval.
+     * @param eventType
+     *            - the type of event of the trigger that will be removed.
+     */
+    public void removeTrigger(Class<? extends Event> eventType) {
+
+        if (!isPrototype) {
+            logger.warn("This method can only be used on the PE prototype.");
+            return;
+        }
+
+        if (eventType == null) {
+            logger.error("Argument null in removeTrigger() method is not valid.");
+            return;
+        }
+        triggers.remove(eventType);
+    }
+
+    /**
      * 
      * @param timeUnit
-     * @return interval in timeUnit
+     *            the timeUnt of the returned value.
      */
-    public long getOutputInterval(TimeUnit timeUnit) {
-        return timeUnit.convert(outputIntervalInMilliseconds,
+    public long getTimerInterval(TimeUnit timeUnit) {
+        return timeUnit.convert(timerIntervalInMilliseconds,
                 TimeUnit.MILLISECONDS);
     }
 
     /**
-     * Set a time-based policy to call {@link #processOutputEvent(Event)}. The
-     * time based policy and the event-based policy are not mutually exclusive.
-     * There are two modes:
+     * Set a timer that calls {@link #onTime()}.
      * 
-     * <ol>
-     * <li>When {@code onEvent==true} method {@link #processOutputEvent(Event)}
-     * is only when an input event arrives *and* the time since the last input
-     * event is greater than this interval.
-     * 
-     * <li>When {@code onEvent==false} method {@link #processOutputEvent(Event)}
-     * is called periodically whether or not an input event has arrived. Because
-     * the method will be called forever for every PE in the prototype you
-     * should use this setting it with caution.
-     * </ol>
-     * 
-     * If {@code interval==0} the time-based policy is disabled.
+     * If {@code interval==0} the timer is disabled.
      * 
      * @param interval
      *            in timeUnit
      * @param timeUnit
      *            the timeUnit of interval
-     * @param onEvent
-     *            selects event-time policy mode.
-     * 
      */
-    public void setOutputInterval(long interval, TimeUnit timeUnit,
-            boolean onEvent) {
-        outputIntervalInMilliseconds = TimeUnit.MILLISECONDS.convert(interval,
+    public void setTimerInterval(long interval, TimeUnit timeUnit) {
+        timerIntervalInMilliseconds = TimeUnit.MILLISECONDS.convert(interval,
                 timeUnit);
 
         /* We only allow timers in the PE prototype, not in the instances. */
-        if (!isPrototype)
-            return;
-
-        if (timer != null)
-            timer.cancel();
-
-        if (interval == 0) {
-            isTimedOutput = false;
+        if (!isPrototype) {
+            logger.warn("This method can only be used on the PE prototype.");
             return;
         }
 
-        isOutputOnEvent = onEvent;
+        if (timer != null || interval == 0)
+            timer.cancel();
+
         timer = new Timer();
-        timer.schedule(new PETask(), 0, outputIntervalInMilliseconds);
+        timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);
     }
 
     /**
@@ -231,53 +275,31 @@ public abstract class ProcessingElement implements Cloneable {
         }
 
         synchronized (object) {
-            eventCount++;
 
-            processInputEvent(event);
+            /* Dispatch onEvent() method. */
+            onEvent(event);
 
-            if (isOutput()) {
-                processOutputEvent(event);
+            /* Dispatch onTrigger() method. */
+            if (haveTriggers && isTrigger(event)) {
+                onTrigger(event);
             }
         }
     }
 
-    private boolean isOutput() {
+    private boolean isTrigger(Event event) {
 
-        /* Handle time-based policies. */
-        if (isTimedOutput) {
-            isTimedOutput = false;
-            return true;
-        }
+        /* Check if there is a trigger for this event type. */
+        Trigger trigger = triggers.get(Event.class); // TODO: modify for dynamic
+                                                     // dispatch.
+
+        if (trigger == null)
+            return false;
 
         /*
-         * Handle event-based policy. Output event at regular intervals based on
-         * the number of input events.
+         * Check if it is time to activate the trigger for this event type.
          */
-        if (outputIntervalInEvents > 0
-                && (eventCount % outputIntervalInEvents == 0)) {
-            return true;
-        }
-
-        return false;
+        return trigger.checkAndUpdate();
     }
-
-    abstract protected void processInputEvent(Event event);
-
-    abstract public void processOutputEvent(Event event);
-
-    /**
-     * This method is called after a PE instance is created. Use it to
-     * initialize fields that are PE instance specific. PE instances are created
-     * using {#clone()}. Fields initialized in the class constructor are shared
-     * by all PE instances.
-     */
-    abstract protected void onCreate();
-
-    /**
-     * This method is called before a PE instance is removed. Use it to close
-     * resources and clean up.
-     */
-    abstract protected void onRemove();
 
     private void removeInstanceForKeyInternal(String id) {
 
@@ -455,10 +477,7 @@ public abstract class ProcessingElement implements Cloneable {
         }
     }
 
-    private class PETask extends TimerTask {
-
-        protected class TimerEvent extends Event {
-        }
+    private class OnTimeTask extends TimerTask {
 
         @Override
         public void run() {
@@ -468,24 +487,39 @@ public abstract class ProcessingElement implements Cloneable {
 
                 ProcessingElement peInstance = entry.getValue();
 
-                peInstance.isTimedOutput = true;
-
-                if (!isOutputOnEvent) {
-                    /* Call output method asynchronously using a fake event. */
-
-                    Object object;
-                    if (isThreadSafe) {
-                        object = new Object(); // a dummy object TODO improve
-                                               // this.
-                    } else {
-                        object = this;
-                    }
-
-                    synchronized (object) {
-                        peInstance.processOutputEvent(new TimerEvent());
+                if (isThreadSafe) {
+                    peInstance.onTime();
+                } else {
+                    synchronized (this) {
+                        peInstance.onTime();
                     }
                 }
             }
+        }
+    }
+
+    class Trigger {
+        final long intervalInMilliseconds;
+        final int intervalInEvents;
+        long lastTime;
+        int eventCount;
+
+        Trigger(int intervalInEvents, long intervalInMilliseconds) {
+            this.intervalInEvents = intervalInEvents;
+            this.intervalInMilliseconds = intervalInMilliseconds;
+        }
+
+        boolean checkAndUpdate() {
+            long timeLapse = System.currentTimeMillis() - lastTime;
+            eventCount++;
+            lastTime = System.currentTimeMillis();
+
+            if (timeLapse > intervalInMilliseconds
+                    || eventCount >= intervalInEvents) {
+                eventCount = 0;
+                return true;
+            }
+            return false;
         }
     }
 }

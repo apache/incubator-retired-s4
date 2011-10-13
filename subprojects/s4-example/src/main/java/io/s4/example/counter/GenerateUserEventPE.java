@@ -44,12 +44,12 @@ public class GenerateUserEventPE extends SingletonPE {
     }
     
     @Override
-    protected void processInputEvent(Event event) {
+    protected void onEvent(Event event) {
 
     }
 
     @Override
-    public void processOutputEvent(Event event) {
+    public void onTrigger(Event event) {
         List<String> favorites = new ArrayList<String>();
         favorites.add("dulce de leche");
         favorites.add("strawberry");

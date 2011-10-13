@@ -40,9 +40,9 @@ public abstract class SingletonPE extends ProcessingElement {
         return this;
     }
 
-    abstract protected void processInputEvent(Event event);
+    abstract protected void onEvent(Event event);
 
-    abstract public void processOutputEvent(Event event);
+    abstract public void onTrigger(Event event);
 
     /*
      * Don't let subclasses override this method. It is not needed. All

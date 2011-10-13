@@ -15,11 +15,14 @@
  */
 package io.s4.example.counter;
 
+import java.util.concurrent.TimeUnit;
+
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Named;
 
+import io.s4.base.Event;
 import io.s4.core.App;
 import io.s4.core.Receiver;
 import io.s4.core.Sender;
@@ -79,15 +82,15 @@ final public class MyApp extends App {
 
         /* PEs that count events by user, gender, and age. */
         CounterPE userCountPE = createPE(CounterPE.class);
-        userCountPE.setOutputIntervalInEvents(interval);
+        userCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         userCountPE.setCountStream(userCountStream);
 
         CounterPE genderCountPE = createPE(CounterPE.class);
-        genderCountPE.setOutputIntervalInEvents(interval);
+        genderCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         genderCountPE.setCountStream(genderCountStream);
 
         CounterPE ageCountPE = createPE(CounterPE.class);
-        ageCountPE.setOutputIntervalInEvents(interval);
+        ageCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         ageCountPE.setCountStream(ageCountStream);
 
         /* Streams that output user events keyed on user, gender, and age. */
@@ -111,7 +114,7 @@ final public class MyApp extends App {
     protected void start() {
 
         for (int i = 0; i < 200; i++) {
-            generateUserEventPE.processOutputEvent(null);
+            generateUserEventPE.onTrigger(null);
         }
 
         try {
