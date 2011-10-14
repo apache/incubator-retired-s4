@@ -19,11 +19,10 @@ import io.s4.base.Event;
 
 import java.util.Collection;
 import java.util.Map;
-import com.google.common.collect.Maps;
-import com.google.common.collect.ImmutableMap;
+
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import net.jcip.annotations.ThreadSafe;
@@ -32,6 +31,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.MapMaker;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * @author Leo Neumeyer
@@ -56,7 +60,8 @@ public abstract class ProcessingElement implements Cloneable {
      * This maps holds all the instances. We make it package private to prevent
      * concrete classes from updating the collection.
      */
-    ConcurrentMap<String, ProcessingElement> peInstances;
+    Cache<String, ProcessingElement> peInstances;
+    // ConcurrentMap<String, ProcessingElement> peInstances;
 
     /* This map is initialized in the prototype and cloned to instances. */
     Map<Class<? extends Event>, Trigger> triggers;
@@ -84,7 +89,13 @@ public abstract class ProcessingElement implements Cloneable {
         this.app = app;
         app.addPEPrototype(this);
 
-        peInstances = new MapMaker().makeMap();
+        peInstances = CacheBuilder.newBuilder().build(
+                new CacheLoader<String, ProcessingElement>() {
+                    public ProcessingElement load(String key) throws Exception {
+                        return createPE(key);
+                    }
+                });
+
         triggers = new MapMaker().makeMap();
 
         /*
@@ -130,30 +141,43 @@ public abstract class ProcessingElement implements Cloneable {
         return app;
     }
 
-    public int getNumPEInstances() {
+    public long getNumPEInstances() {
 
         return peInstances.size();
     }
 
     /**
-     * Set expiration. PE instances will be automatically removed once a fixed
-     * duration has passed since the PE's last read or write access.
+     * Set PE expiration and cache size.
+     * <p>
+     * PE instances will be automatically removed from the cache once a fixed
+     * duration has elapsed after the PEs creation, or last access.
+     * <p>
+     * Least accessed PEs will automatically be removed from the cache when the
+     * number of PEs approaches maximumSize.
+     * <p>
+     * When this method is called all existing PE instances are destroyed.
      * 
-     * All existing PE instance will destroyed!
      * 
-     * 
+     * @param maximumSize
+     *            the approximate maximum number of PEs in the cache.
      * @param duration
-     *            the fixed duration
+     *            the PE duration
      * @param timeUnit
      *            the time unit
      */
-    public void setExpiration(long duration, TimeUnit timeUnit) {
+    public void configurePECache(int maximumSize, long duration,
+            TimeUnit timeUnit) {
 
         if (!isPrototype)
             return;
 
-        peInstances = new MapMaker().expireAfterAccess(duration, timeUnit)
-                .makeMap();
+        peInstances = CacheBuilder.newBuilder()
+                .expireAfterAccess(duration, timeUnit).maximumSize(maximumSize)
+                .build(new CacheLoader<String, ProcessingElement>() {
+                    public ProcessingElement load(String key) throws Exception {
+                        return createPE(key);
+                    }
+                });
     }
 
     /**
@@ -323,7 +347,7 @@ public abstract class ProcessingElement implements Cloneable {
         onRemove();
 
         /* Remove PE instance. */
-        peInstances.remove(id);
+        peInstances.invalidate(id);
     }
 
     protected void removeAll() {
@@ -335,24 +359,22 @@ public abstract class ProcessingElement implements Cloneable {
         }
 
         /* Remove all the instances. */
-        for (Map.Entry<String, ProcessingElement> entry : peInstances
-                .entrySet()) {
-
-            String key = entry.getKey();
-
-            if (key != null)
-                removeInstanceForKeyInternal(key);
-        }
-
-        /*
-         * TODO: This object (the PE prototype) may still be referenced by other
-         * objects at this point. For example a stream object may still be
-         * referencing PEs.
-         */
+        peInstances.invalidateAll();
     }
 
     protected void close() {
         removeInstanceForKeyInternal(id);
+    }
+
+    private ProcessingElement createPE(String id) {
+        ProcessingElement pe = (ProcessingElement) this.clone();
+        pe.isPrototype = false;
+        if (isFirst)
+            onCreateInternal(pe);
+        pe.id = id;
+        pe.onCreate();
+        logger.trace("Num PE instances: {}.", getNumPEInstances());
+        return pe;
     }
 
     /**
@@ -363,34 +385,13 @@ public abstract class ProcessingElement implements Cloneable {
     public ProcessingElement getInstanceForKey(String id) {
 
         /* Check if instance for key exists, otherwise create one. */
-        ProcessingElement pe = peInstances.get(id);
-        if (pe == null) {
-            /* PE instance for key does not yet exist, cloning one. */
-            pe = (ProcessingElement) this.clone();
-            pe.isPrototype = false;
-            if (isFirst)
-                onCreateInternal(pe);
-
-            /*
-             * The thread safe method putIfAbsent will most likely return null.
-             * However, in the rare event that a thread created the a PE with
-             * the same key a microsecond before, then pe2 will return the
-             * recently created object. In that case, we discard the second
-             * clone. With this precaution, we avoid synchronizing the
-             * {#getInstanceForKey} method and avoid deadlocks.
-             */
-            ProcessingElement pe2 = peInstances.putIfAbsent(id, pe);
-
-            if (pe2 != null) {
-                pe = pe2;
-            }
-
-            pe.id = id;
-            pe.onCreate();
-
-            logger.trace("Num PE instances: {}.", getNumPEInstances());
+        try {
+            return peInstances.get(id);
+        } catch (ExecutionException e) {
+            logger.error("Problem when trying to create a PE instance.", e);
         }
-        return pe;
+        
+        return null;
     }
 
     /**
@@ -399,7 +400,7 @@ public abstract class ProcessingElement implements Cloneable {
      */
     public Collection<ProcessingElement> getInstances() {
 
-        return peInstances.values();
+        return peInstances.asMap().values();
     }
 
     /**
@@ -414,7 +415,7 @@ public abstract class ProcessingElement implements Cloneable {
                 + "it to test your app in single node configuration only. Should work "
                 + "transparently for remote objects once it is implemented.");
 
-        ProcessingElement pe = peInstances.get(id);
+        ProcessingElement pe = peInstances.asMap().get(id);
         return pe;
     }
 
@@ -436,7 +437,7 @@ public abstract class ProcessingElement implements Cloneable {
          * a custom map capable of working on an S4 cluster as efficiently as
          * possible.
          */
-        return ImmutableMap.copyOf(peInstances);
+        return ImmutableMap.copyOf(peInstances.asMap());
     }
 
     /*
@@ -510,7 +511,7 @@ public abstract class ProcessingElement implements Cloneable {
         @Override
         public void run() {
 
-            for (Map.Entry<String, ProcessingElement> entry : peInstances
+            for (Map.Entry<String, ProcessingElement> entry : peInstances.asMap()
                     .entrySet()) {
 
                 ProcessingElement peInstance = entry.getValue();

@@ -169,7 +169,7 @@ public abstract class WindowingPE<T> extends ProcessingElement {
             }
 
             /* Iterate over all instances and put a new slot in the buffer. */
-            for (Map.Entry<String, ProcessingElement> entry : peInstances
+            for (Map.Entry<String, ProcessingElement> entry : peInstances.asMap()
                     .entrySet()) {
                 logger.trace("pe id: " + entry.getValue().id);
                 @SuppressWarnings("unchecked")
