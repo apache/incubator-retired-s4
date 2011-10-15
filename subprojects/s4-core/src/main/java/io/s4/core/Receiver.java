@@ -48,6 +48,10 @@ public class Receiver implements Runnable {
         streams = new MapMaker().makeMap();
     }
 
+    int getPartition() {
+        return listener.getPartitionId();
+    }
+    
     /** Save stream keyed by app id and stream id. */
     void addStream(Stream<? extends Event> stream) {
         int appId = stream.getApp().getId();

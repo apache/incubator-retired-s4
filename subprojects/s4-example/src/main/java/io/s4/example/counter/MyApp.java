@@ -141,8 +141,7 @@ final public class MyApp extends App {
         MyApp myApp = injector.getInstance(MyApp.class);
         Sender sender = injector.getInstance(Sender.class);
         Receiver receiver = injector.getInstance(Receiver.class);
-        myApp.setSender(sender);
-        myApp.setReceiver(receiver);
+        myApp.setCommLayer(sender, receiver);
         myApp.init();
         myApp.start();
     }

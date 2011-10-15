@@ -15,7 +15,6 @@
  */
 package io.s4.core;
 
-
 import io.s4.base.Event;
 import io.s4.core.Receiver;
 import io.s4.core.Sender;
@@ -115,21 +114,41 @@ public class Stream<T extends Event> implements Runnable, Streamable<T> {
      * 
      * @param event
      */
-    @SuppressWarnings("unused")
     public void put(T event) {
         try {
             event.setStreamId(getId());
             event.setAppId(app.getId());
+
+            /*
+             * Events may be sent to local or remote partitions or both. The
+             * following code implements the logic.
+             */
             if (key != null) {
-                sender.send(key.get(event), event);
+
+                /*
+                 * We send to a specific PE instance using the key but we don't
+                 * know if the target partition is remote or local. We need to
+                 * ask the sender.
+                 */
+                if (sender.sendAndCheckIfLocal(key.get(event), event)) {
+
+                    /*
+                     * Sender checked and decided that the target is local so we
+                     * simply put the event in the queue and we save the trip
+                     * over the network.
+                     */
+                    queue.put(event);
+                }
+                
             } else {
-                // no key, send to all partitions
-                sender.send(event);
-            }
-            // maybe have sender return some code if the event belongs to this
-            // node
-            if (event == null) { // for now, don't run the code in the following
-                                 // blocks
+
+                /*
+                 * We are broadcasting this event to all PE instance. In a
+                 * cluster, we need to send the event to every node. The sender
+                 * method takes care of the remote partitions an we take care of
+                 * putting the event into the queue.
+                 */
+                sender.sendToRemotePartitions(event);
                 queue.put(event);
             }
         } catch (InterruptedException e) {
@@ -146,7 +165,8 @@ public class Stream<T extends Event> implements Runnable, Streamable<T> {
      * {@link Receiver} object call this method when a new {@link Event} is
      * available.
      */
-    @SuppressWarnings("unchecked") // Need casting because we don't know the concrete event type.
+    @SuppressWarnings("unchecked")
+    // Need casting because we don't know the concrete event type.
     public void receiveEvent(Event event) {
         try {
             queue.put((T) event);

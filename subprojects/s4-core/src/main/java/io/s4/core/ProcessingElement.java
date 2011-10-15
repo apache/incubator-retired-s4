@@ -61,7 +61,6 @@ public abstract class ProcessingElement implements Cloneable {
      * concrete classes from updating the collection.
      */
     Cache<String, ProcessingElement> peInstances;
-    // ConcurrentMap<String, ProcessingElement> peInstances;
 
     /* This map is initialized in the prototype and cloned to instances. */
     Map<Class<? extends Event>, Trigger> triggers;

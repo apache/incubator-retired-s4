@@ -186,17 +186,13 @@ public abstract class App {
     }
 
     /**
-     * @param sender the sender to set
+     * @param sender - sends events to the communication layer.
+     * @param receiver - receives events from the communication layer.
      */
-    public void setSender(Sender sender) {
+    public void setCommLayer(Sender sender, Receiver receiver) {
         this.sender = sender;
-    }
-
-    /**
-     * @param receiver the receiver to set
-     */
-    public void setReceiver(Receiver receiver) {
         this.receiver = receiver;
+        sender.setPartition(receiver.getPartition());
     }
 
     /**
