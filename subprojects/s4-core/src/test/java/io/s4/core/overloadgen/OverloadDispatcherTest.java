@@ -25,8 +25,8 @@ public class OverloadDispatcherTest {
         Assert.assertEquals(Event1a.class, a.processedEventClass);
         dispatcher.dispatchEvent(a, new Event2());
         Assert.assertEquals(Event2.class, a.processedEventClass);
-        
-        // output events
+       
+        // trigger events
         dispatcher.dispatchTrigger(a, new Event2());
         Assert.assertEquals(Event2.class, a.processedTriggerEventClass);
         Assert.assertTrue(a.processedTriggerThroughGenericMethod);
@@ -66,5 +66,16 @@ public class OverloadDispatcherTest {
             System.setOut(stdout);
         }
 
+    }
+    
+    @Test
+    public void testGenericEvent() throws Exception {
+        OverloadDispatcherGenerator gen = new OverloadDispatcherGenerator(D.class);
+        OverloadDispatcher dispatcher = (OverloadDispatcher) gen.generate().newInstance();
+        D d = new D();
+        dispatcher.dispatchEvent(d, new Event2());
+        Assert.assertTrue(d.processedGenericEvent);
+        dispatcher.dispatchEvent(d, new Event1());
+        Assert.assertTrue(d.processedEvent1);
     }
 }
