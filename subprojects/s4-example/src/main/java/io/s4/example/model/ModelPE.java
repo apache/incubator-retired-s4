@@ -137,16 +137,7 @@ final public class ModelPE extends ProcessingElement {
         iteration++;
     }
 
-    /*
-     * 
-     * @see io.s4.ProcessingElement#processInputEvent(io.s4.Event)
-     * 
-     * Read input event, compute distance to current centroid and emit.
-     * 
-     * All models receive an end of training stream marker.
-     */
-    @Override
-    protected void onEvent(Event event) {
+    public void onEvent(Event event) {
 
         ObsEvent inEvent = (ObsEvent) event;
         float[] obs = inEvent.getObsVector();
@@ -209,10 +200,6 @@ final public class ModelPE extends ProcessingElement {
                 }
             }
         }
-    }
-
-    @Override
-    public void onTrigger(Event event) {
     }
 
     @Override

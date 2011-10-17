@@ -44,7 +44,6 @@ allprojects {
 
 /* All project libraries must be defined here. */
 libraries = [
-    modules:            'org.jboss.modules:jboss-modules:1.0.2.GA',
     json:               'org.json:json:20090211',
     guava:              'com.google.guava:guava:10.0.1',
     gson:               'com.google.code.gson:gson:1.6',
@@ -68,9 +67,9 @@ libraries = [
     logback_core:       'ch.qos.logback:logback-core:0.9.29',
     logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
     ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
+    zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
     jcip:               'net.jcip:jcip-annotations:1.0',
-    junit:              'junit:junit:4.10',
-    linkedin_gradle:    'org.linkedin:org.linkedin.gradle-plugins:1.5.0'
+    junit:              'junit:junit:4.10'
 ]
 
 subprojects {
@@ -100,7 +99,8 @@ subprojects {
 
         /* Misc. */
         compile( libraries.jcip )
-
+        compile( libraries.zk )
+        
         /* Testing. */
         testCompile( libraries.junit )
     }
@@ -176,11 +176,9 @@ class Version {
     int major
     int minor
     int bugfix
-    //String releaseType
     boolean isRelease
 
     String toString() {
-        //"$major.$minor.$bugfix${releaseType ? '-'+releaseType : ''}"
         "$major.$minor.$bugfix${isRelease ? '' : '-SNAPSHOT'}"
     }
 }

@@ -17,16 +17,20 @@ package io.s4.core;
 
 
 import io.s4.base.Event;
-import io.s4.core.Receiver;
-import io.s4.core.Sender;
+import io.s4.core.App.ClockType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 
 /*
  * Container base class to hold all processing elements. We will implement administrative methods here. 
@@ -39,7 +43,9 @@ public abstract class App {
     final private List<Streamable<? extends Event>> streams = new ArrayList<Streamable<? extends Event>>();
     private ClockType clockType = ClockType.WALL_CLOCK;
     private int id = -1;
+    @Inject
     private Sender sender;
+    @Inject
     private Receiver receiver;
     //@Inject private @Named("isCluster") Boolean isCluster;
 
@@ -258,4 +264,47 @@ public abstract class App {
             return null;
         }
     }
+    
+    /**
+    * Facility for starting S4 apps by passing a module class and an application class
+    *
+    * Usage: java &ltclasspath+params&gt io.s4.core.App &ltappClassName&gt &ltmoduleClassName&gt
+    *
+    */
+        public static void main(String[] args) {
+            if (args.length!=2) {
+                usage(args);
+            }
+            logger.info("Starting S4 app with module [{}] and app [{}]", args[0], args[1]);
+            Injector injector = null;
+            try {
+                if (!AbstractModule.class.isAssignableFrom(Class.forName(args[0]))) {
+                    logger.error("Module class [{}] is not an instance of [{}]", args[0], AbstractModule.class.getName());
+                    System.exit(-1);
+                }
+                injector = Guice.createInjector((AbstractModule) Class.forName(args[0]).newInstance());
+            } catch (InstantiationException e) {
+                logger.error("Invalid app class [{}] : {}", args[0], e.getMessage());
+                System.exit(-1);
+            } catch (IllegalAccessException e) {
+                logger.error("Invalid app class [{}] : {}", args[0], e.getMessage());
+                System.exit(-1);
+            } catch (ClassNotFoundException e) {
+                logger.error("Invalid app class [{}] : {}", args[0], e.getMessage());
+                System.exit(-1);
+            }
+            App app;
+            try {
+                app = (App)injector.getInstance(Class.forName(args[1]));
+                app.init();
+                app.start();
+            } catch (ClassNotFoundException e) {
+                logger.error("Invalid S4 application class [{}] : {}", args[0], e.getMessage());
+            }
+        }
+
+        private static void usage(String[] args) {
+            logger.info("Invalid parameters " + Arrays.toString(args) + " \nUsage: java <classpath+params> io.s4.core.App <appClassName> <moduleClassName>");
+            System.exit(-1);
+        }
 }

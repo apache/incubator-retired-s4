@@ -4,9 +4,6 @@ import io.s4.base.util.MultiClassLoader;
 
 import java.io.File;
 
-import org.jboss.modules.LocalModuleLoader;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

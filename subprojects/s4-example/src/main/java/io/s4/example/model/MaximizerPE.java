@@ -62,8 +62,7 @@ final public class MaximizerPE extends ProcessingElement {
         this.numClasses = numClasses;
     }
 
-    @Override
-    protected void onEvent(Event event) {
+    public void onEvent(Event event) {
 
         ObsEvent inEvent = (ObsEvent) event;
         float[] obs = inEvent.getObsVector();
@@ -87,12 +86,6 @@ final public class MaximizerPE extends ProcessingElement {
             /* This PE instance is no longer needed. */
             close();
         }
-
-    }
-
-    @Override
-    public void onTrigger(Event event) {
-        // TODO Auto-generated method stub
 
     }
 
