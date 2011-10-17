@@ -45,7 +45,7 @@ public class CounterPE extends ProcessingElement {
 
     private long counter = 0;
 
-    protected void onEvent(Event event) {
+    public void onEvent(Event event) {
 
         counter += 1;
     }

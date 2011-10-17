@@ -39,7 +39,7 @@ final public class MetricsPE extends ProcessingElement {
         super(app);
     }
 
-    protected void onEvent(Event event) {
+    public void onEvent(Event event) {
 
         ResultEvent resultEvent = (ResultEvent) event;
         int classID = resultEvent.getClassId();

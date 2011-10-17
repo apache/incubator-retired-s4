@@ -137,7 +137,7 @@ final public class ModelPE extends ProcessingElement {
         iteration++;
     }
 
-    protected void onEvent(Event event) {
+    public void onEvent(Event event) {
 
         ObsEvent inEvent = (ObsEvent) event;
         float[] obs = inEvent.getObsVector();

@@ -7,21 +7,22 @@ import io.s4.core.Stream;
 
 public class WordSplitterPE extends ProcessingElement {
     
-    final private Stream<WordSeenEvent> wordSeenStream;
+    private Stream<WordSeenEvent> wordSeenStream;
 
-    public WordSplitterPE(App app, Stream<WordSeenEvent> wordSeenStream) {
+    public WordSplitterPE(App app) {
         super(app);
-        this.wordSeenStream = wordSeenStream;
     }
 
-    public void processInputEvent(StringEvent event) {
+    public void onEvent(StringEvent event) {
         StringEvent sentence = event;
         String[] split = sentence.getString().split(" ");
         for (String word : split) {
             wordSeenStream.put(new WordSeenEvent(word));
         }
-        
-        
+    }
+    
+    public void setWordSeenStream(Stream<WordSeenEvent> stream) {
+        this.wordSeenStream = stream;
     }
 
     @Override

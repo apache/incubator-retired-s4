@@ -30,7 +30,7 @@ public class WordClassifierPE extends ProcessingElement implements Watcher {
         super(app);
     }
     
-    public void processInputEvent(WordCountEvent event) {
+    public void onEvent(WordCountEvent event) {
         try {
             WordCountEvent wcEvent = event;
             if (zk == null) {

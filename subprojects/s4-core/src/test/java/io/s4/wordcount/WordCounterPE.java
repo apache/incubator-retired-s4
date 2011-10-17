@@ -11,12 +11,15 @@ public class WordCounterPE extends ProcessingElement {
 
     private WordCounterPE() {}
     
-    public WordCounterPE(App app, Stream<WordCountEvent> wordClassifierStream) {
+    public WordCounterPE(App app) {
         super(app);
-        this.wordClassifierStream = wordClassifierStream;
     }
     
-    public void processInputEvent(WordSeenEvent event) { 
+    public void setWordClassifierStream(Stream<WordCountEvent> stream) {
+        this.wordClassifierStream = stream;
+    }
+
+    public void onEvent(WordSeenEvent event) { 
         wordCounter++;
         System.out.println("seen word " + event.getWord());
         // NOTE: it seems the id is the key for now...     

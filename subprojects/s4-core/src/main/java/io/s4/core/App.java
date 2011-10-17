@@ -43,7 +43,9 @@ public abstract class App {
     final private List<Streamable<? extends Event>> streams = new ArrayList<Streamable<? extends Event>>();
     private ClockType clockType = ClockType.WALL_CLOCK;
     private int id = -1;
+    @Inject
     private Sender sender;
+    @Inject
     private Receiver receiver;
     //@Inject private @Named("isCluster") Boolean isCluster;
 

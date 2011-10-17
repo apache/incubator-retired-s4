@@ -62,7 +62,7 @@ final public class MaximizerPE extends ProcessingElement {
         this.numClasses = numClasses;
     }
 
-    protected void onEvent(Event event) {
+    public void onEvent(Event event) {
 
         ObsEvent inEvent = (ObsEvent) event;
         float[] obs = inEvent.getObsVector();
@@ -89,6 +89,7 @@ final public class MaximizerPE extends ProcessingElement {
 
     }
 
+    @Override
     protected void onRemove() {
         // TODO Auto-generated method stub
 
