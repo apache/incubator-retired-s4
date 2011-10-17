@@ -14,5 +14,7 @@
  * limitations under the License.
  */
 
+description = 'Interfaces and most basic classes required by nultiple modules.'
+ 
 dependencies {
 }

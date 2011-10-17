@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+description = 'The S4 core platform.'
+ 
 dependencies {
     compile project(":s4-base")
+    compile project(":s4-comm")
 }

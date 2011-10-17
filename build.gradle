@@ -15,76 +15,69 @@
  */
 
 /**
- *
+ * The Apache Incubator S4 Project Build File
  *
  */
 
+description = 'Apache S4'
 defaultTasks 'assemble'
-
 archivesBaseName = 's4'
+distRootFolder = "$archivesBaseName-${-> version}"
 
-// Include Linkedin plugins.
-buildscript {
+allprojects {
+
+    // Append the suffix 'SNAPSHOT' when the build is not for release.
+    version = new Version(major: 0, minor: 5, bugfix: 0, isRelease: false)
+    group = 'io.s4'
+
+    /* Search these repos to find artifacts. Gradle will download and cache. */
     repositories {
-      mavenCentral()
-    }
-    dependencies {
-      classpath 'org.linkedin:org.linkedin.gradle-plugins:1.5.0'
+        mavenLocal()
+        mavenCentral()
+        mavenRepo name: "gson", urls: "http://google-gson.googlecode.com/svn/mavenrepo"
+
+        /* Add lib dir as a repo. Some jar files that are not available
+         in a public repo are distributed in the lib dir. */
+        flatDir name: 'libDir', dirs: "$rootDir/lib"
     }
 }
 
 /* All project libraries must be defined here. */
- libraries = [
- modules:            'org.jboss.modules:jboss-modules:1.0.2.GA',
- json:               'org.json:json:20090211',
- guava:              'com.google.guava:guava:10.0.1',
- gson:               'com.google.code.gson:gson:1.6',
- guice:              'com.google.inject:guice:3.0',
- guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
- guice_grapher:      'com.google.inject:guice-grapher:3.0',
- flexjson:           'net.sf.flexjson:flexjson:2.1',
- bcel:               'org.apache.bcel:bcel:5.2',
- jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
- kryo:               'com.googlecode:kryo:1.04',
- netty:              'org.jboss.netty:netty:3.2.5.Final',
- reflectasm:         'com.esotericsoftware:reflectasm:0.8',
- minlog:             'com.esotericsoftware:minlog:1.2',
- asm:                'asm:asm:3.2',
- commons_io:         'commons-io:commons-io:2.0.1',
- commons_config:     'commons-configuration:commons-configuration:1.6',
- commons_codec:      'commons-codec:commons-codec:1.4',
- commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
- commons_coll:       'net.sourceforge.collections:collections-generic:4.01', // Use this lib until the commons collection with Generics is released.
- slf4j:              'org.slf4j:slf4j-api:1.6.1',
- logback_core:       'ch.qos.logback:logback-core:0.9.29',
- logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
- ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
- jcip:               'net.jcip:jcip-annotations:1.0',
- junit:              'junit:junit:4.10',
- linkedin_gradle:    'org.linkedin:org.linkedin.gradle-plugins:1.5.0'
- ]
- 
-allprojects {
-    group = 'io.s4'
-   
-    /* Search these repos to find artifacts. Gradle will download and cache. */
-    repositories {
-    mavenLocal()
-    mavenCentral()
-    mavenRepo name: "gson", urls: "http://google-gson.googlecode.com/svn/mavenrepo"
-
-    /* Add lib dir as a repo. Some jar files that are not available 
-    in a public repo are distributed in the lib dir. */
-    flatDir name: 'libDir', dirs: "$rootDir/lib"
-    }
-
-    version = this.version
-}
+libraries = [
+    modules:            'org.jboss.modules:jboss-modules:1.0.2.GA',
+    json:               'org.json:json:20090211',
+    guava:              'com.google.guava:guava:10.0.1',
+    gson:               'com.google.code.gson:gson:1.6',
+    guice:              'com.google.inject:guice:3.0',
+    guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
+    guice_grapher:      'com.google.inject:guice-grapher:3.0',
+    flexjson:           'net.sf.flexjson:flexjson:2.1',
+    bcel:               'org.apache.bcel:bcel:5.2',
+    jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
+    kryo:               'com.googlecode:kryo:1.04',
+    netty:              'org.jboss.netty:netty:3.2.5.Final',
+    reflectasm:         'com.esotericsoftware:reflectasm:0.8',
+    minlog:             'com.esotericsoftware:minlog:1.2',
+    asm:                'asm:asm:3.2',
+    commons_io:         'commons-io:commons-io:2.0.1',
+    commons_config:     'commons-configuration:commons-configuration:1.6',
+    commons_codec:      'commons-codec:commons-codec:1.4',
+    commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
+    commons_coll:       'net.sourceforge.collections:collections-generic:4.01', // Use this lib until the commons collection with Generics is released.
+    slf4j:              'org.slf4j:slf4j-api:1.6.1',
+    logback_core:       'ch.qos.logback:logback-core:0.9.29',
+    logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
+    ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
+    jcip:               'net.jcip:jcip-annotations:1.0',
+    junit:              'junit:junit:4.10',
+    linkedin_gradle:    'org.linkedin:org.linkedin.gradle-plugins:1.5.0'
+]
 
 subprojects {
     apply plugin: 'java'
     apply plugin: 'eclipse'
-    
+    apply plugin: 'maven'
+
     /* Set Java version. */
     sourceCompatibility = 1.6
     targetCompatibility = 1.6
@@ -94,29 +87,100 @@ subprojects {
         /* Google. */
         compile( libraries.guava )
         compile( libraries.guice )
-        
+
         /* Logging. */
         compile( libraries.slf4j )
         compile( libraries.logback_core )
         compile( libraries.logback_classic )
-        
+
         /* Commons. */
         compile( libraries.commons_io )
         compile( libraries.commons_config )
         compile( libraries.commons_coll )
-        
+
         /* Misc. */
         compile( libraries.jcip )
-        
+
         /* Testing. */
         testCompile( libraries.junit )
     }
 
-    jar {
-        manifest.attributes provider: 's4'
+    manifest.mainAttributes(
+    provider: 'gradle',
+    'Implementation-Url': 'http://incubator.apache.org/projects/s4.html',
+    'Implementation-Version': version,
+    'Implementation-Vendor': 'Apache S4',
+    'Implementation-Vendor-Id': 'io.s4'
+    )
+}
+
+dependsOnChildren()
+
+platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm')]
+
+configurations {
+    platformLibs
+}
+
+dependencies {
+    platformLibs platformProjects
+}
+
+//task xxx {
+//    platformProjects.collect {proj ->
+//        // Iterate over the source sets
+//        println '\n' + proj.name + ' ' + proj.sourceSets.main.name
+//        println proj.sourceSets.main.classesDir
+//        println proj.sourceSets.main.runtimeClasspath.getFiles()
+//        println proj.sourceSets.main.resources.getFiles()
+//        println proj.sourceSets.main.allJava.getFiles()
+//        println proj.configurations.runtime.getFiles()
+//        println ' '
+//        println proj.configurations.archives.allArtifactFiles.getFiles()
+//    }
+//}
+
+binDistImage = copySpec {
+    platformProjects.collect {proj ->
+        into ("platform/lib") {
+            from proj.sourceSets.main.resources
+            from proj.configurations.runtime.getFiles()
+            from proj.configurations.archives.allArtifactFiles
+        }
     }
 }
 
+task binImage(type: Copy) {
+    description = "Create binary image"
+    destinationDir = file("$buildDir/s4-image")
+    with binDistImage
+}
 
+task clean << {
+    delete buildDir
+}
 
+// This task lists all the jars. We can use this pattern to create file descriptors.
+task listJars << {
+    description = 'List all the jars in the S4 framework.'
+    configurations.platformLibs.each { File file -> println file.name }
+}
 
+/* Generates the gradlew scripts.
+ http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.0-milestone-3'
+}
+
+class Version {
+    int major
+    int minor
+    int bugfix
+    //String releaseType
+    boolean isRelease
+
+    String toString() {
+        //"$major.$minor.$bugfix${releaseType ? '-'+releaseType : ''}"
+        "$major.$minor.$bugfix${isRelease ? '' : '-SNAPSHOT'}"
+    }
+}

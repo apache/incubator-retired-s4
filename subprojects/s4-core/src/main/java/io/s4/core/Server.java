@@ -1,7 +1,12 @@
 package io.s4.core;
 
+import io.s4.base.util.MultiClassLoader;
+
 import java.io.File;
 
+import org.jboss.modules.LocalModuleLoader;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,37 +64,23 @@ class Server {
 
         logger.trace("Load HelloApp");
 
-        /* The root dir for the modules is called "modules". */
-//        File repoRoot = new File(getClass().getClassLoader()
-//                .getResource("modules").toURI());
+        // LOOK AT the custom classloader class MultiClassLoader, for now it
+        // reads from a fixed location
+        // for testing.
+        MultiClassLoader cl = new MultiClassLoader();
+        Object o;
 
-        /* Create a module loader using the root. */
-        // ModuleLoader moduleLoader = new LocalModuleLoader(new File[]
-        // {repoRoot});
+        /*
+         * CREATE THE CLASS FILE USING THE DEFAULT PACKAGE! and copy/rename
+         * /HelloApp.class to /tmp/HelloApp.impl
+         */
+        String tst = "HelloApp";
 
-        /* Load teh module and run! */
-        // moduleLoader.loadModule(ModuleIdentifier.fromString("helloapp")).run(new
-        // String[] {});
-
-        // org.jboss.modules.Module mod =
-        // moduleLoader.loadModule(ModuleIdentifier.fromString("modules.helloapp"));
-        // System.out.println(mod.toString());
-        // System.out.println(mod.getClassLoader().toString());
-        // mod.run(new String[] {});
-
-        // /*
-        // * Create the Event Generator objects using injection. The generators
-        // * will be serialized and sent to remote hosts.
-        // */
-        // List<EventGenerator> generators = injector.getInstance(Key
-        // .get(new TypeLiteral<List<EventGenerator>>() {
-        // }));
-        //
-        // /*
-        // * The communicator interface hides the implementation details of how
-        // * the EventGenerator instance is sent to remote hosts.
-        // */
-        // Communicator comm = injector.getInstance(Communicator.class);
-
+        try {
+            o = (cl.loadClass(tst)).newInstance();
+            ((App) o).start();
+        } catch (Exception e) {
+            System.out.println("Caught exception : " + e);
+        }
     }
 }

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+description = 'Implementation-specific components of the communication layer.'
+ 
 dependencies {
     compile project(":s4-base")
     compile libraries.json

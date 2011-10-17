@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+description = 'Examples of S4 applications.'
+ 
 dependencies {
     compile project( ":s4-base" )
     compile project( ":s4-core" )

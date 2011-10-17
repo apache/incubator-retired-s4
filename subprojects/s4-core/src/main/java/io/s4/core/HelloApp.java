@@ -1,9 +1,21 @@
 package io.s4.core;
 
-public class HelloApp {
+public class HelloApp extends App {
 
-    public static void main(String[] args) {
+    @Override
+    protected void start() {
+        System.out.println("Hello App!");        
+    }
+
+    @Override
+    protected void init() {
+        // TODO Auto-generated method stub
         
-        System.out.println("Hello App!");
+    }
+
+    @Override
+    protected void close() {
+        // TODO Auto-generated method stub
+        
     }
 }
