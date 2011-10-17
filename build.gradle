@@ -61,7 +61,7 @@ buildscript {
  ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
  jcip:               'net.jcip:jcip-annotations:1.0',
  junit:              'junit:junit:4.10',
- zk:                 'org.apache.zookeeper:zookeeper:3.3.3',
+ zk:                 'org.apache.zookeeper:zookeeper:3.3.3', 
  linkedin_gradle:    'org.linkedin:org.linkedin.gradle-plugins:1.5.0'
  ]
  
