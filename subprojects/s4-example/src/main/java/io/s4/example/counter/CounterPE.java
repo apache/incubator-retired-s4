@@ -68,7 +68,6 @@ public class CounterPE extends ProcessingElement {
      */
     @Override
     protected void onCreate() {
-        // TODO Auto-generated method stub
 
     }
 

@@ -8,8 +8,8 @@ import io.s4.core.ProcessingElement;
  * most relevant methods of the processing elements.
  * 
  * <p>
- * <code>processInputEvent</code> and <code>processOutputEvent</code> methods
- * may be overloaded with different subtypes of {@link Event Event} parameters.
+ * <code>onEvent</code> and <code>onTrigger</code> methods
+ * may be overloaded with different subtypes of {@link Event} parameters.
  * Methods defined in this interface dispatch an event to the method
  * which is the best match according to the runtime type of the event.
  * </p>

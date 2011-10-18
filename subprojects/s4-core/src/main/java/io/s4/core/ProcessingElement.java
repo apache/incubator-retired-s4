@@ -42,14 +42,74 @@ import com.google.common.collect.ImmutableMap;
 /**
  * @author Leo Neumeyer
  * @author Matthieu Morel
- * 
+ *         <p>
  *         Base class for implementing processing in S4. All instances are
- *         organized as follows. A PE prototype is a special type of instance
- *         that defines the topology of the graph and manages the creation and
- *         destruction of the actual instances that do the processing. PE
- *         instances are clones of the prototype. To initialize PE instance
- *         variables implement the {@link #onCreate()} method. Be aware that
- *         Class variables are simply copied to the clones, even references.
+ *         organized as follows:
+ *         <ul>
+ *         <li>A PE prototype is a special type of instance that, along with
+ *         {@link Stream} defines the topology of the application graph.
+ *         <li>PE prototypes manage the creation and destruction of PE
+ *         instances.
+ *         <li>All PE instances are clones of a PE prototype.
+ *         <li>PE instances are associated with a unique key.
+ *         <li>PE instances do the actual work by processing any number of input
+ *         events of various types and emit output events of various types.
+ *         <li>To process events, {@code ProcessingElement} dynamically matches
+ *         an event type to a processing method. See
+ *         {@link io.s4.core.gen.OverloadDispatcher} . There are two types of
+ *         processing methods:
+ *         <ul>
+ *         <li>{@code onEvent(SomeEvent event)} When implemented, input events
+ *         of type {@code SomeEvent} will be dispatched to this method.
+ *         <li>{@code onTrigger(AnotherEvent event)} When implemented, input
+ *         events of type {@code AnotherEvent} will be dispatched to this method
+ *         when certain conditions are met. See
+ *         {@link #setTrigger(Class, int, long, TimeUnit)}.
+ *         </ul>
+ *         <li>
+ *         A PE implementation must not create threads. A periodic task can be
+ *         implemented by overloading the {@link #onTime()} method. See
+ *         {@link #setTimerInterval(long, TimeUnit)}
+ *         <li>If a reference in the PE prototype shared by the PE instances,
+ *         the object must be thread safe.
+ *         <li>The code in a PE instance is synchronized by the framework to
+ *         avoid concurrency problems.
+ *         <li>In some special cases, it may be desirable to allow concurrency
+ *         in the PE instance. For example, there may be several event
+ *         processing methods that can safely run concurrently. To enable
+ *         concurrency, annotate the implementation of {@code ProcessingElement}
+ *         with {@link ThreadSafe}.
+ *         <li>PE instances never use the constructor. They must be initialized
+ *         by implementing the {@link #onCreate()} method.
+ *         <li>PE class fields are cloned from the prototype. References are
+ *         also copied which means that if the prototype creates a collection
+ *         object, all instances will be sharing the same collection object
+ *         which is usually <em>NOT</em> what the programmer intended . The
+ *         application developer is responsible for initializing objects in the
+ *         {@link #onCreate()} method. For example, if each instance requires a
+ *         <tt>List<tt/> object the PE should implement the following:
+ *         <pre>
+ *         {@code
+ *         public class MyPE extends ProcessingElement {
+ * 
+ *           private Map<String, Integer> wordCount;
+ *         
+ *           ...
+ *         
+ *           onCreate() {
+ *           wordCount = new HashMap<String, Integer>;
+ *           logger.trace("Created a map for instance PE with id {}, getId());
+ *           }
+ *         }
+ *         }
+ *         </pre>
+ * 
+ * 
+ *         </ul>
+ * 
+ * 
+ * 
+ * 
  */
 public abstract class ProcessingElement implements Cloneable {
 
@@ -74,33 +134,34 @@ public abstract class ProcessingElement implements Cloneable {
     private ProcessingElement pePrototype;
     private boolean haveTriggers = false;
     private long timerIntervalInMilliseconds = 0;
-//    private int outputIntervalInEvents = 0;
-//    private long outputIntervalInMilliseconds = 0;
-//    private int eventCount = 0;
     private Timer timer;
     private boolean isPrototype = true;
     private boolean isThreadSafe = false;
     private boolean isFirst = true;
 
     private transient OverloadDispatcher overloadDispatcher;
-    
-    protected ProcessingElement() {}
+
+    protected ProcessingElement() {
+    }
 
     /**
-     * Create a PE prototype. The PE instance will never expire.
+     * Create a PE prototype. By default, PE instances will never expire. Use
+     * {@code #configurePECache} to configure.
      * 
      * @param app
      *            the app that contains this PE
      */
     public ProcessingElement(App app) {
-        OverloadDispatcherGenerator oldg = new OverloadDispatcherGenerator(this.getClass());
+        OverloadDispatcherGenerator oldg = new OverloadDispatcherGenerator(
+                this.getClass());
         Class<?> overloadDispatcherClass = oldg.generate();
         try {
-            overloadDispatcher = (OverloadDispatcher) overloadDispatcherClass.newInstance();
+            overloadDispatcher = (OverloadDispatcher) overloadDispatcherClass
+                    .newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        
+
         this.app = app;
         app.addPEPrototype(this);
 
@@ -120,10 +181,6 @@ public abstract class ProcessingElement implements Cloneable {
          */
         this.pePrototype = this;
     }
-
-//    abstract protected void onEvent(Event event);
-//
-//    abstract public void onTrigger(Event event);
 
     /**
      * This method is called by the PE timer. By default it is synchronized with
@@ -151,12 +208,19 @@ public abstract class ProcessingElement implements Cloneable {
     abstract protected void onRemove();
 
     /**
+     * PE objects must be associated with one and only one {@code App} object.
+     * 
      * @return the app
      */
     public App getApp() {
         return app;
     }
 
+    /**
+     * Returns the approximate number of PE instances from the cache.
+     * 
+     * @return the approximate number of PE instances.
+     */
     public long getNumPEInstances() {
 
         return peInstances.size();
@@ -210,15 +274,15 @@ public abstract class ProcessingElement implements Cloneable {
      * called. Where <tt>EventType</tt> matches the argument eventType.
      * 
      * @param eventType
-     *            - the type of event on which this trigger will fire.
+     *            the type of event on which this trigger will fire.
      * @param numEvents
-     *            - number of events since last trigger activation. Must be
+     *            number of events since last trigger activation. Must be
      *            greater than zero. (Set to one to trigger on every input
      *            event.)
      * @param interval
-     *            - minimum time between triggers.
+     *            minimum time between triggers.
      * @param timeUnit
-     *            - the TimeUnit for the argument interval.
+     *            the TimeUnit for the argument interval.
      */
     public void setTrigger(Class<? extends Event> eventType, int numEvents,
             long interval, TimeUnit timeUnit) {
@@ -250,24 +314,7 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     /**
-     * @param eventType
-     *            - the type of event of the trigger that will be removed.
-     */
-    public void removeTrigger(Class<? extends Event> eventType) {
-
-        if (!isPrototype) {
-            logger.warn("This method can only be used on the PE prototype.");
-            return;
-        }
-
-        if (eventType == null) {
-            logger.error("Argument null in removeTrigger() method is not valid.");
-            return;
-        }
-        triggers.remove(eventType);
-    }
-
-    /**
+     * The duration of the periodic task controlled by the embedded timer.
      * 
      * @param timeUnit
      *            the timeUnt of the returned value.
@@ -407,7 +454,7 @@ public abstract class ProcessingElement implements Cloneable {
         } catch (ExecutionException e) {
             logger.error("Problem when trying to create a PE instance.", e);
         }
-        
+
         return null;
     }
 
@@ -496,16 +543,9 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     /**
-     * @param id
-     *            the id to set
-     */
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    /**
+     * The {@code ProcessingElement} prototype for this object.
      * 
-     * @return the corresponding {@link ProcessingElement} for this instance.
+     * @return the corresponding {@code ProcessingElement} for this instance.
      */
     public ProcessingElement getPrototype() {
         return pePrototype;
@@ -529,8 +569,8 @@ public abstract class ProcessingElement implements Cloneable {
         @Override
         public void run() {
 
-            for (Map.Entry<String, ProcessingElement> entry : peInstances.asMap()
-                    .entrySet()) {
+            for (Map.Entry<String, ProcessingElement> entry : peInstances
+                    .asMap().entrySet()) {
 
                 ProcessingElement peInstance = entry.getValue();
 

@@ -8,6 +8,8 @@ target/
 build/
 bin/
 doc/
+tmp/
+
 
 # SVN
 .svn
@@ -21,3 +23,5 @@ doc/
 # Misc hidden files
 .DS_Store 
 
+# Java
+*.class
