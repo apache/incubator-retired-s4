@@ -11,19 +11,20 @@ import com.google.common.collect.MapMaker;
 /**
  * Custom class loader to load classes in its own classloader.
  * 
+ * <p>
  * CREDITS
  * 
- * The source code for this class was derived from:
- * http://code.google.com/p/db4o
- * -om/source/browse/trunk/objectmanager-api/src/com
- * /db4o/objectmanager/configuration/MultiClassLoader.java
+ * <p>
+ * The source code for this class was derived from <a href=
+ * "http://code.google.com/p/db4o-om/source/browse/trunk/objectmanager-api/src/com/db4o/objectmanager/configuration/MultiClassLoader.java"
+ * >this project</a> which was derived from this <a href=
+ * "http://www.javaworld.com/javaworld/jw-10-1996/jw-10-indepth.html?page=1"
+ * >article by Chuck McManis</a>.
  * 
- * which was derived from this article by Chuck McManis:
- * http://www.javaworld.com/javaworld/jw-10-1996/jw-10-indepth.html?page=1
  * 
  * Thank you to the authors!
  */
-public class MultiClassLoader extends ClassLoader {
+abstract public class MultiClassLoader extends ClassLoader {
 
     private static final Logger logger = LoggerFactory
             .getLogger(MultiClassLoader.class);
@@ -107,28 +108,7 @@ public class MultiClassLoader extends ClassLoader {
     }
 
     /** Simple method to read a class file from a known location. */
-    public byte[] loadClassBytes(String className) {
-
-        byte[] bytes = null;
-        String filename = "/tmp/" + className + ".impl";
-        logger.debug("Reading: " + filename);
-
-        try {
-            FileInputStream fi = new FileInputStream(filename);
-            bytes = new byte[fi.available()];
-            fi.read(bytes);
-            return bytes;
-        } catch (Exception e) {
-
-            /*
-             * If we caught an exception, either the class wasn't found or it
-             * was unreadable by our process.
-             */
-            logger.error("Unable to load class: {}.", filename);
-            e.printStackTrace();
-            return null;
-        }
-    }
+    abstract protected byte[] loadClassBytes(String className);
 
     protected String formatClassName(String className) {
         if (classNameReplacementChar == '\u0000') {
@@ -146,4 +126,3 @@ public class MultiClassLoader extends ClassLoader {
     }
 
 }
-

@@ -1,8 +1,6 @@
 package io.s4.core;
 
-import io.s4.base.util.MultiClassLoader;
-
-import java.io.File;
+import io.s4.base.util.JarLoader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +18,8 @@ import com.google.inject.name.Named;
  * loading and unloading of applications and instantiating the communication
  * layer.
  */
-class Server {
-
+public class Server {
+    
     final private String moduleName;
     final private String logLevel;
 
@@ -61,20 +59,15 @@ class Server {
 
         logger.trace("Load HelloApp");
 
+        // copy the jar from main/resources/apps/HelloApp.jar to /tmp
+        JarLoader cl = new JarLoader("/tmp/HelloApp.jar");
+        
         // LOOK AT the custom classloader class MultiClassLoader, for now it
-        // reads from a fixed location
-        // for testing.
-        MultiClassLoader cl = new MultiClassLoader();
-        Object o;
 
-        /*
-         * CREATE THE CLASS FILE USING THE DEFAULT PACKAGE! and copy/rename
-         * /HelloApp.class to /tmp/HelloApp.impl
-         */
         String tst = "HelloApp";
 
         try {
-            o = (cl.loadClass(tst)).newInstance();
+            Object o = (cl.loadClass(tst)).newInstance();
             ((App) o).start();
         } catch (Exception e) {
             System.out.println("Caught exception : " + e);
