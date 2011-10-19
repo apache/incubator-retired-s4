@@ -1,7 +1,8 @@
 package io.s4.core.overloadgen;
 
-import io.s4.base.Event;
-import io.s4.core.ProcessingElement;
+import org.apache.s4.base.Event;
+import org.apache.s4.core.ProcessingElement;
+
 
 public class A extends ProcessingElement {
     

@@ -1,6 +1,5 @@
 package io.s4;
 
-import io.s4.core.Stream;
 import io.s4.wordcount.KeyValueEvent;
 import io.s4.wordcount.StringEvent;
 
@@ -9,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import org.apache.s4.core.Stream;
 
 public class SocketAdapter<T extends StringEvent> {
 

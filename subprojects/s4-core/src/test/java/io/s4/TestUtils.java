@@ -1,6 +1,5 @@
 package io.s4;
 
-import io.s4.core.App;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,6 +19,7 @@ import java.util.concurrent.CountDownLatch;
 
 import junit.framework.Assert;
 
+import org.apache.s4.core.App;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;

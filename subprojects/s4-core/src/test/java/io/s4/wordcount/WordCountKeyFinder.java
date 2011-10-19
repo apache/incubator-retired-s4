@@ -1,9 +1,10 @@
 package io.s4.wordcount;
 
-import io.s4.core.KeyFinder;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.s4.core.KeyFinder;
 
 public class WordCountKeyFinder implements KeyFinder<WordCountEvent> {
 

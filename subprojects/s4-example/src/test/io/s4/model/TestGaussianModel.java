@@ -1,4 +1,4 @@
-package io.s4.model;
+package org.apache.s4.model;
 
 import java.util.Random;
 

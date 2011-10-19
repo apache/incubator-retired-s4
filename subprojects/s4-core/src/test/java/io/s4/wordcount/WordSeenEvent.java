@@ -1,6 +1,6 @@
 package io.s4.wordcount;
 
-import io.s4.base.Event;
+import org.apache.s4.base.Event;
 
 public class WordSeenEvent extends Event {
     

@@ -1,7 +1,5 @@
 package io.s4.core.overloadgen;
 
-import io.s4.core.gen.OverloadDispatcher;
-import io.s4.core.gen.OverloadDispatcherGenerator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -9,6 +7,8 @@ import java.util.regex.Pattern;
 
 import junit.framework.Assert;
 
+import org.apache.s4.core.gen.OverloadDispatcher;
+import org.apache.s4.core.gen.OverloadDispatcherGenerator;
 import org.junit.Test;
 
 public class OverloadDispatcherTest {

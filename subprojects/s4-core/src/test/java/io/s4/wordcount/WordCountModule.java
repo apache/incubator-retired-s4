@@ -1,18 +1,5 @@
 package io.s4.wordcount;
 
-import io.s4.base.Emitter;
-import io.s4.base.Hasher;
-import io.s4.base.Listener;
-import io.s4.base.SerializerDeserializer;
-import io.s4.comm.DefaultHasher;
-import io.s4.comm.serialize.KryoSerDeser;
-import io.s4.comm.topology.Assignment;
-import io.s4.comm.topology.AssignmentFromFile;
-import io.s4.comm.topology.Cluster;
-import io.s4.comm.topology.Topology;
-import io.s4.comm.topology.TopologyFromFile;
-import io.s4.comm.udp.UDPEmitter;
-import io.s4.comm.udp.UDPListener;
 
 import java.io.InputStream;
 
@@ -20,6 +7,19 @@ import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.ConfigurationUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.s4.base.Emitter;
+import org.apache.s4.base.Hasher;
+import org.apache.s4.base.Listener;
+import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.DefaultHasher;
+import org.apache.s4.comm.serialize.KryoSerDeser;
+import org.apache.s4.comm.topology.Assignment;
+import org.apache.s4.comm.topology.AssignmentFromFile;
+import org.apache.s4.comm.topology.Cluster;
+import org.apache.s4.comm.topology.Topology;
+import org.apache.s4.comm.topology.TopologyFromFile;
+import org.apache.s4.comm.udp.UDPEmitter;
+import org.apache.s4.comm.udp.UDPListener;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;

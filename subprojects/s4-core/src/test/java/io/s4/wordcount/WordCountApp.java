@@ -1,10 +1,11 @@
 package io.s4.wordcount;
 
 import io.s4.SocketAdapter;
-import io.s4.core.App;
-import io.s4.core.Stream;
 
 import java.io.IOException;
+
+import org.apache.s4.core.App;
+import org.apache.s4.core.Stream;
 
 import com.google.inject.Inject;
 

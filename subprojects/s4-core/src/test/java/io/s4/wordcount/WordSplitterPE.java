@@ -1,8 +1,8 @@
 package io.s4.wordcount;
 
-import io.s4.core.App;
-import io.s4.core.ProcessingElement;
-import io.s4.core.Stream;
+import org.apache.s4.core.App;
+import org.apache.s4.core.ProcessingElement;
+import org.apache.s4.core.Stream;
 
 
 public class WordSplitterPE extends ProcessingElement {

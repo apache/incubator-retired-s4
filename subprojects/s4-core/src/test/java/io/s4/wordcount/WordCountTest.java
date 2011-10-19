@@ -1,7 +1,6 @@
 package io.s4.wordcount;
 
 import io.s4.TestUtils;
-import io.s4.core.App;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,6 +8,7 @@ import java.util.concurrent.CountDownLatch;
 
 import junit.framework.Assert;
 
+import org.apache.s4.core.App;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs.Ids;

@@ -1,8 +1,6 @@
 package io.s4.wordcount;
 
 import io.s4.TestUtils;
-import io.s4.core.App;
-import io.s4.core.ProcessingElement;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +10,8 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.log4j.Logger;
+import org.apache.s4.core.App;
+import org.apache.s4.core.ProcessingElement;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
