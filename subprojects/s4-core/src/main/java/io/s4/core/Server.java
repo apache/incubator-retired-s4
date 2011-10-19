@@ -1,5 +1,7 @@
 package io.s4.core;
 
+import java.net.URL;
+
 import io.s4.base.util.JarLoader;
 
 import org.slf4j.Logger;
@@ -57,20 +59,43 @@ public class Server {
 
         // HERE WE SHOULD LOOP TO CHECK IF WE NEED TO LOAD OR UNLOAD APPS.
 
-        logger.trace("Load HelloApp");
 
-        // copy the jar from main/resources/apps/HelloApp.jar to /tmp
-        JarLoader cl = new JarLoader("/tmp/HelloApp.jar");
+        // MAKE SURE YOU COPY THE RESOURCE TO THE CLASSPATH 
+        // example: subprojects/s4-core/bin/apps/MY_RESOURCE (in Eclipse)
+        //String resource = "/apps/HelloApp.jar";
+        String resource = "/apps/CounterExample.s4r";
+        // Read the jar as a resource into a URL.
+        URL url = this.getClass().getResource(resource);
+        if(url == null) {
+            logger.error("Couldn't read resource.");
+            System.exit(-1);
+        }
+        logger.trace("Read: {}", url.toString());
+        
+        // Convert the URL to a File and load the jar.
+        JarLoader cl = new JarLoader(url.getFile());
+        
+//        URL url = this.getClass().getResource("/apps/HelloApp.jar");
+//        logger.trace("URL: " + url.toString());
         
         // LOOK AT the custom classloader class MultiClassLoader, for now it
 
-        String tst = "HelloApp";
-
+        String appClassName = "io.s4.example.counter.MyApp"; // THE APP CLASS WE NEED TO GET FROM THE MANIFEST.
+        App myApp=null;
+        
         try {
-            Object o = (cl.loadClass(tst)).newInstance();
-            ((App) o).start();
+            Object o = (cl.loadClass(appClassName)).newInstance();
+            myApp = (App) o;
         } catch (Exception e) {
             System.out.println("Caught exception : " + e);
+            e.printStackTrace();
         }
+        myApp.start();
+        
+        Sender sender = injector.getInstance(Sender.class);
+        Receiver receiver = injector.getInstance(Receiver.class);
+        myApp.setCommLayer(sender, receiver);
+        myApp.init();
+        myApp.start();
     }
 }
