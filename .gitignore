@@ -9,7 +9,7 @@ build/
 bin/
 doc/
 tmp/
-
+pepe/
 
 # SVN
 .svn
