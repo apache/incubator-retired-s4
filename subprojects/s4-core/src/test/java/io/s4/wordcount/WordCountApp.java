@@ -32,6 +32,7 @@ public class WordCountApp extends App {
         Stream<WordCountEvent> wordCountStream = createStream("words counts stream", new WordCountKeyFinder(),
                 wordClassifierPrototype);
         WordCounterPE wordCounterPrototype = createPE(WordCounterPE.class);
+        wordCounterPrototype.setTrigger(WordSeenEvent.class, 1, 0, null);
         wordCounterPrototype.setWordClassifierStream(wordCountStream);
         Stream<WordSeenEvent> wordSeenStream = createStream("words seen stream", new WordSeenKeyFinder(),
                 wordCounterPrototype);

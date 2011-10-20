@@ -15,7 +15,6 @@
  */
 package org.apache.s4.core;
 
-
 import java.util.Collection;
 import java.util.Map;
 
@@ -56,8 +55,8 @@ import com.google.common.collect.ImmutableMap;
  *         events of various types and emit output events of various types.
  *         <li>To process events, {@code ProcessingElement} dynamically matches
  *         an event type to a processing method. See
- *         {@link org.apache.s4.core.gen.OverloadDispatcher} . There are two types of
- *         processing methods:
+ *         {@link org.apache.s4.core.gen.OverloadDispatcher} . There are two
+ *         types of processing methods:
  *         <ul>
  *         <li>{@code onEvent(SomeEvent event)} When implemented, input events
  *         of type {@code SomeEvent} will be dispatched to this method.
@@ -270,6 +269,7 @@ public abstract class ProcessingElement implements Cloneable {
      * -OR- time since last event is greater than interval.
      * </ul>
      * 
+     * <p>
      * When the trigger fires, the method <tt>trigger(EventType event)</tt> is
      * called. Where <tt>EventType</tt> matches the argument eventType.
      * 
@@ -280,9 +280,11 @@ public abstract class ProcessingElement implements Cloneable {
      *            greater than zero. (Set to one to trigger on every input
      *            event.)
      * @param interval
-     *            minimum time between triggers.
+     *            minimum time between triggers. Set to zero if no time interval
+     *            needed.
      * @param timeUnit
-     *            the TimeUnit for the argument interval.
+     *            the TimeUnit for the argument interval. Can set to null if no
+     *            time interval needed.
      */
     public void setTrigger(Class<? extends Event> eventType, int numEvents,
             long interval, TimeUnit timeUnit) {
@@ -305,8 +307,10 @@ public abstract class ProcessingElement implements Cloneable {
         /* Skip trigger checking overhead if there are no triggers. */
         haveTriggers = true;
 
-        long intervalInMilliseconds = timeUnit.convert(interval,
-                TimeUnit.MILLISECONDS);
+        long intervalInMilliseconds = 0;
+        if (timeUnit != null)
+            intervalInMilliseconds = timeUnit.convert(interval,
+                    TimeUnit.MILLISECONDS);
 
         Trigger config = new Trigger(numEvents, intervalInMilliseconds);
 
