@@ -63,7 +63,7 @@ public class NettyListener implements Listener {
         try {
             return handoffQueue.take();
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        	return null;
         }
     }
     

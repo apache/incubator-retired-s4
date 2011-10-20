@@ -72,7 +72,7 @@ public class UDPListener implements Listener, Runnable {
         try {
             return handoffQueue.take();
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        	return null;
         }
     }
 
