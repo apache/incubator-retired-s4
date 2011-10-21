@@ -19,6 +19,8 @@ description = 'Implementation-specific components of the communication layer.'
 dependencies {
     compile project(":s4-base")
     compile libraries.json
+    compile libraries.gson
  	compile libraries.kryo
     compile libraries.netty
+    compile libraries.zkclient
 }
