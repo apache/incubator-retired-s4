@@ -42,7 +42,7 @@ import com.google.inject.name.Names;
 /*
  * Module for s4-comm/tests
  */
-public class TestModule extends AbstractModule {
+public class NettyTestModule extends AbstractModule {
 
 	protected PropertiesConfiguration config = null;
 
