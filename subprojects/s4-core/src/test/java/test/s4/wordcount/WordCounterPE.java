@@ -19,7 +19,7 @@ public class WordCounterPE extends ProcessingElement {
         this.wordClassifierStream = stream;
     }
 
-    public void onTrigger(WordSeenEvent event) { 
+    public void onEvent(WordSeenEvent event) { 
         wordCounter++;
         System.out.println("seen word " + event.getWord());
         // NOTE: it seems the id is the key for now...     
