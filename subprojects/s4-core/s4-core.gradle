@@ -20,3 +20,7 @@ dependencies {
     compile project(":s4-base")
     compile project(":s4-comm")
 }
+
+test {
+    forkEvery=1
+}

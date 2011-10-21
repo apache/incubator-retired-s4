@@ -112,8 +112,7 @@ import com.google.common.collect.ImmutableMap;
  */
 public abstract class ProcessingElement implements Cloneable {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(ProcessingElement.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProcessingElement.class);
 
     protected App app;
 
@@ -151,12 +150,10 @@ public abstract class ProcessingElement implements Cloneable {
      *            the app that contains this PE
      */
     public ProcessingElement(App app) {
-        OverloadDispatcherGenerator oldg = new OverloadDispatcherGenerator(
-                this.getClass());
+        OverloadDispatcherGenerator oldg = new OverloadDispatcherGenerator(this.getClass());
         Class<?> overloadDispatcherClass = oldg.generate();
         try {
-            overloadDispatcher = (OverloadDispatcher) overloadDispatcherClass
-                    .newInstance();
+            overloadDispatcher = (OverloadDispatcher) overloadDispatcherClass.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -164,13 +161,12 @@ public abstract class ProcessingElement implements Cloneable {
         this.app = app;
         app.addPEPrototype(this);
 
-        peInstances = CacheBuilder.newBuilder().build(
-                new CacheLoader<String, ProcessingElement>() {
-                    @Override
-                    public ProcessingElement load(String key) throws Exception {
-                        return createPE(key);
-                    }
-                });
+        peInstances = CacheBuilder.newBuilder().build(new CacheLoader<String, ProcessingElement>() {
+            @Override
+            public ProcessingElement load(String key) throws Exception {
+                return createPE(key);
+            }
+        });
 
         triggers = new MapMaker().makeMap();
 
@@ -244,14 +240,12 @@ public abstract class ProcessingElement implements Cloneable {
      * @param timeUnit
      *            the time unit
      */
-    public void configurePECache(int maximumSize, long duration,
-            TimeUnit timeUnit) {
+    public void configurePECache(int maximumSize, long duration, TimeUnit timeUnit) {
 
         if (!isPrototype)
             return;
 
-        peInstances = CacheBuilder.newBuilder()
-                .expireAfterAccess(duration, timeUnit).maximumSize(maximumSize)
+        peInstances = CacheBuilder.newBuilder().expireAfterAccess(duration, timeUnit).maximumSize(maximumSize)
                 .build(new CacheLoader<String, ProcessingElement>() {
                     @Override
                     public ProcessingElement load(String key) throws Exception {
@@ -286,8 +280,7 @@ public abstract class ProcessingElement implements Cloneable {
      *            the TimeUnit for the argument interval. Can set to null if no
      *            time interval needed.
      */
-    public void setTrigger(Class<? extends Event> eventType, int numEvents,
-            long interval, TimeUnit timeUnit) {
+    public void setTrigger(Class<? extends Event> eventType, int numEvents, long interval, TimeUnit timeUnit) {
 
         if (!isPrototype) {
             logger.warn("This method can only be used on the PE prototype.");
@@ -324,8 +317,7 @@ public abstract class ProcessingElement implements Cloneable {
      *            the timeUnt of the returned value.
      */
     public long getTimerInterval(TimeUnit timeUnit) {
-        return timeUnit.convert(timerIntervalInMilliseconds,
-                TimeUnit.MILLISECONDS);
+        return timeUnit.convert(timerIntervalInMilliseconds, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -339,8 +331,7 @@ public abstract class ProcessingElement implements Cloneable {
      *            the timeUnit of interval
      */
     public void setTimerInterval(long interval, TimeUnit timeUnit) {
-        timerIntervalInMilliseconds = TimeUnit.MILLISECONDS.convert(interval,
-                timeUnit);
+        timerIntervalInMilliseconds = TimeUnit.MILLISECONDS.convert(interval, timeUnit);
 
         /* We only allow timers in the PE prototype, not in the instances. */
         if (!isPrototype) {
@@ -392,18 +383,38 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     private boolean isTrigger(Event event) {
+        return isTrigger(event, event.getClass());
+    }
 
-        /* Check if there is a trigger for this event type. */
-        Trigger trigger = triggers.get(Event.class); // TODO: modify for dynamic
-                                                     // dispatch.
+    /**
+     * Checks the trigger for this event type. 
+     * Creates an inactive trigger if no trigger is found after recursively exploring 
+     * the event class hierarchy.
+     * An inactive trigger never triggers.
+     * 
+     * @return true if trigger is reached, 
+     *         false if trigger is not ready yet or if trigger is inactive
+     * 
+     */
+    private boolean isTrigger(Event event, Class<?> triggerClass) {
+        /* Check if there is a trigger for this event type. Create an */
+        Trigger trigger = triggers.get(triggerClass);
 
-        if (trigger == null)
-            return false;
-
-        /*
-         * Check if it is time to activate the trigger for this event type.
-         */
-        return trigger.checkAndUpdate();
+        if (trigger == null) {
+            if (!Event.class.isAssignableFrom(triggerClass)) {
+                // reached termination condition
+                triggers.put(event.getClass(), new Trigger());
+                return false;
+            } else {
+                // further explore hierarchy
+                return isTrigger(event, triggerClass.getSuperclass());
+            }
+        } else {
+            /*
+             * Check if it is time to activate the trigger for this event type.
+             */
+            return trigger.checkAndUpdate();
+        }
     }
 
     private void removeInstanceForKeyInternal(String id) {
@@ -573,8 +584,7 @@ public abstract class ProcessingElement implements Cloneable {
         @Override
         public void run() {
 
-            for (Map.Entry<String, ProcessingElement> entry : peInstances
-                    .asMap().entrySet()) {
+            for (Map.Entry<String, ProcessingElement> entry : peInstances.asMap().entrySet()) {
 
                 ProcessingElement peInstance = entry.getValue();
 
@@ -594,6 +604,14 @@ public abstract class ProcessingElement implements Cloneable {
         final int intervalInEvents;
         long lastTime;
         int eventCount;
+        // inactive triggers never trigger anything, they are used as markers
+        boolean active = true;
+
+        Trigger() {
+            this.intervalInEvents = 0;
+            this.intervalInMilliseconds = 0;
+            this.active = false;
+        }
 
         Trigger(int intervalInEvents, long intervalInMilliseconds) {
             this.intervalInEvents = intervalInEvents;
@@ -601,16 +619,22 @@ public abstract class ProcessingElement implements Cloneable {
         }
 
         boolean checkAndUpdate() {
-            long timeLapse = System.currentTimeMillis() - lastTime;
-            eventCount++;
-            lastTime = System.currentTimeMillis();
+            if (active) {
+                long timeLapse = System.currentTimeMillis() - lastTime;
+                eventCount++;
+                lastTime = System.currentTimeMillis();
 
-            if (timeLapse > intervalInMilliseconds
-                    || eventCount >= intervalInEvents) {
-                eventCount = 0;
-                return true;
+                if (timeLapse > intervalInMilliseconds || eventCount >= intervalInEvents) {
+                    eventCount = 0;
+                    return true;
+                }
             }
             return false;
         }
+
+        boolean isActive() {
+            return active;
+        }
     }
+
 }
