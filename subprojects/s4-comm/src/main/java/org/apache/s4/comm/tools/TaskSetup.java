@@ -1,4 +1,4 @@
-package org.apache.s4.admin;
+package org.apache.s4.comm.tools;
 
 import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.Cluster;
@@ -54,7 +54,7 @@ public class TaskSetup {
         TopologyFromZK topologyFromZK=new TopologyFromZK(clusterName, zookeeperAddress, 30000, 30000);
         Thread.sleep(3000);
         Cluster topology = topologyFromZK.getTopology();
-        System.out.println(topology);
+        System.out.println(topology.getNodes().size());
         Thread.currentThread().join();
     }
 }

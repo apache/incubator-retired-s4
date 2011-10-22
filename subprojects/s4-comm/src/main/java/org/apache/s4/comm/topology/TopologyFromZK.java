@@ -79,12 +79,12 @@ public class TopologyFromZK implements Topology, IZkChildListener,
 
     @Override
     public void handleDataChange(String dataPath, Object data) throws Exception {
-
+        doProcess();
     }
 
     @Override
     public void handleDataDeleted(String dataPath) throws Exception {
-
+        doProcess();
     }
 
     @Override

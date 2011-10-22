@@ -179,8 +179,9 @@ public class AssignmentFromZK implements Assignment, IZkChildListener,
                                 process);
 
                     } catch (Throwable e) {
-                        logger.warn("Exception trying to acquire task. This is warning and can be ignored"
-                                + e);
+                        logger.warn("Exception trying to acquire task:"
+                                + taskName
+                                + " This is warning and can be ignored. " + e);
                         // Any exception does not means we failed to acquire
                         // task because we might have acquired task but there
                         // was ZK connection loss
