@@ -46,7 +46,7 @@ public abstract class GenericTestModule<T> extends AbstractModule {
             config = new PropertiesConfiguration();
             config.load(is);
             config.setProperty("cluster.lock_dir",
-                    config.getString("cluster.lock_dir").replace("{user.dir}", System.getProperty("user.dir")));
+                    config.getString("cluster.lock_dir").replace("{user.dir}", System.getProperty("java.io.tmpdir")));
             System.out.println(ConfigurationUtils.toString(config));
             // TODO - validate properties.
 

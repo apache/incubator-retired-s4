@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import junit.framework.Assert;
 
 import org.apache.s4.core.App;
+import org.apache.s4.core.ProcessingElement;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -27,6 +28,8 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ZooKeeperServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Contains static methods that can be used in tests for things such as: - files
@@ -37,13 +40,17 @@ import org.apache.zookeeper.server.ZooKeeperServer;
  */
 public class TestUtils {
 
+    private static final Logger logger = LoggerFactory.getLogger(TestUtils.class);
+
     public static final int ZK_PORT = 21810;
     public static final int INITIAL_BOOKIE_PORT = 5000;
-    public static File DEFAULT_TEST_OUTPUT_DIR = new File(System.getProperty("user.dir") + File.separator + "tmp");
+    public static File DEFAULT_TEST_OUTPUT_DIR = new File(System.getProperty("java.io.tmpdir") + File.separator + "tmp");
     public static File DEFAULT_STORAGE_DIR = new File(DEFAULT_TEST_OUTPUT_DIR.getAbsolutePath() + File.separator
             + "storage");
     public static ServerSocket serverSocket;
-
+    static {
+        logger.info("Storage dir: " + DEFAULT_STORAGE_DIR);
+    }
     public static Process forkS4App(Class<?> moduleClass, Class<?> appClass) throws IOException, InterruptedException {
 
         List<String> cmdList = new ArrayList<String>();
