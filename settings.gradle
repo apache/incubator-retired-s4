@@ -16,7 +16,6 @@
 include 's4-base'
 include 's4-core'
 include 's4-comm'
-include 's4-admin'
 include 's4-example'
 
 rootProject.name = 's4'

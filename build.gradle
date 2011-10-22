@@ -117,7 +117,7 @@ subprojects {
 
 dependsOnChildren()
 
-platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-admin')]
+platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm')]
 
 configurations {
     platformLibs
