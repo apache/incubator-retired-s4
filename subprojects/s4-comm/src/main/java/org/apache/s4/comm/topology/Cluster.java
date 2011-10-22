@@ -32,7 +32,13 @@ public class Cluster {
     final private String[] hosts;
     final private String[] ports;
     final private int numNodes;
-
+    private int numPartitions;
+    public Cluster(int numPartitions){
+        this.hosts = new String[] {};
+        this.ports = new String[] {};
+        this.numNodes = 0;
+        this.numPartitions = numPartitions;
+    }
     /**
      * Define the hosts and corresponding ports in the cluster.
      * 
@@ -46,24 +52,40 @@ public class Cluster {
     @Inject
     Cluster(@Named("cluster.hosts") String hosts,
             @Named("cluster.ports") String ports) throws IOException {
+        if (hosts != null && hosts.length() > 0 && ports != null
+                && ports.length() > 0) {
+            this.ports = ports.split(",");
+            this.hosts = hosts.split(",");
 
-        this.ports = ports.split(",");
-        this.hosts = hosts.split(",");
+            if (this.ports.length != this.hosts.length) {
+                logger.error("Number of hosts should match number of ports in properties file. hosts: "
+                        + hosts + " ports: " + ports);
+                throw new IOException();
+            }
 
-        if (this.ports.length != this.hosts.length) {
-            logger.error("Number of hosts should match number of ports in properties file. hosts: "
-                    + hosts + " ports: " + ports);
-            throw new IOException();
+            numNodes = this.hosts.length;
+            for (int i = 0; i < numNodes; i++) {
+                ClusterNode node = new ClusterNode(i,
+                        Integer.parseInt(this.ports[i]), this.hosts[i], "");
+                nodes.add(node);
+                logger.info("Added cluster node: " + this.hosts[i] + ":"
+                        + this.ports[i]);
+            }
+            numPartitions = numNodes;
+        } else {
+            this.hosts = new String[] {};
+            this.ports = new String[] {};
+            this.numNodes = 0;
+
         }
+    }
 
-        numNodes = this.hosts.length;
-        for (int i = 0; i < numNodes; i++) {
-            ClusterNode node = new ClusterNode(i,
-                    Integer.parseInt(this.ports[i]), this.hosts[i], "");
-            nodes.add(node);
-            logger.info("Added cluster node: " + this.hosts[i] + ":"
-                    + this.ports[i]);
-        }
+    /**
+     * Number of partitions in the cluster.
+     * @return
+     */
+    public int getPartitionCount() {
+        return numPartitions;
     }
 
     /**
@@ -81,7 +103,7 @@ public class Cluster {
     }
 
     // TODO: do we need mode and name? Making provate for now.
-    
+
     @SuppressWarnings("unused")
     private String getMode() {
         return mode;

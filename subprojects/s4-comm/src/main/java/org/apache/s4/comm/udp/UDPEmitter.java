@@ -68,7 +68,7 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
     }
     
     public int getPartitionCount() {
-        return topology.getTopology().getNodes().size();
+        return topology.getTopology().getPartitionCount();
     }
     
     public void onChange() {

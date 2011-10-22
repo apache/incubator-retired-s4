@@ -159,7 +159,8 @@ public class NettyEmitter implements Emitter, ChannelFutureListener,
 	}
 
 	public int getPartitionCount() {
-		return topology.getTopology().getNodes().size();
+	    //Number of nodes is not same as number of partitions
+		return topology.getTopology().getPartitionCount();
 	}
 
 	class TestHandler extends SimpleChannelHandler {

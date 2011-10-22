@@ -69,7 +69,8 @@ libraries = [
     ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
     zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
     jcip:               'net.jcip:jcip-annotations:1.0',
-    junit:              'junit:junit:4.10'
+    junit:              'junit:junit:4.10',
+    zkclient:           'com.github.sgroschupf:zkclient:0.1'
 ]
 
 subprojects {
@@ -116,7 +117,7 @@ subprojects {
 
 dependsOnChildren()
 
-platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm')]
+platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-admin')]
 
 configurations {
     platformLibs
