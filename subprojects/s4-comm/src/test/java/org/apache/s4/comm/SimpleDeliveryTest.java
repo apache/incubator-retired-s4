@@ -2,18 +2,18 @@ package org.apache.s4.comm;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Listener;
-
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.google.inject.name.Named;
 
 import junit.framework.Assert;
 import junit.framework.TestCase;
 
 /*
- * Test class to test communication protocols.
+ * Test class to test communication protocols. As comm-layer connections need to be
+ *  made including acquiring locks, the test is declared abstract and needs to be 
+ *  extended with appropriate protocols.
  * 
+ * At a high-level, the test accomplishes the following:
  * <ul>
  * <li> Create Send and Receive Threads </li>
  * <li> SendThread sends out a pre-defined number of messages to all the partitions </li>
@@ -24,9 +24,10 @@ import junit.framework.TestCase;
  * </ul>
  * 
  */
-public class SimpleDeliveryTest extends TestCase {
+public abstract class SimpleDeliveryTest extends TestCase {
+	protected CommWrapper sdt;
 
-	class CommWrapper {
+	static class CommWrapper {
 		final private static int messageCount = 200;
 		final private static int timerThreadCount = 100;
 
@@ -140,54 +141,14 @@ public class SimpleDeliveryTest extends TestCase {
 	}
 
 	/**
-	 * test1() tests the UDP protocol. If all components function without
-	 * throwing exceptions, the test passes. As UDP doesn't guarantee message
-	 * delivery, the number of messages received doesn't come into play to
-	 * determine if it passes the test.
-	 * 
+	 * test() tests the protocol. If all components function without throwing
+	 * exceptions, the test passes. The test also reports the loss of messages,
+	 * if any.
 	 * 
 	 * @throws InterruptedException
 	 */
-	public void test1() throws InterruptedException {
-		System.out.println("Testing UDP");
-
-		Injector injector = Guice.createInjector(new UDPTestModule());
+	public void test() throws InterruptedException {
 		try {
-			CommWrapper sdt = injector.getInstance(CommWrapper.class);
-
-			// start send and receive threads
-			sdt.sendThread.start();
-			sdt.receiveThread.start();
-
-			// wait for them to finish
-			sdt.sendThread.join();
-			sdt.receiveThread.join();
-
-			// exit - system.exit is called here to revoke the lock file and
-			// listener
-			// sockets
-		} catch (Exception e) {
-			Assert.fail("UDP test has failed");
-		}
-		Assert.assertTrue("UDP test PASSED. Seems to work fine", true);
-
-		System.out.println("Done");
-	}
-
-	/**
-	 * test2() tests the Netty TCP protocol. If all components function without
-	 * throwing exceptions, the test passes partially. As TCP guarantees message
-	 * delivery, the test checks for that too.
-	 * 
-	 * @throws InterruptedException
-	 */
-	public void test2() throws InterruptedException {
-		System.out.println("Testing Netty TCP");
-
-		Injector injector = Guice.createInjector(new NettyTestModule());
-		try {
-			CommWrapper sdt = injector.getInstance(CommWrapper.class);
-
 			// start send and receive threads
 			sdt.sendThread.start();
 			sdt.receiveThread.start();
@@ -199,10 +160,12 @@ public class SimpleDeliveryTest extends TestCase {
 			Assert.assertTrue("Guaranteed message delivery",
 					!sdt.moreMessages());
 		} catch (Exception e) {
-			Assert.fail("Netty test has failed basic functionality test");
+			e.printStackTrace();
+			Assert.fail("The comm protocol has failed basic functionality test");
 		}
 
-		Assert.assertTrue("Netty seems to be working crash-free", true);
+		Assert.assertTrue("The comm protocol seems to be working crash-free",
+				true);
 
 		System.out.println("Done");
 	}
