@@ -23,8 +23,8 @@ public final class JarResources {
     public boolean debugOn = false;
 
     // jar resource mapping tables
-    private Hashtable htSizes = new Hashtable();
-    private Hashtable htJarContents = new Hashtable();
+    private Map<String, Integer> htSizes = new HashMap<String, Integer>();
+    private Map<String, Object> htJarContents = new HashMap<String, Object>();
 
     // a jar file
     private String jarFileName;
@@ -56,7 +56,7 @@ public final class JarResources {
         try {
             // extracts just sizes only.
             ZipFile zf = new ZipFile(jarFileName);
-            Enumeration e = zf.entries();
+            Enumeration<? extends ZipEntry> e = zf.entries();
             while (e.hasMoreElements()) {
                 ZipEntry ze = (ZipEntry) e.nextElement();
 

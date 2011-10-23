@@ -80,7 +80,7 @@ public class Server {
         
         // LOOK AT the custom classloader class MultiClassLoader, for now it
 
-        String appClassName = "io.s4.example.counter.MyApp"; // THE APP CLASS WE NEED TO GET FROM THE MANIFEST.
+        String appClassName = "org.apache.s4.example.counter.MyApp"; // THE APP CLASS WE NEED TO GET FROM THE MANIFEST.
         App myApp=null;
         
         try {
@@ -90,7 +90,6 @@ public class Server {
             System.out.println("Caught exception : " + e);
             e.printStackTrace();
         }
-        myApp.start();
         
         Sender sender = injector.getInstance(Sender.class);
         Receiver receiver = injector.getInstance(Receiver.class);

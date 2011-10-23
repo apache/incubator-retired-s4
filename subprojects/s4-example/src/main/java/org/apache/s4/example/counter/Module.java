@@ -107,7 +107,5 @@ public class Module extends AbstractModule {
         /* Use Kryo to serialize events. */
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
 
-        bind(Integer.class).annotatedWith(Names.named("pe.counter.interval"))
-                .toInstance(config.getInt("pe.counter.interval"));
     }
 }

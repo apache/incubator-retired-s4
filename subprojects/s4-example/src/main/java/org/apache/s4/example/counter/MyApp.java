@@ -24,9 +24,7 @@ import org.apache.s4.core.Sender;
 import org.apache.s4.core.Stream;
 
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.name.Named;
 
 
 /*
@@ -37,14 +35,11 @@ import com.google.inject.name.Named;
 
 final public class MyApp extends App {
 
-    final private int interval;
+    final private int interval = 1;
     private GenerateUserEventPE generateUserEventPE;
 
     /*
-     * We use Guice to pass parameters to the application. This is just a
-     * trivial example where we get the value for the variable interval from a
-     * properties file. (Saved under "src/main/resources".) All configuration
-     * details are done in Module.java.
+     * 
      * 
      * The application graph itself is created in this Class. However,
      * developers may provide tools for creating apps which will generate the
@@ -54,12 +49,9 @@ final public class MyApp extends App {
      * instance that is used as a prototype from which all PE instance will be
      * created. The prototype itself is not used as an instance. (Except when
      * the PE is of type Singleton PE). To create a data structure for each PE
-     * instance you must do in the method ProcessingElement.initPEInstance().
+     * instance you must do it in the method ProcessingElement.onCreate().
      */
-    @Inject
-    public MyApp(@Named("pe.counter.interval") int interval) {
-        this.interval = interval;
-    }
+
 
     /*
      * Build the application graph using POJOs. Don't like it? Write a nice

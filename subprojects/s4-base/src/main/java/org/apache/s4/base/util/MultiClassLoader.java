@@ -1,6 +1,5 @@
 package org.apache.s4.base.util;
 
-import java.io.FileInputStream;
 import java.util.Map;
 
 import org.slf4j.Logger;

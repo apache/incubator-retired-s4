@@ -79,9 +79,9 @@ public class JarClassLoader extends URLClassLoader {
         }
        }
        
-       private void addJarResource(File file) throws IOException {
+    private void addJarResource(File file) throws IOException {
         JarFile jarFile = new JarFile(file);
-        addURL(file.toURL());
+        addURL(file.toURI().toURL());
         Enumeration<JarEntry> jarEntries = jarFile.entries();
         while (jarEntries.hasMoreElements()) {
          JarEntry jarEntry = jarEntries.nextElement();

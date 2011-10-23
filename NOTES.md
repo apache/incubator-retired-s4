@@ -74,26 +74,28 @@ Implementation-Vendor: Apache S4
 Implementation-Vendor-Id: io.s4
 S4-App-Class: io.s4.example.counter.MyApp
   
-$ jar cmf MANIFEST.MF CounterExample.s4r io
-$ jar tvf CounterExample.s4r 
-     0 Tue Oct 18 22:10:58 PDT 2011 META-INF/
-   272 Tue Oct 18 22:10:58 PDT 2011 META-INF/MANIFEST.MF
-     0 Tue Oct 18 22:10:22 PDT 2011 io/
-     0 Tue Oct 18 22:10:40 PDT 2011 io/s4/
-     0 Tue Oct 18 22:10:44 PDT 2011 io/s4/example/
-     0 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/
-  1160 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/AgeKeyFinder.class
-  1556 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/CounterPE.class
-  1306 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/CountEvent.class
-  1117 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/CountKeyFinder.class
-  1174 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/GenderKeyFinder.class
-  2242 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/GenerateUserEventPE.class
-  3286 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/Module.class
-  4100 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/MyApp.class
-   841 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/PrintPE.class
-   532 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/README.md
-  1209 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/UserEvent.class
-  1118 Tue Oct 18 22:10:22 PDT 2011 io/s4/example/counter/UserIDKeyFinder.class
+$ jar cmf MANIFEST.MF CounterExample.s4r org
+$ jar tfv CounterExample.s4r 
+     0 Sat Oct 22 19:21:06 PDT 2011 META-INF/
+   307 Sat Oct 22 19:21:06 PDT 2011 META-INF/MANIFEST.MF
+     0 Wed Oct 19 08:55:18 PDT 2011 org/
+     0 Wed Oct 19 08:55:18 PDT 2011 org/apache/
+     0 Wed Oct 19 08:55:36 PDT 2011 org/apache/s4/
+     0 Wed Oct 19 08:55:44 PDT 2011 org/apache/s4/example/
+     0 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/
+  1240 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/AgeKeyFinder.class
+  1708 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/CounterPE.class
+  1330 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/CountEvent.class
+  1197 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/CountKeyFinder.class
+  1254 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/GenderKeyFinder.class
+  2378 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/GenerateUserEventPE.class
+  3414 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/Module.class
+  4196 Sat Oct 22 19:19:14 PDT 2011 org/apache/s4/example/counter/MyApp.class
+   897 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/PrintPE.class
+   532 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/README.md
+  1233 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/UserEvent.class
+  1198 Wed Oct 19 08:55:18 PDT 2011 org/apache/s4/example/counter/UserIDKeyFinder.class
+
 </pre>
 
 

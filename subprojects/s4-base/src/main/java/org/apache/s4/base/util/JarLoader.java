@@ -1,6 +1,5 @@
 package org.apache.s4.base.util;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -32,8 +31,8 @@ public class JarLoader extends MultiClassLoader {
         return jarResource.getResource(className);
     }
 
-    public List<Class> getClasses(String path) {
-        List<Class> classes = new ArrayList<Class>();
+    public List<Class<?>> getClasses(String path) {
+        List<Class<?>> classes = new ArrayList<Class<?>>();
         try {
             JarLoader jarLoader = new JarLoader(path);
             JarFile jarFile = new JarFile(path);
@@ -47,7 +46,7 @@ public class JarLoader extends MultiClassLoader {
                                 .substring(0, entry.getName().indexOf(".class"))
                                 .replace("/", ".").replace("\\", ".");
 
-                        Class clazz = jarLoader.loadClass(className);
+                        Class<?> clazz = jarLoader.loadClass(className);
                         // clazz.asSubclass(IoAdapter.class);
                         if (clazz != null) {
                             classes.add(clazz);
