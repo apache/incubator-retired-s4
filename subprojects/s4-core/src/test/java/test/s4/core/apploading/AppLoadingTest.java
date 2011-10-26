@@ -12,7 +12,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 
 import org.apache.s4.core.Server;
 import org.apache.zookeeper.ZooKeeper;
@@ -63,7 +62,8 @@ public class AppLoadingTest {
     public void testA() throws Exception, InterruptedException {
 
         // add all classes from counter app
-        File rootAppDir = new File ( new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath()+"/s4-example/bin");
+        File rootAppDir = new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath()
+                + "/s4-example/bin");
         File appFilesDir = new File(rootAppDir, "org/apache/s4/example/counter");
         generateS4RFromDirectoryContents(rootAppDir, appFilesDir, "counterExample",
                 "org.apache.s4.example.counter.MyApp");
@@ -118,16 +118,15 @@ public class AppLoadingTest {
 
     /**
      * 
-     * 1. generates an s4r package from classes in the apploading package (TODO process still to be improved), 
-     * 2. deploys it to bin/apps 
-     * 3. starts a forked S4 node, which loads apps from bin/apps
-     * 4. verifies app is working (s4 app started, event correctly processed)
+     * 1. generates an s4r package from classes in the apploading package (TODO process still to be improved), 2.
+     * deploys it to bin/apps 3. starts a forked S4 node, which loads apps from bin/apps 4. verifies app is working (s4
+     * app started, event correctly processed)
      * 
      * NOTE: we'll need to add an automatic test for which we make sure code cannot be in the classpath
      */
     @Test
     public void testAppLoading() throws Exception {
-        
+
         // TODO fix paths
 
         final ZooKeeper zk = TestUtils.createZkClient();
