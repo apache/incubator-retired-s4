@@ -28,7 +28,7 @@ abstract public class MultiClassLoader extends ClassLoader {
     private static final Logger logger = LoggerFactory
             .getLogger(MultiClassLoader.class);
 
-    private Map<String, Class<?>> classes;
+    private final Map<String, Class<?>> classes;
     private char classNameReplacementChar;
 
     public MultiClassLoader() {
@@ -40,10 +40,12 @@ abstract public class MultiClassLoader extends ClassLoader {
      * This is a simple version for external clients since they will always want
      * the class resolved before it is returned to them.
      */
+    @Override
     public Class<?> loadClass(String className) throws ClassNotFoundException {
         return (loadClass(className, true));
     }
 
+    @Override
     public synchronized Class<?> loadClass(String className, boolean resolveIt)
             throws ClassNotFoundException {
 
@@ -53,19 +55,19 @@ abstract public class MultiClassLoader extends ClassLoader {
                 + ", resolveIt: " + resolveIt);
 
         /* Check our local cache of classes. */
-        result = (Class<?>) classes.get(className);
+        result = classes.get(className);
         if (result != null) {
-            logger.debug("Returning cached result.");
+            logger.debug("Returning cached result for class [{}]", className);
             return result;
         }
 
         /* Check with the primordial class loader. */
         try {
             result = super.findSystemClass(className);
-            logger.debug("Returning system class (in CLASSPATH).");
+            logger.debug("Returning system class (in CLASSPATH) [{}]", className);
             return result;
         } catch (ClassNotFoundException e) {
-            logger.debug("Not a system class.");
+            logger.debug("Not a system class [{}]", className);
         }
 
         classBytes = loadClassBytes(className);
@@ -92,7 +94,7 @@ abstract public class MultiClassLoader extends ClassLoader {
         if (result == null)
             return null;
         classes.put(className, result);
-        logger.debug("Returning newly loaded class.");
+        logger.debug("Returning newly loaded class [{}]", className);
         return result;
     }
 

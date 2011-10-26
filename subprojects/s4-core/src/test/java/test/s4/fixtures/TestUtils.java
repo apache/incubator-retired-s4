@@ -1,6 +1,5 @@
 package test.s4.fixtures;
 
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,12 +13,14 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import junit.framework.Assert;
 
 import org.apache.s4.core.App;
+import org.apache.s4.core.Main;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -51,23 +52,31 @@ public class TestUtils {
     static {
         logger.info("Storage dir: " + DEFAULT_STORAGE_DIR);
     }
-    public static Process forkS4App(Class<?> moduleClass, Class<?> appClass) throws IOException, InterruptedException {
 
+    public static Process forkS4App(Class<?> moduleClass, Class<?> appClass) throws IOException, InterruptedException {
+        return forkProcess(App.class.getName(), moduleClass.getName(), appClass.getName());
+    }
+
+    public static Process forkS4Node() throws IOException, InterruptedException {
+        return forkProcess(Main.class.getName(), new String[] {});
+    }
+
+    private static Process forkProcess(String mainClass, String... args) throws IOException, InterruptedException {
         List<String> cmdList = new ArrayList<String>();
         cmdList.add("java");
         cmdList.add("-cp");
         cmdList.add(System.getProperty("java.class.path"));
-        // cmdList.add("-Xdebug");
-        // cmdList.add("-Xnoagent");
-        //
-        // cmdList.add("-Xrunjdwp:transport=dt_socket,address=8788,server=y,suspend=n");
-        cmdList.add(App.class.getName());
-        cmdList.add(moduleClass.getName());
-        cmdList.add(appClass.getName());
+//      cmdList.add("-Xdebug");
+//      cmdList.add("-Xnoagent");
+//     
+//      cmdList.add("-Xrunjdwp:transport=dt_socket,address=8788,server=y,suspend=n");
 
-        // System.out.println(Arrays.toString(cmdList.toArray(new
-        // String[]{})).replace(",", ""));
-
+        cmdList.add(mainClass);
+        for (String arg : args) {
+            cmdList.add(arg);
+        }
+        
+        System.out.println(Arrays.toString(cmdList.toArray(new String[] {})).replace(",", ""));
         ProcessBuilder pb = new ProcessBuilder(cmdList);
 
         pb.directory(new File(System.getProperty("user.dir")));
@@ -166,7 +175,7 @@ public class TestUtils {
             KeeperException {
 
         List<String> cmdList = new ArrayList<String>();
-        final File zkDataDir = new File(System.getProperty("user.dir") + File.separator + "tmp" + File.separator
+        final File zkDataDir = new File(System.getProperty("java.io.tmpdir") + File.separator + "tmp" + File.separator
                 + "zookeeper" + File.separator + "data");
         if (zkDataDir.exists()) {
             TestUtils.deleteDirectoryContents(zkDataDir);
@@ -269,8 +278,20 @@ public class TestUtils {
     public static void watchAndSignalCreation(String path, final CountDownLatch latch, final ZooKeeper zk)
             throws KeeperException, InterruptedException {
 
+        // by default delete existing nodes with same path
+        watchAndSignalCreation(path, latch, zk, false);
+    }
+
+    
+    public static void watchAndSignalCreation(String path, final CountDownLatch latch, final ZooKeeper zk, boolean deleteIfExists)
+            throws KeeperException, InterruptedException {
+
         if (zk.exists(path, false) != null) {
-            zk.delete(path, -1);
+            if (deleteIfExists) {
+                zk.delete(path, -1);
+            } else {
+                latch.countDown();
+            }
         }
         zk.exists(path, new Watcher() {
             @Override

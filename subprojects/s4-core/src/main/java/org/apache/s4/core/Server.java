@@ -1,16 +1,19 @@
 package org.apache.s4.core;
 
-import java.net.URL;
-import java.util.jar.Attributes;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 
-import org.apache.s4.base.util.JarLoader;
+import org.apache.s4.base.util.S4RLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
 
+import com.google.common.io.PatternFilenameFilter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -24,20 +27,25 @@ import com.google.inject.name.Named;
  */
 public class Server {
 
-    final private String moduleName;
+    private static final Logger logger = LoggerFactory.getLogger(Server.class);
+
+    final private String commModuleName;
     final private String logLevel;
+    public static final String MANIFEST_S4_APP_CLASS = "S4-App-Class";
+    // NOTE: currently we use a directory, but this will be changed by a URL (ref to zookeeper?), 
+    // so that applications can be downloaded from a remote repository
+    final private static String S4_APPS_PATH = System.getProperty("s4.apps.path", System.getProperty("user.dir")
+            + "/bin/apps");
+    List<App> apps = new ArrayList<App>();
 
     /**
      * 
      */
     @Inject
-    public Server(@Named("comm.module") String moduleName,
-            @Named("s4.logger_level") String logLevel) {
-        this.moduleName = moduleName;
+    public Server(@Named("comm.module") String commModuleName, @Named("s4.logger_level") String logLevel) {
+        this.commModuleName = commModuleName;
         this.logLevel = logLevel;
     }
-
-    private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
     public void start() throws Exception {
 
@@ -51,7 +59,7 @@ public class Server {
 
         /* Initialize communication layer module. */
         try {
-            module = (AbstractModule) Class.forName(moduleName).newInstance();
+            module = (AbstractModule) Class.forName(commModuleName).newInstance();
         } catch (Exception e) {
             logger.error("Unable to instantiate communication layer module.", e);
         }
@@ -59,55 +67,54 @@ public class Server {
         /* After some indirection we get the injector. */
         injector = Guice.createInjector(module);
 
-        // HERE WE SHOULD LOOP TO CHECK IF WE NEED TO LOAD OR UNLOAD APPS.
-
-        // MAKE SURE YOU COPY THE RESOURCE TO THE CLASSPATH
-        // example: subprojects/s4-core/bin/apps/MY_RESOURCE (in Eclipse)
-        // String resource = "/apps/HelloApp.jar";
-        String resource = "/apps/CounterExample.s4r";
-        // Read the jar as a resource into a URL.
-        URL url = this.getClass().getResource(resource);
-        if (url == null) {
-            logger.error("Couldn't read resource.");
-            System.exit(-1);
+        File[] s4rFiles = new File(S4_APPS_PATH).listFiles(new PatternFilenameFilter("\\w+\\.s4r"));
+        for (File s4rFile : s4rFiles) {
+            loadApp(injector, s4rFile);
         }
-        logger.trace("Read: {}", url.toString());
 
-        /* Convert the URL to a File and load the jar. */
-        JarLoader cl = new JarLoader(url.getFile());
+        // now init + start apps
+        for (App app : apps) {
+            logger.info("Starting app " + app.getClass().getName());
+            app.init();
+            app.start();
+        }
 
-        /* Read MANIFEST main attributes. We need the name of the App class. */
-        String appClassName="";
+        logger.info("Completed applications startup");
+
+    }
+
+    private void loadApp(Injector injector, File s4r) {
+
+        S4RLoader cl = new S4RLoader(s4r.getAbsolutePath());
         try {
-            JarFile jar = new JarFile(url.getFile());
-            Manifest manifest = jar.getManifest();
-            Attributes attributes = manifest.getMainAttributes();
-            for (Object name : attributes.keySet()) {
-                logger.debug(name + ": " + attributes.getValue((Attributes.Name)name));
+            JarFile s4rFile = new JarFile(s4r);
+            if (s4rFile.getManifest() == null) {
+                logger.warn("Cannot load s4r archive [{}] : missing manifest file");
+                return;
             }
-            appClassName = attributes.getValue("S4-App-Class");
-        } catch (Exception e) {
-           logger.error(e.getMessage(), e);
-        }
-        
-        logger.info("Loading application class: " + appClassName);
-        App myApp = null;
+            if (!s4rFile.getManifest().getMainAttributes().containsKey(new Name(MANIFEST_S4_APP_CLASS))) {
+                logger.warn("Cannot load s4r archive [{}] : missing attribute [{}] in manifest", s4r.getAbsolutePath(),
+                        MANIFEST_S4_APP_CLASS);
+                return;
+            }
+            String appClassName = s4rFile.getManifest().getMainAttributes().getValue(MANIFEST_S4_APP_CLASS);
+            App app = null;
 
-        /* Create app. App must have a zero-arg constructor. */
-        try {
-            Object o = (cl.loadClass(appClassName)).newInstance();
-            myApp = (App) o;
-        } catch (Exception e) {
-            System.out.println("Caught exception : " + e);
-            e.printStackTrace();
+            try {
+                Object o = (cl.loadClass(appClassName)).newInstance();
+                app = (App) o;
+            } catch (Exception e) {
+                logger.error("Could not load s4 application form s4r file [{" + s4r.getAbsolutePath() + "}]", e);
+                return;
+            }
+
+            Sender sender = injector.getInstance(Sender.class);
+            Receiver receiver = injector.getInstance(Receiver.class);
+            app.setCommLayer(sender, receiver);
+            apps.add(app);
+        } catch (IOException e) {
+            logger.error("Could not load s4 application form s4r file [{" + s4r.getAbsolutePath() + "}]", e);
         }
 
-        /* Set up app and call life-cycle methods. */
-        Sender sender = injector.getInstance(Sender.class);
-        Receiver receiver = injector.getInstance(Receiver.class);
-        myApp.setCommLayer(sender, receiver);
-        myApp.init();
-        myApp.start();
-        myApp.close();
     }
 }

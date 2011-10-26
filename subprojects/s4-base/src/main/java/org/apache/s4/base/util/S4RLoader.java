@@ -2,9 +2,13 @@ package org.apache.s4.base.util;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+
+import com.google.common.collect.MapMaker;
 
 /**
  * 
@@ -17,16 +21,31 @@ import java.util.jar.JarFile;
  * 
  * 
  */
-public class JarLoader extends MultiClassLoader {
+public class S4RLoader extends MultiClassLoader {
 
-    private JarResources jarResource;
-
-    public JarLoader(String jarPath) {
+    private final JarResources jarResource;
+    private final Map<String, byte[]> generatedClassBytes = new HashMap<String, byte[]>();
+    
+    public S4RLoader(String jarPath) {
         jarResource = new JarResources(jarPath);
     }
 
+    /**
+     * In order to load dynamically generated classes with the same classloader than 
+     * the one used for loading application classes from an s4r archive, we register these
+     * generated classes and bytecode in this classloader. They can be picked later.
+     * 
+     */
+    public void addGeneratedClassBytes(String className, byte[] classBytes) {
+        generatedClassBytes.put(className, classBytes);
+    }
+    
     @Override
     protected byte[] loadClassBytes(String className) {
+        if (generatedClassBytes.containsKey(className)) {
+            // note: no need to keep that data any longer
+            return generatedClassBytes.remove(className);
+        }
         className = formatClassName(className);
         return jarResource.getResource(className);
     }
@@ -34,7 +53,7 @@ public class JarLoader extends MultiClassLoader {
     public List<Class<?>> getClasses(String path) {
         List<Class<?>> classes = new ArrayList<Class<?>>();
         try {
-            JarLoader jarLoader = new JarLoader(path);
+            S4RLoader jarLoader = new S4RLoader(path);
             JarFile jarFile = new JarFile(path);
             for (Enumeration<JarEntry> e = jarFile.entries(); e
                     .hasMoreElements();) {
