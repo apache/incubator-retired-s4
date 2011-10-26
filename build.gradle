@@ -28,7 +28,7 @@ allprojects {
 
     // Append the suffix 'SNAPSHOT' when the build is not for release.
     version = new Version(major: 0, minor: 5, bugfix: 0, isRelease: false)
-    group = 'io.s4'
+    group = 'org.apache.s4'
 
     /* Search these repos to find artifacts. Gradle will download and cache. */
     repositories {
@@ -77,10 +77,14 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'eclipse'
     apply plugin: 'maven'
+    apply plugin: 'code-quality'
 
     /* Set Java version. */
     sourceCompatibility = 1.6
     targetCompatibility = 1.6
+
+    checkstyleConfigFileName = "$rootDir/config/checkstyle/s4-checkstyle.xml"
+    
 
     dependencies {
         
