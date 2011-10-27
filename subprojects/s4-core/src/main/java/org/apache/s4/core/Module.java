@@ -1,5 +1,6 @@
 package org.apache.s4.core;
 
+import java.io.File;
 import java.io.InputStream;
 
 import org.apache.commons.configuration.ConfigurationConverter;
@@ -23,8 +24,7 @@ public class Module extends AbstractModule {
     private void loadProperties(Binder binder) {
 
         try {
-            InputStream is = this.getClass().getResourceAsStream(
-                    "/s4-core.properties");
+            InputStream is = this.getClass().getResourceAsStream("/s4-core.properties");
             config = new PropertiesConfiguration();
             config.load(is);
 
@@ -32,8 +32,7 @@ public class Module extends AbstractModule {
             // TODO - validate properties.
 
             /* Make all properties injectable. Do we need this? */
-            Names.bindProperties(binder,
-                    ConfigurationConverter.getProperties(config));
+            Names.bindProperties(binder, ConfigurationConverter.getProperties(config));
         } catch (ConfigurationException e) {
             binder.addError(e);
             e.printStackTrace();
@@ -46,8 +45,14 @@ public class Module extends AbstractModule {
             loadProperties(binder());
 
         bind(Server.class).asEagerSingleton();
-//        bind(String.class).annotatedWith(Names.named("core.module"))
-//                .toInstance(config.getString("core.module"));
+
+        /*
+         * Apps dir is searched as follows: The s4.apps.path property in the properties file. The user's current working
+         * directory under the subdirectory /bin/apps.
+         */
+        String appsDir = config.getString("s4.apps.path", System.getProperty("user.dir") + File.separator + "bin"
+                + File.separator + "apps");
+        bind(String.class).annotatedWith(Names.named("appsDir")).toInstance(appsDir);
     }
 
 }
