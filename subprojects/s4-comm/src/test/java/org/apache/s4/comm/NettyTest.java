@@ -28,7 +28,7 @@ import com.google.inject.name.Names;
 public class NettyTest extends SimpleDeliveryTest {
 
 	@Override
-	protected void setUp() {
+	public void setup() {
 		Injector injector = Guice.createInjector(new NettyTestModule());
 		sdt = injector.getInstance(CommWrapper.class);
 	}
