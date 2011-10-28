@@ -33,10 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Contains static methods that can be used in tests for things such as: - files
- * utilities: strings <-> files conversion, directory recursive delete etc... -
- * starting local instances for zookeeper and bookkeeper - distributed latches
- * through zookeeper - etc...
+ * Contains static methods that can be used in tests for things such as: - files utilities: strings <-> files
+ * conversion, directory recursive delete etc... - starting local instances for zookeeper and bookkeeper - distributed
+ * latches through zookeeper - etc...
  * 
  */
 public class TestUtils {
@@ -66,16 +65,16 @@ public class TestUtils {
         cmdList.add("java");
         cmdList.add("-cp");
         cmdList.add(System.getProperty("java.class.path"));
-//      cmdList.add("-Xdebug");
-//      cmdList.add("-Xnoagent");
-//     
-//      cmdList.add("-Xrunjdwp:transport=dt_socket,address=8788,server=y,suspend=n");
+        // cmdList.add("-Xdebug");
+        // cmdList.add("-Xnoagent");
+        //
+        // cmdList.add("-Xrunjdwp:transport=dt_socket,address=8788,server=y,suspend=n");
 
         cmdList.add(mainClass);
         for (String arg : args) {
             cmdList.add(arg);
         }
-        
+
         System.out.println(Arrays.toString(cmdList.toArray(new String[] {})).replace(",", ""));
         ProcessBuilder pb = new ProcessBuilder(cmdList);
 
@@ -236,8 +235,8 @@ public class TestUtils {
             long length = file.length();
 
             /*
-             * Arrays can only be created using int types, so ensure that the
-             * file size is not too big before we downcast to create the array.
+             * Arrays can only be created using int types, so ensure that the file size is not too big before we
+             * downcast to create the array.
              */
             if (length > Integer.MAX_VALUE) {
                 throw new IOException("Error file is too large: " + file.getName() + " " + length + " bytes");
@@ -282,9 +281,8 @@ public class TestUtils {
         watchAndSignalCreation(path, latch, zk, false);
     }
 
-    
-    public static void watchAndSignalCreation(String path, final CountDownLatch latch, final ZooKeeper zk, boolean deleteIfExists)
-            throws KeeperException, InterruptedException {
+    public static void watchAndSignalCreation(String path, final CountDownLatch latch, final ZooKeeper zk,
+            boolean deleteIfExists) throws KeeperException, InterruptedException {
 
         if (zk.exists(path, false) != null) {
             if (deleteIfExists) {
@@ -402,6 +400,35 @@ public class TestUtils {
         if (serverSocket != null) {
             serverSocket.close();
         }
+    }
+
+    /**
+     * gradle and eclipse have different directories for output files This is justified here
+     * http://gradle.1045684.n5.nabble.com/Changing-default-IDE-output-directories-td3335478.html#a3337433
+     * 
+     * A consequence is that for tests to reference compiled files, we need to resolve the corresponding directory at
+     * runtime.
+     * 
+     * This is what this method does
+     * 
+     * @return directory containing the compiled test classes for this project and execution environment.
+     */
+    public static File findDirForCompiledTestClasses() {
+        String userDir = System.getProperty("user.dir");
+        String classpath = System.getProperty("java.class.path");
+        System.out.println(userDir);
+        System.out.println(classpath);
+        if (classpath.contains(userDir + "/bin")) {
+            // eclipse classpath
+            return new File(userDir + "/bin");
+        } else if (classpath.contains(userDir + "/build/classes/test")) {
+            // gradle classpath
+            return new File(userDir + "/build/classes/test");
+        } else {
+            // TODO other IDEs
+            throw new RuntimeException("Cannot find path for compiled test classes");
+        }
+
     }
 
     public static void injectIntoStringSocketAdapter(String string) throws IOException {

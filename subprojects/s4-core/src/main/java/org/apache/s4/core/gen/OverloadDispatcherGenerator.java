@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.util.MultiClassLoader;
 import org.apache.s4.base.util.S4RLoader;
 import org.apache.s4.core.ProcessingElement;
 import org.objectweb.asm.ClassWriter;

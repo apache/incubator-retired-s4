@@ -34,7 +34,7 @@ import com.google.common.io.Files;
  */
 public class AppLoadingTest {
 
-    public static long ZOOKEEPER_PORT = 21810;
+    public static final long ZOOKEEPER_PORT = 21810;
     private static Factory zookeeperServerConnectionFactory = null;
     private Process forkedApp;
 
@@ -59,7 +59,7 @@ public class AppLoadingTest {
 
     @Ignore("fix paths")
     @Test
-    public void testA() throws Exception, InterruptedException {
+    public void testA() throws Exception {
 
         // add all classes from counter app
         File rootAppDir = new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath()
@@ -131,7 +131,8 @@ public class AppLoadingTest {
 
         final ZooKeeper zk = TestUtils.createZkClient();
 
-        File rootAppDir = new File(System.getProperty("user.dir") + "/build/classes/test/");
+        File rootAppDir = TestUtils.findDirForCompiledTestClasses();
+
         File appFilesDir = new File(rootAppDir, "test/s4/core/apploading");
         // 1. create app jar and place it in tmp/s4-apps
         generateS4RFromDirectoryContents(rootAppDir, appFilesDir, "appLoadingTest", SimpleApp.class.getName());
