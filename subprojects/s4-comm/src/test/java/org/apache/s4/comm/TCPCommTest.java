@@ -16,11 +16,8 @@ import org.apache.s4.comm.topology.AssignmentFromFile;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyFromFile;
-import org.apache.s4.comm.udp.UDPEmitter;
-import org.apache.s4.comm.udp.UDPListener;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.junit.Ignore;
+import org.apache.s4.comm.netty.NettyEmitter;
+import org.apache.s4.comm.netty.NettyListener;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
@@ -28,19 +25,15 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 
-// TODO: this test class excluded and set as abstract because:
-// 1. test hangs and blocks the whole test suite
-// 2. it does not use junit 4 and therefore there is no simple way to time out
-@RunWith(JUnit4.class)
-public abstract class UDPTest extends SimpleDeliveryTest {
+public class TCPCommTest extends SimpleDeliveryTest {
 
 	@Override
 	public void setup() {
-		Injector injector = Guice.createInjector(new UDPTestModule());
+		Injector injector = Guice.createInjector(new NettyTestModule());
 		sdt = injector.getInstance(CommWrapper.class);
 	}
 
-	class UDPTestModule extends AbstractModule {
+	class NettyTestModule extends AbstractModule {
 
 		protected PropertiesConfiguration config = null;
 
@@ -78,8 +71,8 @@ public abstract class UDPTest extends SimpleDeliveryTest {
 			bind(Topology.class).to(TopologyFromFile.class);
 
 			/* Use a simple UDP comm layer implementation. */
-			bind(Listener.class).to(UDPListener.class);
-			bind(Emitter.class).to(UDPEmitter.class);
+			bind(Listener.class).to(NettyListener.class);
+			bind(Emitter.class).to(NettyEmitter.class);
 
 			/* The hashing function to map keys top partitions. */
 			bind(Hasher.class).to(DefaultHasher.class);
@@ -90,7 +83,6 @@ public abstract class UDPTest extends SimpleDeliveryTest {
 			bind(Integer.class).annotatedWith(
 					Names.named("emitter.send.interval")).toInstance(
 					config.getInt("emitter.send.interval"));
-
 		}
 	}
 }

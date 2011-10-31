@@ -16,8 +16,8 @@ import org.apache.s4.comm.topology.AssignmentFromFile;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyFromFile;
-import org.apache.s4.comm.netty.NettyEmitter;
-import org.apache.s4.comm.netty.NettyListener;
+import org.apache.s4.comm.udp.UDPEmitter;
+import org.apache.s4.comm.udp.UDPListener;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
@@ -25,15 +25,15 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 
-public class NettyTest extends SimpleDeliveryTest {
+public class UDPCommTest extends SimpleDeliveryTest {
 
 	@Override
 	public void setup() {
-		Injector injector = Guice.createInjector(new NettyTestModule());
+		Injector injector = Guice.createInjector(new UDPCommTestModule());
 		sdt = injector.getInstance(CommWrapper.class);
 	}
 
-	class NettyTestModule extends AbstractModule {
+	class UDPCommTestModule extends AbstractModule {
 
 		protected PropertiesConfiguration config = null;
 
@@ -71,8 +71,8 @@ public class NettyTest extends SimpleDeliveryTest {
 			bind(Topology.class).to(TopologyFromFile.class);
 
 			/* Use a simple UDP comm layer implementation. */
-			bind(Listener.class).to(NettyListener.class);
-			bind(Emitter.class).to(NettyEmitter.class);
+			bind(Listener.class).to(UDPListener.class);
+			bind(Emitter.class).to(UDPEmitter.class);
 
 			/* The hashing function to map keys top partitions. */
 			bind(Hasher.class).to(DefaultHasher.class);
