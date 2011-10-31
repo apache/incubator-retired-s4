@@ -2,11 +2,12 @@ package org.apache.s4.comm;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Listener;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-
-import junit.framework.Assert;
-import junit.framework.TestCase;
 
 /*
  * Test class to test communication protocols. As comm-layer connections need to be
@@ -24,7 +25,7 @@ import junit.framework.TestCase;
  * </ul>
  * 
  */
-public abstract class SimpleDeliveryTest extends TestCase {
+public abstract class SimpleDeliveryTest {
 	protected CommWrapper sdt;
 
 	static class CommWrapper {
@@ -140,14 +141,23 @@ public abstract class SimpleDeliveryTest extends TestCase {
 		}
 	}
 
+
+	
+	/*
+	 * All tests extending this class need to implement this method
+	 */
+	@Before
+	public abstract void setup();
+	
 	/**
-	 * test() tests the protocol. If all components function without throwing
+	 * Tests the protocol. If all components function without throwing
 	 * exceptions, the test passes. The test also reports the loss of messages,
 	 * if any.
 	 * 
 	 * @throws InterruptedException
 	 */
-	public void test() throws InterruptedException {
+	@Test
+	public void testCommLayerProtocol() throws InterruptedException {
 		try {
 			// start send and receive threads
 			sdt.sendThread.start();

@@ -18,7 +18,6 @@ import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyFromFile;
 import org.apache.s4.comm.udp.UDPEmitter;
 import org.apache.s4.comm.udp.UDPListener;
-import org.junit.Ignore;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
@@ -26,18 +25,15 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 
-// TODO: this test class excluded and set as abstract because:
-// 1. test hangs and blocks the whole test suite
-// 2. it does not use junit 4 and therefore there is no simple way to time out
-public abstract class UDPTest extends SimpleDeliveryTest {
+public class UDPCommTest extends SimpleDeliveryTest {
 
 	@Override
-	protected void setUp() {
-		Injector injector = Guice.createInjector(new UDPTestModule());
+	public void setup() {
+		Injector injector = Guice.createInjector(new UDPCommTestModule());
 		sdt = injector.getInstance(CommWrapper.class);
 	}
 
-	class UDPTestModule extends AbstractModule {
+	class UDPCommTestModule extends AbstractModule {
 
 		protected PropertiesConfiguration config = null;
 
@@ -87,7 +83,6 @@ public abstract class UDPTest extends SimpleDeliveryTest {
 			bind(Integer.class).annotatedWith(
 					Names.named("emitter.send.interval")).toInstance(
 					config.getInt("emitter.send.interval"));
-
 		}
 	}
 }
