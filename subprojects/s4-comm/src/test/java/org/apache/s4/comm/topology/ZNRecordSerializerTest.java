@@ -1,10 +1,11 @@
 package org.apache.s4.comm.topology;
 
-import junit.framework.Assert;
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class ZNRecordSerializerTest extends TestCase {
+public class ZNRecordSerializerTest {
 
+    @Test
     public void testSerDeser() {
 
         ZNRecordSerializer serializer = new ZNRecordSerializer();

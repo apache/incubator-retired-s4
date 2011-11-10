@@ -2,31 +2,31 @@ package org.apache.s4.comm.topology;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import static org.junit.Assert.*;
 
 import org.apache.s4.comm.tools.TaskSetup;
+import org.junit.Test;
 
 public class TopologyFromZKTest extends ZKBaseTest {
 
+    @Test
     public void testAssignment() throws Exception {
         TaskSetup taskSetup = new TaskSetup(zookeeperAddress);
         final String clusterName = "test-s4-cluster";
         taskSetup.clean(clusterName);
         taskSetup.setup(clusterName, 10);
 
-        final TopologyFromZK topologyFromZK = new TopologyFromZK(clusterName,
-                zookeeperAddress, 30000, 30000);
+        final TopologyFromZK topologyFromZK = new TopologyFromZK(clusterName, zookeeperAddress, 30000, 30000);
         final Lock lock = new ReentrantLock();
         final Condition signal = lock.newCondition();
         TopologyChangeListener listener = new TopologyChangeListener() {
 
             @Override
             public void onChange() {
-                System.out
-                        .println("TopologyFromZKTest.testAssignment().new TopologyChangeListener() {...}.onChange()");
+                System.out.println("TopologyFromZKTest.testAssignment().new TopologyChangeListener() {...}.onChange()");
                 if (topologyFromZK.getTopology().getNodes().size() == 10) {
                     lock.lock();
                     try {
@@ -48,10 +48,8 @@ public class TopologyFromZKTest extends ZKBaseTest {
                 public void run() {
                     AssignmentFromZK assignmentFromZK;
                     try {
-                        assignmentFromZK = new AssignmentFromZK(clusterName,
-                                zookeeperAddress, 30000, 30000);
-                        ClusterNode assignClusterNode = assignmentFromZK
-                                .assignClusterNode();
+                        assignmentFromZK = new AssignmentFromZK(clusterName, zookeeperAddress, 30000, 30000);
+                        ClusterNode assignClusterNode = assignmentFromZK.assignClusterNode();
                         latch.countDown();
                     } catch (Exception e) {
                         e.printStackTrace();
