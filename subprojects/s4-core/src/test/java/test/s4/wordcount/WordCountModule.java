@@ -1,7 +1,7 @@
 package test.s4.wordcount;
 
-import test.s4.fixtures.GenericTestModule;
+import test.s4.fixtures.FileBasedClusterManagementTestModule;
 
-public class WordCountModule extends GenericTestModule<WordCountApp> {
+public class WordCountModule extends FileBasedClusterManagementTestModule<WordCountApp> {
 
 }

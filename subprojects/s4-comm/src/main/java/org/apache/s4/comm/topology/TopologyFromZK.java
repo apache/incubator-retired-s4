@@ -19,30 +19,33 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TopologyFromZK implements Topology, IZkChildListener,
-        IZkStateListener, IZkDataListener {
-    private static final Logger logger = LoggerFactory
-            .getLogger(TopologyFromZK.class);
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+
+public class TopologyFromZK implements Topology, IZkChildListener, IZkStateListener, IZkDataListener {
+    private static final Logger logger = LoggerFactory.getLogger(TopologyFromZK.class);
     private final String clusterName;
-    private AtomicReference<Cluster> clusterRef;
-    private List<TopologyChangeListener> listeners;
+    private final AtomicReference<Cluster> clusterRef;
+    private final List<TopologyChangeListener> listeners;
     private KeeperState state;
-    private ZkClient zkClient;
-    private String taskPath;
-    private String processPath;
-    private Lock lock;
+    private final ZkClient zkClient;
+    private final String taskPath;
+    private final String processPath;
+    private final Lock lock;
     private AtomicBoolean currentlyOwningTask;
     private String machineId;
 
-    public TopologyFromZK(String clusterName, String zookeeperAddress,
-            int sessionTimeout, int connectionTimeout) throws Exception {
+    @Inject
+    public TopologyFromZK(@Named("cluster.name") String clusterName,
+            @Named("cluster.zk_address") String zookeeperAddress,
+            @Named("cluster.zk_session_timeout") int sessionTimeout,
+            @Named("cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
         this.clusterName = clusterName;
         taskPath = "/" + clusterName + "/" + "tasks";
         processPath = "/" + clusterName + "/" + "process";
         lock = new ReentrantLock();
         clusterRef = new AtomicReference<Cluster>();
-        zkClient = new ZkClient(zookeeperAddress, sessionTimeout,
-                connectionTimeout);
+        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
         ZkSerializer serializer = new ZNRecordSerializer();
         zkClient.setZkSerializer(serializer);
         listeners = new ArrayList<TopologyChangeListener>();
@@ -101,8 +104,7 @@ public class TopologyFromZK implements Topology, IZkChildListener,
     }
 
     @Override
-    public void handleChildChange(String parentPath, List<String> currentChilds)
-            throws Exception {
+    public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
         doProcess();
     }
 
@@ -122,21 +124,17 @@ public class TopologyFromZK implements Topology, IZkChildListener,
         List<String> tasks = zkClient.getChildren(taskPath);
         Cluster cluster = new Cluster(tasks.size());
         for (int i = 0; i < processes.size(); i++) {
-            ZNRecord process = zkClient.readData(
-                    processPath + "/" + processes.get(i), true);
+            ZNRecord process = zkClient.readData(processPath + "/" + processes.get(i), true);
             if (process != null) {
-                int partition = Integer.parseInt(process
-                        .getSimpleField("partition"));
+                int partition = Integer.parseInt(process.getSimpleField("partition"));
                 String host = process.getSimpleField("host");
                 int port = Integer.parseInt(process.getSimpleField("port"));
                 String taskId = process.getSimpleField("taskId");
-                ClusterNode node = new ClusterNode(partition, port, host,
-                        taskId);
+                ClusterNode node = new ClusterNode(partition, port, host, taskId);
                 cluster.addNode(node);
             }
         }
-        logger.info("Changing cluster topology to " + cluster + " from "
-                + clusterRef.get());
+        logger.info("Changing cluster topology to " + cluster + " from " + clusterRef.get());
         clusterRef.set(cluster);
         // Notify all changeListeners about the topology change
         for (TopologyChangeListener listener : listeners) {

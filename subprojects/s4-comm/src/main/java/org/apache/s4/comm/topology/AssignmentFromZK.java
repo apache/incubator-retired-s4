@@ -19,10 +19,11 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AssignmentFromZK implements Assignment, IZkChildListener,
-        IZkStateListener, IZkDataListener {
-    private static final Logger logger = LoggerFactory
-            .getLogger(TopologyFromZK.class);
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+
+public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateListener, IZkDataListener {
+    private static final Logger logger = LoggerFactory.getLogger(TopologyFromZK.class);
     /*
      * Name of the cluster
      */
@@ -34,23 +35,23 @@ public class AssignmentFromZK implements Assignment, IZkChildListener,
     /**
      * ZkClient used to do all interactions with Zookeeper
      */
-    private ZkClient zkClient;
+    private final ZkClient zkClient;
     /**
      * Root path of tasks in ZK
      */
-    private String taskPath;
+    private final String taskPath;
     /**
      * Root path of processes in ZK
      */
-    private String processPath;
+    private final String processPath;
     /**
      * Reentrant lock used to synchronize processing callback
      */
-    private Lock lock;
+    private final Lock lock;
     /**
      * Variable that indicates if this instance is currently owning any task.
      */
-    private AtomicBoolean currentlyOwningTask;
+    private final AtomicBoolean currentlyOwningTask;
     /**
      * Hostname where the process is running
      */
@@ -58,15 +59,17 @@ public class AssignmentFromZK implements Assignment, IZkChildListener,
     /**
      * Condition to signal taskAcquisition
      */
-    private Condition taskAcquired;
+    private final Condition taskAcquired;
     /**
-     * Holds the reference to ClusterNode which points to the current partition
-     * owned
+     * Holds the reference to ClusterNode which points to the current partition owned
      */
     AtomicReference<ClusterNode> clusterNodeRef;
 
-    public AssignmentFromZK(String clusterName, String zookeeperAddress,
-            int sessionTimeout, int connectionTimeout) throws Exception {
+    @Inject
+    public AssignmentFromZK(@Named("cluster.name") String clusterName,
+            @Named("cluster.zk_address") String zookeeperAddress,
+            @Named("cluster.zk_session_timeout") int sessionTimeout,
+            @Named("cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
         this.clusterName = clusterName;
         taskPath = "/" + clusterName + "/" + "tasks";
         processPath = "/" + clusterName + "/" + "process";
@@ -82,8 +85,7 @@ public class AssignmentFromZK implements Assignment, IZkChildListener,
             machineId = "UNKNOWN";
         }
 
-        zkClient = new ZkClient(zookeeperAddress, sessionTimeout,
-                connectionTimeout);
+        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
         ZkSerializer serializer = new ZNRecordSerializer();
         zkClient.setZkSerializer(serializer);
         zkClient.subscribeStateChanges(this);
@@ -119,14 +121,12 @@ public class AssignmentFromZK implements Assignment, IZkChildListener,
     }
 
     @Override
-    public void handleChildChange(String parentPath, List<String> currentChilds)
-            throws Exception {
+    public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
         doProcess();
     }
 
     /**
-     * One method to do any processing if there is a change in ZK, all callbacks
-     * will be processed sequentially
+     * One method to do any processing if there is a change in ZK, all callbacks will be processed sequentially
      */
     private void doProcess() {
         lock.lock();
@@ -147,14 +147,12 @@ public class AssignmentFromZK implements Assignment, IZkChildListener,
     }
 
     /**
-     * Core method where the task acquisition happens. Algo is as follow Get All
-     * the tasks<br/>
+     * Core method where the task acquisition happens. Algo is as follow Get All the tasks<br/>
      * Get All the processes<br/>
      * Check if the number of process is less than task<br/>
      * Iterate over the tasks and pick up one that is not yet acquire<br/>
      * 
-     * If the creation of ephemeral process node is successful then task
-     * acquisition is successful
+     * If the creation of ephemeral process node is successful then task acquisition is successful
      */
     private void tryToAcquiretask() {
         List<String> tasks = zkClient.getChildren(taskPath);
@@ -168,19 +166,15 @@ public class AssignmentFromZK implements Assignment, IZkChildListener,
                     continue;
                 }
                 if (!zkClient.exists(processPath + "/" + taskName)) {
-                    ZNRecord task = zkClient
-                            .readData(taskPath + "/" + taskName);
+                    ZNRecord task = zkClient.readData(taskPath + "/" + taskName);
                     ZNRecord process = new ZNRecord(task);
                     process.setSimpleField("host", machineId);
-                    process.setSimpleField("session",
-                            String.valueOf(zkClient.getSessionId()));
+                    process.setSimpleField("session", String.valueOf(zkClient.getSessionId()));
                     try {
-                        zkClient.createEphemeral(processPath + "/" + taskName,
-                                process);
+                        zkClient.createEphemeral(processPath + "/" + taskName, process);
 
                     } catch (Throwable e) {
-                        logger.warn("Exception trying to acquire task:"
-                                + taskName
+                        logger.warn("Exception trying to acquire task:" + taskName
                                 + " This is warning and can be ignored. " + e);
                         // Any exception does not means we failed to acquire
                         // task because we might have acquired task but there
@@ -190,19 +184,13 @@ public class AssignmentFromZK implements Assignment, IZkChildListener,
                     }
                     // check if the process node is created and we own it
                     Stat stat = zkClient.getStat(processPath + "/" + taskName);
-                    if (stat != null
-                            && stat.getEphemeralOwner() == zkClient
-                                    .getSessionId()) {
-                        logger.info("Successfully acquired task:" + taskName
-                                + " by " + machineId);
-                        int partition = Integer.parseInt(process
-                                .getSimpleField("partition"));
+                    if (stat != null && stat.getEphemeralOwner() == zkClient.getSessionId()) {
+                        logger.info("Successfully acquired task:" + taskName + " by " + machineId);
+                        int partition = Integer.parseInt(process.getSimpleField("partition"));
                         String host = process.getSimpleField("host");
-                        int port = Integer.parseInt(process
-                                .getSimpleField("port"));
+                        int port = Integer.parseInt(process.getSimpleField("port"));
                         String taskId = process.getSimpleField("taskId");
-                        ClusterNode node = new ClusterNode(partition, port,
-                                host, taskId);
+                        ClusterNode node = new ClusterNode(partition, port, host, taskId);
                         clusterNodeRef.set(node);
                         currentlyOwningTask.set(true);
                         taskAcquired.signalAll();

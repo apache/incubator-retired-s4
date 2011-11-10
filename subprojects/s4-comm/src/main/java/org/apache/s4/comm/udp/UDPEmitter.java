@@ -12,44 +12,43 @@ import org.apache.s4.base.Emitter;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyChangeListener;
+import org.jboss.netty.channel.Channel;
 
+import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
-
 
 public class UDPEmitter implements Emitter, TopologyChangeListener {
     private DatagramSocket socket;
-    private ClusterNode[] partitions;
-    private Map<Integer, InetAddress> inetCache = new HashMap<Integer, InetAddress>();
-    private long messageDropInQueueCount = 0;
-    private Topology topology;
-    
+    private final HashBiMap<Integer, ClusterNode> nodes;
+    private final Map<Integer, InetAddress> inetCache = new HashMap<Integer, InetAddress>();
+    private final long messageDropInQueueCount = 0;
+    private final Topology topology;
+
     public long getMessageDropInQueueCount() {
         return messageDropInQueueCount;
     }
-    
+
     @Inject
     public UDPEmitter(Topology topology) {
         this.topology = topology;
         topology.addListener(this);
-        partitions = new ClusterNode[topology.getTopology().getNodes().size()];
+        nodes = HashBiMap.create(topology.getTopology().getNodes().size());
         for (ClusterNode node : topology.getTopology().getNodes()) {
-            partitions[node.getPartition()] = node;
+            nodes.forcePut(node.getPartition(), node);
         }
-        
+
         try {
             socket = new DatagramSocket();
         } catch (SocketException se) {
             throw new RuntimeException(se);
         }
     }
-    
+
+    @Override
     public void send(int partitionId, byte[] message) {
         try {
-            ClusterNode node = null;
-            if (partitionId < partitions.length) {
-                node = partitions[partitionId];
-            }
-            else {
+            ClusterNode node = nodes.get(partitionId);
+            if (node == null) {
                 throw new RuntimeException(String.format("Bad partition id %d", partitionId));
             }
             byte[] byteBuffer = new byte[message.length];
@@ -59,19 +58,26 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
                 inetAddress = InetAddress.getByName(node.getMachineName());
                 inetCache.put(partitionId, inetAddress);
             }
-            DatagramPacket dp = new DatagramPacket(byteBuffer,
-                    byteBuffer.length, inetAddress, node.getPort());
+            DatagramPacket dp = new DatagramPacket(byteBuffer, byteBuffer.length, inetAddress, node.getPort());
             socket.send(dp);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-    
+
+    @Override
     public int getPartitionCount() {
         return topology.getTopology().getPartitionCount();
     }
-    
+
+    @Override
     public void onChange() {
-        // do nothing on change of Topology, for now
+        // topology changes when processes pick tasks
+        synchronized (nodes) {
+            for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
+                Integer partition = clusterNode.getPartition();
+                nodes.put(partition, clusterNode);
+            }
+        }
     }
 }

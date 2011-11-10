@@ -30,174 +30,180 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
 
-public class NettyEmitter implements Emitter, ChannelFutureListener,
-		TopologyChangeListener {
-	private static final Logger logger = LoggerFactory
-			.getLogger(NettyEmitter.class);
+public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyChangeListener {
+    private static final Logger logger = LoggerFactory.getLogger(NettyEmitter.class);
 
-	private Topology topology;
-	private final ClientBootstrap bootstrap;
+    private Topology topology;
+    private final ClientBootstrap bootstrap;
 
-	// Hashtable inherently allows capturing changes to the underlying topology
-	private HashBiMap<Integer, Channel> channels;
-	private HashBiMap<Integer, ClusterNode> nodes;
+    // Hashtable inherently allows capturing changes to the underlying topology
+    private HashBiMap<Integer, Channel> channels;
+    private HashBiMap<Integer, ClusterNode> nodes;
 
-	@Inject
-	public NettyEmitter(Topology topology) throws InterruptedException {
-		this.topology = topology;
-		int clusterSize = this.topology.getTopology().getNodes().size();
-		
-		channels = HashBiMap.create(clusterSize);
-		nodes = HashBiMap.create(clusterSize);
-		
-		for (ClusterNode clusterNode : NettyEmitter.this.topology.getTopology()
-				.getNodes()) {
-			Integer partition = clusterNode.getPartition();
-			nodes.forcePut(partition, clusterNode);
-		}
+    @Inject
+    public NettyEmitter(Topology topology) throws InterruptedException {
+        this.topology = topology;
+        topology.addListener(this);
+        int clusterSize = this.topology.getTopology().getNodes().size();
 
-		ChannelFactory factory = new NioClientSocketChannelFactory(
-				Executors.newCachedThreadPool(),
-				Executors.newCachedThreadPool());
+        channels = HashBiMap.create(clusterSize);
+        nodes = HashBiMap.create(clusterSize);
 
-		bootstrap = new ClientBootstrap(factory);
+        for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
+            Integer partition = clusterNode.getPartition();
+            nodes.forcePut(partition, clusterNode);
+        }
 
-		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-			public ChannelPipeline getPipeline() {
-				ChannelPipeline p = Channels.pipeline();
-				p.addLast("1", new LengthFieldPrepender(4));
-				p.addLast("2", new TestHandler());
-				return p;
-			}
-		});
+        ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
+                Executors.newCachedThreadPool());
 
-		bootstrap.setOption("tcpNoDelay", true);
-		bootstrap.setOption("keepAlive", true);
-	}
+        bootstrap = new ClientBootstrap(factory);
 
-	private void connectTo(Integer partitionId) {
-		ClusterNode clusterNode = nodes.get(partitionId);
+        bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+            @Override
+            public ChannelPipeline getPipeline() {
+                ChannelPipeline p = Channels.pipeline();
+                p.addLast("1", new LengthFieldPrepender(4));
+                p.addLast("2", new TestHandler());
+                return p;
+            }
+        });
 
-		if (clusterNode == null)
-			logger.error("No ClusterNode exists for partitionId " + partitionId);
+        bootstrap.setOption("tcpNoDelay", true);
+        bootstrap.setOption("keepAlive", true);
+    }
 
-		logger.info(String.format("Connecting to %s:%d",
-				clusterNode.getMachineName(), clusterNode.getPort()));
-		while (true) {
-			ChannelFuture f = this.bootstrap.connect(new InetSocketAddress(
-					clusterNode.getMachineName(), clusterNode.getPort()));
-			f.awaitUninterruptibly();
-			if (f.isSuccess()) {
-				channels.forcePut(partitionId, f.getChannel());
-				break;
-			}
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException ie) {
-				logger.error(String.format(
-						"Interrupted while connecting to %s:%d",
-						clusterNode.getMachineName(), clusterNode.getPort()));
-			}
-		}
-	}
+    private void connectTo(Integer partitionId) {
+        ClusterNode clusterNode = nodes.get(partitionId);
 
-	private Object sendLock = new Object();
+        if (clusterNode == null) {
+            logger.error("No ClusterNode exists for partitionId " + partitionId);
+            // clusterNode = topology.getTopology().getNodes().get(partitionId);
+        }
 
-	public void send(int partitionId, byte[] message) {
-		Channel channel = channels.get(partitionId);
+        logger.info(String.format("Connecting to %s:%d", clusterNode.getMachineName(), clusterNode.getPort()));
+        while (true) {
+            ChannelFuture f = this.bootstrap.connect(new InetSocketAddress(clusterNode.getMachineName(), clusterNode
+                    .getPort()));
+            f.awaitUninterruptibly();
+            if (f.isSuccess()) {
+                channels.forcePut(partitionId, f.getChannel());
+                break;
+            }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException ie) {
+                logger.error(String.format("Interrupted while connecting to %s:%d", clusterNode.getMachineName(),
+                        clusterNode.getPort()));
+            }
+        }
+    }
 
-		while (channel == null) {
-			connectTo(partitionId);
-			channel = channels.get(partitionId); // making sure it is reflected in the map
-		}
+    private final Object sendLock = new Object();
 
-		ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
+    @Override
+    public void send(int partitionId, byte[] message) {
+        Channel channel = channels.get(partitionId);
 
-		// check if Netty's send queue has gotten quite large
-		if (!channel.isWritable()) {
-			synchronized (sendLock) {
-				// check again now that we have the lock
-				while (!channel.isWritable()) {
-					try {
-						sendLock.wait(); // wait until the channel's queue
-											// has gone down
-					} catch (InterruptedException ie) {
-						return; // somebody wants us to stop running
-					}
-				}
-				// logger.info("Woke up from send block!");
-			}
-		}
-		// between the above isWritable check and the below writeBytes, the
-		// isWritable
-		// may become false again. That's OK, we're just trying to avoid a
-		// very large
-		// above check to avoid creating a very large send queue inside
-		// Netty.
-		buffer.writeBytes(message);
-		ChannelFuture f = channel.write(buffer);
-		f.addListener(this);
+        while (channel == null) {
+            connectTo(partitionId);
+            channel = channels.get(partitionId); // making sure it is reflected in the map
+        }
 
-	}
+        ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
 
-	public void operationComplete(ChannelFuture f) {
-		// when we get here, the I/O operation associated with f is complete
-		if (f.isCancelled()) {
-			logger.error("Send I/O was cancelled!! "
-					+ f.getChannel().getRemoteAddress());
-		} else if (!f.isSuccess()) {
-			logger.error("Exception on I/O operation", f.getCause());
-			// find the partition associated with this broken channel
-			int partition = channels.inverse().get(f.getChannel());
-			logger.error(String
-					.format("I/O on partition %d failed!", partition));
-		}
-	}
+        // check if Netty's send queue has gotten quite large
+        if (!channel.isWritable()) {
+            synchronized (sendLock) {
+                // check again now that we have the lock
+                while (!channel.isWritable()) {
+                    try {
+                        sendLock.wait(); // wait until the channel's queue
+                                         // has gone down
+                    } catch (InterruptedException ie) {
+                        return; // somebody wants us to stop running
+                    }
+                }
+                // logger.info("Woke up from send block!");
+            }
+        }
+        // between the above isWritable check and the below writeBytes, the
+        // isWritable
+        // may become false again. That's OK, we're just trying to avoid a
+        // very large
+        // above check to avoid creating a very large send queue inside
+        // Netty.
+        buffer.writeBytes(message);
+        ChannelFuture f = channel.write(buffer);
+        f.addListener(this);
 
-	public void onChange() {
-		// do nothing for now, don't expect the topology to change.
-	}
+    }
 
-	public int getPartitionCount() {
-	    //Number of nodes is not same as number of partitions
-		return topology.getTopology().getPartitionCount();
-	}
+    @Override
+    public void operationComplete(ChannelFuture f) {
+        // when we get here, the I/O operation associated with f is complete
+        if (f.isCancelled()) {
+            logger.error("Send I/O was cancelled!! " + f.getChannel().getRemoteAddress());
+        } else if (!f.isSuccess()) {
+            logger.error("Exception on I/O operation", f.getCause());
+            // find the partition associated with this broken channel
+            int partition = channels.inverse().get(f.getChannel());
+            logger.error(String.format("I/O on partition %d failed!", partition));
+        }
+    }
 
-	class TestHandler extends SimpleChannelHandler {
-		public void channelInterestChanged(ChannelHandlerContext ctx,
-				ChannelStateEvent e) {
-			// logger.info(String.format("%08x %08x %08x", e.getValue(),
-			// e.getChannel().getInterestOps(), Channel.OP_WRITE));
-			synchronized (sendLock) {
-				if (e.getChannel().isWritable()) {
-					sendLock.notify();
-				}
-			}
-			ctx.sendUpstream(e);
+    @Override
+    public void onChange() {
+        // topology changes when processes pick tasks
+        synchronized (nodes) {
+            for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
+                Integer partition = clusterNode.getPartition();
+                nodes.put(partition, clusterNode);
+            }
+        }
+    }
 
-		}
+    @Override
+    public int getPartitionCount() {
+        // Number of nodes is not same as number of partitions
+        return topology.getTopology().getPartitionCount();
+    }
 
-		public void exceptionCaught(ChannelHandlerContext context,
-				ExceptionEvent event) {
-			Integer partition = channels.inverse().get(context.getChannel());
-			if (partition == null) {
-				logger.error("Error on mystery channel!!");
-				// return;
-			}
-			logger.error("Error on channel to partition " + partition);
+    class TestHandler extends SimpleChannelHandler {
+        @Override
+        public void channelInterestChanged(ChannelHandlerContext ctx, ChannelStateEvent e) {
+            // logger.info(String.format("%08x %08x %08x", e.getValue(),
+            // e.getChannel().getInterestOps(), Channel.OP_WRITE));
+            synchronized (sendLock) {
+                if (e.getChannel().isWritable()) {
+                    sendLock.notify();
+                }
+            }
+            ctx.sendUpstream(e);
 
-			try {
-				throw event.getCause();
-			} catch (ConnectException ce) {
-				logger.error(ce.getMessage(), ce);
-			} catch (Throwable err) {
-				logger.error("Error", err);
-				if (context.getChannel().isOpen()) {
-					logger.error("Closing channel due to exception");
-					context.getChannel().close();
-				}
-			}
-		}
-	}
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event) {
+            Integer partition = channels.inverse().get(context.getChannel());
+            if (partition == null) {
+                logger.error("Error on mystery channel!!");
+                // return;
+            }
+            logger.error("Error on channel to partition " + partition);
+
+            try {
+                throw event.getCause();
+            } catch (ConnectException ce) {
+                logger.error(ce.getMessage(), ce);
+            } catch (Throwable err) {
+                logger.error("Error", err);
+                if (context.getChannel().isOpen()) {
+                    logger.error("Closing channel due to exception");
+                    context.getChannel().close();
+                }
+            }
+        }
+    }
 
 }
