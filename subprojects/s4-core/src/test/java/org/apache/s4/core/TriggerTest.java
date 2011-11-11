@@ -1,12 +1,13 @@
 package org.apache.s4.core;
 
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
+import org.apache.s4.core.triggers.TriggeredApp;
+import org.apache.s4.core.triggers.TriggeredModule;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
@@ -14,15 +15,14 @@ import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.junit.After;
 import org.junit.Before;
 
-
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 /**
- * tests from subclasses are forked in separate VMs, an easy way to avoid
- * conflict with unavailable resources when instantiating new S4 nodes
+ * tests from subclasses are forked in separate VMs, an easy way to avoid conflict with unavailable resources when
+ * instantiating new S4 nodes
  */
-
+// NOTE: placed in this package so that App#start(), init() and close() can be called without modifying their visibility
 public abstract class TriggerTest {
 
     private Factory zookeeperServerConnectionFactory;
@@ -54,12 +54,12 @@ public abstract class TriggerTest {
         app = injector.getInstance(TriggeredApp.class);
         app.init();
         app.start();
-        
+
         String time1 = String.valueOf(System.currentTimeMillis());
 
         CountDownLatch signalEvent1Processed = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/onEvent@" + time1, signalEvent1Processed, zk);
-        
+
         CountDownLatch signalEvent1Triggered = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/onTrigger[StringEvent]@" + time1, signalEvent1Triggered, zk);
 

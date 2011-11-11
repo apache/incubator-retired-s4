@@ -13,7 +13,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -56,7 +55,6 @@ public class CommTestUtils {
         cmdList.add(System.getProperty("java.class.path"));
         // cmdList.add("-Xdebug");
         // cmdList.add("-Xnoagent");
-        //
         // cmdList.add("-Xrunjdwp:transport=dt_socket,address=8788,server=y,suspend=n");
 
         cmdList.add(mainClass);
@@ -64,7 +62,7 @@ public class CommTestUtils {
             cmdList.add(arg);
         }
 
-        System.out.println(Arrays.toString(cmdList.toArray(new String[] {})).replace(",", ""));
+        // System.out.println(Arrays.toString(cmdList.toArray(new String[] {})).replace(",", ""));
         ProcessBuilder pb = new ProcessBuilder(cmdList);
 
         pb.directory(new File(System.getProperty("user.dir")));

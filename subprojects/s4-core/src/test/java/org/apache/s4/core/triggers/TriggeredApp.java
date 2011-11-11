@@ -1,9 +1,12 @@
-package org.apache.s4.core;
+package org.apache.s4.core.triggers;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.core.App;
+import org.apache.s4.core.Stream;
+import org.apache.s4.core.TriggerTest;
 import org.apache.s4.fixtures.SocketAdapter;
 import org.apache.s4.wordcount.SentenceKeyFinder;
 import org.apache.s4.wordcount.StringEvent;

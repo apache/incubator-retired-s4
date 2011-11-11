@@ -37,7 +37,7 @@ import com.google.inject.Injector;
  */
 public abstract class App {
 
-    private static final Logger logger = LoggerFactory.getLogger(App.class);
+    static final Logger logger = LoggerFactory.getLogger(App.class);
 
     /* PE prototype to streams relations. */
     final private Multimap<ProcessingElement, Streamable<? extends Event>> pe2stream = LinkedListMultimap.create();
@@ -379,4 +379,5 @@ public abstract class App {
                 + " \nUsage: java <classpath+params> org.apache.s4.core.App <appClassName> <moduleClassName>");
         System.exit(-1);
     }
+
 }

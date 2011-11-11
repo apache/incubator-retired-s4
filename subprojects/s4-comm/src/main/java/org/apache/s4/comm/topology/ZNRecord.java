@@ -34,12 +34,28 @@ public class ZNRecord {
         listFields.putAll(that.listFields);
     }
 
-    public void setSimpleField(String key, String value) {
-        simpleFields.put(key, value);
+    public String putSimpleField(String key, String value) {
+        return simpleFields.put(key, value);
     }
 
     public String getSimpleField(String key) {
         return simpleFields.get(key);
+    }
+
+    public List<String> putListField(String key, List<String> value) {
+        return listFields.put(key, value);
+    }
+
+    public List<String> getListField(String key) {
+        return listFields.get(key);
+    }
+
+    public Map<String, String> putMapField(String key, Map<String, String> value) {
+        return mapFields.put(key, value);
+    }
+
+    public Map<String, String> getMapField(String key) {
+        return mapFields.get(key);
     }
 
     @Override
@@ -49,10 +65,8 @@ public class ZNRecord {
         }
         if (obj instanceof ZNRecord) {
             ZNRecord that = (ZNRecord) obj;
-            return this.id.equals(that.id)
-                    && this.simpleFields.equals(that.simpleFields)
-                    && this.mapFields.equals(that.mapFields)
-                    && this.listFields.equals(that.listFields);
+            return this.id.equals(that.id) && this.simpleFields.equals(that.simpleFields)
+                    && this.mapFields.equals(that.mapFields) && this.listFields.equals(that.listFields);
         }
         return false;
     }

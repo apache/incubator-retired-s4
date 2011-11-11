@@ -17,13 +17,17 @@ include 's4-base'
 include 's4-core'
 include 's4-comm'
 include 's4-example'
+include ':test-apps:simple-deployable-app-1'
+include ':test-apps:simple-deployable-app-2'
 
 rootProject.name = 's4'
 rootProject.children.each {project ->
-    String fileBaseName = project.name.replaceAll("\\p{Upper}") { "-${it.toLowerCase()}" }
-    String projectDirName = "subprojects/$fileBaseName"
-    project.projectDir = new File(settingsDir, projectDirName)
-    project.buildFileName = "${fileBaseName}.gradle"
-    assert project.projectDir.isDirectory()
-    assert project.buildFile.isFile()
+    if (project.name != 'test-apps') {
+        String fileBaseName = project.name.replaceAll("\\p{Upper}") { "-${it.toLowerCase()}" }
+        String projectDirName = "subprojects/$fileBaseName"
+        project.projectDir = new File(settingsDir, projectDirName)
+        project.buildFileName = "${fileBaseName}.gradle"
+        assert project.projectDir.isDirectory()
+        assert project.buildFile.isFile()
+    }
 }
