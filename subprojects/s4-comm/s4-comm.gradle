@@ -24,3 +24,7 @@ dependencies {
     compile libraries.netty
     compile libraries.zkclient
 }
+
+test {
+    forkEvery=1
+}
