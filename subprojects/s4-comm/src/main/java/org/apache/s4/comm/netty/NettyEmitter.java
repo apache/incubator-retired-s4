@@ -93,8 +93,6 @@ public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyCha
     private HashBiMap<Integer, ClusterNode> partitionNodeMap;
     private MessageQueuesPerPartition queuedMessages = new MessageQueuesPerPartition(true);
 
-    // private MessageQueuesPerPartition messagesOnTheWire = new MessageQueuesPerPartition(false);
-
     @Inject
     public NettyEmitter(Topology topology) throws InterruptedException {
         this.topology = topology;
@@ -156,9 +154,6 @@ public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyCha
     }
 
     private void writeMessageToChannel(Channel channel, int partitionId, byte[] message) {
-        // if (addToWire) {
-        // messagesOnTheWire.add(partitionId, message);
-        // }
         ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
         buffer.writeBytes(message);
         ChannelFuture f = channel.write(buffer);
@@ -272,7 +267,6 @@ public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyCha
             Integer partitionId = partitionChannelMap.inverse().get(context.getChannel());
             if (partitionId == null) {
                 logger.error("Error on mystery channel!!");
-                // return;
             }
             logger.error("Error on channel to partition " + partitionId);
 
