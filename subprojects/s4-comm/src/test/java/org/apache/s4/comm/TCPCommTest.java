@@ -27,62 +27,58 @@ import com.google.inject.name.Names;
 
 public class TCPCommTest extends SimpleDeliveryTest {
 
-	@Override
-	public void setup() {
-		Injector injector = Guice.createInjector(new NettyTestModule());
-		sdt = injector.getInstance(CommWrapper.class);
-	}
+    @Override
+    public void setup() {
+        Injector injector = Guice.createInjector(new NettyTestModule());
+        sdt = injector.getInstance(CommWrapper.class);
+    }
 
-	class NettyTestModule extends AbstractModule {
+    class NettyTestModule extends AbstractModule {
 
-		protected PropertiesConfiguration config = null;
+        protected PropertiesConfiguration config = null;
 
-		private void loadProperties(Binder binder) {
+        private void loadProperties(Binder binder) {
 
-			try {
-				InputStream is = this.getClass().getResourceAsStream(
-						"/s4-comm-test.properties");
-				config = new PropertiesConfiguration();
-				config.load(is);
+            try {
+                InputStream is = this.getClass().getResourceAsStream("/s4-comm-test.properties");
+                config = new PropertiesConfiguration();
+                config.load(is);
 
-				System.out.println(ConfigurationUtils.toString(config));
-				Names.bindProperties(binder,
-						ConfigurationConverter.getProperties(config));
-			} catch (ConfigurationException e) {
-				binder.addError(e);
-				e.printStackTrace();
-			}
-		}
+                System.out.println(ConfigurationUtils.toString(config));
+                Names.bindProperties(binder, ConfigurationConverter.getProperties(config));
+            } catch (ConfigurationException e) {
+                binder.addError(e);
+                e.printStackTrace();
+            }
+        }
 
-		@Override
-		protected void configure() {
-			if (config == null)
-				loadProperties(binder());
+        @Override
+        protected void configure() {
+            if (config == null)
+                loadProperties(binder());
 
-			int numHosts = config.getList("cluster.hosts").size();
-			boolean isCluster = numHosts > 1 ? true : false;
-			bind(Boolean.class).annotatedWith(Names.named("isCluster"))
-					.toInstance(Boolean.valueOf(isCluster));
+            int numHosts = config.getList("cluster.hosts").size();
+            boolean isCluster = numHosts > 1 ? true : false;
+            bind(Boolean.class).annotatedWith(Names.named("isCluster")).toInstance(Boolean.valueOf(isCluster));
 
-			bind(Cluster.class);
+            bind(Cluster.class);
 
-			bind(Assignment.class).to(AssignmentFromFile.class);
+            bind(Assignment.class).to(AssignmentFromFile.class);
 
-			bind(Topology.class).to(TopologyFromFile.class);
+            bind(Topology.class).to(TopologyFromFile.class);
 
-			/* Use a simple UDP comm layer implementation. */
-			bind(Listener.class).to(NettyListener.class);
-			bind(Emitter.class).to(NettyEmitter.class);
+            /* Use a simple UDP comm layer implementation. */
+            bind(Listener.class).to(NettyListener.class);
+            bind(Emitter.class).to(NettyEmitter.class);
 
-			/* The hashing function to map keys top partitions. */
-			bind(Hasher.class).to(DefaultHasher.class);
+            /* The hashing function to map keys top partitions. */
+            bind(Hasher.class).to(DefaultHasher.class);
 
-			/* Use Kryo to serialize events. */
-			bind(SerializerDeserializer.class).to(KryoSerDeser.class);
+            /* Use Kryo to serialize events. */
+            bind(SerializerDeserializer.class).to(KryoSerDeser.class);
 
-			bind(Integer.class).annotatedWith(
-					Names.named("emitter.send.interval")).toInstance(
-					config.getInt("emitter.send.interval"));
-		}
-	}
+            bind(Integer.class).annotatedWith(Names.named("emitter.send.interval")).toInstance(
+                    config.getInt("emitter.send.interval"));
+        }
+    }
 }

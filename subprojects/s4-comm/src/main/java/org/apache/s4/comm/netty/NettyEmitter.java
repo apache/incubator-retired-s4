@@ -2,6 +2,9 @@ package org.apache.s4.comm.netty;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.util.ArrayDeque;
+import java.util.Hashtable;
+import java.util.Queue;
 import java.util.concurrent.Executors;
 
 import org.apache.s4.base.Emitter;
@@ -32,13 +35,65 @@ import com.google.inject.Inject;
 
 public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyChangeListener {
     private static final Logger logger = LoggerFactory.getLogger(NettyEmitter.class);
+    private static final int BUFFER_SIZE = 10;
+    private static final int NUM_RETRIES = 10;
 
     private Topology topology;
     private final ClientBootstrap bootstrap;
 
-    // Hashtable inherently allows capturing changes to the underlying topology
-    private HashBiMap<Integer, Channel> channels;
-    private HashBiMap<Integer, ClusterNode> nodes;
+    static class MessageQueuesPerPartition {
+        private Hashtable<Integer, Queue<byte[]>> queues = new Hashtable<Integer, Queue<byte[]>>();
+        private boolean bounded;
+
+        MessageQueuesPerPartition(boolean bounded) {
+            this.bounded = bounded;
+        }
+
+        private boolean add(int partitionId, byte[] message) {
+            Queue<byte[]> messages = queues.get(partitionId);
+
+            if (messages == null) {
+                messages = new ArrayDeque<byte[]>();
+                queues.put(partitionId, messages);
+            }
+
+            if (bounded && messages.size() >= BUFFER_SIZE) {
+                // Too many messages already queued
+                return false;
+            }
+
+            messages.offer(message);
+            return true;
+        }
+
+        private byte[] peek(int partitionId) {
+            Queue<byte[]> messages = queues.get(partitionId);
+
+            try {
+                return messages.peek();
+            } catch (NullPointerException npe) {
+                return null;
+            }
+        }
+
+        private void remove(int partitionId) {
+            Queue<byte[]> messages = queues.get(partitionId);
+
+            if (messages.isEmpty()) {
+                logger.error("Trying to remove messages from an empty queue for partition" + partitionId);
+                return;
+            }
+
+            if (messages != null)
+                messages.remove();
+        }
+    }
+
+    private HashBiMap<Integer, Channel> partitionChannelMap;
+    private HashBiMap<Integer, ClusterNode> partitionNodeMap;
+    private MessageQueuesPerPartition queuedMessages = new MessageQueuesPerPartition(true);
+
+    // private MessageQueuesPerPartition messagesOnTheWire = new MessageQueuesPerPartition(false);
 
     @Inject
     public NettyEmitter(Topology topology) throws InterruptedException {
@@ -46,13 +101,8 @@ public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyCha
         topology.addListener(this);
         int clusterSize = this.topology.getTopology().getNodes().size();
 
-        channels = HashBiMap.create(clusterSize);
-        nodes = HashBiMap.create(clusterSize);
-
-        for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
-            Integer partition = clusterNode.getPartition();
-            nodes.forcePut(partition, clusterNode);
-        }
+        partitionChannelMap = HashBiMap.create(clusterSize);
+        partitionNodeMap = HashBiMap.create(clusterSize);
 
         ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
                 Executors.newCachedThreadPool());
@@ -73,22 +123,26 @@ public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyCha
         bootstrap.setOption("keepAlive", true);
     }
 
-    private void connectTo(Integer partitionId) {
-        ClusterNode clusterNode = nodes.get(partitionId);
+    private boolean connectTo(Integer partitionId) {
+        ClusterNode clusterNode = partitionNodeMap.get(partitionId);
+
+        if (clusterNode == null) {
+            clusterNode = topology.getTopology().getNodes().get(partitionId);
+            partitionNodeMap.forcePut(partitionId, clusterNode);
+        }
 
         if (clusterNode == null) {
             logger.error("No ClusterNode exists for partitionId " + partitionId);
-            // clusterNode = topology.getTopology().getNodes().get(partitionId);
+            return false;
         }
 
-        logger.info(String.format("Connecting to %s:%d", clusterNode.getMachineName(), clusterNode.getPort()));
-        while (true) {
+        for (int retries = 0; retries < NUM_RETRIES; retries++) {
             ChannelFuture f = this.bootstrap.connect(new InetSocketAddress(clusterNode.getMachineName(), clusterNode
                     .getPort()));
             f.awaitUninterruptibly();
             if (f.isSuccess()) {
-                channels.forcePut(partitionId, f.getChannel());
-                break;
+                partitionChannelMap.forcePut(partitionId, f.getChannel());
+                return true;
             }
             try {
                 Thread.sleep(10);
@@ -97,69 +151,100 @@ public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyCha
                         clusterNode.getPort()));
             }
         }
+
+        return false;
+    }
+
+    private void writeMessageToChannel(Channel channel, int partitionId, byte[] message) {
+        // if (addToWire) {
+        // messagesOnTheWire.add(partitionId, message);
+        // }
+        ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
+        buffer.writeBytes(message);
+        ChannelFuture f = channel.write(buffer);
+        f.addListener(this);
     }
 
     private final Object sendLock = new Object();
 
     @Override
-    public void send(int partitionId, byte[] message) {
-        Channel channel = channels.get(partitionId);
-
-        while (channel == null) {
-            connectTo(partitionId);
-            channel = channels.get(partitionId); // making sure it is reflected in the map
+    public boolean send(int partitionId, byte[] message) {
+        Channel channel = partitionChannelMap.get(partitionId);
+        if (channel == null) {
+            if (connectTo(partitionId)) {
+                channel = partitionChannelMap.get(partitionId);
+            } else {
+                // could not connect, queue to the partitionBuffer
+                return queuedMessages.add(partitionId, message);
+            }
         }
 
-        ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
-
-        // check if Netty's send queue has gotten quite large
+        /*
+         * Try limiting the size of the send queue inside Netty
+         */
         if (!channel.isWritable()) {
             synchronized (sendLock) {
                 // check again now that we have the lock
                 while (!channel.isWritable()) {
                     try {
-                        sendLock.wait(); // wait until the channel's queue
-                                         // has gone down
+                        sendLock.wait();
                     } catch (InterruptedException ie) {
-                        return; // somebody wants us to stop running
+                        return false;
                     }
                 }
-                // logger.info("Woke up from send block!");
             }
         }
-        // between the above isWritable check and the below writeBytes, the
-        // isWritable
-        // may become false again. That's OK, we're just trying to avoid a
-        // very large
-        // above check to avoid creating a very large send queue inside
-        // Netty.
-        buffer.writeBytes(message);
-        ChannelFuture f = channel.write(buffer);
-        f.addListener(this);
 
+        /*
+         * Channel is available. Write messages in the following order: (1) Messages already on wire, (2) Previously
+         * buffered messages, and (3) the Current Message
+         * 
+         * Once the channel returns success delete from the messagesOnTheWire
+         */
+        byte[] messageBeingSent = null;
+        // while ((messageBeingSent = messagesOnTheWire.peek(partitionId)) != null) {
+        // writeMessageToChannel(channel, partitionId, messageBeingSent, false);
+        // }
+
+        while ((messageBeingSent = queuedMessages.peek(partitionId)) != null) {
+            writeMessageToChannel(channel, partitionId, messageBeingSent);
+            queuedMessages.remove(partitionId);
+        }
+
+        writeMessageToChannel(channel, partitionId, message);
+        return true;
     }
 
     @Override
     public void operationComplete(ChannelFuture f) {
-        // when we get here, the I/O operation associated with f is complete
+        int partitionId = partitionChannelMap.inverse().get(f.getChannel());
+        if (f.isSuccess()) {
+            // messagesOnTheWire.remove(partitionId);
+        }
+
         if (f.isCancelled()) {
             logger.error("Send I/O was cancelled!! " + f.getChannel().getRemoteAddress());
         } else if (!f.isSuccess()) {
             logger.error("Exception on I/O operation", f.getCause());
-            // find the partition associated with this broken channel
-            int partition = channels.inverse().get(f.getChannel());
-            logger.error(String.format("I/O on partition %d failed!", partition));
+            logger.error(String.format("I/O on partition %d failed!", partitionId));
+            partitionChannelMap.remove(partitionId);
         }
     }
 
     @Override
     public void onChange() {
-        // topology changes when processes pick tasks
-        synchronized (nodes) {
-            for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
-                Integer partition = clusterNode.getPartition();
-                nodes.put(partition, clusterNode);
+        /*
+         * Close the channels that correspond to changed partitions and update partitionNodeMap
+         */
+        for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
+            Integer partition = clusterNode.getPartition();
+            ClusterNode oldNode = partitionNodeMap.get(partition);
+
+            if (oldNode != null && !oldNode.equals(clusterNode)) {
+                partitionChannelMap.remove(partition).close();
             }
+
+            partitionNodeMap.forcePut(partition, clusterNode);
         }
     }
 
@@ -180,17 +265,16 @@ public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyCha
                 }
             }
             ctx.sendUpstream(e);
-
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event) {
-            Integer partition = channels.inverse().get(context.getChannel());
-            if (partition == null) {
+            Integer partitionId = partitionChannelMap.inverse().get(context.getChannel());
+            if (partitionId == null) {
                 logger.error("Error on mystery channel!!");
                 // return;
             }
-            logger.error("Error on channel to partition " + partition);
+            logger.error("Error on channel to partition " + partitionId);
 
             try {
                 throw event.getCause();
@@ -205,5 +289,4 @@ public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyCha
             }
         }
     }
-
 }

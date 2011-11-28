@@ -2,6 +2,7 @@ package org.apache.s4.comm;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Listener;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,6 +28,7 @@ import com.google.inject.name.Named;
  */
 public abstract class SimpleDeliveryTest {
     protected CommWrapper sdt;
+    protected String lockdir;
 
     static class CommWrapper {
         private static final int MESSAGE_COUNT = 200;

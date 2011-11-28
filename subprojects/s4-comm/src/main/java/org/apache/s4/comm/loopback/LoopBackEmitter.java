@@ -10,9 +10,9 @@ public class LoopBackEmitter implements Emitter {
     }
     
     @Override
-    public void send(int partitionId, byte[] message) {
-        //System.out.println("LoopBackEmitter: Putting message to listener");
+    public boolean send(int partitionId, byte[] message) {
         listener.put(message);
+        return true;
     }
 
     @Override

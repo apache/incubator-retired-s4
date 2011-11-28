@@ -12,7 +12,6 @@ import org.apache.s4.base.Emitter;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyChangeListener;
-import org.jboss.netty.channel.Channel;
 
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
@@ -45,7 +44,7 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
     }
 
     @Override
-    public void send(int partitionId, byte[] message) {
+    public boolean send(int partitionId, byte[] message) {
         try {
             ClusterNode node = nodes.get(partitionId);
             if (node == null) {
@@ -63,6 +62,8 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        return true;
     }
 
     @Override
