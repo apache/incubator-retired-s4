@@ -70,8 +70,10 @@ public class Server {
         Sender sender = injector.getInstance(Sender.class);
         Receiver receiver = injector.getInstance(Receiver.class);
 
-        File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter("\\w+\\.s4r"));
+        // File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter("\\w+\\.s4r"));
+        File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter(".+.s4r"));
         for (File s4rFile : s4rFiles) {
+            logger.info("Loading app: " + s4rFile.getPath());
             loadApp(sender, receiver, s4rFile);
         }
 
@@ -100,6 +102,7 @@ public class Server {
                 return;
             }
             String appClassName = s4rFile.getManifest().getMainAttributes().getValue(MANIFEST_S4_APP_CLASS);
+            logger.info("App class name is: " + appClassName);
             App app = null;
 
             try {

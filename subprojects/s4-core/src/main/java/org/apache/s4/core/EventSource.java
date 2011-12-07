@@ -7,22 +7,18 @@ import org.apache.s4.base.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * 
- * A producer app uses one or more EventSource classes to provide events to
- * streams. AT runtime, consumer apps subscribe to an event source by providing
- * a stream object. Each EventSource instance may correspond to a different type
- * of event stream. Each EventSource may have an unlimited number of
- * subscribers.
+ * A producer app uses one or more EventSource classes to provide events to streams. AT runtime, consumer apps subscribe
+ * to an event source by providing a stream object. Each EventSource instance may correspond to a different type of
+ * event stream. Each EventSource may have an unlimited number of subscribers.
  * 
  */
 public class EventSource<T extends Event> implements Streamable<T> {
 
     /* No need to synchronize this object because we expect a single thread. */
     private Set<Stream<T>> streams = new HashSet<Stream<T>>();
-    private static final Logger logger = LoggerFactory
-            .getLogger(EventSource.class);
+    private static final Logger logger = LoggerFactory.getLogger(EventSource.class);
     final private String name;
 
     public EventSource(App app, String name) {
@@ -36,8 +32,7 @@ public class EventSource<T extends Event> implements Streamable<T> {
      * @param stream
      */
     public void subscribeStream(Stream<T> stream) {
-        logger.info("Subscribing stream: {} to event source: {}.",
-                stream.getName(), getName());
+        logger.info("Subscribing stream: {} to event source: {}.", stream.getName(), getName());
         streams.add(stream);
     }
 
@@ -47,8 +42,7 @@ public class EventSource<T extends Event> implements Streamable<T> {
      * @param stream
      */
     public void unsubscribeStream(Stream<T> stream) {
-        logger.info("Unsubsubscribing stream: {} to event source: {}.",
-                stream.getName(), getName());
+        logger.info("Unsubsubscribing stream: {} to event source: {}.", stream.getName(), getName());
         streams.remove(stream);
     }
 
@@ -73,7 +67,7 @@ public class EventSource<T extends Event> implements Streamable<T> {
     }
 
     /**
-     * @return the name of this event source
+     * @return the name of this event source.
      */
     public String getName() {
         return name;
@@ -85,9 +79,16 @@ public class EventSource<T extends Event> implements Streamable<T> {
     @Override
     public void close() {
         for (Stream<T> stream : streams) {
-            logger.info("Closing stream: {} in event source: {}.",
-                    stream.getName(), getName());
+            logger.info("Closing stream: {} in event source: {}.", stream.getName(), getName());
             stream.close();
         }
+    }
+
+    /**
+     * 
+     * @return the set of streams subscribed to this event source.
+     */
+    public Set<Stream<T>> getStreams() {
+        return streams;
     }
 }
