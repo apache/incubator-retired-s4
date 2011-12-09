@@ -32,14 +32,14 @@ public class Event {
     private Map<String, Data<?>> map;
 
     /** Default constructor sets time using system time. */
-    protected Event() {
+    public Event() {
         this.time = System.currentTimeMillis();
     }
 
     /**
      * This constructor explicitly sets the time. Event that need to explicitly set the time must call {super(time)}
      */
-    protected Event(long time) {
+    public Event(long time) {
         this.time = time;
     }
 
