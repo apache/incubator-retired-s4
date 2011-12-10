@@ -12,11 +12,11 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
-
 public class SimpleApp extends App {
     private SocketAdapter<StringEvent> socketAdapter;
-    
-    public SimpleApp () {}
+
+    public SimpleApp() {
+    }
 
     @Override
     protected void start() {
