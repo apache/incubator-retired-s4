@@ -10,10 +10,12 @@ public class StreamMaker {
     private String keyFinderString;
     private PEMaker pem;
     private Class<? extends Event> type;
+    private AppMaker appMaker;
 
     /* Only package classes can instantiate this class. */
-    StreamMaker(Class<? extends Event> type) {
+    StreamMaker(AppMaker appMaker, Class<? extends Event> type) {
         this.type = type;
+        this.appMaker = appMaker;
     }
 
     /**
@@ -35,7 +37,7 @@ public class StreamMaker {
      *            a function to lookup the value of the key.
      * @return the stream maker object
      */
-    public StreamMaker withKeyFinder(KeyFinder<?> keyFinder) {
+    public StreamMaker withKey(KeyFinder<?> keyFinder) {
         this.keyFinder = keyFinder;
         this.keyFinderString = null;
         return this;
@@ -48,7 +50,7 @@ public class StreamMaker {
      *            a descriptor to lookup the value of the key.
      * @return the stream maker object
      */
-    public StreamMaker withKeyFinder(String keyFinderString) {
+    public StreamMaker withKey(String keyFinderString) {
         this.keyFinder = null;
         this.keyFinderString = keyFinderString;
         return this;
@@ -62,6 +64,7 @@ public class StreamMaker {
      * @return the stream maker object
      */
     public StreamMaker to(PEMaker pem) {
+        appMaker.add(this, pem);
         this.pem = pem;
         return this;
     }

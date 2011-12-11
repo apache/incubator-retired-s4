@@ -8,10 +8,12 @@ import org.apache.s4.core.ProcessingElement;
 public class PEMaker {
 
     private Class<? extends ProcessingElement> type;
+    private AppMaker appMaker;
 
     /* Only package classes can instantiate this class. */
-    PEMaker(Class<? extends ProcessingElement> type) {
+    PEMaker(AppMaker appMaker, Class<? extends ProcessingElement> type) {
         this.type = type;
+        this.appMaker = appMaker;
     }
 
     public PEMaker withTrigger(Class<? extends Event> eventType, int numEvents, long interval, TimeUnit timeUnit) {
@@ -25,6 +27,7 @@ public class PEMaker {
     }
 
     public <T extends Event> PEMaker to(StreamMaker stream) {
+        appMaker.add(this, stream);
         return this;
     }
 
