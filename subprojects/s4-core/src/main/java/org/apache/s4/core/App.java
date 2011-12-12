@@ -15,15 +15,17 @@
  */
 package org.apache.s4.core;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -36,8 +38,12 @@ public abstract class App extends AbstractModule {
 
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
-    final private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
-    final private List<Streamable<? extends Event>> streams = new ArrayList<Streamable<? extends Event>>();
+    /* PE prototype to streams relations. */
+    final private Multimap<ProcessingElement, Streamable<? extends Event>> pe2stream = LinkedListMultimap.create();
+
+    /* Stream prototype to PE relations. */
+    final private Multimap<Streamable<? extends Event>, ProcessingElement> stream2pe = LinkedListMultimap.create();
+
     private ClockType clockType = ClockType.WALL_CLOCK;
     private int id = -1;
     @Inject
@@ -79,55 +85,82 @@ public abstract class App extends AbstractModule {
     }
 
     /**
-     * @return the pePrototypes
+     * @return all the pePrototypes
      */
-    public List<ProcessingElement> getPePrototypes() {
-        return pePrototypes;
+    Collection<ProcessingElement> getPePrototypes() {
+        return pe2stream.keySet();
     }
 
-    protected abstract void start();
+    /**
+     * @return all the pePrototypes
+     */
+    <T extends Event> Collection<ProcessingElement> getTargetPEs(Stream<T> stream) {
 
-    protected abstract void init();
+        Map<Streamable<?>, Collection<ProcessingElement>> stream2peMap = stream2pe.asMap();
 
-    protected abstract void close();
+        return stream2peMap.get(stream);
+    }
 
-    public void removeAll() {
+    protected abstract void onStart();
 
-        for (ProcessingElement pe : pePrototypes) {
+    protected void start() {
+
+        /* Start all streams. */
+        for (Streamable<? extends Event> stream : getStreams()) {
+            stream.start();
+        }
+
+        onStart();
+    }
+
+    protected abstract void onInit();
+
+    protected void init() {
+
+        onInit();
+    }
+
+    protected abstract void onClose();
+
+    protected void close() {
+
+        onClose();
+        removeAll();
+    }
+
+    private void removeAll() {
+
+        for (ProcessingElement pe : getPePrototypes()) {
 
             /* Remove all instances. */
             pe.removeAll();
 
         }
 
-        for (Streamable<? extends Event> stream : streams) {
-
-            /* Close all streams. */
+        /* Get the set of streams and close them. */
+        for (Streamable<?> stream : getStreams()) {
             stream.close();
         }
 
-        /* Give prototype a chance to clean up after itself. */
-        close();
-
-        /* Finally remove from App. */
-        pePrototypes.clear();
-        streams.clear();
+        /* Finally remove the entire app graph. */
+        pe2stream.clear();
+        stream2pe.clear();
     }
 
-    void addPEPrototype(ProcessingElement pePrototype) {
+    void addPEPrototype(ProcessingElement pePrototype, Stream<? extends Event> stream) {
 
-        pePrototypes.add(pePrototype);
+        pe2stream.put(pePrototype, stream);
 
     }
 
-    void addStream(Streamable<? extends Event> stream) {
+    void addStream(Streamable<? extends Event> stream, ProcessingElement pePrototype) {
 
-        streams.add(stream);
+        stream2pe.put(stream, pePrototype);
 
     }
 
-    public List<Streamable<? extends Event>> getStreams() {
-        return streams;
+    Collection<Streamable<? extends Event>> getStreams() {
+        return stream2pe.keySet();
     }
 
     /**
@@ -217,7 +250,7 @@ public abstract class App extends AbstractModule {
     protected <T extends Event> Stream<T> createStream(String name, KeyFinder<T> finder,
             ProcessingElement... processingElements) {
 
-        return new Stream<T>(this, name, finder, processingElements);
+        return new Stream<T>(this).withName(name).withKey(finder).to(processingElements);
     }
 
     /**
@@ -234,7 +267,28 @@ public abstract class App extends AbstractModule {
      */
     protected <T extends Event> Stream<T> createStream(String name, ProcessingElement... processingElements) {
 
-        return new Stream<T>(this, name, processingElements);
+        return new Stream<T>(this).withName(name).to(processingElements);
+    }
+
+    /**
+     * Creates stream with default values. Use the builder methods to configure the stream. Example:
+     * <p>
+     * 
+     * <pre>
+     *  s1 = <SampleEvent> createStream().withName("My first stream.").withKey(new AKeyFinder()).to(somePE);
+     * </pre>
+     * 
+     * <p>
+     * 
+     * @param name
+     *            the name of the stream
+     * @param processingElements
+     *            the target processing elements
+     * @return the stream
+     */
+    protected <T extends Event> Stream<T> createStream(Class<T> type) {
+
+        return new Stream<T>(this);
     }
 
     /**
@@ -308,4 +362,5 @@ public abstract class App extends AbstractModule {
         // TODO Auto-generated method stub
 
     }
+
 }

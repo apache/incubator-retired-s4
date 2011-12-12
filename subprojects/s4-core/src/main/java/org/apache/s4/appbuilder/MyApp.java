@@ -2,11 +2,21 @@ package org.apache.s4.appbuilder;
 
 public class MyApp extends AppMaker {
 
-    /**
-     * @param args
-     */
-    public void define() {
+    public static void main(String[] args) {
 
+        MyApp myApp = new MyApp();
+        myApp.init();
+        System.out.println(myApp.toString());
+    }
+
+    @Override
+    protected void start() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    protected void onInit() {
         PEMaker pem1, pem2;
         StreamMaker s1;
         StreamMaker s2, s3;
@@ -24,10 +34,15 @@ public class MyApp extends AppMaker {
         addPE(PEX.class).to(s2).to(s3);
     }
 
-    public static void main(String[] args) {
+    @Override
+    protected void onStart() {
+        // TODO Auto-generated method stub
 
-        MyApp myApp = new MyApp();
-        myApp.define();
-        System.out.println(myApp.toString());
+    }
+
+    @Override
+    protected void onClose() {
+        // TODO Auto-generated method stub
+
     }
 }

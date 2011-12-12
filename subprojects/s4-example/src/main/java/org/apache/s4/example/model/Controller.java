@@ -16,7 +16,6 @@
  */
 package org.apache.s4.example.model;
 
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
@@ -26,10 +25,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.s4.core.Receiver;
 import org.apache.s4.core.Sender;
 import org.apache.s4.model.Model;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
-import org.slf4j.Logger;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -39,8 +38,7 @@ import com.google.inject.name.Named;
  */
 public class Controller {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(Controller.class);
+    private static final Logger logger = LoggerFactory.getLogger(Controller.class);
 
     final private String trainFilename;
     final private String testFilename;
@@ -55,10 +53,8 @@ public class Controller {
     final private Receiver receiver;
 
     @Inject
-    private Controller(@Named("model.train_data") String trainFilename,
-            @Named("model.test_data") String testFilename, Model model,
-            @Named("model.vector_size") int vectorSize,
-            @Named("model.num_iterations") int numIterations,
+    private Controller(@Named("model.train_data") String trainFilename, @Named("model.test_data") String testFilename,
+            Model model, @Named("model.vector_size") int vectorSize, @Named("model.num_iterations") int numIterations,
             @Named("model.output_interval_in_seconds") int outputInterval,
             @Named("model.logger.level") String logLevel, Sender sender, Receiver receiver) {
 
@@ -88,23 +84,21 @@ public class Controller {
             /* Get vector size and number of classes from data set. */
             getDataSetInfo(trainFilename);
 
-            MyApp app = new MyApp(numClasses, numTrainVectors, model,
-                    outputInterval, TimeUnit.SECONDS);
-            
+            MyApp app = new MyApp(numClasses, numTrainVectors, model, outputInterval, TimeUnit.SECONDS);
+
             app.setCommLayer(sender, receiver);
 
             logger.info("Init app.");
-            app.init();
+            app.initApp();
 
             /* Initialize modelPEs by injecting one dummy events per class. */
             for (int i = 0; i < numClasses; i++) {
-                ObsEvent obsEvent = new ObsEvent(-1, new float[vectorSize],
-                        -Float.MAX_VALUE, i, -1, true);
+                ObsEvent obsEvent = new ObsEvent(-1, new float[vectorSize], -Float.MAX_VALUE, i, -1, true);
                 app.injectByKey(obsEvent);
             }
 
             /* Wait until the app is initialized. */
-            while(!app.isInited()) {
+            while (!app.isInited()) {
                 Thread.sleep(1);
             }
 
@@ -116,7 +110,7 @@ public class Controller {
                 /*
                  * Make sure all the data has been processed.
                  */
-                while(!app.isTrained(i)) {
+                while (!app.isTrained(i)) {
                     Thread.sleep(5);
                 }
             }
@@ -130,22 +124,23 @@ public class Controller {
             stop = System.nanoTime();
             long testTime = stop - start;
 
-            while(!app.isTested(numTestVectors)) {
+            while (!app.isTested(numTestVectors)) {
                 Thread.sleep(5);
             }
-            
+
             /* Print final report. */
             logger.info(app.getReport());
-            
+
             /* Print timing info. */
             logger.info("Total training time was {} seconds.", trainTime / 1000000000);
             logger.info("Training time per observation was {} microseconds.", trainTime / numTrainVectors / 1000);
-            logger.info("Training time per observation per iteration was {} microseconds.", trainTime / numTrainVectors / numIterations / 1000);
+            logger.info("Training time per observation per iteration was {} microseconds.", trainTime / numTrainVectors
+                    / numIterations / 1000);
             logger.info("Total testing time was {} seconds.", testTime / 1000000000);
             logger.info("Testing time per observation was {} microseconds.", testTime / numTrainVectors / 1000);
-            
+
             /* Done. */
-            app.remove();
+            app.closeApp();
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -159,8 +154,7 @@ public class Controller {
         }
     }
 
-    private void injectData(MyApp app, boolean isTraining, String filename)
-            throws FileNotFoundException, IOException {
+    private void injectData(MyApp app, boolean isTraining, String filename) throws FileNotFoundException, IOException {
 
         DataFile data = new DataFile(filename);
         int count = 0;
@@ -176,15 +170,13 @@ public class Controller {
 
                 vector[j] = Float.parseFloat(result[j + 1]);
             }
-            ObsEvent obsEvent = new ObsEvent(count++, vector, -Float.MAX_VALUE,
-                    classID, -1, isTraining);
+            ObsEvent obsEvent = new ObsEvent(count++, vector, -Float.MAX_VALUE, classID, -1, isTraining);
             app.injectToAll(obsEvent);
         }
         data.close();
     }
 
-    private void getDataSetInfo(String filename) throws FileNotFoundException,
-            IOException {
+    private void getDataSetInfo(String filename) throws FileNotFoundException, IOException {
 
         Map<Integer, Long> countsPerClass = new HashMap<Integer, Long>();
 
@@ -197,8 +189,7 @@ public class Controller {
             /* Format is: label val1 val2 ... valN */
             if (vectorSize != result.length - 1) {
                 throw new IllegalArgumentException("vectorSize: (" + vectorSize
-                        + ") does not match number of columns in data file ("
-                        + (result.length - 1) + ").");
+                        + ") does not match number of columns in data file (" + (result.length - 1) + ").");
             }
 
             /* Class ID range starts in 1, shift to start in zero. */

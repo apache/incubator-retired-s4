@@ -1,12 +1,10 @@
 package org.apache.s4.wordcount;
 
-
 import java.io.IOException;
 
 import org.apache.s4.core.App;
 import org.apache.s4.core.Stream;
 import org.apache.s4.fixtures.SocketAdapter;
-
 
 import com.google.inject.Inject;
 
@@ -21,19 +19,19 @@ public class WordCountApp extends App {
     }
 
     @Override
-    protected void start() {
+    protected void onStart() {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    protected void init() {
+    protected void onInit() {
 
         WordClassifierPE wordClassifierPrototype = createPE(WordClassifierPE.class);
         Stream<WordCountEvent> wordCountStream = createStream("words counts stream", new WordCountKeyFinder(),
                 wordClassifierPrototype);
         WordCounterPE wordCounterPrototype = createPE(WordCounterPE.class);
-//        wordCounterPrototype.setTrigger(WordSeenEvent.class, 1, 0, null);
+        // wordCounterPrototype.setTrigger(WordSeenEvent.class, 1, 0, null);
         wordCounterPrototype.setWordClassifierStream(wordCountStream);
         Stream<WordSeenEvent> wordSeenStream = createStream("words seen stream", new WordSeenKeyFinder(),
                 wordCounterPrototype);
@@ -63,7 +61,7 @@ public class WordCountApp extends App {
     }
 
     @Override
-    protected void close() {
+    protected void onClose() {
         socketAdapter.close();
 
     }

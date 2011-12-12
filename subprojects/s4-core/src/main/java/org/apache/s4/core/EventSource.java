@@ -14,16 +14,16 @@ import org.slf4j.LoggerFactory;
  * event stream. Each EventSource may have an unlimited number of subscribers.
  * 
  */
-public class EventSource<T extends Event> implements Streamable<T> {
+class EventSource<T extends Event> extends Streamable<T> {
 
     /* No need to synchronize this object because we expect a single thread. */
     private Set<Stream<T>> streams = new HashSet<Stream<T>>();
     private static final Logger logger = LoggerFactory.getLogger(EventSource.class);
     final private String name;
 
-    public EventSource(App app, String name) {
+    EventSource(App app, String name) {
         this.name = name;
-        app.addStream(this);
+        app.addStream(this, null);
     }
 
     /**
@@ -31,7 +31,7 @@ public class EventSource<T extends Event> implements Streamable<T> {
      * 
      * @param stream
      */
-    public void subscribeStream(Stream<T> stream) {
+    void subscribeStream(Stream<T> stream) {
         logger.info("Subscribing stream: {} to event source: {}.", stream.getName(), getName());
         streams.add(stream);
     }
@@ -41,7 +41,7 @@ public class EventSource<T extends Event> implements Streamable<T> {
      * 
      * @param stream
      */
-    public void unsubscribeStream(Stream<T> stream) {
+    void unsubscribeStream(Stream<T> stream) {
         logger.info("Unsubsubscribing stream: {} to event source: {}.", stream.getName(), getName());
         streams.remove(stream);
     }
@@ -62,14 +62,14 @@ public class EventSource<T extends Event> implements Streamable<T> {
      * 
      * @return the number of streams subscribed to this event source.
      */
-    public int getNumSubscribers() {
+    int getNumSubscribers() {
         return streams.size();
     }
 
     /**
      * @return the name of this event source.
      */
-    public String getName() {
+    String getName() {
         return name;
     }
 
@@ -77,7 +77,7 @@ public class EventSource<T extends Event> implements Streamable<T> {
      * Close all the streams subscribed to this event source.
      */
     @Override
-    public void close() {
+    void close() {
         for (Stream<T> stream : streams) {
             logger.info("Closing stream: {} in event source: {}.", stream.getName(), getName());
             stream.close();
@@ -88,7 +88,13 @@ public class EventSource<T extends Event> implements Streamable<T> {
      * 
      * @return the set of streams subscribed to this event source.
      */
-    public Set<Stream<T>> getStreams() {
+    Set<Stream<T>> getStreams() {
         return streams;
+    }
+
+    @Override
+    void start() {
+        // TODO Auto-generated method stub
+
     }
 }

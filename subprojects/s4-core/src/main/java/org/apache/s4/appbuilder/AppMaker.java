@@ -11,7 +11,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
-abstract public class AppMaker {
+abstract public class AppMaker extends App {
 
     /**
      * NOTES: reflection+guice:
@@ -37,12 +37,6 @@ abstract public class AppMaker {
 
     private Multimap<PEMaker, StreamMaker> psGraph = LinkedListMultimap.create();
     private Map<StreamMaker, PEMaker> spGraph = Maps.newHashMap();
-
-    public AppMaker() {
-
-    }
-
-    abstract protected void define();
 
     void add(PEMaker pem, StreamMaker stream) {
 

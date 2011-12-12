@@ -2,6 +2,8 @@ package org.apache.s4.appbuilder;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.core.KeyFinder;
+import org.apache.s4.core.ProcessingElement;
+import org.apache.s4.core.Stream;
 
 public class StreamMaker {
 
@@ -69,4 +71,18 @@ public class StreamMaker {
         return this;
     }
 
+    private Stream<? extends Event> getStream() {
+
+        // Stream stream = new Stream(appMaker, name, getKeyFinder(), getProcessingElements());
+        return null;// stream;
+    }
+
+    private KeyFinder<?> getKeyFinder() {
+
+        return null;
+    }
+
+    private ProcessingElement[] getProcessingElements() {
+        return null;
+    }
 }

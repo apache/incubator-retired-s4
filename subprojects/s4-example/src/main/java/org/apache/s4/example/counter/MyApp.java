@@ -26,7 +26,6 @@ import org.apache.s4.core.Stream;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
-
 /*
  * This is a sample application to test a new S4 API. 
  * See README file for details.
@@ -41,58 +40,58 @@ final public class MyApp extends App {
     /*
      * 
      * 
-     * The application graph itself is created in this Class. However,
-     * developers may provide tools for creating apps which will generate the
-     * objects.
+     * The application graph itself is created in this Class. However, developers may provide tools for creating apps
+     * which will generate the objects.
      * 
-     * IMPORTANT: we create a graph of PE prototypes. The prototype is a class
-     * instance that is used as a prototype from which all PE instance will be
-     * created. The prototype itself is not used as an instance. (Except when
-     * the PE is of type Singleton PE). To create a data structure for each PE
-     * instance you must do it in the method ProcessingElement.onCreate().
+     * IMPORTANT: we create a graph of PE prototypes. The prototype is a class instance that is used as a prototype from
+     * which all PE instance will be created. The prototype itself is not used as an instance. (Except when the PE is of
+     * type Singleton PE). To create a data structure for each PE instance you must do it in the method
+     * ProcessingElement.onCreate().
      */
 
-
     /*
-     * Build the application graph using POJOs. Don't like it? Write a nice
-     * tool.
+     * Build the application graph using POJOs. Don't like it? Write a nice tool.
      * 
      * @see io.s4.App#init()
      */
     @SuppressWarnings("unchecked")
     @Override
-    protected void init() {
+    protected void onInit() {
 
         /* PE that prints counts to console. */
         PrintPE printPE = createPE(PrintPE.class);
 
-        Stream<CountEvent> userCountStream = createStream("User Count Stream",
-                new CountKeyFinder(), printPE);
-        Stream<CountEvent> genderCountStream = createStream(
-                "Gender Count Stream", new CountKeyFinder(), printPE);
-        Stream<CountEvent> ageCountStream = createStream("Age Count Stream",
-                new CountKeyFinder(), printPE);
+        Stream<CountEvent> userCountStream = createStream(CountEvent.class).withName("User Count Stream")
+                .withKey(new CountKeyFinder()).to(printPE);
+
+        Stream<CountEvent> genderCountStream = createStream(CountEvent.class).withName("Gender Count Stream")
+                .withKey(new CountKeyFinder()).to(printPE);
+
+        Stream<CountEvent> ageCountStream = createStream(CountEvent.class).withName("Age Count Stream")
+                .withKey(new CountKeyFinder()).to(printPE);
 
         /* PEs that count events by user, gender, and age. */
-        CounterPE userCountPE = createPE(CounterPE.class);
-        userCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        CounterPE userCountPE = createPE(CounterPE.class);// .withTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        userCountPE.withTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         userCountPE.setCountStream(userCountStream);
 
         CounterPE genderCountPE = createPE(CounterPE.class);
-        genderCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        genderCountPE.withTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         genderCountPE.setCountStream(genderCountStream);
 
         CounterPE ageCountPE = createPE(CounterPE.class);
-        ageCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        ageCountPE.withTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         ageCountPE.setCountStream(ageCountStream);
 
         /* Streams that output user events keyed on user, gender, and age. */
-        Stream<UserEvent> userStream = createStream("User Stream",
-                new UserIDKeyFinder(), userCountPE);
-        Stream<UserEvent> genderStream = createStream("Gender Stream",
-                new GenderKeyFinder(), genderCountPE);
-        Stream<UserEvent> ageStream = createStream("Age Stream",
-                new AgeKeyFinder(), ageCountPE);
+        Stream<UserEvent> userStream = createStream(UserEvent.class).withName("User Stream")
+                .withKey(new UserIDKeyFinder()).to(userCountPE);
+
+        Stream<UserEvent> genderStream = createStream(UserEvent.class).withName("Gender Stream")
+                .withKey(new GenderKeyFinder()).to(genderCountPE);
+
+        Stream<UserEvent> ageStream = createStream(UserEvent.class).withName("Age Stream").withKey(new AgeKeyFinder())
+                .to(ageCountPE);
 
         generateUserEventPE = createPE(GenerateUserEventPE.class);
         generateUserEventPE.setStreams(userStream, genderStream, ageStream);
@@ -104,7 +103,7 @@ final public class MyApp extends App {
      * @see io.s4.App#start()
      */
     @Override
-    protected void start() {
+    protected void onStart() {
 
         for (int i = 0; i < 200; i++) {
             generateUserEventPE.onTrigger(null);
@@ -117,13 +116,12 @@ final public class MyApp extends App {
             e.printStackTrace();
         }
 
-        System.out.println("Done. Closing...");
-        removeAll();
-
+        System.out.println("Done. Wait until the main app closes.");
+        // close();
     }
 
     @Override
-    protected void close() {
+    protected void onClose() {
         System.out.println("Bye.");
 
     }
@@ -137,5 +135,13 @@ final public class MyApp extends App {
         myApp.setCommLayer(sender, receiver);
         myApp.init();
         myApp.start();
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        myApp.close();
     }
 }

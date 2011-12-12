@@ -15,7 +15,6 @@
  */
 package org.apache.s4.core;
 
-
 import java.util.List;
 
 import org.apache.s4.base.Event;
@@ -25,7 +24,7 @@ import org.apache.s4.base.Event;
  * (One value for single keys, and more than one value for 
  * composite keys.) 
  * */
-public interface KeyFinder<T extends Event> {
+abstract public interface KeyFinder<T extends Event> {
 
     public List<String> get(T event);
 }

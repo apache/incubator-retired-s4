@@ -7,22 +7,27 @@ import org.apache.s4.base.Event;
  * 
  * @param <T>
  */
-public interface Streamable<T extends Event> {
+abstract class Streamable<T extends Event> {
 
     /**
      * Put an event into the streams.
      * 
      * @param event
      */
-    public void put(T event);
+    abstract void put(T event);
 
     /**
      * Stop and close all the streams.
      */
-    public void close();
+    abstract void close();
 
     /**
      * @return the name of this streamable object.
      */
-    public String getName();
+    abstract String getName();
+
+    /**
+     * Start all streams;
+     */
+    abstract void start();
 }

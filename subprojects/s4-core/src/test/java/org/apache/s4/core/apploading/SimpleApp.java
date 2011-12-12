@@ -19,7 +19,7 @@ public class SimpleApp extends App {
     }
 
     @Override
-    protected void start() {
+    protected void onStart() {
         try {
             final ZooKeeper zk = TestUtils.createZkClient();
             zk.create("/simpleAppCreated", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
@@ -30,7 +30,7 @@ public class SimpleApp extends App {
     }
 
     @Override
-    protected void init() {
+    protected void onInit() {
         SimplePE prototype = createPE(SimplePE.class);
         Stream<StringEvent> stream = createStream("stream", new SentenceKeyFinder(), prototype);
         try {
@@ -41,7 +41,7 @@ public class SimpleApp extends App {
     }
 
     @Override
-    protected void close() {
+    protected void onClose() {
         // TODO Auto-generated method stub
     }
 }

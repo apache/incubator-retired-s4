@@ -25,7 +25,6 @@ import org.apache.s4.model.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class MyApp extends App {
 
     private static final Logger logger = LoggerFactory.getLogger(MyApp.class);
@@ -42,8 +41,7 @@ public class MyApp extends App {
     Stream<ObsEvent> assignmentStream;
     private String report;
 
-    MyApp(int numClasses, long numVectors, Model model, int outputInterval,
-            TimeUnit timeUnit) {
+    MyApp(int numClasses, long numVectors, Model model, int outputInterval, TimeUnit timeUnit) {
         super();
         this.numClasses = numClasses;
         this.numVectors = numVectors;
@@ -63,43 +61,44 @@ public class MyApp extends App {
     }
 
     @Override
-    protected void start() {
+    protected void onStart() {
 
     }
 
+    /* init() visibility is protected. Normally the Server class only should call init. */
+    public void initApp() {
+        init();
+    }
+
     @Override
-    protected void init() {
+    protected void onInit() {
 
         metricsPE = createPE(MetricsPE.class);
 
-        Stream<ResultEvent> resultStream = createStream(
-                "Result Stream", new ResultKeyFinder(), metricsPE);
+        Stream<ResultEvent> resultStream = createStream("Result Stream", new ResultKeyFinder(), metricsPE);
 
         modelPE = createPE(ModelPE.class);
         modelPE.setModel(model);
         modelPE.setNumVectors(numVectors);
-        
-        assignmentStream = createStream( "Assignment Stream",
-                new ClassIDKeyFinder(), modelPE);
+
+        assignmentStream = createStream("Assignment Stream", new ClassIDKeyFinder(), modelPE);
 
         MaximizerPE maximizerPE = createPE(MaximizerPE.class);
         maximizerPE.setNumClasses(numClasses);
         maximizerPE.setAssignmentStream(assignmentStream);
 
-        Stream<ObsEvent> distanceStream = createStream(
-                "Distance Stream", new ObsIndexKeyFinder(), maximizerPE);
+        Stream<ObsEvent> distanceStream = createStream("Distance Stream", new ObsIndexKeyFinder(), maximizerPE);
 
         /*
-         * There is a loop in this graph so we need to set the stream at the
-         * end. Is there a cleaner way to do this?
+         * There is a loop in this graph so we need to set the stream at the end. Is there a cleaner way to do this?
          */
         modelPE.setStream(distanceStream, resultStream);
         // modelPE.setOutputIntervalInEvents(10); // output every 10 events
-        metricsPE.setTimerInterval(outputInterval, timeUnit); // output every 5
+        metricsPE.withTimerInterval(outputInterval, timeUnit); // output every 5
                                                                // seconds
         // obsStream = new Stream<ObsEvent>(this, "Observation Stream", new
         // ClassIDKeyFinder(), modelPE);
-        obsStream = createStream( "Observation Stream", modelPE);
+        obsStream = createStream("Observation Stream", modelPE);
     }
 
     /** @return true if modelPE is initialized. */
@@ -159,10 +158,13 @@ public class MyApp extends App {
         return report;
     }
 
+    /* close() visibility is protected. Normally the Server class only should call init. */
+    public void closeApp() {
+        close();
+    }
+
     @Override
     protected void close() {
-        // TODO Auto-generated method stub
-
     }
 
     public long getObsCount() {
@@ -170,7 +172,7 @@ public class MyApp extends App {
         return modelPE.getObsCount();
     }
 
-    public void remove() {
-        removeAll();
+    @Override
+    protected void onClose() {
     }
 }

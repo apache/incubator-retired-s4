@@ -15,7 +15,6 @@
  */
 package org.apache.s4.core;
 
-
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;

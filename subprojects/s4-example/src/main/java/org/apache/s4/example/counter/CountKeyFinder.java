@@ -20,7 +20,6 @@ import java.util.List;
 
 import org.apache.s4.core.KeyFinder;
 
-
 public class CountKeyFinder implements KeyFinder<CountEvent> {
 
     public List<String> get(CountEvent event) {

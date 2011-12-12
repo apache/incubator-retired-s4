@@ -1,4 +1,4 @@
-package org.apache.s4.core.triggers;
+package org.apache.s4.core;
 
 import org.apache.s4.fixtures.FileBasedClusterManagementTestModule;
 
