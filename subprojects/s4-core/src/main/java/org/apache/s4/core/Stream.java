@@ -103,7 +103,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      *            the stream name, default is an empty string.
      * @return the stream maker object
      */
-    public Stream<T> withName(String name) {
+    public Stream<T> setName(String name) {
         this.name = name;
         return this;
     }
@@ -115,7 +115,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      *            a function to lookup the value of the key.
      * @return the stream maker object
      */
-    public Stream<T> withKey(KeyFinder<T> keyFinder) {
+    public Stream<T> setKey(KeyFinder<T> keyFinder) {
         this.key = new Key<T>(keyFinder, DEFAULT_SEPARATOR);
         return this;
     }
@@ -127,7 +127,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      *            a descriptor to lookup the value of the key.
      * @return the stream maker object
      */
-    public Stream<T> withKey(String keyFinderString) {
+    public Stream<T> setKey(String keyFinderString) {
 
         return this;
     }
@@ -140,7 +140,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * 
      * @return the stream maker object
      */
-    public Stream<T> to(ProcessingElement pe) {
+    public Stream<T> setPE(ProcessingElement pe) {
         app.addStream(this, pe);
         return this;
     }
@@ -153,7 +153,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * 
      * @return the stream maker object
      */
-    public Stream<T> to(ProcessingElement[] pes) {
+    public Stream<T> setPEs(ProcessingElement[] pes) {
         for (int i = 0; i < pes.length; i++)
             app.addStream(this, pes[i]);
         return this;

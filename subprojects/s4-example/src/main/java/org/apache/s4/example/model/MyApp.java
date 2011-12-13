@@ -94,7 +94,7 @@ public class MyApp extends App {
          */
         modelPE.setStream(distanceStream, resultStream);
         // modelPE.setOutputIntervalInEvents(10); // output every 10 events
-        metricsPE.withTimerInterval(outputInterval, timeUnit); // output every 5
+        metricsPE.setTimerInterval(outputInterval, timeUnit); // output every 5
                                                                // seconds
         // obsStream = new Stream<ObsEvent>(this, "Observation Stream", new
         // ClassIDKeyFinder(), modelPE);

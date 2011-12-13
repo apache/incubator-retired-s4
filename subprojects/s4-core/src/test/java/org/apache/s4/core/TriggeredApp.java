@@ -32,10 +32,10 @@ public class TriggeredApp extends App {
         Stream<StringEvent> stream = createStream("stream", new SentenceKeyFinder(), prototype);
         switch (TriggerTest.triggerType) {
             case COUNT_BASED:
-                prototype.withTrigger(Event.class, 1, 0, TimeUnit.SECONDS);
+                prototype.setTrigger(Event.class, 1, 0, TimeUnit.SECONDS);
                 break;
             case TIME_BASED:
-                prototype.withTrigger(Event.class, 1, 1, TimeUnit.MILLISECONDS);
+                prototype.setTrigger(Event.class, 1, 1, TimeUnit.MILLISECONDS);
             default:
                 break;
         }

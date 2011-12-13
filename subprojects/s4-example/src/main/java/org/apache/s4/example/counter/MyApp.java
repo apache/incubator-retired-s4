@@ -61,37 +61,37 @@ final public class MyApp extends App {
         /* PE that prints counts to console. */
         PrintPE printPE = createPE(PrintPE.class);
 
-        Stream<CountEvent> userCountStream = createStream(CountEvent.class).withName("User Count Stream")
-                .withKey(new CountKeyFinder()).to(printPE);
+        Stream<CountEvent> userCountStream = createStream(CountEvent.class).setName("User Count Stream")
+                .setKey(new CountKeyFinder()).setPE(printPE);
 
-        Stream<CountEvent> genderCountStream = createStream(CountEvent.class).withName("Gender Count Stream")
-                .withKey(new CountKeyFinder()).to(printPE);
+        Stream<CountEvent> genderCountStream = createStream(CountEvent.class).setName("Gender Count Stream")
+                .setKey(new CountKeyFinder()).setPE(printPE);
 
-        Stream<CountEvent> ageCountStream = createStream(CountEvent.class).withName("Age Count Stream")
-                .withKey(new CountKeyFinder()).to(printPE);
+        Stream<CountEvent> ageCountStream = createStream(CountEvent.class).setName("Age Count Stream")
+                .setKey(new CountKeyFinder()).setPE(printPE);
 
         /* PEs that count events by user, gender, and age. */
         CounterPE userCountPE = createPE(CounterPE.class);// .withTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
-        userCountPE.withTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        userCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         userCountPE.setCountStream(userCountStream);
 
         CounterPE genderCountPE = createPE(CounterPE.class);
-        genderCountPE.withTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        genderCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         genderCountPE.setCountStream(genderCountStream);
 
         CounterPE ageCountPE = createPE(CounterPE.class);
-        ageCountPE.withTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        ageCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         ageCountPE.setCountStream(ageCountStream);
 
         /* Streams that output user events keyed on user, gender, and age. */
-        Stream<UserEvent> userStream = createStream(UserEvent.class).withName("User Stream")
-                .withKey(new UserIDKeyFinder()).to(userCountPE);
+        Stream<UserEvent> userStream = createStream(UserEvent.class).setName("User Stream")
+                .setKey(new UserIDKeyFinder()).setPE(userCountPE);
 
-        Stream<UserEvent> genderStream = createStream(UserEvent.class).withName("Gender Stream")
-                .withKey(new GenderKeyFinder()).to(genderCountPE);
+        Stream<UserEvent> genderStream = createStream(UserEvent.class).setName("Gender Stream")
+                .setKey(new GenderKeyFinder()).setPE(genderCountPE);
 
-        Stream<UserEvent> ageStream = createStream(UserEvent.class).withName("Age Stream").withKey(new AgeKeyFinder())
-                .to(ageCountPE);
+        Stream<UserEvent> ageStream = createStream(UserEvent.class).setName("Age Stream").setKey(new AgeKeyFinder())
+                .setPE(ageCountPE);
 
         generateUserEventPE = createPE(GenerateUserEventPE.class);
         generateUserEventPE.setStreams(userStream, genderStream, ageStream);

@@ -97,7 +97,7 @@ import com.google.common.collect.Maps;
  * 
  * 
  */
-public abstract class ProcessingElement implements Cloneable {
+abstract public class ProcessingElement implements Cloneable {
 
     private static final Logger logger = LoggerFactory.getLogger(ProcessingElement.class);
 
@@ -223,7 +223,7 @@ public abstract class ProcessingElement implements Cloneable {
      *            the time unit
      * @return the PE prototype
      */
-    public ProcessingElement withPECache(int maximumSize, long duration, TimeUnit timeUnit) {
+    public ProcessingElement setPECache(int maximumSize, long duration, TimeUnit timeUnit) {
 
         if (!isPrototype) {
             logger.error("This method can only be used on the PE prototype. Cache not configured.");
@@ -265,7 +265,7 @@ public abstract class ProcessingElement implements Cloneable {
      *            the TimeUnit for the argument interval. Can set to null if no time interval needed.
      * @return the PE prototype
      */
-    public ProcessingElement withTrigger(Class<? extends Event> eventType, int numEvents, long interval,
+    public ProcessingElement setTrigger(Class<? extends Event> eventType, int numEvents, long interval,
             TimeUnit timeUnit) {
 
         if (!isPrototype) {
@@ -319,7 +319,7 @@ public abstract class ProcessingElement implements Cloneable {
      *            the timeUnit of interval
      * @return the PE prototype
      */
-    public ProcessingElement withTimerInterval(long interval, TimeUnit timeUnit) {
+    public ProcessingElement setTimerInterval(long interval, TimeUnit timeUnit) {
         timerIntervalInMilliseconds = TimeUnit.MILLISECONDS.convert(interval, timeUnit);
 
         /* We only allow timers in the PE prototype, not in the instances. */

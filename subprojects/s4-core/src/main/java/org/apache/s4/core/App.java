@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.core.App.ClockType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ import com.google.inject.Injector;
 /*
  * Container base class to hold all processing elements. We will implement administrative methods here. 
  */
-public abstract class App extends AbstractModule {
+public abstract class App {
 
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
@@ -250,7 +251,7 @@ public abstract class App extends AbstractModule {
     protected <T extends Event> Stream<T> createStream(String name, KeyFinder<T> finder,
             ProcessingElement... processingElements) {
 
-        return new Stream<T>(this).withName(name).withKey(finder).to(processingElements);
+        return new Stream<T>(this).setName(name).setKey(finder).setPEs(processingElements);
     }
 
     /**
@@ -267,7 +268,7 @@ public abstract class App extends AbstractModule {
      */
     protected <T extends Event> Stream<T> createStream(String name, ProcessingElement... processingElements) {
 
-        return new Stream<T>(this).withName(name).to(processingElements);
+        return new Stream<T>(this).setName(name).setPEs(processingElements);
     }
 
     /**
@@ -355,12 +356,4 @@ public abstract class App extends AbstractModule {
                 + " \nUsage: java <classpath+params> org.apache.s4.core.App <appClassName> <moduleClassName>");
         System.exit(-1);
     }
-
-    /* Implement Guice abstract method. */
-    @Override
-    protected void configure() {
-        // TODO Auto-generated method stub
-
-    }
-
 }

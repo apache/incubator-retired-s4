@@ -1,4 +1,4 @@
-package org.apache.s4.appbuilder;
+package org.apache.s4.appmaker;
 
 import org.apache.s4.base.Event;
 
