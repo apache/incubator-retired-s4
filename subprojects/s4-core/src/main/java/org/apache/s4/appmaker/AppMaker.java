@@ -1,16 +1,20 @@
 package org.apache.s4.appmaker;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
+import org.apache.s4.fluent.FluentApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.inject.AbstractModule;
 
 /**
  * A fluent API to build S4 applications.
@@ -51,6 +55,7 @@ abstract public class AppMaker {
     /* Use multi-maps to save the graph. */
     private Multimap<PEMaker, StreamMaker> pe2stream = LinkedListMultimap.create();
     private Multimap<StreamMaker, PEMaker> stream2pe = LinkedListMultimap.create();
+    private List<Element> order = Lists.newLinkedList();
 
     /**
      * Configure the application.
@@ -72,7 +77,9 @@ abstract public class AppMaker {
     }
 
     protected PEMaker addPE(Class<? extends ProcessingElement> type) {
-        return new PEMaker(this, type);
+        PEMaker pe = new PEMaker(this, type);
+        order.add(new Element(pe, null));
+        return pe;
     }
 
     /**
@@ -83,13 +90,45 @@ abstract public class AppMaker {
      * 
      * @return a stream maker.
      */
-    protected StreamMaker addStream(Class<? extends Event> type) {
-
-        return new StreamMaker(this, type);
-
+    protected StreamMaker addStream(String propName, Class<? extends Event> type) {
+        StreamMaker stream = new StreamMaker(this, propName, type);
+        order.add(new Element(null, stream));
+        return stream;
     }
 
     App make() {
+
+        App app = null;
+
+        /* Build the graph using the same order as configured in AppMaker. */
+        for (Element element : order) {
+
+            if (element.pe != null) {
+                /* Create a PE. */
+                ProcessingElement pe = app.createPE(element.pe.getType());
+
+            } else {
+                /* Create a stream. */
+
+            }
+        }
+
+        Map<PEMaker, Collection<StreamMaker>> pe2streamMap = pe2stream.asMap();
+        for (Map.Entry<PEMaker, Collection<StreamMaker>> entry : pe2streamMap.entrySet()) {
+            // sb.append(entry.getKey() + ": ");
+            for (StreamMaker sm : entry.getValue()) {
+                // sb.append(sm + " ");
+            }
+        }
+
+        Map<StreamMaker, Collection<PEMaker>> stream2peMap = stream2pe.asMap();
+        for (Map.Entry<StreamMaker, Collection<PEMaker>> entry : stream2peMap.entrySet()) {
+            // sb.append(entry.getKey() + ": ");
+            for (PEMaker pm : entry.getValue()) {
+                // sb.append(pm + " ");
+            }
+        }
+
         return null;
     }
 
@@ -122,5 +161,27 @@ abstract public class AppMaker {
 
         return sb.toString();
 
+    }
+
+    class Element {
+
+        PEMaker pe;
+        StreamMaker stream;
+
+        Element(PEMaker pe, StreamMaker stream) {
+            this.pe = pe;
+            this.stream = stream;
+        }
+
+    }
+
+    class Module extends AbstractModule {
+
+        @Override
+        protected void configure() {
+
+            bind(FluentApp.class);
+            bind(PEX.class);
+        }
     }
 }

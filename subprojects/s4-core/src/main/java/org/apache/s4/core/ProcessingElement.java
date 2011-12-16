@@ -274,12 +274,12 @@ abstract public class ProcessingElement implements Cloneable {
         }
 
         if (eventType == null) {
-            logger.error("Argument null in setTrigger() method is not valid. Trigger not set.");
+            logger.debug("Argument null in setTrigger() method is not valid. Trigger not set.");
             return this;
         }
 
         if (numEvents < 1) {
-            logger.error("Argument numEvents in setTrigger() method must be greater than zero. Trigger not set.");
+            logger.debug("Argument numEvents in setTrigger() method must be greater than zero. Trigger not set.");
             return this;
         }
 
@@ -328,8 +328,13 @@ abstract public class ProcessingElement implements Cloneable {
             return this;
         }
 
-        if (timer != null || interval == 0)
+        if (timer != null) {
             timer.cancel();
+            return this;
+        }
+
+        if (interval == 0)
+            return this;
 
         timer = new Timer();
         timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);

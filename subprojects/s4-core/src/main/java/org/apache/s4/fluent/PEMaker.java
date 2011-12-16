@@ -1,10 +1,12 @@
-package org.apache.s4.appmaker;
+package org.apache.s4.fluent;
 
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.base.Event;
 import org.apache.s4.core.ProcessingElement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
@@ -16,8 +18,11 @@ import com.google.common.base.Preconditions;
  */
 public class PEMaker {
 
+    private static final Logger logger = LoggerFactory.getLogger(PEMaker.class);
+
     final private Class<? extends ProcessingElement> type;
     final private AppMaker app;
+    private ProcessingElement pe = null;
 
     private long timerInterval = 0;
 
@@ -56,12 +61,9 @@ public class PEMaker {
      *            the time unit
      * @return the PEMaker
      */
-    public PEMaker withPECache(int maximumSize, long duration, TimeUnit timeUnit) {
+    public CacheMaker addCache() {
 
-        cacheMaximumSize = maximumSize;
-        cacheDuration = timeUnit.convert(duration, TimeUnit.MILLISECONDS);
-
-        return this;
+        return new CacheMaker();
     }
 
     /**
@@ -88,15 +90,9 @@ public class PEMaker {
      *            the TimeUnit for the argument interval. Can set to null if no time interval needed.
      * @return the PEMaker
      */
-    public PEMaker withTrigger(Class<? extends Event> eventType, int numEvents, long interval, TimeUnit timeUnit) {
+    public TriggerMaker addTrigger() {
 
-        triggerEventType = eventType;
-        triggerNumEvents = numEvents;
-
-        if (timeUnit != null)
-            triggerInterval = timeUnit.convert(interval, TimeUnit.MILLISECONDS);
-
-        return this;
+        return new TriggerMaker();
     }
 
     /**
@@ -110,30 +106,26 @@ public class PEMaker {
      *            the timeUnit of interval
      * @return the PEMaker
      */
-    public PEMaker withTimerInterval(long interval, TimeUnit timeUnit) {
-        timerInterval = TimeUnit.MILLISECONDS.convert(interval, timeUnit);
+    public TimerMaker addTimer() {
+        return new TimerMaker();
+    }
 
-        timerInterval = interval;
+    public StreamMaker emit(Class<? extends Event> type) {
+
+        logger.debug("PE [{}] emits event of type [{}].", this.getType().getName(), type.getCanonicalName());
+        StreamMaker stream = new StreamMaker(app, type);
+        app.add(this, stream);
+        return stream;
+    }
+
+    public PEMaker withKey(String key) {
 
         return this;
     }
 
-    public PEMaker property(String key, Object value) {
+    public PEMaker with(String key, Object value) {
 
         properties.addProperty(key, value);
-        return this;
-    }
-
-    /**
-     * Send events from this PE to a stream.
-     * 
-     * @param stream
-     * 
-     * 
-     * @return the PE maker.
-     */
-    public PEMaker to(StreamMaker stream) {
-        app.add(this, stream);
         return this;
     }
 
@@ -191,5 +183,64 @@ public class PEMaker {
      */
     PropertiesConfiguration getProperties() {
         return properties;
+    }
+
+    /**
+     * @return the pe
+     */
+    public ProcessingElement getPe() {
+        return pe;
+    }
+
+    /**
+     * @param pe
+     *            the pe to set
+     */
+    public void setPe(ProcessingElement pe) {
+        this.pe = pe;
+    }
+
+    public class TriggerMaker {
+
+        public TriggerMaker fireOn(Class<? extends Event> eventType) {
+
+            triggerEventType = eventType;
+            return this;
+        }
+
+        public TriggerMaker ifNumEvents(int numEvents) {
+
+            triggerNumEvents = numEvents;
+            return this;
+        }
+
+        public TriggerMaker ifInterval(long interval, TimeUnit timeUnit) {
+
+            if (timeUnit != null)
+                triggerInterval = timeUnit.convert(interval, TimeUnit.MILLISECONDS);
+            return this;
+        }
+    }
+
+    public class CacheMaker {
+
+        public CacheMaker ofSize(int maxSize) {
+            cacheMaximumSize = maxSize;
+            return this;
+        }
+
+        public CacheMaker withDuration(long duration, TimeUnit timeUnit) {
+            cacheDuration = timeUnit.convert(duration, TimeUnit.MILLISECONDS);
+            return this;
+        }
+    }
+
+    public class TimerMaker {
+
+        public TimerMaker withDuration(long duration, TimeUnit timeUnit) {
+            timerInterval = TimeUnit.MILLISECONDS.convert(duration, timeUnit);
+            timerInterval = duration;
+            return this;
+        }
     }
 }

@@ -1,7 +1,8 @@
-package org.apache.s4.appmaker;
+package org.apache.s4.fluent;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.core.KeyFinder;
+import org.apache.s4.core.Stream;
 
 import com.google.common.base.Preconditions;
 
@@ -15,18 +16,15 @@ public class StreamMaker {
 
     final private AppMaker app;
     final private Class<? extends Event> type;
-    final private String propName; // Must match a property name in a PE class that will receive this stream.
-    private String name;
+    private String name = null;
     private KeyFinder<? extends Event> keyFinder;
     private String keyDescriptor = null;
+    private Stream<? extends Event> stream = null;
 
-    StreamMaker(AppMaker app, String propName, Class<? extends Event> type) {
+    StreamMaker(AppMaker app, Class<? extends Event> type) {
 
-        Preconditions.checkNotNull(propName);
         Preconditions.checkNotNull(type);
         this.app = app;
-        this.propName = propName;
-        this.name = propName; // Default name if one is not specified.
         this.type = type;
         app.add(null, this);
     }
@@ -50,7 +48,7 @@ public class StreamMaker {
      *            a function to lookup the value of the key.
      * @return the stream maker.
      */
-    public <T extends Event> StreamMaker withKey(KeyFinder<T> keyFinder) {
+    public <T extends Event> StreamMaker onKey(KeyFinder<T> keyFinder) {
         this.keyFinder = keyFinder;
         return this;
     }
@@ -113,7 +111,19 @@ public class StreamMaker {
      * @return the name
      */
     String getName() {
-        return name;
+
+        if (name != null) {
+            return name;
+        } else {
+
+            String key;
+            if (keyDescriptor != null) {
+                key = keyDescriptor;
+                return type.getCanonicalName() + "-" + key;
+            } else {
+                return type.getCanonicalName();
+            }
+        }
     }
 
     /**
@@ -131,10 +141,17 @@ public class StreamMaker {
     }
 
     /**
-     * @return the propName
+     * @return the stream
      */
-    public String getPropName() {
-        return propName;
+    public Stream<? extends Event> getStream() {
+        return stream;
     }
 
+    /**
+     * @param stream
+     *            the stream to set
+     */
+    public void setStream(Stream<? extends Event> stream) {
+        this.stream = stream;
+    }
 }

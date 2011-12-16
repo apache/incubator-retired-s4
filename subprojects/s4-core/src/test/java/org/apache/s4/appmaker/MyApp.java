@@ -5,20 +5,21 @@ public class MyApp extends AppMaker {
     @Override
     protected void configure() {
 
-        PEMaker pe1, pe2;
+        PEMaker pez, pey;
         StreamMaker s1;
         StreamMaker s2, s3;
 
-        pe1 = addPE(PEZ.class);
+        pez = addPE(PEZ.class);
 
-        s1 = addStream(EventA.class).withName("My first stream.").withKey("{gender}").to(pe1);
+        s1 = addStream("stream1", EventA.class).withName("My first stream.").withKey("{gender}").to(pez);
 
-        pe2 = addPE(PEY.class).to(s1);
+        pey = addPE(PEY.class).to(s1).property("duration", 4).property("height", 99);
 
-        s2 = addStream(EventB.class).withName("My second stream.").withKey("{age}").to(pe2);
+        s2 = addStream("stream2", EventB.class).withName("My second stream.").withKey("{age}").to(pey).to(pez);
 
-        s3 = addStream(EventB.class).withName("My third stream.").withKey("{height}").to(pe2);
+        s3 = addStream("stream3", EventB.class).withKey("{height}").to(pey);
 
-        addPE(PEX.class).to(s2).to(s3);
+        addPE(PEX.class).to(s2).to(s3).property("keyword", "money");
     }
+
 }

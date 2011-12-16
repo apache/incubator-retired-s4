@@ -287,7 +287,7 @@ public abstract class App {
      *            the target processing elements
      * @return the stream
      */
-    protected <T extends Event> Stream<T> createStream(Class<T> type) {
+    public <T extends Event> Stream<T> createStream(Class<T> type) {
 
         return new Stream<T>(this);
     }
@@ -299,7 +299,7 @@ public abstract class App {
      *            the processing element type.
      * @return the processing element prototype.
      */
-    protected <T extends ProcessingElement> T createPE(Class<T> type) {
+    public <T extends ProcessingElement> T createPE(Class<T> type) {
 
         try {
             // TODO: make sure this doesn't crash if PE has a constructor other than with App as argument.

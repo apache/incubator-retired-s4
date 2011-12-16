@@ -1,5 +1,6 @@
-package org.apache.s4.appmaker;
+package org.apache.s4.fluent;
 
+import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
 
@@ -7,6 +8,10 @@ public class PEZ extends ProcessingElement {
 
     private Stream<EventA> stream1;
     private Stream<EventB> stream2;
+
+    public PEZ(App app) {
+        super(app);
+    }
 
     /**
      * @return the stream1
