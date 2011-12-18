@@ -13,7 +13,7 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package org.apache.s4.fluent.counter;
+package org.apache.s4.example.fluent.counter;
 
 
 import java.util.ArrayList;
@@ -21,14 +21,14 @@ import java.util.List;
 
 import org.apache.s4.core.KeyFinder;
 
-public class GenderKeyFinder implements KeyFinder<UserEvent> {
+public class UserIDKeyFinder implements KeyFinder<UserEvent> {
 
     public List<String> get(UserEvent event) {
 
         List<String> results = new ArrayList<String>();
 
-        /* Retrieve the gender and add it to the list. */
-        results.add(Character.toString(event.getGender()));
+        /* Retrieve the user ID and add it to the list. */
+        results.add(event.getUserID());
 
         return results;
     }

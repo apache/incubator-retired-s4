@@ -13,7 +13,7 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package org.apache.s4.fluent.counter;
+package org.apache.s4.example.fluent.counter;
 
 import java.io.InputStream;
 
@@ -34,6 +34,7 @@ import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyFromFile;
 import org.apache.s4.comm.udp.UDPEmitter;
 import org.apache.s4.comm.udp.UDPListener;
+import org.apache.s4.fluent.AppMaker;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
@@ -73,7 +74,7 @@ public class Module extends AbstractModule {
         if (config == null)
             loadProperties(binder());
 
-        bind(MyApp.class);
+        bind(AppMaker.class).to(Main.class);
 
         bind(Cluster.class);
 

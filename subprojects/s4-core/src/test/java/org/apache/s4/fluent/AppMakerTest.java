@@ -10,6 +10,7 @@ public class AppMakerTest {
     public void test() throws Exception {
 
         MyApp myApp = new MyApp();
+        myApp.setApp(new FluentApp(myApp));
         myApp.configure();
         System.out.println(myApp.toString());
         myApp.make();

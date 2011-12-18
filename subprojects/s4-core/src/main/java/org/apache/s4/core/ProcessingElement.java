@@ -30,6 +30,7 @@ import org.apache.s4.core.gen.OverloadDispatcherGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -100,6 +101,7 @@ import com.google.common.collect.Maps;
 abstract public class ProcessingElement implements Cloneable {
 
     private static final Logger logger = LoggerFactory.getLogger(ProcessingElement.class);
+    private static final String SINGLETON = "singleton";
 
     protected App app;
 
@@ -107,7 +109,7 @@ abstract public class ProcessingElement implements Cloneable {
      * This maps holds all the instances. We make it package private to prevent concrete classes from updating the
      * collection.
      */
-    Cache<String, ProcessingElement> peInstances;
+    private Cache<String, ProcessingElement> peInstances;
 
     /* This map is initialized in the prototype and cloned to instances. */
     Map<Class<? extends Event>, Trigger> triggers;
@@ -123,6 +125,7 @@ abstract public class ProcessingElement implements Cloneable {
     private boolean isPrototype = true;
     private boolean isThreadSafe = false;
     private boolean isFirst = true;
+    private boolean isSingleton = true;
 
     private transient OverloadDispatcher overloadDispatcher;
 
@@ -170,7 +173,7 @@ abstract public class ProcessingElement implements Cloneable {
      * 
      * Override this method to implement a periodic process.
      */
-    void onTime() {
+    protected void onTime() {
     }
 
     /**
@@ -204,6 +207,10 @@ abstract public class ProcessingElement implements Cloneable {
         return peInstances.size();
     }
 
+    Map<String, ProcessingElement> getPEInstances() {
+        return peInstances.asMap();
+    }
+
     /**
      * Set PE expiration and cache size.
      * <p>
@@ -225,10 +232,7 @@ abstract public class ProcessingElement implements Cloneable {
      */
     public ProcessingElement setPECache(int maximumSize, long duration, TimeUnit timeUnit) {
 
-        if (!isPrototype) {
-            logger.error("This method can only be used on the PE prototype. Cache not configured.");
-            return this;
-        }
+        Preconditions.checkArgument(isPrototype, "This method can only be used on the PE prototype. Trigger not set.");
 
         peInstances = CacheBuilder.newBuilder().expireAfterAccess(duration, timeUnit).maximumSize(maximumSize)
                 .build(new CacheLoader<String, ProcessingElement>() {
@@ -268,31 +272,46 @@ abstract public class ProcessingElement implements Cloneable {
     public ProcessingElement setTrigger(Class<? extends Event> eventType, int numEvents, long interval,
             TimeUnit timeUnit) {
 
-        if (!isPrototype) {
-            logger.error("This method can only be used on the PE prototype. Trigger not set.");
-            return this;
-        }
-
-        if (eventType == null) {
-            logger.debug("Argument null in setTrigger() method is not valid. Trigger not set.");
-            return this;
-        }
-
-        if (numEvents < 1) {
-            logger.debug("Argument numEvents in setTrigger() method must be greater than zero. Trigger not set.");
-            return this;
-        }
+        Preconditions.checkArgument(isPrototype, "This method can only be used on the PE prototype. Trigger not set.");
+        Preconditions.checkNotNull(eventType, "Need eventType to set trigger.");
+        Preconditions.checkArgument(numEvents > 0 || interval > 0,
+                "To set trigger numEvent OR interval must be greater than zero.");
+        Preconditions.checkArgument(timeUnit != null || interval < 1,
+                "To set trigger timeUnit is needed when interval is greater than zero.");
 
         /* Skip trigger checking overhead if there are no triggers. */
         haveTriggers = true;
 
-        long intervalInMilliseconds = 0;
-        if (timeUnit != null)
-            intervalInMilliseconds = timeUnit.convert(interval, TimeUnit.MILLISECONDS);
+        if (timeUnit != null && timeUnit != TimeUnit.MILLISECONDS)
+            interval = timeUnit.convert(interval, TimeUnit.MILLISECONDS);
 
-        Trigger config = new Trigger(numEvents, intervalInMilliseconds);
+        Trigger config = new Trigger(numEvents, interval);
 
         triggers.put(eventType, config);
+
+        return this;
+    }
+
+    /**
+     * @return the isSingleton
+     */
+    public boolean isSingleton() {
+        return isSingleton;
+    }
+
+    /**
+     * Makes this PE a singleton. A single PE instance is eagerly created and ready to receive events.
+     * 
+     * @param isSingleton
+     * @throws ExecutionException
+     */
+    public ProcessingElement setSingleton(boolean isSingleton) {
+
+        if (!isPrototype) {
+            logger.warn("This method can only be used on the PE prototype.");
+            return this;
+        }
+        this.isSingleton = isSingleton;
 
         return this;
     }
@@ -322,22 +341,18 @@ abstract public class ProcessingElement implements Cloneable {
     public ProcessingElement setTimerInterval(long interval, TimeUnit timeUnit) {
         timerIntervalInMilliseconds = TimeUnit.MILLISECONDS.convert(interval, timeUnit);
 
-        /* We only allow timers in the PE prototype, not in the instances. */
-        if (!isPrototype) {
-            logger.warn("This method can only be used on the PE prototype. Timer not set.");
-            return this;
-        }
+        Preconditions.checkArgument(isPrototype, "This method can only be used on the PE prototype. Trigger not set.");
 
         if (timer != null) {
             timer.cancel();
-            return this;
         }
 
         if (interval == 0)
             return this;
 
         timer = new Timer();
-        timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);
+        logger.info("Created timer for PE prototype [{}] with interval [{}].", this.getClass().getName(),
+                timerIntervalInMilliseconds);
 
         return this;
     }
@@ -439,27 +454,55 @@ abstract public class ProcessingElement implements Cloneable {
     private ProcessingElement createPE(String id) {
         ProcessingElement pe = (ProcessingElement) this.clone();
         pe.isPrototype = false;
-        if (isFirst)
-            onCreateInternal(pe);
+        if (isFirst) // TODO: THIS DOESNT MAKE SENSE. WE ONLY CREATE INSTANCE ONCE. REVIEW.
+            initPEInstance(pe);
         pe.id = id;
         pe.onCreate();
         logger.trace("Num PE instances: {}.", getNumPEInstances());
         return pe;
     }
 
+    /* This method is called by App just before the application starts. */
+    void initPEPrototypeInternal() {
+
+        /* Eagerly create singleton PE. */
+        if (isSingleton) {
+            try {
+                peInstances.get(SINGLETON);
+                logger.trace("Created singleton [{}].", getInstanceForKey(SINGLETON));
+            } catch (ExecutionException e) {
+                logger.error("Problem when trying to create a PE instance.", e);
+            }
+        }
+
+        /* Start timer. */
+        if (timer != null) {
+            timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);
+            logger.info("Started timer for PE [{}] with ID [{}].", this.getClass().getName(), id);
+        }
+
+    }
+
     /**
      * This method is designed to be used within the package. We make it package-private. The returned instances are all
      * in the same JVM. Do not use it to access remote objects.
+     * 
+     * @throws ExecutionException
      */
     public ProcessingElement getInstanceForKey(String id) {
 
         /* Check if instance for key exists, otherwise create one. */
         try {
+            if (isSingleton) {
+                logger.trace(
+                        "Requested a PE instance with key [{}]. The instance is a singleton and will ignore the key. The key should be set to null when requesting a singleton.",
+                        id);
+                return peInstances.get(SINGLETON);
+            }
             return peInstances.get(id);
         } catch (ExecutionException e) {
             logger.error("Problem when trying to create a PE instance.", e);
         }
-
         return null;
     }
 
@@ -508,7 +551,7 @@ abstract public class ProcessingElement implements Cloneable {
      * Called when we create the first PE instance. TODO: Would be better to do this as part of the PE lifecycle after
      * PE construction.
      */
-    private void onCreateInternal(ProcessingElement pe) {
+    private void initPEInstance(ProcessingElement pe) {
 
         isFirst = false;
 
@@ -562,21 +605,38 @@ abstract public class ProcessingElement implements Cloneable {
         }
     }
 
+    /**
+     * Helper method to be used by PE implementation classes. Sends an event to all the target streams.
+     * 
+     */
+    protected <T extends Event> void emit(T event, Stream<T>[] streamArray) {
+
+        for (int i = 0; i < streamArray.length; i++) {
+            streamArray[i].put(event);
+        }
+    }
+
     private class OnTimeTask extends TimerTask {
 
         @Override
         public void run() {
 
-            for (Map.Entry<String, ProcessingElement> entry : peInstances.asMap().entrySet()) {
+            for (Map.Entry<String, ProcessingElement> entry : getPEInstances().entrySet()) {
 
                 ProcessingElement peInstance = entry.getValue();
 
-                if (isThreadSafe) {
-                    peInstance.onTime();
-                } else {
-                    synchronized (this) {
+                try {
+                    if (isThreadSafe) {
                         peInstance.onTime();
+                    } else {
+                        synchronized (this) {
+                            peInstance.onTime();
+                        }
                     }
+                } catch (Exception e) {
+                    logger.error("Cought exception in timer when calling PE instance [{}] with id [{}].", peInstance,
+                            peInstance.id);
+                    logger.error("Timer error.", e);
                 }
             }
         }
@@ -619,5 +679,4 @@ abstract public class ProcessingElement implements Cloneable {
             return active;
         }
     }
-
 }

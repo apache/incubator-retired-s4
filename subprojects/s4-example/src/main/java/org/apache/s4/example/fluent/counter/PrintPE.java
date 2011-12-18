@@ -13,46 +13,32 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package org.apache.s4.fluent.counter;
+package org.apache.s4.example.fluent.counter;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.core.App;
+import org.apache.s4.core.ProcessingElement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class CountEvent extends Event {
+public class PrintPE extends ProcessingElement {
 
-    private String key;
-    private long count;
-    
-    public CountEvent() {
-        
+    private static final Logger logger = LoggerFactory.getLogger(PrintPE.class);
+
+    public PrintPE(App app) {
+        super(app);
     }
 
-    CountEvent(String key, long count) {
-        this.key = key;
-        this.count = count;
+    public void onEvent(Event event) {
+
+        logger.info(">>> [{}].", event.toString());
     }
 
-    CountEvent(String key, long count, long time) {
-        super(time);
-        this.key = key;
-        this.count = count;
+    @Override
+    protected void onCreate() {
     }
 
-   
-    /**
-     * @return the key
-     */
-    public String getKey() {
-        return key;
-    }
-
-    /**
-     * @return the count
-     */
-    public long getCount() {
-        return count;
-    }
-
-    public String toString() {
-        return String.format("Key: " + key + ", Count: %08d", count);
+    @Override
+    protected void onRemove() {
     }
 }

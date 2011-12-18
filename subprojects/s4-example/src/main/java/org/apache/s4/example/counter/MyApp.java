@@ -60,6 +60,7 @@ final public class MyApp extends App {
 
         /* PE that prints counts to console. */
         PrintPE printPE = createPE(PrintPE.class);
+        printPE.setSingleton(true);
 
         Stream<CountEvent> userCountStream = createStream(CountEvent.class).setName("User Count Stream")
                 .setKey(new CountKeyFinder()).setPE(printPE);
@@ -71,7 +72,7 @@ final public class MyApp extends App {
                 .setKey(new CountKeyFinder()).setPE(printPE);
 
         /* PEs that count events by user, gender, and age. */
-        CounterPE userCountPE = createPE(CounterPE.class);// .withTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        CounterPE userCountPE = createPE(CounterPE.class);
         userCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
         userCountPE.setCountStream(userCountStream);
 

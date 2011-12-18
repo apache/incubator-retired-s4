@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 public class MyApp extends AppMaker {
 
     @Override
-    protected void configure() {
+    public void configure() {
 
         PEMaker pez, pey, pex;
 
@@ -19,30 +19,23 @@ public class MyApp extends AppMaker {
         pey.addTimer().withDuration(2, TimeUnit.MINUTES);
 
         /* Configure processing element pex. */
-        pex = addPE(PEX.class).with("query", "money");
+        pex = addPE(PEX.class).with("query", "money").asSingleton();
         pex.addCache().ofSize(100).withDuration(1, TimeUnit.MINUTES);
 
         /* Construct the graph. */
-        pey.emit(EventA.class).onKey(new DurationKeyFinder()).to(pez);
-        pex.emit(EventB.class).onKey(new QueryKeyFinder()).to(pez);
+        pey.emit(EventA.class).withField("stream3").onKey(new DurationKeyFinder()).to(pez);
+        pey.emit(EventA.class).withField("heightpez").onKey(new HeightKeyFinder()).to(pez);
+        pez.emit(EventB.class).to(pex);
         pex.emit(EventB.class).onKey(new QueryKeyFinder()).to(pey).to(pez);
     }
 
     @Override
-    protected void onStart() {
+    public void start() {
         // TODO Auto-generated method stub
-
     }
 
     @Override
-    protected void onInit() {
+    public void close() {
         // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    protected void onClose() {
-        // TODO Auto-generated method stub
-
     }
 }

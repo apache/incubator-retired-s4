@@ -201,8 +201,8 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
             if (logger.isTraceEnabled()) {
                 e.printStackTrace();
             }
-            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            System.exit(-1);
+            logger.debug("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
+            // System.exit(-1);
         }
     }
 
@@ -216,9 +216,8 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
         try {
             queue.put((T) event);
         } catch (InterruptedException e) {
-            e.printStackTrace();
-            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            System.exit(-1);
+            logger.debug("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
+            // System.exit(-1);
         }
     }
 
@@ -300,7 +299,8 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
                         /* We have a key, send to target PE. */
 
                         /* STEP 1: find the PE instance for key. */
-                        ProcessingElement pe = targetPEs[i].getInstanceForKey(key.get(event));
+                        ProcessingElement pe;
+                        pe = targetPEs[i].getInstanceForKey(key.get(event));
 
                         /* STEP 2: pass event to PE instance. */
                         pe.handleInputEvent(event);

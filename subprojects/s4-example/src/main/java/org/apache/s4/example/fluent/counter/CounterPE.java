@@ -13,26 +13,29 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package org.apache.s4.fluent.counter;
+package org.apache.s4.example.fluent.counter;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CounterPE extends ProcessingElement {
 
-    private Stream<CountEvent> countStream = null;
+    private static final Logger logger = LoggerFactory.getLogger(CounterPE.class);
+
+    private Stream<CountEvent>[] countStream = null;
 
     public CounterPE(App app) {
         super(app);
     }
-    
+
     /**
      * @return the countStream
      */
-    public Stream<CountEvent> getCountStream() {
+    public Stream<CountEvent>[] getCountStream() {
         return countStream;
     }
 
@@ -40,7 +43,7 @@ public class CounterPE extends ProcessingElement {
      * @param countStream
      *            the countStream to set
      */
-    public void setCountStream(Stream<CountEvent> countStream) {
+    public void setCountStream(Stream<CountEvent>[] countStream) {
         this.countStream = countStream;
     }
 
@@ -49,6 +52,7 @@ public class CounterPE extends ProcessingElement {
     public void onEvent(Event event) {
 
         counter += 1;
+        logger.trace("PE with id [{}] incremented counter to [{}].", getId(), counter);
     }
 
     /*
@@ -58,8 +62,9 @@ public class CounterPE extends ProcessingElement {
      */
     public void onTrigger(Event event) {
 
+        logger.trace("Sending count event for PE id [{}] with count [{}].", getId(), counter);
         CountEvent countEvent = new CountEvent(getId(), counter);
-        countStream.put(countEvent);
+        emit(countEvent, countStream);
     }
 
     /*
@@ -68,12 +73,12 @@ public class CounterPE extends ProcessingElement {
      * @see io.s4.ProcessingElement#init()
      */
     @Override
-    protected void onCreate() {
+    public void onCreate() {
 
     }
 
     @Override
-    protected void onRemove() {
+    public void onRemove() {
 
     }
 }

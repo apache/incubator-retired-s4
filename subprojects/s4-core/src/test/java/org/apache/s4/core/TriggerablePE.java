@@ -1,10 +1,7 @@
 package org.apache.s4.core;
 
-
 import java.io.IOException;
 
-import org.apache.s4.core.App;
-import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.fixtures.TestUtils;
 import org.apache.s4.wordcount.StringEvent;
 import org.apache.zookeeper.CreateMode;
@@ -14,21 +11,20 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
-
 public class TriggerablePE extends ProcessingElement implements Watcher {
-    
+
     private ZooKeeper zk;
 
-    public TriggerablePE() {}
-    
+    public TriggerablePE() {
+    }
+
     public TriggerablePE(App app) {
         super(app);
     }
-    
+
     public void onEvent(StringEvent event) {
         try {
-            zk.create("/onEvent@"+event.getString(), new byte[0], Ids.OPEN_ACL_UNSAFE,
-                    CreateMode.PERSISTENT);
+            zk.create("/onEvent@" + event.getString(), new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         } catch (KeeperException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -37,9 +33,9 @@ public class TriggerablePE extends ProcessingElement implements Watcher {
             e.printStackTrace();
         }
     }
-    
+
     @Override
-    protected void onCreate() {
+    public void onCreate() {
         if (zk == null) {
             try {
                 zk = new ZooKeeper("localhost:" + TestUtils.ZK_PORT, 4000, this);
@@ -51,7 +47,7 @@ public class TriggerablePE extends ProcessingElement implements Watcher {
 
     public void onTrigger(StringEvent event) {
         try {
-            zk.create("/onTrigger[StringEvent]@"+event.getString(), new byte[0], Ids.OPEN_ACL_UNSAFE,
+            zk.create("/onTrigger[StringEvent]@" + event.getString(), new byte[0], Ids.OPEN_ACL_UNSAFE,
                     CreateMode.PERSISTENT);
         } catch (KeeperException e) {
             // TODO Auto-generated catch block
@@ -61,20 +57,17 @@ public class TriggerablePE extends ProcessingElement implements Watcher {
             e.printStackTrace();
         }
     }
-    
-    
+
     @Override
-    protected void onRemove() {
+    public void onRemove() {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void process(WatchedEvent event) {
         // TODO Auto-generated method stub
-        
+
     }
-    
-    
 
 }

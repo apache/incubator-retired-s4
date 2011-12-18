@@ -19,6 +19,7 @@ public class StreamMaker {
     private String name = null;
     private KeyFinder<? extends Event> keyFinder;
     private String keyDescriptor = null;
+    private String fieldName;
     private Stream<? extends Event> stream = null;
 
     StreamMaker(AppMaker app, Class<? extends Event> type) {
@@ -114,16 +115,14 @@ public class StreamMaker {
 
         if (name != null) {
             return name;
-        } else {
-
-            String key;
-            if (keyDescriptor != null) {
-                key = keyDescriptor;
-                return type.getCanonicalName() + "-" + key;
-            } else {
-                return type.getCanonicalName();
-            }
         }
+
+        if (keyDescriptor != null) {
+            return type.getCanonicalName() + "," + keyDescriptor;
+        } else if (keyFinder != null) {
+            return type.getCanonicalName() + "," + keyFinder.getClass().getCanonicalName();
+        } else
+            return type.getCanonicalName();
     }
 
     /**
@@ -141,6 +140,13 @@ public class StreamMaker {
     }
 
     /**
+     * @return the field name
+     */
+    String getFieldName() {
+        return fieldName;
+    }
+
+    /**
      * @return the stream
      */
     public Stream<? extends Event> getStream() {
@@ -153,5 +159,10 @@ public class StreamMaker {
      */
     public void setStream(Stream<? extends Event> stream) {
         this.stream = stream;
+    }
+
+    public StreamMaker withField(String fieldName) {
+        this.fieldName = fieldName;
+        return this;
     }
 }

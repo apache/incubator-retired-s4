@@ -1,10 +1,10 @@
 package org.apache.s4.fluent;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 /**
  * A fluent API to build S4 applications.
@@ -29,28 +28,27 @@ import com.google.common.collect.Sets;
  * 
  * <pre>
  * 
- * public class MyApp extends AppMaker {
+ * &#064;Override
+ * public void configure() {
  * 
- *     &#064;Override
- *     protected void configure() {
+ *     PEMaker pez, pey, pex;
  * 
- *         PEMaker pez, pey, pex;
+ *     pez = addPE(PEZ.class);
+ *     pez.addTrigger().fireOn(EventA.class).ifInterval(5, TimeUnit.SECONDS);
+ *     pez.addCache().ofSize(1000).withDuration(3, TimeUnit.HOURS);
  * 
- *         pez = addPE(PEZ.class);
- *         pez.addTrigger().fireOn(EventA.class).ifInterval(5, TimeUnit.SECONDS);
- *         pez.addCache().ofSize(1000).withDuration(3, TimeUnit.HOURS);
+ *     pey = addPE(PEY.class).with(&quot;duration&quot;, 4).with(&quot;height&quot;, 99);
+ *     pey.addTimer().withDuration(2, TimeUnit.MINUTES);
  * 
- *         pey = addPE(PEY.class).property(&quot;duration&quot;, 4).property(&quot;height&quot;, 99);
- *         pey.addTimer().withDuration(2, TimeUnit.MINUTES);
+ *     pex = addPE(PEX.class).with(&quot;query&quot;, &quot;money&quot;).asSingleton();
+ *     pex.addCache().ofSize(100).withDuration(1, TimeUnit.MINUTES);
  * 
- *         pex = addPE(PEX.class).property(&quot;query&quot;, &quot;money&quot;);
- *         pex.addCache().ofSize(100).withDuration(1, TimeUnit.MINUTES);
- * 
- *         pey.emit(EventA.class).withKey(new DurationKeyFinder()).to(pez);
- *         pex.emit(EventB.class).withKey(new QueryKeyFinder()).to(pez);
- *         pex.emit(EventB.class).withKey(new QueryKeyFinder()).to(pey).to(pez);
- *     }
+ *     pey.emit(EventA.class).withField(&quot;stream3&quot;).onKey(new DurationKeyFinder()).to(pez);
+ *     pey.emit(EventA.class).withField(&quot;heightpez&quot;).onKey(new HeightKeyFinder()).to(pez);
+ *     pez.emit(EventB.class).to(pex);
+ *     pex.emit(EventB.class).onKey(new QueryKeyFinder()).to(pey).to(pez);
  * }
+ * 
  * 
  * </pre>
  */
@@ -62,16 +60,31 @@ abstract public class AppMaker {
     private Multimap<PEMaker, StreamMaker> pe2stream = LinkedListMultimap.create();
     private Multimap<StreamMaker, PEMaker> stream2pe = LinkedListMultimap.create();
 
-    final private App app;
+    private FluentApp app;
 
-    AppMaker() {
-        this.app = new BaseApp();
+    public AppMaker() {
+
+    }
+
+    public void setApp(FluentApp app) {
+        this.app = app;
     }
 
     /**
      * Configure the application.
      */
-    abstract protected void configure();
+    protected abstract void start();
+
+    protected abstract void configure();
+
+    protected abstract void close();
+
+    /**
+     * @return the app
+     */
+    public FluentApp getApp() {
+        return app;
+    }
 
     /* Used internally to build the graph. */
     void add(PEMaker pem, StreamMaker stream) {
@@ -94,25 +107,20 @@ abstract public class AppMaker {
         return pe;
     }
 
-    /**
-     * Add a stream.
-     * 
-     * @param eventType
-     *            the type of events emitted by this PE.
-     * 
-     * @return a stream maker.
-     */
-    protected StreamMaker addStream(Class<? extends Event> type) {
-        StreamMaker stream = new StreamMaker(this, type);
-        return stream;
-    }
+    App make() {
 
-    App make() throws Exception {
+        logger.debug("Start MAKE.");
 
         /* Loop PEMaker objects to create PEs. */
         for (PEMaker key : pe2stream.keySet()) {
             if (key != null) {
-                key.setPe(makePE(key, key.getType()));
+                try {
+                    key.setPe(makePE(key, key.getType()));
+                } catch (NoSuchFieldException e) {
+                    logger.error("Couldn't make PE.", e);
+                } catch (IllegalAccessException e) {
+                    logger.error("Couldn't make PE.", e);
+                }
             }
 
         }
@@ -124,14 +132,16 @@ abstract public class AppMaker {
         }
 
         /* PE to Stream wiring. */
-        Set<PEMaker> done = Sets.newHashSet();
         Map<PEMaker, Collection<StreamMaker>> pe2streamMap = pe2stream.asMap();
         for (Map.Entry<PEMaker, Collection<StreamMaker>> entry : pe2streamMap.entrySet()) {
             PEMaker pm = entry.getKey();
-            for (StreamMaker sm : entry.getValue()) {
-                if (pm != null && sm != null && !done.contains(pm)) {
-                    done.add(pm);
-                    setStreamField(pm.getPe(), sm.getStream(), sm.getType());
+            Collection<StreamMaker> streams = entry.getValue();
+
+            if (pm != null && streams != null) {
+                try {
+                    setStreamField(pm, streams);
+                } catch (Exception e) {
+                    logger.error("Couldn't make Stream.", e);
                 }
             }
         }
@@ -150,7 +160,7 @@ abstract public class AppMaker {
         return app;
     }
 
-    /* So the magic to create a Stream from a StreamMaker. */
+    /* Do the magic to create a Stream from a StreamMaker. */
     @SuppressWarnings("unchecked")
     private <T extends Event> Stream<T> makeStream(StreamMaker sm, Class<T> type) {
 
@@ -164,10 +174,20 @@ abstract public class AppMaker {
     private <T extends ProcessingElement> T makePE(PEMaker pem, Class<T> type) throws NoSuchFieldException,
             IllegalAccessException {
         T pe = app.createPE(type);
-        pe.setPECache(pem.getCacheMaximumSize(), pem.getCacheDuration(), TimeUnit.MILLISECONDS);
-        pe.setTimerInterval(pem.getTimerInterval(), TimeUnit.MILLISECONDS);
-        pe.setTrigger(pem.getTriggerEventType(), pem.getTriggerNumEvents(), pem.getTriggerInterval(),
-                TimeUnit.MILLISECONDS);
+        pe.setSingleton(pem.isSingleton());
+
+        if (pem.getCacheMaximumSize() > 0)
+            pe.setPECache(pem.getCacheMaximumSize(), pem.getCacheDuration(), TimeUnit.MILLISECONDS);
+
+        if (pem.getTimerInterval() > 0)
+            pe.setTimerInterval(pem.getTimerInterval(), TimeUnit.MILLISECONDS);
+
+        if (pem.getTriggerEventType() != null) {
+            if (pem.getTriggerNumEvents() > 0 || pem.getTriggerInterval() > 0) {
+                pe.setTrigger(pem.getTriggerEventType(), pem.getTriggerNumEvents(), pem.getTriggerInterval(),
+                        TimeUnit.MILLISECONDS);
+            }
+        }
 
         /* Use introspection to match properties to class fields. */
         setPEAttributes(pe, pem, type);
@@ -239,37 +259,116 @@ abstract public class AppMaker {
         }
     }
 
-    /* We need to set stream fields in PE classes. We will infer the field by checking the Event parameter type. */
-    private <P extends ProcessingElement> void setStreamField(P pe, Stream<? extends Event> stream,
-            Class<? extends Event> eventType) throws Exception {
+    /* Set the stream fields in PE classes. Infer the field by checking the stream parameter type <? extends Event>. */
+    private void setStreamField(PEMaker pm, Collection<StreamMaker> streams) throws Exception {
 
-        Field[] fields = pe.getClass().getDeclaredFields();
-        String fieldName = "";
-        Set<String> eventTypes = Sets.newHashSet();
+        /*
+         * Create a map of the stream fields to the corresponding generic type. We will use this info to assign the
+         * streams. If the field type matches the stream type and there is no ambiguity, then the assignment is easy. If
+         * more than one field has the same type, then then we need to do more work.
+         */
+        Field[] fields = pm.getPe().getClass().getDeclaredFields();
+        Multimap<String, Field> typeMap = LinkedListMultimap.create();
+        logger.debug("Analyzing PE [{}].", pm.getPe().getClass().getName());
         for (Field field : fields) {
-            if (field.getType() == Stream.class) {
+            logger.trace("Field [{}] is of generic type [{}].", field.getName(), field.getGenericType());
 
-                fieldName = field.getName();
-                if (field.getGenericType().toString().endsWith("<" + eventType.getCanonicalName() + ">")) {
+            if (field.getType() == Stream[].class) {
+                logger.debug("Found stream field: {}", field.getGenericType());
 
-                    /* Sanity check. This AOI does not support more than one stream field with the same event type. */
-                    if (eventTypes.contains(field.getGenericType().toString())) {
-                        logger.error(
-                                "There is more than one stream field in PE [{}] for event type [{}]. The fluent API only supports one stream field per event type.",
-                                pe.getClass().getName(), eventType.getCanonicalName());
-                    }
-
-                    eventTypes.add(field.getGenericType().toString());
-                    logger.debug("Stream field [" + fieldName + "] in PE [" + pe.getClass().getCanonicalName()
-                            + "] matches event type: [" + eventType.getCanonicalName() + "].");
-
-                    /* Assign stream field. */
-                    field.setAccessible(true);
-                    field.set(pe, stream);
-                }
+                /* Track what fields have streams with the same event type. */
+                String key = field.getGenericType().toString();
+                typeMap.put(key, field);
             }
         }
 
+        /* Assign streams to stream fields. */
+        Multimap<Field, Stream<? extends Event>> assignment = LinkedListMultimap.create();
+        for (StreamMaker sm : streams) {
+
+            if (sm == null)
+                continue;
+
+            Stream<? extends Event> stream = sm.getStream();
+            Class<? extends Event> eventType = sm.getType();
+            String key = Stream.class.getCanonicalName() + "<" + eventType.getCanonicalName() + ">[]";
+            if (typeMap.containsKey(key)) {
+                String fieldName;
+                Field field;
+                Collection<Field> streamFields = typeMap.get(key);
+                int numStreamFields = streamFields.size();
+                logger.debug("Found [{}] stream fields for type [{}].", numStreamFields, key);
+
+                if (numStreamFields > 1) {
+
+                    /*
+                     * There is more than one field that can be used for this stream type. To resolve the ambiguity we
+                     * need additional information. The app graph should include the name of the field that should be
+                     * used to assign this stream. If the name is missing we bail out.
+                     */
+                    fieldName = sm.getFieldName();
+
+                    /* Bail out. */
+                    if (fieldName == null) {
+                        String msg = String
+                                .format("There are [%d] stream fields in PE [%s]. To assign stream [%s] you need to provide the field name in the application graph using the method withFiled(). See Javadocs for an example.",
+                                        numStreamFields, pm.getPe().getClass().getName(), stream.getName());
+                        logger.error(msg);
+                        throw new Exception(msg);
+                    }
+
+                    /* Use the provided field name to choose the PE field. */
+                    field = pm.getPe().getClass().getDeclaredField(fieldName);
+
+                } else {
+
+                    /*
+                     * The easy case, no ambiguity, we don't need an explicit field name to be provided. We have the
+                     * field that matches the stream type.
+                     */
+                    Iterator<Field> iter = streamFields.iterator();
+                    field = iter.next(); // Note that numStreamFields == 1, the size of this collection is 1.
+                    logger.debug("Using field [{}].", field.getName());
+                }
+
+                /*
+                 * By now, we found the field to use for this stream or we bailed out. We are not ready to finish yet.
+                 * There may be more than one stream that needs to be assigned to this field. The stream fields must be
+                 * arrays by convention and there may be more than one stream assigned to this fields. For now we create
+                 * a multimap from field to streams so we can construct the array in the next pass.
+                 */
+                assignment.put(field, stream);
+
+            } else {
+
+                /* We couldn't find a match. Tell user to fix the application. */
+                String msg = String.format(
+                        "There is no stream of type [%s] in PE [%s]. I was unable to assign stream [%s].", key, pm
+                                .getPe().getClass().getName(), stream.getName());
+                logger.error(msg);
+                throw new Exception(msg);
+
+            }
+        }
+        /* Now we construct the array and do the final assignment. */
+
+        Map<Field, Collection<Stream<? extends Event>>> assignmentMap = assignment.asMap();
+        for (Map.Entry<Field, Collection<Stream<? extends Event>>> entry : assignmentMap.entrySet()) {
+            Field f = entry.getKey();
+
+            int arraySize = entry.getValue().size();
+            @SuppressWarnings("unchecked")
+            Stream<? extends Event> streamArray[] = (Stream<? extends Event>[]) Array.newInstance(Stream.class,
+                    arraySize);
+            int i = 0;
+            for (Stream<? extends Event> s : entry.getValue()) {
+                streamArray[i++] = s;
+
+                f.setAccessible(true);
+                f.set(pm.getPe(), streamArray);
+                logger.debug("Assigned [{}] streams to field [{}].", streamArray.length, f.getName());
+            }
+        }
     }
 
     static private String toString(PEMaker pm) {
@@ -310,11 +409,5 @@ abstract public class AppMaker {
         return sb.toString();
 
     }
-
-    abstract protected void onStart();
-
-    abstract protected void onInit();
-
-    abstract protected void onClose();
 
 }

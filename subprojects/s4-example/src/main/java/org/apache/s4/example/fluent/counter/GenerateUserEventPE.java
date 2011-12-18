@@ -13,19 +13,21 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package org.apache.s4.fluent.counter;
+package org.apache.s4.example.fluent.counter;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.s4.base.Event;
 import org.apache.s4.core.App;
-import org.apache.s4.core.SingletonPE;
+import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+public class GenerateUserEventPE extends ProcessingElement {
 
-public class GenerateUserEventPE extends SingletonPE {
+    private static final Logger logger = LoggerFactory.getLogger(GenerateUserEventPE.class);
 
     static String userIds[] = { "pepe", "jose", "tito", "mr_smith", "joe" };
     static int[] ages = { 25, 2, 33, 6, 67 };
@@ -38,13 +40,14 @@ public class GenerateUserEventPE extends SingletonPE {
     }
 
     /**
-     * @param targetStreams the {@link UserEvent} streams.
+     * @param targetStreams
+     *            the {@link UserEvent} streams.
      */
-    public void setStreams(Stream<UserEvent>... targetStreams){
+    public void setStreams(Stream<UserEvent>... targetStreams) {
         this.targetStreams = targetStreams;
     }
-    
-    public void onTrigger(Event event) {
+
+    protected void onTime() {
         List<String> favorites = new ArrayList<String>();
         favorites.add("dulce de leche");
         favorites.add("strawberry");
@@ -53,12 +56,9 @@ public class GenerateUserEventPE extends SingletonPE {
         int indexAge = generator.nextInt(ages.length);
         int indexGender = generator.nextInt(2);
 
-        UserEvent userEvent = new UserEvent(userIds[indexUserID],
-                ages[indexAge], favorites, genders[indexGender]);
-
-        for (int i = 0; i < targetStreams.length; i++) {
-            targetStreams[i].put(userEvent);
-        }
+        UserEvent userEvent = new UserEvent(userIds[indexUserID], ages[indexAge], favorites, genders[indexGender]);
+        logger.trace("Sending userID: [{}], age: [{}].", userIds[indexUserID], ages[indexAge]);
+        emit(userEvent, targetStreams);
     }
 
     @Override
@@ -67,5 +67,11 @@ public class GenerateUserEventPE extends SingletonPE {
 
     static int pickRandom(int numElements) {
         return 0;
+    }
+
+    @Override
+    protected void onCreate() {
+        // TODO Auto-generated method stub
+
     }
 }

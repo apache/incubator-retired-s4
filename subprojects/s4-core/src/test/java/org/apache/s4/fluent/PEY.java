@@ -6,7 +6,10 @@ import org.apache.s4.core.Stream;
 
 public class PEY extends ProcessingElement {
 
-    private Stream<EventA> stream3;
+    private Stream<EventA>[] stream3;
+    @SuppressWarnings("unused")
+    private Stream<EventA>[] heightpez;
+
     private int height;
     private long duration;
 
@@ -15,13 +18,13 @@ public class PEY extends ProcessingElement {
     }
 
     @Override
-    protected void onCreate() {
+    public void onCreate() {
         // TODO Auto-generated method stub
 
     }
 
     @Override
-    protected void onRemove() {
+    public void onRemove() {
         // TODO Auto-generated method stub
 
     }
@@ -29,7 +32,7 @@ public class PEY extends ProcessingElement {
     /**
      * @return the stream3
      */
-    Stream<EventA> getStream3() {
+    Stream<EventA>[] getStream3() {
         return stream3;
     }
 
@@ -37,7 +40,7 @@ public class PEY extends ProcessingElement {
      * @param stream3
      *            the stream3 to set
      */
-    void setStream3(Stream<EventA> stream3) {
+    void setStream3(Stream<EventA>[] stream3) {
         this.stream3 = stream3;
     }
 

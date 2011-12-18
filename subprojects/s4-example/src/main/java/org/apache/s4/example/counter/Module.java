@@ -15,7 +15,6 @@
  */
 package org.apache.s4.example.counter;
 
-
 import java.io.InputStream;
 
 import org.apache.commons.configuration.ConfigurationConverter;
@@ -43,8 +42,7 @@ import com.google.inject.name.Names;
 /**
  * Configures the controller.
  * 
- * Reads a properties file, provides a {@link Communicator} singleton, and
- * configures Guice bindings.
+ * Reads a properties file, provides a {@link Communicator} singleton, and configures Guice bindings.
  * 
  * @author Leo Neumeyer
  */
@@ -55,8 +53,7 @@ public class Module extends AbstractModule {
     private void loadProperties(Binder binder) {
 
         try {
-            InputStream is = this.getClass().getResourceAsStream(
-                    "/s4-piper-example.properties");
+            InputStream is = this.getClass().getResourceAsStream("/s4-piper-example.properties");
             config = new PropertiesConfiguration();
             config.load(is);
 
@@ -64,8 +61,7 @@ public class Module extends AbstractModule {
             // TODO - validate properties.
 
             /* Make all properties injectable. Do we need this? */
-            Names.bindProperties(binder,
-                    ConfigurationConverter.getProperties(config));
+            Names.bindProperties(binder, ConfigurationConverter.getProperties(config));
         } catch (ConfigurationException e) {
             binder.addError(e);
             e.printStackTrace();
@@ -78,32 +74,32 @@ public class Module extends AbstractModule {
             loadProperties(binder());
 
         bind(MyApp.class);
-        
+
         bind(Cluster.class);
-        
+
         /* Configure static assignment using a configuration file. */
         bind(Assignment.class).to(AssignmentFromFile.class);
-        
+
         /* Configure a static cluster topology using a configuration file. */
         bind(Topology.class).to(TopologyFromFile.class);
-        
-//        bind(Emitter.class).annotatedWith(Names.named("ll")).to(NettyEmitter.class);
-//        bind(Listener.class).annotatedWith(Names.named("ll")).to(NettyListener.class);
-//        
-//        bind(Emitter.class).to(QueueingEmitter.class);
-//        bind(Listener.class).to(QueueingListener.class);
-        
+
+        // bind(Emitter.class).annotatedWith(Names.named("ll")).to(NettyEmitter.class);
+        // bind(Listener.class).annotatedWith(Names.named("ll")).to(NettyListener.class);
+        //
+        // bind(Emitter.class).to(QueueingEmitter.class);
+        // bind(Listener.class).to(QueueingListener.class);
+
         /* Use the Netty comm layer implementation. */
-//        bind(Emitter.class).to(NettyEmitter.class);
-//        bind(Listener.class).to(NettyListener.class);
-        
+        // bind(Emitter.class).to(NettyEmitter.class);
+        // bind(Listener.class).to(NettyListener.class);
+
         /* Use a simple UDP comm layer implementation. */
         bind(Emitter.class).to(UDPEmitter.class);
         bind(Listener.class).to(UDPListener.class);
-        
+
         /* The hashing function to map keys top partitions. */
         bind(Hasher.class).to(DefaultHasher.class);
-        
+
         /* Use Kryo to serialize events. */
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
 

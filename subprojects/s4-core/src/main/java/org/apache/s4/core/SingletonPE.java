@@ -15,7 +15,6 @@
  */
 package org.apache.s4.core;
 
-
 /*
  * This is provided for cases where we want to process all events in 
  * a given node without a key. If the application class extends this class, 
@@ -40,16 +39,16 @@ public abstract class SingletonPE extends ProcessingElement {
         return this;
     }
 
-//    abstract protected void onEvent(Event event);
-//
-//    abstract public void onTrigger(Event event);
+    // abstract protected void onEvent(Event event);
+    //
+    // abstract public void onTrigger(Event event);
 
     /*
-     * Don't let subclasses override this method. It is not needed. All
-     * initialization should be done by the concrete PE constructor.
+     * Don't let subclasses override this method. It is not needed. All initialization should be done by the concrete PE
+     * constructor.
      */
     @Override
-    final protected void onCreate() {
+    final public void onCreate() {
         // TODO Auto-generated method stub
 
     }

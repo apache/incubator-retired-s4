@@ -7,19 +7,21 @@ import org.apache.s4.core.Stream;
 public class PEX extends ProcessingElement {
 
     private String query;
-    private Stream<EventB> someStream;
+    private Stream<EventB>[] someStream;
+    @SuppressWarnings("unused")
+    private Stream<EventA>[] streams;
 
     public PEX(App app) {
         super(app);
     }
 
     @Override
-    protected void onCreate() {
+    public void onCreate() {
 
     }
 
     @Override
-    protected void onRemove() {
+    public void onRemove() {
 
     }
 
@@ -41,7 +43,7 @@ public class PEX extends ProcessingElement {
     /**
      * @return the someStream
      */
-    public Stream<EventB> getSomeStream() {
+    public Stream<EventB>[] getSomeStream() {
         return someStream;
     }
 
@@ -49,7 +51,7 @@ public class PEX extends ProcessingElement {
      * @param someStream
      *            the someStream to set
      */
-    public void setSomeStream(Stream<EventB> someStream) {
+    public void setSomeStream(Stream<EventB>[] someStream) {
         this.someStream = someStream;
     }
 

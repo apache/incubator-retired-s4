@@ -35,6 +35,8 @@ public class PEMaker {
 
     private PropertiesConfiguration properties = new PropertiesConfiguration();
 
+    private boolean isSingleton = false;
+
     PEMaker(AppMaker app, Class<? extends ProcessingElement> type) {
         Preconditions.checkNotNull(type);
         this.type = type;
@@ -242,5 +244,14 @@ public class PEMaker {
             timerInterval = duration;
             return this;
         }
+    }
+
+    public PEMaker asSingleton() {
+        this.isSingleton = true;
+        return this;
+    }
+
+    public boolean isSingleton() {
+        return isSingleton;
     }
 }

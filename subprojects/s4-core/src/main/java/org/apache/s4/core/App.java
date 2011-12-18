@@ -106,9 +106,17 @@ public abstract class App {
 
     protected void start() {
 
+        logger.info("Prepare to start App [{}].", getClass().getName());
+
         /* Start all streams. */
         for (Streamable<? extends Event> stream : getStreams()) {
             stream.start();
+        }
+
+        /* Allow abstract PE to initialize. */
+        for (ProcessingElement pe : getPePrototypes()) {
+            logger.info("Init prototype [{}].", pe.getClass().getName());
+            pe.initPEPrototypeInternal();
         }
 
         onStart();
@@ -150,12 +158,13 @@ public abstract class App {
 
     void addPEPrototype(ProcessingElement pePrototype, Stream<? extends Event> stream) {
 
+        logger.info("Add PE prototype [{}] with stream [{}].", toString(pePrototype), toString(stream));
         pe2stream.put(pePrototype, stream);
 
     }
 
     void addStream(Streamable<? extends Event> stream, ProcessingElement pePrototype) {
-
+        logger.info("Add Stream [{}] with PE prototype [{}].", toString(stream), toString(pePrototype));
         stream2pe.put(stream, pePrototype);
 
     }
@@ -311,6 +320,14 @@ public abstract class App {
             logger.error(e.getMessage(), e);
             return null;
         }
+    }
+
+    static private String toString(ProcessingElement pe) {
+        return pe != null ? pe.getClass().getName() + " " : "null ";
+    }
+
+    static private String toString(Streamable<? extends Event> stream) {
+        return stream != null ? stream.getName() + " " : "null ";
     }
 
     /**

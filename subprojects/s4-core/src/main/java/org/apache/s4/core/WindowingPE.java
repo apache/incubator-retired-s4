@@ -16,7 +16,6 @@
  */
 package org.apache.s4.core;
 
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.Timer;
@@ -29,19 +28,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Abstract ProcessingElement that can store historical values using a sliding
- * window. Each set of values is called a slot. The concrete class must
- * implement a class (the slot class) where values are stored. Each slot
- * represents a segment of time or a fixed number of events. Slots are
- * consecutive in time or events. The slot object cannot be null.
+ * Abstract ProcessingElement that can store historical values using a sliding window. Each set of values is called a
+ * slot. The concrete class must implement a class (the slot class) where values are stored. Each slot represents a
+ * segment of time or a fixed number of events. Slots are consecutive in time or events. The slot object cannot be null.
  * 
- * WHen using time-based slots, use this implementation only if you expect most
- * slots to have values, it is not efficient for sparse event streams.
+ * WHen using time-based slots, use this implementation only if you expect most slots to have values, it is not
+ * efficient for sparse event streams.
  */
 public abstract class WindowingPE<T> extends ProcessingElement {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(WindowingPE.class);
+    private static final Logger logger = LoggerFactory.getLogger(WindowingPE.class);
 
     final private int numSlots;
     private CircularFifoBuffer<T> circularBuffer;
@@ -49,8 +45,7 @@ public abstract class WindowingPE<T> extends ProcessingElement {
     final private long slotDurationInMilliseconds;
 
     /**
-     * Constructor for time-based slots. The abstract method
-     * {@link #addPeriodicSlot()} is called periodically.
+     * Constructor for time-based slots. The abstract method {@link #addPeriodicSlot()} is called periodically.
      * 
      * @param app
      *            the application
@@ -61,17 +56,14 @@ public abstract class WindowingPE<T> extends ProcessingElement {
      * @param numSlots
      *            the number of slots to be stored
      */
-    public WindowingPE(App app, long slotDuration, TimeUnit timeUnit,
-            int numSlots) {
+    public WindowingPE(App app, long slotDuration, TimeUnit timeUnit, int numSlots) {
         super(app);
         this.numSlots = numSlots;
 
         if (slotDuration > 0l) {
-            slotDurationInMilliseconds = TimeUnit.MILLISECONDS.convert(
-                    slotDuration, timeUnit);
+            slotDurationInMilliseconds = TimeUnit.MILLISECONDS.convert(slotDuration, timeUnit);
             timer = new Timer();
-            timer.schedule(new SlotTask(), slotDurationInMilliseconds,
-                    slotDurationInMilliseconds);
+            timer.schedule(new SlotTask(), slotDurationInMilliseconds, slotDurationInMilliseconds);
             logger.trace("TIMER: " + slotDurationInMilliseconds);
 
         } else {
@@ -82,8 +74,8 @@ public abstract class WindowingPE<T> extends ProcessingElement {
 
     /**
      * 
-     * Constructor for the event-based slot. The abstract method
-     * {@link #addPeriodicSlot()} must be called by the concrete class.
+     * Constructor for the event-based slot. The abstract method {@link #addPeriodicSlot()} must be called by the
+     * concrete class.
      * 
      * @param app
      *            the application
@@ -98,26 +90,25 @@ public abstract class WindowingPE<T> extends ProcessingElement {
 
     abstract public void onTrigger(Event event);
 
-    abstract protected void onCreate();
+    abstract public void onCreate();
 
-    abstract protected void onRemove();
+    abstract public void onRemove();
 
     /**
-     * This method is called at periodic intervals when a new slot must be put
-     * into the buffer. The concrete class must implement the logic required to
-     * create a slot. For example, compute statistics from aggregations and get
+     * This method is called at periodic intervals when a new slot must be put into the buffer. The concrete class must
+     * implement the logic required to create a slot. For example, compute statistics from aggregations and get
      * variables ready for the new slot.
      * 
-     * If the implementation class doesn't use periodic slots, this method will
-     * never be called. Use {@link #addSlot(Object)} instead.
+     * If the implementation class doesn't use periodic slots, this method will never be called. Use
+     * {@link #addSlot(Object)} instead.
      * 
      * @return the slot object
      */
     abstract protected T addPeriodicSlot();
 
     /**
-     * Add an object to the sliding window. Use it when the window is not
-     * periodic. For periodic slots use {@link #addPeriodicSlot()} instead.
+     * Add an object to the sliding window. Use it when the window is not periodic. For periodic slots use
+     * {@link #addPeriodicSlot()} instead.
      * 
      * @param slot
      */
@@ -163,21 +154,14 @@ public abstract class WindowingPE<T> extends ProcessingElement {
 
             logger.trace("START TIMER TASK");
 
-            if (peInstances == null) {
-                logger.trace("peInstances is null");
-                return;
-            }
-
             /* Iterate over all instances and put a new slot in the buffer. */
-            for (Map.Entry<String, ProcessingElement> entry : peInstances.asMap()
-                    .entrySet()) {
+            for (Map.Entry<String, ProcessingElement> entry : getPEInstances().entrySet()) {
                 logger.trace("pe id: " + entry.getValue().id);
                 @SuppressWarnings("unchecked")
                 WindowingPE<T> peInstance = (WindowingPE<T>) entry.getValue();
 
                 if (peInstance.circularBuffer == null) {
-                    peInstance.circularBuffer = new CircularFifoBuffer<T>(
-                            numSlots);
+                    peInstance.circularBuffer = new CircularFifoBuffer<T>(numSlots);
                 }
                 synchronized (peInstance) {
                     peInstance.circularBuffer.add(peInstance.addPeriodicSlot());
