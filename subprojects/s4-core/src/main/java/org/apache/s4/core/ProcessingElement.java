@@ -454,9 +454,8 @@ abstract public class ProcessingElement implements Cloneable {
     private ProcessingElement createPE(String id) {
         ProcessingElement pe = (ProcessingElement) this.clone();
         pe.isPrototype = false;
-        if (isFirst) // TODO: THIS DOESNT MAKE SENSE. WE ONLY CREATE INSTANCE ONCE. REVIEW.
-            initPEInstance(pe);
         pe.id = id;
+        pe.triggers = Maps.newHashMap(triggers);
         pe.onCreate();
         logger.trace("Num PE instances: {}.", getNumPEInstances());
         return pe;
@@ -479,6 +478,15 @@ abstract public class ProcessingElement implements Cloneable {
         if (timer != null) {
             timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);
             logger.info("Started timer for PE [{}] with ID [{}].", this.getClass().getName(), id);
+        }
+
+        /* Check if this PE is annotated as thread safe. */
+        if (getClass().isAnnotationPresent(ThreadSafe.class) == true) {
+
+            // TODO: this doesn't seem to be working. isannotationpresent always returns false.
+
+            isThreadSafe = true;
+            logger.trace("Annotated with @ThreadSafe");
         }
 
     }
@@ -545,33 +553,6 @@ abstract public class ProcessingElement implements Cloneable {
          * cluster as efficiently as possible.
          */
         return ImmutableMap.copyOf(peInstances.asMap());
-    }
-
-    /*
-     * Called when we create the first PE instance. TODO: Would be better to do this as part of the PE lifecycle after
-     * PE construction.
-     */
-    private void initPEInstance(ProcessingElement pe) {
-
-        isFirst = false;
-
-        logger.trace("OnCreateInternal");
-
-        /*
-         * If PE class has the @ThreadSafe annotation, then we set isThtreadSafe to true in the prototype so all future
-         * PE instances inherit the setting.
-         */
-        if (pe.getClass().isAnnotationPresent(ThreadSafe.class) == true) {
-            pe.isThreadSafe = true;
-            isThreadSafe = true;
-
-            logger.trace("Annotated with @ThreadSafe");
-        }
-
-        /*
-         * Each PE instance needs its own triggers map to keep track time lapsed and event count.
-         */
-        pe.triggers = Maps.newHashMap(triggers);
     }
 
     /**

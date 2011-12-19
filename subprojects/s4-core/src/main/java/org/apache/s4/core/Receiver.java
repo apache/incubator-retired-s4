@@ -32,12 +32,15 @@ public class Receiver implements Runnable {
     final private Listener listener;
     final private SerializerDeserializer serDeser;
     private Map<Integer, Map<Integer, Stream<? extends Event>>> streams;
+    private Thread thread;
 
     @Inject
     public Receiver(Listener listener, SerializerDeserializer serDeser) {
         this.listener = listener;
         this.serDeser = serDeser;
-        new Thread(this).start();
+
+        thread = new Thread(this, "Receiver");
+        thread.start();
 
         streams = new MapMaker().makeMap();
     }
@@ -69,6 +72,8 @@ public class Receiver implements Runnable {
     }
 
     public void run() {
+        // TODO: this thread never seems to get interrupted. SHould we catch an interrupted exception from listener
+        // here?
         while (!Thread.interrupted()) {
             byte[] message = listener.recv();
             Event event = (Event) serDeser.deserialize(message);
@@ -89,6 +94,6 @@ public class Receiver implements Runnable {
     }
 
     public void close() {
-        Thread.currentThread().interrupt();
+        thread.interrupt();
     }
 }

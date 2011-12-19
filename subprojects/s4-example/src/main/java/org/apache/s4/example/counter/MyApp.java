@@ -120,8 +120,6 @@ final public class MyApp extends App {
     @Override
     protected void onStart() {
 
-        System.out.println("Done. Wait until the main app closes.");
-        // close();
     }
 
     @Override
@@ -147,5 +145,6 @@ final public class MyApp extends App {
             e.printStackTrace();
         }
         myApp.close();
+        receiver.close();
     }
 }

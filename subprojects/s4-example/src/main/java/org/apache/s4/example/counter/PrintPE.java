@@ -15,11 +15,13 @@
  */
 package org.apache.s4.example.counter;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.apache.s4.base.Event;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 
-
+@ThreadSafe
 public class PrintPE extends ProcessingElement {
 
     public PrintPE(App app) {
