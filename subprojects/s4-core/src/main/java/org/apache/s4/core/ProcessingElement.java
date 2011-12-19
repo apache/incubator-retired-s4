@@ -125,7 +125,7 @@ abstract public class ProcessingElement implements Cloneable {
     private boolean isPrototype = true;
     private boolean isThreadSafe = false;
     private boolean isFirst = true;
-    private boolean isSingleton = true;
+    private boolean isSingleton = false;
 
     private transient OverloadDispatcher overloadDispatcher;
 

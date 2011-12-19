@@ -63,7 +63,7 @@ final public class Main extends AppMaker {
     public void configure() {
 
         /* PE that prints counts to console. */
-        PEMaker printPE = addPE(PrintPE.class).asSingleton();
+        PEMaker printPE = addPE(PrintPE.class);
 
         /* PEs that count events by user, gender, and age. */
         PEMaker userCountPE = addPE(CounterPE.class);

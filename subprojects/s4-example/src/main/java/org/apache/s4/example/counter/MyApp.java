@@ -60,42 +60,56 @@ final public class MyApp extends App {
 
         /* PE that prints counts to console. */
         PrintPE printPE = createPE(PrintPE.class);
-        printPE.setSingleton(true);
 
-        Stream<CountEvent> userCountStream = createStream(CountEvent.class).setName("User Count Stream")
-                .setKey(new CountKeyFinder()).setPE(printPE);
+        Stream<CountEvent> userCountStream = createStream(CountEvent.class);
+        userCountStream.setName("User Count Stream");
+        userCountStream.setKey(new CountKeyFinder());
+        userCountStream.setPE(printPE);
 
-        Stream<CountEvent> genderCountStream = createStream(CountEvent.class).setName("Gender Count Stream")
-                .setKey(new CountKeyFinder()).setPE(printPE);
+        Stream<CountEvent> genderCountStream = createStream(CountEvent.class);
+        genderCountStream.setName("Gender Count Stream");
+        genderCountStream.setKey(new CountKeyFinder());
+        genderCountStream.setPE(printPE);
 
-        Stream<CountEvent> ageCountStream = createStream(CountEvent.class).setName("Age Count Stream")
-                .setKey(new CountKeyFinder()).setPE(printPE);
+        Stream<CountEvent> ageCountStream = createStream(CountEvent.class);
+        ageCountStream.setName("Age Count Stream");
+        ageCountStream.setKey(new CountKeyFinder());
+        ageCountStream.setPE(printPE);
 
         /* PEs that count events by user, gender, and age. */
         CounterPE userCountPE = createPE(CounterPE.class);
-        userCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        userCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.MILLISECONDS);
         userCountPE.setCountStream(userCountStream);
 
         CounterPE genderCountPE = createPE(CounterPE.class);
-        genderCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        genderCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.MILLISECONDS);
         genderCountPE.setCountStream(genderCountStream);
 
         CounterPE ageCountPE = createPE(CounterPE.class);
-        ageCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.SECONDS);
+        ageCountPE.setTrigger(Event.class, interval, 10l, TimeUnit.MILLISECONDS);
         ageCountPE.setCountStream(ageCountStream);
 
         /* Streams that output user events keyed on user, gender, and age. */
-        Stream<UserEvent> userStream = createStream(UserEvent.class).setName("User Stream")
-                .setKey(new UserIDKeyFinder()).setPE(userCountPE);
+        Stream<UserEvent> userStream = createStream(UserEvent.class);
+        userStream.setName("User Stream");
+        userStream.setKey(new UserIDKeyFinder());
+        userStream.setPE(userCountPE);
 
-        Stream<UserEvent> genderStream = createStream(UserEvent.class).setName("Gender Stream")
-                .setKey(new GenderKeyFinder()).setPE(genderCountPE);
+        Stream<UserEvent> genderStream = createStream(UserEvent.class);
+        genderStream.setName("Gender Stream");
+        genderStream.setKey(new GenderKeyFinder());
+        genderStream.setPE(genderCountPE);
 
-        Stream<UserEvent> ageStream = createStream(UserEvent.class).setName("Age Stream").setKey(new AgeKeyFinder())
-                .setPE(ageCountPE);
+        Stream<UserEvent> ageStream = createStream(UserEvent.class);
+        ageStream.setName("Age Stream");
+        ageStream.setKey(new AgeKeyFinder());
+        ageStream.setPE(ageCountPE);
 
         generateUserEventPE = createPE(GenerateUserEventPE.class);
         generateUserEventPE.setStreams(userStream, genderStream, ageStream);
+        generateUserEventPE.setSingleton(true);
+        generateUserEventPE.setTimerInterval(1, TimeUnit.MILLISECONDS);
+
     }
 
     /*
@@ -105,17 +119,6 @@ final public class MyApp extends App {
      */
     @Override
     protected void onStart() {
-
-        for (int i = 0; i < 200; i++) {
-            generateUserEventPE.onTrigger(null);
-        }
-
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
 
         System.out.println("Done. Wait until the main app closes.");
         // close();
@@ -138,7 +141,7 @@ final public class MyApp extends App {
         myApp.start();
 
         try {
-            Thread.sleep(10000);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

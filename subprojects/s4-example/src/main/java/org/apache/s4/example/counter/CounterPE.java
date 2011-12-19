@@ -20,27 +20,19 @@ import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
 
-
 public class CounterPE extends ProcessingElement {
 
-    private Stream<CountEvent> countStream = null;
+    private Stream<CountEvent>[] countStream;
 
     public CounterPE(App app) {
         super(app);
     }
-    
-    /**
-     * @return the countStream
-     */
-    public Stream<CountEvent> getCountStream() {
+
+    public Stream<CountEvent>[] getCountStream() {
         return countStream;
     }
 
-    /**
-     * @param countStream
-     *            the countStream to set
-     */
-    public void setCountStream(Stream<CountEvent> countStream) {
+    public void setCountStream(Stream<CountEvent>... countStream) {
         this.countStream = countStream;
     }
 
@@ -51,22 +43,12 @@ public class CounterPE extends ProcessingElement {
         counter += 1;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see io.s4.ProcessingElement#sendOutputEvent()
-     */
     public void onTrigger(Event event) {
 
         CountEvent countEvent = new CountEvent(getId(), counter);
-        countStream.put(countEvent);
+        emit(countEvent, countStream);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see io.s4.ProcessingElement#init()
-     */
     @Override
     protected void onCreate() {
 

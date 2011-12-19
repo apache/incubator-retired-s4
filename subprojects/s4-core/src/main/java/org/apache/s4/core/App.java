@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.core.App.ClockType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,6 +140,8 @@ public abstract class App {
 
         for (ProcessingElement pe : getPePrototypes()) {
 
+            logger.trace("Removing PE proto [{}].", pe.getClass().getName());
+
             /* Remove all instances. */
             pe.removeAll();
 
@@ -148,10 +149,12 @@ public abstract class App {
 
         /* Get the set of streams and close them. */
         for (Streamable<?> stream : getStreams()) {
+            logger.trace("Closing stream [{}].", stream.getName());
             stream.close();
         }
 
         /* Finally remove the entire app graph. */
+        logger.trace("Clear app graph.");
         pe2stream.clear();
         stream2pe.clear();
     }

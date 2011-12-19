@@ -5,7 +5,6 @@ import java.util.Map;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.core.Sender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,27 +12,22 @@ import com.google.common.collect.MapMaker;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
-
 /**
- * The {@link Receiver} and its counterpart {@link Sender} are the top level
- * classes of the communication layer.
+ * The {@link Receiver} and its counterpart {@link Sender} are the top level classes of the communication layer.
  * <p>
- * {@link Receiver} is responsible for receiving an event to a
- * {@link ProcessingElement} instance using a hashKey.
+ * {@link Receiver} is responsible for receiving an event to a {@link ProcessingElement} instance using a hashKey.
  * <p>
- * A Listener implementation receives data from the network and passes an event
- * as a byte array to the {@link Receiver}. The byte array is de-serialized and
- * converted into an {@link Event}. Finally the event is passed to the matching
+ * A Listener implementation receives data from the network and passes an event as a byte array to the {@link Receiver}.
+ * The byte array is de-serialized and converted into an {@link Event}. Finally the event is passed to the matching
  * streams. There is a single {@link Receiver} instance per node.
  * 
- * Details on how the cluster is partitioned and how events are serialized and
- * transmitted to its destination are hidden from the application developer.
+ * Details on how the cluster is partitioned and how events are serialized and transmitted to its destination are hidden
+ * from the application developer.
  */
 @Singleton
 public class Receiver implements Runnable {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(Receiver.class);
+    private static final Logger logger = LoggerFactory.getLogger(Receiver.class);
 
     final private Listener listener;
     final private SerializerDeserializer serDeser;
@@ -51,7 +45,7 @@ public class Receiver implements Runnable {
     int getPartition() {
         return listener.getPartitionId();
     }
-    
+
     /** Save stream keyed by app id and stream id. */
     void addStream(Stream<? extends Event> stream) {
         int appId = stream.getApp().getId();
@@ -83,17 +77,18 @@ public class Receiver implements Runnable {
             int streamId = event.getStreamId();
 
             /*
-             * Match appId and streamId in event to the target stream and pass
-             * the event to the target stream. TODO: make this more efficient
-             * for the case in which we send the same event to multiple PEs.
+             * Match appId and streamId in event to the target stream and pass the event to the target stream. TODO:
+             * make this more efficient for the case in which we send the same event to multiple PEs.
              */
             try {
                 streams.get(appId).get(streamId).receiveEvent(event);
             } catch (NullPointerException e) {
-                logger.error(
-                        "Could not find target stream for event with appId={} and streamId={}",
-                        appId, streamId);
+                logger.error("Could not find target stream for event with appId={} and streamId={}", appId, streamId);
             }
         }
+    }
+
+    public void close() {
+        Thread.currentThread().interrupt();
     }
 }
