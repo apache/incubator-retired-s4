@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.base.KeyFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -301,7 +302,9 @@ public abstract class App {
      */
     public <T extends Event> Stream<T> createStream(Class<T> type) {
 
-        return new Stream<T>(this);
+        Stream<T> stream = new Stream<T>(this);
+        stream.setEventType(type);
+        return stream;
     }
 
     /**

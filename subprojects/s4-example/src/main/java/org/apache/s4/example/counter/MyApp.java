@@ -97,7 +97,9 @@ final public class MyApp extends App {
 
         Stream<UserEvent> genderStream = createStream(UserEvent.class);
         genderStream.setName("Gender Stream");
-        genderStream.setKey(new GenderKeyFinder());
+        /* It is possible to specify a field name of a primitive type as a string instead of using a KeyFinder object. */
+        // genderStream.setKey(new GenderKeyFinder());
+        genderStream.setKey("gender");
         genderStream.setPE(genderCountPE);
 
         Stream<UserEvent> ageStream = createStream(UserEvent.class);

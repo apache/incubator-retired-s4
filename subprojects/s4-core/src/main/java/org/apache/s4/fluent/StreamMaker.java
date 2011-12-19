@@ -1,7 +1,7 @@
 package org.apache.s4.fluent;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.core.KeyFinder;
+import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.Stream;
 
 import com.google.common.base.Preconditions;
@@ -61,7 +61,7 @@ public class StreamMaker {
      *            a descriptor to lookup the value of the key.
      * @return the stream maker.
      */
-    public StreamMaker withKey(String keyDescriptor) {
+    public StreamMaker onKey(String keyDescriptor) {
 
         this.keyDescriptor = keyDescriptor;
         return this;

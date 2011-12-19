@@ -13,11 +13,10 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package org.apache.s4.core;
+package org.apache.s4.base;
 
 import java.util.List;
 
-import org.apache.s4.base.Event;
 
 /*  
  * The KeyFinder returns a list with one or more String values 

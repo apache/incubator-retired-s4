@@ -15,11 +15,10 @@
  */
 package org.apache.s4.example.fluent.counter;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.s4.core.KeyFinder;
+import org.apache.s4.base.KeyFinder;
 
 public class GenderKeyFinder implements KeyFinder<UserEvent> {
 

@@ -83,7 +83,7 @@ final public class Main extends AppMaker {
         userCountPE.emit(CountEvent.class).onKey(new CountKeyFinder()).to(printPE);
 
         generateUserEventPE.emit(UserEvent.class).onKey(new AgeKeyFinder()).to(ageCountPE);
-        generateUserEventPE.emit(UserEvent.class).onKey(new GenderKeyFinder()).to(genderCountPE);
+        generateUserEventPE.emit(UserEvent.class).onKey("gender").to(genderCountPE);
         generateUserEventPE.emit(UserEvent.class).onKey(new UserIDKeyFinder()).to(userCountPE);
     }
 

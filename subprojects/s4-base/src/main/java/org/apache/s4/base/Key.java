@@ -13,12 +13,11 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package org.apache.s4.core;
+package org.apache.s4.base;
 
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.s4.base.Event;
 
 /*
  * The Key class is used to get the value of the key on a specific type of

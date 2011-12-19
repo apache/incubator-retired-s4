@@ -9,8 +9,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.base.Event;
+import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
-import org.apache.s4.core.KeyFinder;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
 import org.slf4j.Logger;
@@ -166,7 +166,12 @@ abstract public class AppMaker {
 
         Stream<T> stream = app.createStream(type);
         stream.setName(sm.getName());
-        stream.setKey((KeyFinder<T>) sm.getKeyFinder()); // TODO: how do we make this safe?
+
+        if (sm.getKeyFinder() != null)
+            stream.setKey((KeyFinder<T>) sm.getKeyFinder());
+        else if (sm.getKeyDescriptor() != null)
+            stream.setKey(sm.getKeyDescriptor());
+
         return stream;
     }
 

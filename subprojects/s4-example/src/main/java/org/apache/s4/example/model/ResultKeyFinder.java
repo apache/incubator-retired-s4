@@ -19,14 +19,13 @@ package org.apache.s4.example.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.s4.core.KeyFinder;
-
+import org.apache.s4.base.KeyFinder;
 
 public class ResultKeyFinder implements KeyFinder<ResultEvent> {
 
     @Override
     public List<String> get(ResultEvent event) {
-        
+
         List<String> results = new ArrayList<String>();
 
         /* Retrieve the user ID and add it to the list. */

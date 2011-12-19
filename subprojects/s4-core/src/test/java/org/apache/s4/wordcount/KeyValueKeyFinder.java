@@ -4,7 +4,7 @@ package org.apache.s4.wordcount;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.s4.core.KeyFinder;
+import org.apache.s4.base.KeyFinder;
 
 public class KeyValueKeyFinder implements KeyFinder<KeyValueEvent> {
 

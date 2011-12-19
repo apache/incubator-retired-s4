@@ -132,6 +132,40 @@ public class Event {
         return (T) data.value;
     }
 
+    /**
+     * Returns the value for key as a String.
+     * 
+     * @param key
+     * @return the value as a string.
+     */
+    public String get(String key) {
+
+        Data<?> data = map.get(key);
+
+        return String.valueOf(data.value);
+    }
+
+    public boolean hasAttributes() {
+
+        return map != null;
+    }
+
+    public boolean containsKey(String key) {
+        return map.containsKey(key);
+    }
+
+    public Map<String, String> getAttributesAsMap() {
+
+        Map<String, String> amap = Maps.newHashMap();
+
+        for (Map.Entry<String, Data<?>> entry : map.entrySet()) {
+            String key = entry.getKey();
+            String value = String.valueOf(entry.getValue().value);
+            amap.put(key, value);
+        }
+        return amap;
+    }
+
     /* Helper data object. */
     private class Data<T> {
 

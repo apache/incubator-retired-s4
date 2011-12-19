@@ -21,9 +21,13 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.base.GenericKeyFinder;
+import org.apache.s4.base.Key;
+import org.apache.s4.base.KeyFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 /**
@@ -50,6 +54,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
     final private Receiver receiver;
     final private int id;
     final private App app;
+    private Class<T> eventType = null;
 
     /**
      * Send events using a {@link KeyFinder<T>}. The key finder extracts the value of the key which is used to determine
@@ -101,7 +106,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * 
      * @param name
      *            the stream name, default is an empty string.
-     * @return the stream maker object
+     * @return the stream object
      */
     public Stream<T> setName(String name) {
         this.name = name;
@@ -113,7 +118,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * 
      * @param keyFinder
      *            a function to lookup the value of the key.
-     * @return the stream maker object
+     * @return the stream object
      */
     public Stream<T> setKey(KeyFinder<T> keyFinder) {
         this.key = new Key<T>(keyFinder, DEFAULT_SEPARATOR);
@@ -124,10 +129,15 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * Define the key finder for this stream using a descriptor.
      * 
      * @param keyFinderString
-     *            a descriptor to lookup the value of the key.
-     * @return the stream maker object
+     *            a descriptor to lookup up the value of the key.
+     * @return the stream object
      */
-    public Stream<T> setKey(String keyFinderString) {
+    public Stream<T> setKey(String keyName) {
+
+        Preconditions.checkNotNull(eventType);
+
+        KeyFinder<T> kf = new GenericKeyFinder<T>(keyName, eventType);
+        setKey(kf);
 
         return this;
     }
@@ -138,7 +148,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * @param pe
      *            a target PE.
      * 
-     * @return the stream maker object
+     * @return the stream object
      */
     public Stream<T> setPE(ProcessingElement pe) {
         app.addStream(this, pe);
@@ -151,7 +161,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * @param pe
      *            a target PE array.
      * 
-     * @return the stream maker object
+     * @return the stream object
      */
     public Stream<T> setPEs(ProcessingElement[] pes) {
         for (int i = 0; i < pes.length; i++)
@@ -268,6 +278,10 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      */
     public Receiver getReceiver() {
         return receiver;
+    }
+
+    void setEventType(Class<T> type) {
+        this.eventType = type;
     }
 
     @Override
