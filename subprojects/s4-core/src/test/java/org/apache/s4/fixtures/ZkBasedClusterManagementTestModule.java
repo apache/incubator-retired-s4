@@ -13,15 +13,13 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.DefaultHasher;
-import org.apache.s4.comm.netty.NettyEmitter;
-import org.apache.s4.comm.netty.NettyListener;
 import org.apache.s4.comm.serialize.KryoSerDeser;
+import org.apache.s4.comm.tcp.TCPEmitter;
+import org.apache.s4.comm.tcp.TCPListener;
 import org.apache.s4.comm.topology.Assignment;
-import org.apache.s4.comm.topology.AssignmentFromFile;
 import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.Topology;
-import org.apache.s4.comm.topology.TopologyFromFile;
 import org.apache.s4.comm.topology.TopologyFromZK;
 import org.apache.s4.comm.udp.UDPEmitter;
 import org.apache.s4.comm.udp.UDPListener;
@@ -74,9 +72,8 @@ public class ZkBasedClusterManagementTestModule<T> extends AbstractModule {
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
         bind(Assignment.class).to(AssignmentFromZK.class);
         bind(Topology.class).to(TopologyFromZK.class);
-        bind(Emitter.class).to(NettyEmitter.class);
-        bind(Listener.class).to(NettyListener.class);
-
+        bind(Emitter.class).to(TCPEmitter.class);
+        bind(Listener.class).to(TCPListener.class);
     }
 
 }

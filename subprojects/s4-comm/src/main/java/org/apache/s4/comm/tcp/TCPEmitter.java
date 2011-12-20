@@ -1,4 +1,4 @@
-package org.apache.s4.comm.netty;
+package org.apache.s4.comm.tcp;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -33,8 +33,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
 
-public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyChangeListener {
-    private static final Logger logger = LoggerFactory.getLogger(NettyEmitter.class);
+public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChangeListener {
+    private static final Logger logger = LoggerFactory.getLogger(TCPEmitter.class);
     private static final int BUFFER_SIZE = 10;
     private static final int NUM_RETRIES = 10;
 
@@ -94,7 +94,7 @@ public class NettyEmitter implements Emitter, ChannelFutureListener, TopologyCha
     private MessageQueuesPerPartition queuedMessages = new MessageQueuesPerPartition(true);
 
     @Inject
-    public NettyEmitter(Topology topology) throws InterruptedException {
+    public TCPEmitter(Topology topology) throws InterruptedException {
         this.topology = topology;
         topology.addListener(this);
         int clusterSize = this.topology.getTopology().getNodes().size();

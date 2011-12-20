@@ -1,4 +1,4 @@
-package org.apache.s4.comm.netty;
+package org.apache.s4.comm.tcp;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
@@ -26,13 +26,13 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 
 
-public class NettyListener implements Listener {
+public class TCPListener implements Listener {
     private BlockingQueue<byte[]> handoffQueue = new SynchronousQueue<byte[]>();
     private ClusterNode node;
-    private static final Logger logger = LoggerFactory.getLogger(NettyListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(TCPListener.class);
     
     @Inject
-    public NettyListener(Assignment assignment) {
+    public TCPListener(Assignment assignment) {
         // wait for an assignment
         node = assignment.assignClusterNode();
         

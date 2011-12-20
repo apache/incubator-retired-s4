@@ -11,13 +11,13 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
+import org.apache.s4.comm.tcp.TCPEmitter;
+import org.apache.s4.comm.tcp.TCPListener;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromFile;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyFromFile;
-import org.apache.s4.comm.netty.NettyEmitter;
-import org.apache.s4.comm.netty.NettyListener;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
@@ -68,8 +68,8 @@ public class TCPCommTest extends SimpleDeliveryTest {
             bind(Topology.class).to(TopologyFromFile.class);
 
             /* Use a simple UDP comm layer implementation. */
-            bind(Listener.class).to(NettyListener.class);
-            bind(Emitter.class).to(NettyEmitter.class);
+            bind(Listener.class).to(TCPListener.class);
+            bind(Emitter.class).to(TCPEmitter.class);
 
             /* The hashing function to map keys top partitions. */
             bind(Hasher.class).to(DefaultHasher.class);
