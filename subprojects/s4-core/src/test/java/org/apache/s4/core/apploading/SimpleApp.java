@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.apache.s4.core.App;
 import org.apache.s4.core.Stream;
 import org.apache.s4.fixtures.SocketAdapter;
-import org.apache.s4.fixtures.TestUtils;
+import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.wordcount.SentenceKeyFinder;
 import org.apache.s4.wordcount.StringEvent;
 import org.apache.zookeeper.CreateMode;
@@ -21,7 +21,7 @@ public class SimpleApp extends App {
     @Override
     protected void onStart() {
         try {
-            final ZooKeeper zk = TestUtils.createZkClient();
+            final ZooKeeper zk = CommTestUtils.createZkClient();
             zk.create("/simpleAppCreated", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             zk.close();
         } catch (Exception e) {

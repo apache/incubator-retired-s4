@@ -19,6 +19,7 @@ description = 'The S4 core platform.'
 dependencies {
     compile project(":s4-base")
     compile project(":s4-comm")
+    testCompile project(path: ':s4-comm', configuration: 'tests')
 }
 
 test {

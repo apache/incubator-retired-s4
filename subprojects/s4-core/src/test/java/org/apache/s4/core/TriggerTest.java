@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
-import org.apache.s4.fixtures.TestUtils;
+import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
@@ -35,8 +35,8 @@ public abstract class TriggerTest {
 
     @Before
     public void prepare() throws IOException, InterruptedException, KeeperException {
-        TestUtils.cleanupTmpDirs();
-        zookeeperServerConnectionFactory = TestUtils.startZookeeperServer();
+        CommTestUtils.cleanupTmpDirs();
+        zookeeperServerConnectionFactory = CommTestUtils.startZookeeperServer();
     }
 
     @After
@@ -45,11 +45,11 @@ public abstract class TriggerTest {
             app.close();
             app = null;
         }
-        TestUtils.stopZookeeperServer(zookeeperServerConnectionFactory);
+        CommTestUtils.stopZookeeperServer(zookeeperServerConnectionFactory);
     }
 
     protected CountDownLatch createTriggerAppAndSendEvent() throws IOException, KeeperException, InterruptedException {
-        final ZooKeeper zk = TestUtils.createZkClient();
+        final ZooKeeper zk = CommTestUtils.createZkClient();
         Injector injector = Guice.createInjector(new TriggeredModule());
         app = injector.getInstance(TriggeredApp.class);
         app.init();
@@ -58,12 +58,12 @@ public abstract class TriggerTest {
         String time1 = String.valueOf(System.currentTimeMillis());
 
         CountDownLatch signalEvent1Processed = new CountDownLatch(1);
-        TestUtils.watchAndSignalCreation("/onEvent@" + time1, signalEvent1Processed, zk);
+        CommTestUtils.watchAndSignalCreation("/onEvent@" + time1, signalEvent1Processed, zk);
         
         CountDownLatch signalEvent1Triggered = new CountDownLatch(1);
-        TestUtils.watchAndSignalCreation("/onTrigger[StringEvent]@" + time1, signalEvent1Triggered, zk);
+        CommTestUtils.watchAndSignalCreation("/onTrigger[StringEvent]@" + time1, signalEvent1Triggered, zk);
 
-        TestUtils.injectIntoStringSocketAdapter(time1);
+        CommTestUtils.injectIntoStringSocketAdapter(time1);
 
         // check event processed
         Assert.assertTrue(signalEvent1Processed.await(5, TimeUnit.SECONDS));

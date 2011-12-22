@@ -19,9 +19,6 @@ import java.util.concurrent.CountDownLatch;
 
 import junit.framework.Assert;
 
-import org.apache.s4.core.App;
-import org.apache.s4.core.Main;
-import org.apache.s4.core.ProcessingElement;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -38,9 +35,9 @@ import org.slf4j.LoggerFactory;
  * latches through zookeeper - etc...
  * 
  */
-public class TestUtils {
+public class CommTestUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger(TestUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(CommTestUtils.class);
 
     public static final int ZK_PORT = 21810;
     public static final int INITIAL_BOOKIE_PORT = 5000;
@@ -52,15 +49,7 @@ public class TestUtils {
         logger.info("Storage dir: " + DEFAULT_STORAGE_DIR);
     }
 
-    public static Process forkS4App(Class<?> moduleClass, Class<?> appClass) throws IOException, InterruptedException {
-        return forkProcess(App.class.getName(), moduleClass.getName(), appClass.getName());
-    }
-
-    public static Process forkS4Node() throws IOException, InterruptedException {
-        return forkProcess(Main.class.getName(), new String[] {});
-    }
-
-    private static Process forkProcess(String mainClass, String... args) throws IOException, InterruptedException {
+    protected static Process forkProcess(String mainClass, String... args) throws IOException, InterruptedException {
         List<String> cmdList = new ArrayList<String>();
         cmdList.add("java");
         cmdList.add("-cp");
@@ -173,11 +162,10 @@ public class TestUtils {
     public static NIOServerCnxn.Factory startZookeeperServer() throws IOException, InterruptedException,
             KeeperException {
 
-        List<String> cmdList = new ArrayList<String>();
         final File zkDataDir = new File(System.getProperty("java.io.tmpdir") + File.separator + "tmp" + File.separator
                 + "zookeeper" + File.separator + "data");
         if (zkDataDir.exists()) {
-            TestUtils.deleteDirectoryContents(zkDataDir);
+            CommTestUtils.deleteDirectoryContents(zkDataDir);
         } else {
             zkDataDir.mkdirs();
         }
@@ -389,10 +377,10 @@ public class TestUtils {
     }
 
     public static void cleanupTmpDirs() {
-        if (TestUtils.DEFAULT_TEST_OUTPUT_DIR.exists()) {
-            deleteDirectoryContents(TestUtils.DEFAULT_TEST_OUTPUT_DIR);
+        if (CommTestUtils.DEFAULT_TEST_OUTPUT_DIR.exists()) {
+            deleteDirectoryContents(CommTestUtils.DEFAULT_TEST_OUTPUT_DIR);
         }
-        TestUtils.DEFAULT_STORAGE_DIR.mkdirs();
+        CommTestUtils.DEFAULT_STORAGE_DIR.mkdirs();
 
     }
 

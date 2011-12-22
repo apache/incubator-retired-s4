@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import junit.framework.Assert;
 
 import org.apache.s4.core.App;
-import org.apache.s4.fixtures.TestUtils;
+import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs.Ids;
@@ -34,8 +34,8 @@ public class WordCountTest {
     
     @Before
     public void prepare() throws IOException, InterruptedException, KeeperException {
-        TestUtils.cleanupTmpDirs();
-        zookeeperServerConnectionFactory = TestUtils.startZookeeperServer();
+        CommTestUtils.cleanupTmpDirs();
+        zookeeperServerConnectionFactory = CommTestUtils.startZookeeperServer();
 
     }
 
@@ -58,13 +58,13 @@ public class WordCountTest {
     @Test
     public void testSimple() throws Exception {
         
-        final ZooKeeper zk = TestUtils.createZkClient();
+        final ZooKeeper zk = CommTestUtils.createZkClient();
         
         App.main(new String[]{WordCountModule.class.getName(), WordCountApp.class.getName()});
         
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
-        TestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed,
+        CommTestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed,
                 zk);
         
         // add authorizations for processing
@@ -73,20 +73,20 @@ public class WordCountTest {
             zk.create("/continue_" + i, new byte[0], Ids.OPEN_ACL_UNSAFE,
                     CreateMode.EPHEMERAL);
         }
-        TestUtils.injectIntoStringSocketAdapter(SENTENCE_1);
-        TestUtils.injectIntoStringSocketAdapter(SENTENCE_2);
-        TestUtils.injectIntoStringSocketAdapter(SENTENCE_3);
+        CommTestUtils.injectIntoStringSocketAdapter(SENTENCE_1);
+        CommTestUtils.injectIntoStringSocketAdapter(SENTENCE_2);
+        CommTestUtils.injectIntoStringSocketAdapter(SENTENCE_3);
         signalTextProcessed.await();
-        File results = new File(TestUtils.DEFAULT_TEST_OUTPUT_DIR
+        File results = new File(CommTestUtils.DEFAULT_TEST_OUTPUT_DIR
                 + File.separator + "wordcount");
-        String s = TestUtils.readFile(results);
+        String s = CommTestUtils.readFile(results);
         Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", s);
         
     }
 
     @After
     public void cleanup() throws IOException, InterruptedException {
-        TestUtils.stopZookeeperServer(zookeeperServerConnectionFactory);
+        CommTestUtils.stopZookeeperServer(zookeeperServerConnectionFactory);
 
     }
 

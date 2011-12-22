@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
-import org.apache.s4.fixtures.TestUtils;
+import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.wordcount.StringEvent;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -44,7 +44,7 @@ public class SimplePE  extends ProcessingElement implements Watcher {
     protected void onCreate() {
         if (zk == null) {
             try {
-                zk = new ZooKeeper("localhost:" + TestUtils.ZK_PORT, 4000, this);
+                zk = new ZooKeeper("localhost:" + CommTestUtils.ZK_PORT, 4000, this);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

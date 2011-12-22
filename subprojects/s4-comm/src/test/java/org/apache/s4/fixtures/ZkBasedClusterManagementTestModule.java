@@ -49,7 +49,7 @@ public class ZkBasedClusterManagementTestModule<T> extends AbstractModule {
             config = new PropertiesConfiguration();
             config.load(is);
             config.setProperty("cluster.zk_address",
-                    config.getString("cluster.zk_address").replaceFirst("\\w+:\\d+", "localhost:" + TestUtils.ZK_PORT));
+                    config.getString("cluster.zk_address").replaceFirst("\\w+:\\d+", "localhost:" + CommTestUtils.ZK_PORT));
             System.out.println(ConfigurationUtils.toString(config));
             // TODO - validate properties.
 

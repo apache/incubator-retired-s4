@@ -14,7 +14,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
 import org.apache.s4.core.Server;
-import org.apache.s4.fixtures.TestUtils;
+import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.junit.After;
@@ -22,7 +22,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
@@ -40,9 +39,9 @@ public class AppLoadingTest {
 
     @Before
     public void prepare() throws Exception {
-        TestUtils.cleanupTmpDirs();
-        zookeeperServerConnectionFactory = TestUtils.startZookeeperServer();
-        final ZooKeeper zk = TestUtils.createZkClient();
+        CoreTestUtils.cleanupTmpDirs();
+        zookeeperServerConnectionFactory = CoreTestUtils.startZookeeperServer();
+        final ZooKeeper zk = CoreTestUtils.createZkClient();
         try {
             zk.delete("/simpleAppCreated", -1);
         } catch (Exception ignored) {
@@ -53,8 +52,8 @@ public class AppLoadingTest {
 
     @After
     public void cleanup() throws Exception {
-        TestUtils.stopZookeeperServer(zookeeperServerConnectionFactory);
-        TestUtils.killS4App(forkedApp);
+        CoreTestUtils.stopZookeeperServer(zookeeperServerConnectionFactory);
+        CoreTestUtils.killS4App(forkedApp);
     }
 
     @Ignore("fix paths")
@@ -68,7 +67,7 @@ public class AppLoadingTest {
         generateS4RFromDirectoryContents(rootAppDir, appFilesDir, "counterExample",
                 "org.apache.s4.example.counter.MyApp");
 
-        forkedApp = TestUtils.forkS4Node();
+        forkedApp = CoreTestUtils.forkS4Node();
         Thread.sleep(15000);
     }
 
@@ -129,9 +128,9 @@ public class AppLoadingTest {
 
         // TODO fix paths
 
-        final ZooKeeper zk = TestUtils.createZkClient();
+        final ZooKeeper zk = CoreTestUtils.createZkClient();
 
-        File rootAppDir = TestUtils.findDirForCompiledTestClasses();
+        File rootAppDir = CoreTestUtils.findDirForCompiledTestClasses();
 
         File appFilesDir = new File(rootAppDir, "test/s4/core/apploading");
         // 1. create app jar and place it in tmp/s4-apps
@@ -139,22 +138,22 @@ public class AppLoadingTest {
 
         CountDownLatch signalAppStarted = new CountDownLatch(1);
         // 2. start s4 node and check results
-        forkedApp = TestUtils.forkS4Node();
+        forkedApp = CoreTestUtils.forkS4Node();
 
         // TODO wait for ready state (zk node available)
         Thread.sleep(5000);
 
         // note: make sure we don't delete existing znode if it was already created
-        TestUtils.watchAndSignalCreation("/simpleAppCreated", signalAppStarted, zk, false);
+        CoreTestUtils.watchAndSignalCreation("/simpleAppCreated", signalAppStarted, zk, false);
 
         Assert.assertTrue(signalAppStarted.await(20, TimeUnit.SECONDS));
 
         String time1 = String.valueOf(System.currentTimeMillis());
 
         CountDownLatch signalEvent1Processed = new CountDownLatch(1);
-        TestUtils.watchAndSignalCreation("/onEvent@" + time1, signalEvent1Processed, zk);
+        CoreTestUtils.watchAndSignalCreation("/onEvent@" + time1, signalEvent1Processed, zk);
 
-        TestUtils.injectIntoStringSocketAdapter(time1);
+        CoreTestUtils.injectIntoStringSocketAdapter(time1);
 
         // check event processed
         Assert.assertTrue(signalEvent1Processed.await(5, TimeUnit.SECONDS));

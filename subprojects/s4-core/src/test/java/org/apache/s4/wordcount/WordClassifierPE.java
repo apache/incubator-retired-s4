@@ -11,7 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.log4j.Logger;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
-import org.apache.s4.fixtures.TestUtils;
+import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -52,7 +52,7 @@ public class WordClassifierPE extends ProcessingElement implements Watcher {
             }
             ++counter;
             if (counter == WordCountTest.TOTAL_WORDS) {
-                File results = new File(TestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "wordcount");
+                File results = new File(CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "wordcount");
                 if (results.exists()) {
                     if (!results.delete()) {
                         throw new RuntimeException("cannot delete results file");
@@ -63,7 +63,7 @@ public class WordClassifierPE extends ProcessingElement implements Watcher {
                 for (Entry<String, Integer> entry : entrySet) {
                     sb.append(entry.getKey() + "=" + entry.getValue() + ";");
                 }
-                TestUtils.writeStringToFile(sb.toString(), results);
+                CommTestUtils.writeStringToFile(sb.toString(), results);
 
                 zk.create("/textProcessed", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             } else {
@@ -78,7 +78,7 @@ public class WordClassifierPE extends ProcessingElement implements Watcher {
                 // check if we are allowed to continue
                 if (null == zk.exists("/continue_" + counter, null)) {
                     CountDownLatch latch = new CountDownLatch(1);
-                    TestUtils.watchAndSignalCreation("/continue_" + counter, latch, zk);
+                    CommTestUtils.watchAndSignalCreation("/continue_" + counter, latch, zk);
                     latch.await();
                 } else {
                     zk.delete("/continue_" + counter, -1);

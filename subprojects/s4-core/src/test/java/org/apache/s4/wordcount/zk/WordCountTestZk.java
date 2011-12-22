@@ -14,7 +14,7 @@ import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.core.App;
-import org.apache.s4.fixtures.TestUtils;
+import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.wordcount.WordCountApp;
 import org.apache.s4.wordcount.WordCountModule;
 import org.apache.zookeeper.CreateMode;
@@ -32,9 +32,9 @@ public class WordCountTestZk {
     @Before
     public void prepare() {
 
-        String dataDir = TestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "zookeeper" + File.separator + "data";
-        String logDir = TestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "zookeeper" + File.separator + "logs";
-        TestUtils.cleanupTmpDirs();
+        String dataDir = CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "zookeeper" + File.separator + "data";
+        String logDir = CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "zookeeper" + File.separator + "logs";
+        CommTestUtils.cleanupTmpDirs();
 
         IDefaultNameSpace defaultNameSpace = new IDefaultNameSpace() {
 
@@ -44,11 +44,11 @@ public class WordCountTestZk {
             }
         };
 
-        zkServer = new ZkServer(dataDir, logDir, defaultNameSpace, TestUtils.ZK_PORT);
+        zkServer = new ZkServer(dataDir, logDir, defaultNameSpace, CommTestUtils.ZK_PORT);
         zkServer.start();
 
         // zkClient = zkServer.getZkClient();
-        String zookeeperAddress = "localhost:" + TestUtils.ZK_PORT;
+        String zookeeperAddress = "localhost:" + CommTestUtils.ZK_PORT;
         zkClient = new ZkClient(zookeeperAddress, 10000, 10000);
 
         ZkClient zkClient2 = new ZkClient(zookeeperAddress, 10000, 10000);
@@ -81,23 +81,23 @@ public class WordCountTestZk {
     @Test
     public void test() throws Exception {
 
-        final ZooKeeper zk = TestUtils.createZkClient();
+        final ZooKeeper zk = CommTestUtils.createZkClient();
 
         App.main(new String[] { WordCountModuleZk.class.getName(), WordCountApp.class.getName() });
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
-        TestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed, zk);
+        CommTestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed, zk);
 
         // add authorizations for processing
         for (int i = 1; i <= SENTENCE_1_TOTAL_WORDS + SENTENCE_2_TOTAL_WORDS + 1; i++) {
             zk.create("/continue_" + i, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
         }
-        TestUtils.injectIntoStringSocketAdapter(SENTENCE_1);
-        TestUtils.injectIntoStringSocketAdapter(SENTENCE_2);
-        TestUtils.injectIntoStringSocketAdapter(SENTENCE_3);
+        CommTestUtils.injectIntoStringSocketAdapter(SENTENCE_1);
+        CommTestUtils.injectIntoStringSocketAdapter(SENTENCE_2);
+        CommTestUtils.injectIntoStringSocketAdapter(SENTENCE_3);
         signalTextProcessed.await();
-        File results = new File(TestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "wordcount");
-        String s = TestUtils.readFile(results);
+        File results = new File(CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "wordcount");
+        String s = CommTestUtils.readFile(results);
         Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", s);
 
     }

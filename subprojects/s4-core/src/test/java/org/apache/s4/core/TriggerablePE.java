@@ -2,7 +2,7 @@ package org.apache.s4.core;
 
 import java.io.IOException;
 
-import org.apache.s4.fixtures.TestUtils;
+import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.wordcount.StringEvent;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -38,7 +38,7 @@ public class TriggerablePE extends ProcessingElement implements Watcher {
     public void onCreate() {
         if (zk == null) {
             try {
-                zk = new ZooKeeper("localhost:" + TestUtils.ZK_PORT, 4000, this);
+                zk = new ZooKeeper("localhost:" + CommTestUtils.ZK_PORT, 4000, this);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -20,9 +20,22 @@ dependencies {
     compile project(":s4-base")
     compile libraries.json
     compile libraries.gson
- 	compile libraries.kryo
+    compile libraries.kryo
     compile libraries.netty
     compile libraries.zkclient
+}
+
+task testJar(type: Jar) {
+    baseName = "test-${project.archivesBaseName}"
+    from sourceSets.test.classes
+}
+
+configurations {
+    tests
+}
+
+artifacts {
+    tests testJar
 }
 
 test {
