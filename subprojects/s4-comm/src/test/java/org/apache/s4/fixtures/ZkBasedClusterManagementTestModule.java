@@ -1,8 +1,6 @@
 package org.apache.s4.fixtures;
 
 import java.io.InputStream;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
@@ -21,25 +19,25 @@ import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyFromZK;
-import org.apache.s4.comm.udp.UDPEmitter;
-import org.apache.s4.comm.udp.UDPListener;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.name.Names;
 
-// also uses netty
-public class ZkBasedClusterManagementTestModule<T> extends AbstractModule {
+public class ZkBasedClusterManagementTestModule extends AbstractModule {
 
     protected PropertiesConfiguration config = null;
-    private final Class<?> appClass;
+
+    private Class<? extends Emitter> emitterClass = null;
+    private Class<? extends Listener> listenerClass = null;
 
     protected ZkBasedClusterManagementTestModule() {
-        // infer actual app class through "super type tokens" (this simple code
-        // assumes actual module class is a direct subclass from this one)
-        ParameterizedType pt = (ParameterizedType) getClass().getGenericSuperclass();
-        Type[] fieldArgTypes = pt.getActualTypeArguments();
-        this.appClass = (Class<?>) fieldArgTypes[0];
+    }
+
+    protected ZkBasedClusterManagementTestModule(Class<? extends Emitter> emitterClass,
+            Class<? extends Listener> listenerClass) {
+        this.emitterClass = emitterClass;
+        this.listenerClass = listenerClass;
     }
 
     private void loadProperties(Binder binder) {
@@ -48,8 +46,10 @@ public class ZkBasedClusterManagementTestModule<T> extends AbstractModule {
             InputStream is = this.getClass().getResourceAsStream("/default.s4.properties");
             config = new PropertiesConfiguration();
             config.load(is);
-            config.setProperty("cluster.zk_address",
-                    config.getString("cluster.zk_address").replaceFirst("\\w+:\\d+", "localhost:" + CommTestUtils.ZK_PORT));
+            config.setProperty(
+                    "cluster.zk_address",
+                    config.getString("cluster.zk_address").replaceFirst("\\w+:\\d+",
+                            "localhost:" + CommTestUtils.ZK_PORT));
             System.out.println(ConfigurationUtils.toString(config));
             // TODO - validate properties.
 
@@ -66,14 +66,22 @@ public class ZkBasedClusterManagementTestModule<T> extends AbstractModule {
         if (config == null) {
             loadProperties(binder());
         }
-        bind(appClass);
         bind(Cluster.class);
         bind(Hasher.class).to(DefaultHasher.class);
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
         bind(Assignment.class).to(AssignmentFromZK.class);
         bind(Topology.class).to(TopologyFromZK.class);
-        bind(Emitter.class).to(TCPEmitter.class);
-        bind(Listener.class).to(TCPListener.class);
-    }
 
+        if (this.emitterClass != null) {
+            bind(Emitter.class).to(this.emitterClass);
+        } else {
+            bind(Emitter.class).to(TCPEmitter.class);
+        }
+
+        if (this.listenerClass != null) {
+            bind(Listener.class).to(this.listenerClass);
+        } else {
+            bind(Listener.class).to(TCPListener.class);
+        }
+    }
 }

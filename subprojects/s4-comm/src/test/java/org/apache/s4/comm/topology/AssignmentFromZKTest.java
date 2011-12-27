@@ -19,6 +19,7 @@ public class AssignmentFromZKTest extends ZKBaseTest {
         for (int i = 0; i < 10; i++) {
             Runnable runnable = new Runnable() {
 
+                @SuppressWarnings("unused")
                 @Override
                 public void run() {
                     AssignmentFromZK assignmentFromZK;

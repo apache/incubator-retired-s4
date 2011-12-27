@@ -1,83 +1,22 @@
 package org.apache.s4.wordcount.zk;
 
 import static org.apache.s4.wordcount.WordCountTest.*;
-import static org.junit.Assert.*;
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
 import junit.framework.Assert;
 
-import org.I0Itec.zkclient.IDefaultNameSpace;
-import org.I0Itec.zkclient.ZkClient;
-import org.I0Itec.zkclient.ZkServer;
-import org.apache.s4.comm.tools.TaskSetup;
-import org.apache.s4.comm.topology.AssignmentFromZK;
-import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.core.App;
 import org.apache.s4.fixtures.CommTestUtils;
+import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.s4.wordcount.WordCountApp;
-import org.apache.s4.wordcount.WordCountModule;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
-import org.junit.Before;
+
 import org.junit.Test;
 
-
-public class WordCountTestZk {
-
-    private ZkServer zkServer;
-    private ZkClient zkClient;
-
-    @Before
-    public void prepare() {
-
-        String dataDir = CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "zookeeper" + File.separator + "data";
-        String logDir = CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "zookeeper" + File.separator + "logs";
-        CommTestUtils.cleanupTmpDirs();
-
-        IDefaultNameSpace defaultNameSpace = new IDefaultNameSpace() {
-
-            @Override
-            public void createDefaultNameSpace(ZkClient zkClient) {
-
-            }
-        };
-
-        zkServer = new ZkServer(dataDir, logDir, defaultNameSpace, CommTestUtils.ZK_PORT);
-        zkServer.start();
-
-        // zkClient = zkServer.getZkClient();
-        String zookeeperAddress = "localhost:" + CommTestUtils.ZK_PORT;
-        zkClient = new ZkClient(zookeeperAddress, 10000, 10000);
-
-        ZkClient zkClient2 = new ZkClient(zookeeperAddress, 10000, 10000);
-        zkClient2.getCreationTime("/");
-        TaskSetup taskSetup = new TaskSetup(zookeeperAddress);
-        final String clusterName = "s4-test-cluster";
-        taskSetup.clean(clusterName);
-        taskSetup.setup(clusterName, 1);
-        // final CountDownLatch latch = new CountDownLatch(10);
-        // for (int i = 0; i < 10; i++) {
-        // Runnable runnable = new Runnable() {
-        //
-        // @Override
-        // public void run() {
-        // AssignmentFromZK assignmentFromZK;
-        // try {
-        // assignmentFromZK = new AssignmentFromZK(clusterName, zookeeperAddress, 30000, 30000);
-        // ClusterNode assignClusterNode = assignmentFromZK.assignClusterNode();
-        // latch.countDown();
-        // } catch (Exception e) {
-        // e.printStackTrace();
-        // }
-        // }
-        // };
-        // Thread t = new Thread(runnable);
-        // t.start();
-        // }
-    }
-
+public class WordCountTestZk extends ZkBasedTest {
     @Test
     public void test() throws Exception {
 
@@ -99,6 +38,5 @@ public class WordCountTestZk {
         File results = new File(CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "wordcount");
         String s = CommTestUtils.readFile(results);
         Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", s);
-
     }
 }
