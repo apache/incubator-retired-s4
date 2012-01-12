@@ -34,20 +34,23 @@ public enum MetricsName {
     pecontainer_exec_elapse_time("pec_exec_t"), low_level_emitter_msg_out_ct(
             "lle_out"), low_level_emitter_out_err_ct("lle_err"), low_level_emitter_qsz(
             "lle_qsz"), s4_core_exit_ct("s4_ex_ct"), s4_core_free_mem("s4_fmem"), pe_join_ev_ct(
-            "pe_j_ct"), pe_error_count("pe_err");
+            "pe_j_ct"), pe_error_count("pe_err"), checkpointing_dropped_from_serialization_queue("cp_ser_dr"), 
+            checkpointing_dropped_from_storage_queue("cp_sto_dr"), 
+            checkpointing_added_to_serialization_queue("cp_ser_in"), 
+            checkpointing_added_to_storage_queue("cp_sto_in");
 
-    private final String eventShortName;
+	private final String eventShortName;
 
-    private MetricsName(String eventShortName) {
-        this.eventShortName = eventShortName;
-    }
+	private MetricsName(String eventShortName) {
+		this.eventShortName = eventShortName;
+	}
 
-    public String toString() {
-        return eventShortName;
-    }
+	public String toString() {
+		return eventShortName;
+	}
 
-    public static void main(String[] args) {
-        System.out.println(generic_listener_msg_in_ct.toString());
+	public static void main(String[] args) {
+		System.out.println(generic_listener_msg_in_ct.toString());
 
-    }
+	}
 }
