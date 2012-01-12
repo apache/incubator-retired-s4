@@ -142,7 +142,9 @@ public enum HashAlgorithm {
         default:
             assert false;
         }
-        return rv & 0xffffffffL; /* Truncate to 32-bits */
+        /* Truncate to 32-bits */
+        // S4-30 fix: make sure to have a positive int
+        return (int) (rv & 0x7fffffff); 
     }
 
     /**
