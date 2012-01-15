@@ -98,7 +98,7 @@ import com.google.common.collect.Maps;
  * 
  * 
  */
-abstract public class ProcessingElement implements Cloneable {
+public abstract class ProcessingElement implements Cloneable {
 
     private static final Logger logger = LoggerFactory.getLogger(ProcessingElement.class);
     private static final String SINGLETON = "singleton";
@@ -109,7 +109,7 @@ abstract public class ProcessingElement implements Cloneable {
      * This maps holds all the instances. We make it package private to prevent concrete classes from updating the
      * collection.
      */
-    private Cache<String, ProcessingElement> peInstances;
+    Cache<String, ProcessingElement> peInstances;
 
     /* This map is initialized in the prototype and cloned to instances. */
     Map<Class<? extends Event>, Trigger> triggers;
@@ -336,7 +336,6 @@ abstract public class ProcessingElement implements Cloneable {
      *            in timeUnit
      * @param timeUnit
      *            the timeUnit of interval
-     * @return the PE prototype
      */
     public ProcessingElement setTimerInterval(long interval, TimeUnit timeUnit) {
         timerIntervalInMilliseconds = TimeUnit.MILLISECONDS.convert(interval, timeUnit);
@@ -353,7 +352,7 @@ abstract public class ProcessingElement implements Cloneable {
         timer = new Timer();
         logger.info("Created timer for PE prototype [{}] with interval [{}].", this.getClass().getName(),
                 timerIntervalInMilliseconds);
-
+        timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);
         return this;
     }
 

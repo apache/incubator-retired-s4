@@ -16,19 +16,13 @@
 package org.apache.s4.core;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.GenericKeyFinder;
-import org.apache.s4.base.Key;
 import org.apache.s4.base.KeyFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 /**
  * {@link Stream} and {@link ProcessingElement} objects represent the links and nodes in the application graph. A stream
@@ -38,23 +32,22 @@ import com.google.common.collect.Sets;
  * <p>
  * To build an application create stream objects using use the {@link StreamFactory} class.
  */
-public class Stream<T extends Event> extends Streamable<T> implements Runnable {
+public class Stream<T extends Event> implements Runnable, Streamable {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
 
     final static private String DEFAULT_SEPARATOR = "^";
     final static private int CAPACITY = 1000;
     private static int idCounter = 0;
-    private String name = "";
-    private Key<T> key = null;
-    private ProcessingElement[] targetPEs = null;
-    final private BlockingQueue<T> queue = new ArrayBlockingQueue<T>(CAPACITY);
-    private Thread thread;
+    final private String name;
+    final private Key<T> key;
+    final private ProcessingElement[] targetPEs;
+    final private BlockingQueue<Event> queue = new ArrayBlockingQueue<Event>(CAPACITY);
+    final private Thread thread;
     final private Sender sender;
     final private Receiver receiver;
     final private int id;
     final private App app;
-    private Class<T> eventType = null;
 
     /**
      * Send events using a {@link KeyFinder<T>}. The key finder extracts the value of the key which is used to determine
@@ -69,24 +62,22 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * @param processingElements
      *            the target PE prototypes for this stream.
      */
-    public Stream(App app) {
+    public Stream(App app, String name, KeyFinder<T> finder, ProcessingElement... processingElements) {
         synchronized (Stream.class) {
             id = idCounter++;
         }
         this.app = app;
-        app.addStream(this, null);
+        app.addStream(this);
+        this.name = name;
 
+        if (finder == null) {
+            this.key = null;
+        } else {
+            this.key = new Key<T>(finder, DEFAULT_SEPARATOR);
+        }
         this.sender = app.getSender();
         this.receiver = app.getReceiver();
-    }
-
-    void start() {
-
-        /* Get target PE prototypes for this stream. Remove null key. */
-        Set<? extends ProcessingElement> pes = Sets.newHashSet(app.getTargetPEs(this));
-        pes.remove(null);
-        targetPEs = new ProcessingElement[pes.size()];
-        pes.toArray(targetPEs);
+        this.targetPEs = processingElements;
 
         /* Start streaming. */
         thread = new Thread(this, name);
@@ -95,78 +86,18 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
     }
 
     /**
-     * Stop and close this stream.
-     */
-    void close() {
-        thread.interrupt();
-    }
-
-    /**
-     * Name the stream.
+     * Send events to all available {@link ProcessingElement} instances contained by the {@link ProcessingElement}
+     * prototypes passed to this constructor.
      * 
+     * @param app
+     *            we always register streams with the parent application.
      * @param name
-     *            the stream name, default is an empty string.
-     * @return the stream object
+     *            give this stream a meaningful name in the context of your application.
+     * @param processingElements
+     *            the target PE prototypes for this stream.
      */
-    public Stream<T> setName(String name) {
-        this.name = name;
-        return this;
-    }
-
-    /**
-     * Define the key finder for this stream.
-     * 
-     * @param keyFinder
-     *            a function to lookup the value of the key.
-     * @return the stream object
-     */
-    public Stream<T> setKey(KeyFinder<T> keyFinder) {
-        this.key = new Key<T>(keyFinder, DEFAULT_SEPARATOR);
-        return this;
-    }
-
-    /**
-     * Define the key finder for this stream using a descriptor.
-     * 
-     * @param keyFinderString
-     *            a descriptor to lookup up the value of the key.
-     * @return the stream object
-     */
-    public Stream<T> setKey(String keyName) {
-
-        Preconditions.checkNotNull(eventType);
-
-        KeyFinder<T> kf = new GenericKeyFinder<T>(keyName, eventType);
-        setKey(kf);
-
-        return this;
-    }
-
-    /**
-     * Send events from this stream to a PE.
-     * 
-     * @param pe
-     *            a target PE.
-     * 
-     * @return the stream object
-     */
-    public Stream<T> setPE(ProcessingElement pe) {
-        app.addStream(this, pe);
-        return this;
-    }
-
-    /**
-     * Send events from this stream to various PEs.
-     * 
-     * @param pe
-     *            a target PE array.
-     * 
-     * @return the stream object
-     */
-    public Stream<T> setPEs(ProcessingElement[] pes) {
-        for (int i = 0; i < pes.length; i++)
-            app.addStream(this, pes[i]);
-        return this;
+    public Stream(App app, String name, ProcessingElement... processingElements) {
+        this(app, name, null, processingElements);
     }
 
     /**
@@ -174,7 +105,8 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * 
      * @param event
      */
-    public void put(T event) {
+    @SuppressWarnings("unchecked")
+    public void put(Event event) {
         try {
             event.setStreamId(getId());
             event.setAppId(app.getId());
@@ -188,7 +120,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
                  * We send to a specific PE instance using the key but we don't know if the target partition is remote
                  * or local. We need to ask the sender.
                  */
-                if (sender.sendAndCheckIfLocal(key.get(event), event)) {
+                if (sender.sendAndCheckIfLocal(key.get((T) event), event)) {
 
                     /*
                      * Sender checked and decided that the target is local so we simply put the event in the queue and
@@ -208,11 +140,9 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
                 queue.put(event);
             }
         } catch (InterruptedException e) {
-            if (logger.isTraceEnabled()) {
-                e.printStackTrace();
-            }
-            logger.debug("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            // System.exit(-1);
+            e.printStackTrace();
+            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
+            System.exit(-1);
         }
     }
 
@@ -226,8 +156,9 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
         try {
             queue.put((T) event);
         } catch (InterruptedException e) {
-            logger.debug("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            // System.exit(-1);
+            e.printStackTrace();
+            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
+            System.exit(-1);
         }
     }
 
@@ -267,6 +198,13 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
     }
 
     /**
+     * Stop and close this stream.
+     */
+    public void close() {
+        thread.interrupt();
+    }
+
+    /**
      * @return the sender object
      */
     public Sender getSender() {
@@ -280,16 +218,13 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
         return receiver;
     }
 
-    void setEventType(Class<T> type) {
-        this.eventType = type;
-    }
-
     @Override
     public void run() {
         while (true) {
             try {
                 /* Get oldest event in queue. */
-                T event = queue.take();
+                @SuppressWarnings("unchecked")
+                T event = (T) queue.take();
 
                 /* Send event to each target PE. */
                 for (int i = 0; i < targetPEs.length; i++) {
@@ -313,8 +248,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
                         /* We have a key, send to target PE. */
 
                         /* STEP 1: find the PE instance for key. */
-                        ProcessingElement pe;
-                        pe = targetPEs[i].getInstanceForKey(key.get(event));
+                        ProcessingElement pe = targetPEs[i].getInstanceForKey(key.get(event));
 
                         /* STEP 2: pass event to PE instance. */
                         pe.handleInputEvent(event);

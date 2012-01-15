@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.base.Event;
-import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
@@ -152,7 +151,7 @@ abstract public class AppMaker {
             StreamMaker sm = entry.getKey();
             for (PEMaker pm : entry.getValue()) {
                 if (pm != null && sm != null) {
-                    sm.getStream().setPE(pm.getPe());
+                    // sm.getStream().setPE(pm.getPe());
                 }
             }
         }
@@ -164,15 +163,16 @@ abstract public class AppMaker {
     @SuppressWarnings("unchecked")
     private <T extends Event> Stream<T> makeStream(StreamMaker sm, Class<T> type) {
 
-        Stream<T> stream = app.createStream(type);
-        stream.setName(sm.getName());
-
-        if (sm.getKeyFinder() != null)
-            stream.setKey((KeyFinder<T>) sm.getKeyFinder());
-        else if (sm.getKeyDescriptor() != null)
-            stream.setKey(sm.getKeyDescriptor());
-
-        return stream;
+        // Stream<T> stream = app.createStream(type);
+        // stream.setName(sm.getName());
+        //
+        // if (sm.getKeyFinder() != null)
+        // stream.setKey((KeyFinder<T>) sm.getKeyFinder());
+        // else if (sm.getKeyDescriptor() != null)
+        // stream.setKey(sm.getKeyDescriptor());
+        //
+        // return stream;
+        return null;
     }
 
     /* Do the magic to create a PE from a PEMaker. */

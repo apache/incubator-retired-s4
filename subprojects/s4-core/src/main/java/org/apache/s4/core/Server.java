@@ -85,6 +85,36 @@ public class Server {
             startApp(app);
         }
 
+        EventSource savedES = null;
+        App consumerApp = null;
+        for (App app : apps) {
+            logger.info("Resolving dependencies for " + app.getClass().getName());
+            List<EventSource> eventSources = app.getEventSources();
+            if (eventSources.size() > 0) {
+                EventSource es = eventSources.get(0);
+                logger.info("App [{}] exports event source [{}].", app.getClass().getName(), es.getName());
+                savedES = es; // hardcoded
+            } else {
+
+                // hardcoded (one app has event source the other one doesn't.
+                consumerApp = app;
+            }
+        }
+        // hardcoded: make savedApp subscribe to savedES
+        logger.info("The consumer app is [{}].", consumerApp.getClass().getName());
+        // get the list of streams and find the one we are looking for that has name: "I need the time."
+        List<Streamable> streams = consumerApp.getStreams();
+        for (Streamable aStream : streams) {
+
+            String streamName = aStream.getName();
+
+            if (streamName.contentEquals("I need the time.")) {
+                logger.info("Subscribing stream [{}] from app [{}] to event source.", streamName, consumerApp
+                        .getClass().getName());
+                savedES.subscribeStream(aStream);
+            }
+        }
+
         logger.info("Completed local applications startup.");
 
         if (deploymentManager != null) {

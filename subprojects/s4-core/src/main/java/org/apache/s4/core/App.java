@@ -15,9 +15,9 @@
  */
 package org.apache.s4.core;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
@@ -25,8 +25,6 @@ import org.apache.s4.base.KeyFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -39,11 +37,14 @@ public abstract class App {
 
     static final Logger logger = LoggerFactory.getLogger(App.class);
 
-    /* PE prototype to streams relations. */
-    final private Multimap<ProcessingElement, Streamable<? extends Event>> pe2stream = LinkedListMultimap.create();
+    /* All the PE prototypes in this app. */
+    final private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
 
-    /* Stream prototype to PE relations. */
-    final private Multimap<Streamable<? extends Event>, ProcessingElement> stream2pe = LinkedListMultimap.create();
+    /* All the internal streams in this app. */
+    final private List<Streamable> streams = new ArrayList<Streamable>();
+
+    /* All the the event sources exported by this app. */
+    final private List<EventSource> eventSources = new ArrayList<EventSource>();
 
     private ClockType clockType = ClockType.WALL_CLOCK;
     private int id = -1;
@@ -85,39 +86,52 @@ public abstract class App {
         this.id = id;
     }
 
-    /**
-     * @return all the pePrototypes
-     */
-    Collection<ProcessingElement> getPePrototypes() {
-        return pe2stream.keySet();
+    /* Should only be used within the core package. */
+    void addPEPrototype(ProcessingElement pePrototype) {
+        pePrototypes.add(pePrototype);
     }
 
-    /**
-     * @return all the pePrototypes
-     */
-    <T extends Event> Collection<ProcessingElement> getTargetPEs(Stream<T> stream) {
+    /* Should only be used within the core package. */
+    void addStream(Streamable stream) {
+        streams.add(stream);
+    }
 
-        Map<Streamable<?>, Collection<ProcessingElement>> stream2peMap = stream2pe.asMap();
+    /* Should only be used within the core package. */
+    void addEventSource(EventSource es) {
+        eventSources.add(es);
+    }
 
-        return stream2peMap.get(stream);
+    /* Returns list of PE prototypes. Should only be used within the core package. */
+    List<ProcessingElement> getPePrototypes() {
+        return pePrototypes;
+    }
+
+    /* Returns list of internal streams. Should only be used within the core package. */
+    List<Streamable> getStreams() {
+        return streams;
+    }
+
+    /* Returns list of the event sources to be exported. Should only be used within the core package. */
+    List<EventSource> getEventSources() {
+        return eventSources;
     }
 
     protected abstract void onStart();
 
     protected void start() {
 
-        logger.info("Prepare to start App [{}].", getClass().getName());
-
-        /* Start all streams. */
-        for (Streamable<? extends Event> stream : getStreams()) {
-            stream.start();
-        }
-
-        /* Allow abstract PE to initialize. */
-        for (ProcessingElement pe : getPePrototypes()) {
-            logger.info("Init prototype [{}].", pe.getClass().getName());
-            pe.initPEPrototypeInternal();
-        }
+        // logger.info("Prepare to start App [{}].", getClass().getName());
+        //
+        // /* Start all streams. */
+        // for (Streamable<? extends Event> stream : getStreams()) {
+        // stream.start();
+        // }
+        //
+        // /* Allow abstract PE to initialize. */
+        // for (ProcessingElement pe : getPePrototypes()) {
+        // logger.info("Init prototype [{}].", pe.getClass().getName());
+        // pe.initPEPrototypeInternal();
+        // }
 
         onStart();
     }
@@ -156,25 +170,16 @@ public abstract class App {
 
         /* Finally remove the entire app graph. */
         logger.trace("Clear app graph.");
-        pe2stream.clear();
-        stream2pe.clear();
+
+        pePrototypes.clear();
+        streams.clear();
     }
 
     void addPEPrototype(ProcessingElement pePrototype, Stream<? extends Event> stream) {
 
-        logger.info("Add PE prototype [{}] with stream [{}].", toString(pePrototype), toString(stream));
-        pe2stream.put(pePrototype, stream);
+        // logger.info("Add PE prototype [{}] with stream [{}].", toString(pePrototype), toString(stream));
+        pePrototypes.add(pePrototype);
 
-    }
-
-    void addStream(Streamable<? extends Event> stream, ProcessingElement pePrototype) {
-        logger.info("Add Stream [{}] with PE prototype [{}].", toString(stream), toString(pePrototype));
-        stream2pe.put(stream, pePrototype);
-
-    }
-
-    Collection<Streamable<? extends Event>> getStreams() {
-        return stream2pe.keySet();
     }
 
     /**
@@ -264,7 +269,7 @@ public abstract class App {
     protected <T extends Event> Stream<T> createStream(String name, KeyFinder<T> finder,
             ProcessingElement... processingElements) {
 
-        return new Stream<T>(this).setName(name).setKey(finder).setPEs(processingElements);
+        return new Stream<T>(this, name, finder, processingElements);
     }
 
     /**
@@ -281,30 +286,7 @@ public abstract class App {
      */
     protected <T extends Event> Stream<T> createStream(String name, ProcessingElement... processingElements) {
 
-        return new Stream<T>(this).setName(name).setPEs(processingElements);
-    }
-
-    /**
-     * Creates stream with default values. Use the builder methods to configure the stream. Example:
-     * <p>
-     * 
-     * <pre>
-     *  s1 = <SampleEvent> createStream().withName("My first stream.").withKey(new AKeyFinder()).to(somePE);
-     * </pre>
-     * 
-     * <p>
-     * 
-     * @param name
-     *            the name of the stream
-     * @param processingElements
-     *            the target processing elements
-     * @return the stream
-     */
-    public <T extends Event> Stream<T> createStream(Class<T> type) {
-
-        Stream<T> stream = new Stream<T>(this);
-        stream.setEventType(type);
-        return stream;
+        return new Stream<T>(this, name, processingElements);
     }
 
     /**
