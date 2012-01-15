@@ -147,12 +147,13 @@ public class DistributedDeploymentManager implements DeploymentManager {
     }
 
     // synchronizes with startup apps loading
-    private void deployNewApps(Set<String> newApps) throws InterruptedException {
+    private void deployNewApps(Set<String> newApps) {
         try {
             signalInitialAppsLoaded.await();
         } catch (InterruptedException e1) {
-            logger.warn("Interrupted while waiting for initialization of initial application.");
-            throw e1;
+            logger.error("Interrupted while waiting for initialization of initial application. Cancelling deployment of new applications.");
+            Thread.currentThread().interrupt();
+            return;
         }
         deployApps(newApps);
     }
