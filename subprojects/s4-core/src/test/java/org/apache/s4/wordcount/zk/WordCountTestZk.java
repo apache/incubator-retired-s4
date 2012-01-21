@@ -1,19 +1,23 @@
 package org.apache.s4.wordcount.zk;
 
-import static org.apache.s4.wordcount.WordCountTest.*;
+import static org.apache.s4.wordcount.WordCountTest.SENTENCE_1;
+import static org.apache.s4.wordcount.WordCountTest.SENTENCE_1_TOTAL_WORDS;
+import static org.apache.s4.wordcount.WordCountTest.SENTENCE_2;
+import static org.apache.s4.wordcount.WordCountTest.SENTENCE_2_TOTAL_WORDS;
+import static org.apache.s4.wordcount.WordCountTest.SENTENCE_3;
+
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
 import junit.framework.Assert;
 
-import org.apache.s4.core.App;
+import org.apache.s4.core.Main;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.s4.wordcount.WordCountApp;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
-
+import org.apache.zookeeper.ZooKeeper;
 import org.junit.Test;
 
 public class WordCountTestZk extends ZkBasedTest {
@@ -22,7 +26,7 @@ public class WordCountTestZk extends ZkBasedTest {
 
         final ZooKeeper zk = CommTestUtils.createZkClient();
 
-        App.main(new String[] { WordCountModuleZk.class.getName(), WordCountApp.class.getName() });
+        Main.main(new String[] { WordCountModuleZk.class.getName(), WordCountApp.class.getName() });
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed, zk);

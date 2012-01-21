@@ -3,14 +3,21 @@ package org.apache.s4.core;
 import java.io.File;
 import java.io.InputStream;
 
+import javax.inject.Provider;
+
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.ConfigurationUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.s4.deploy.DeploymentManager;
+import org.apache.s4.deploy.DistributedDeploymentManager;
+import org.apache.s4.deploy.NoOpDeploymentManager;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.google.inject.util.Providers;
 
 /**
  * First level of S4 configuration,
@@ -45,7 +52,7 @@ public class Module extends AbstractModule {
             loadProperties(binder());
 
         bind(Server.class).asEagerSingleton();
-
+        bind(DeploymentManager.class).to(NoOpDeploymentManager.class);
         /*
          * Apps dir is searched as follows: The s4.apps.path property in the properties file. The user's current working
          * directory under the subdirectory /bin/apps.

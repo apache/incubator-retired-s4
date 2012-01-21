@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
 
 import org.apache.s4.base.util.S4RLoader;
+import org.apache.s4.deploy.DeploymentManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,13 +30,18 @@ public class Server {
 
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
-    final private String commModuleName;
-    final private String logLevel;
+    private final String commModuleName;
+    private final String logLevel;
     public static final String MANIFEST_S4_APP_CLASS = "S4-App-Class";
-    // NOTE: currently we use a directory, but this will be changed by a URL (ref to zookeeper?),
-    // so that applications can be downloaded from a remote repository
-    final private String appsDir;
+    // local applications directory
+    private final String appsDir;
     List<App> apps = new ArrayList<App>();
+    CountDownLatch signalOneAppLoaded = new CountDownLatch(1);
+
+    private Injector injector;
+
+    @Inject
+    private DeploymentManager deploymentManager;
 
     /**
      * 
@@ -54,7 +61,6 @@ public class Server {
                 .getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.toLevel(logLevel));
 
-        Injector injector;
         AbstractModule module = null;
 
         /* Initialize communication layer module. */
@@ -66,40 +72,50 @@ public class Server {
 
         /* After some indirection we get the injector. */
         injector = Guice.createInjector(module);
+        Thread.sleep(10000);
 
-        Sender sender = injector.getInstance(Sender.class);
-        Receiver receiver = injector.getInstance(Receiver.class);
-
-        // File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter("\\w+\\.s4r"));
-        File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter(".+.s4r"));
+        File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter("\\w+\\.s4r"));
         for (File s4rFile : s4rFiles) {
-            logger.info("Loading app: " + s4rFile.getPath());
-            loadApp(sender, receiver, s4rFile);
+            loadApp(s4rFile);
         }
 
         /* Now init + start apps. TODO: implement dynamic loading/unloading using ZK. */
         for (App app : apps) {
             logger.info("Starting app " + app.getClass().getName());
-            app.init();
-            app.start();
+            startApp(app);
         }
 
-        logger.info("Completed applications startup.");
+        logger.info("Completed local applications startup.");
+
+        if (deploymentManager != null) {
+            deploymentManager.start();
+        }
+
+        // wait for at least 1 app to be loaded (otherwise the server would not have anything to do and just die)
+        signalOneAppLoaded.await();
+
     }
 
-    private void loadApp(Sender sender, Receiver receiver, File s4r) {
+    public String getS4RDir() {
+        return appsDir;
+    }
+
+    public App loadApp(File s4r) {
+
+        Sender sender = injector.getInstance(Sender.class);
+        Receiver receiver = injector.getInstance(Receiver.class);
 
         S4RLoader cl = new S4RLoader(s4r.getAbsolutePath());
         try {
             JarFile s4rFile = new JarFile(s4r);
             if (s4rFile.getManifest() == null) {
                 logger.warn("Cannot load s4r archive [{}] : missing manifest file");
-                return;
+                return null;
             }
             if (!s4rFile.getManifest().getMainAttributes().containsKey(new Name(MANIFEST_S4_APP_CLASS))) {
                 logger.warn("Cannot load s4r archive [{}] : missing attribute [{}] in manifest", s4r.getAbsolutePath(),
                         MANIFEST_S4_APP_CLASS);
-                return;
+                return null;
             }
             String appClassName = s4rFile.getManifest().getMainAttributes().getValue(MANIFEST_S4_APP_CLASS);
             logger.info("App class name is: " + appClassName);
@@ -110,14 +126,23 @@ public class Server {
                 app = (App) o;
             } catch (Exception e) {
                 logger.error("Could not load s4 application form s4r file [{" + s4r.getAbsolutePath() + "}]", e);
-                return;
+                return null;
             }
 
             app.setCommLayer(sender, receiver);
             apps.add(app);
+            logger.info("Loaded application from file {}", s4r.getAbsolutePath());
+            signalOneAppLoaded.countDown();
+            return app;
         } catch (IOException e) {
             logger.error("Could not load s4 application form s4r file [{" + s4r.getAbsolutePath() + "}]", e);
+            return null;
         }
 
+    }
+
+    public void startApp(App app) {
+        app.init();
+        app.start();
     }
 }

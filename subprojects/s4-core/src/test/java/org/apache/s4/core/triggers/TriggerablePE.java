@@ -1,7 +1,9 @@
-package org.apache.s4.core;
+package org.apache.s4.core.triggers;
 
 import java.io.IOException;
 
+import org.apache.s4.core.App;
+import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.wordcount.StringEvent;
 import org.apache.zookeeper.CreateMode;

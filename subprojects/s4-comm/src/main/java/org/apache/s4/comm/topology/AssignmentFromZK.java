@@ -168,8 +168,8 @@ public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateL
                 if (!zkClient.exists(processPath + "/" + taskName)) {
                     ZNRecord task = zkClient.readData(taskPath + "/" + taskName);
                     ZNRecord process = new ZNRecord(task);
-                    process.setSimpleField("host", machineId);
-                    process.setSimpleField("session", String.valueOf(zkClient.getSessionId()));
+                    process.putSimpleField("host", machineId);
+                    process.putSimpleField("session", String.valueOf(zkClient.getSessionId()));
                     try {
                         zkClient.createEphemeral(processPath + "/" + taskName, process);
 

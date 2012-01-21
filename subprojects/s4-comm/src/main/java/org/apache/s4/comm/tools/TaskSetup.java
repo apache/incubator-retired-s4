@@ -29,10 +29,10 @@ public class TaskSetup {
         for (int i = 0; i < tasks; i++) {
             String taskId = "Task-" + i;
             ZNRecord record = new ZNRecord(taskId);
-            record.setSimpleField("taskId", taskId);
-            record.setSimpleField("port", String.valueOf(1300 + i));
-            record.setSimpleField("partition", String.valueOf(i));
-            record.setSimpleField("cluster", clusterName);
+            record.putSimpleField("taskId", taskId);
+            record.putSimpleField("port", String.valueOf(1300 + i));
+            record.putSimpleField("partition", String.valueOf(i));
+            record.putSimpleField("cluster", clusterName);
             zkclient.createPersistent("/" + clusterName + "/tasks/" + taskId,
                     record);
         }
