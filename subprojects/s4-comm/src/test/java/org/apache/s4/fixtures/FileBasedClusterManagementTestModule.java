@@ -14,13 +14,13 @@ import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.DefaultHasher;
 import org.apache.s4.comm.serialize.KryoSerDeser;
+import org.apache.s4.comm.tcp.TCPEmitter;
+import org.apache.s4.comm.tcp.TCPListener;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromFile;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyFromFile;
-import org.apache.s4.comm.udp.UDPEmitter;
-import org.apache.s4.comm.udp.UDPListener;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
@@ -69,9 +69,13 @@ public abstract class FileBasedClusterManagementTestModule<T> extends AbstractMo
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
         bind(Assignment.class).to(AssignmentFromFile.class);
         bind(Topology.class).to(TopologyFromFile.class);
-        bind(Emitter.class).to(UDPEmitter.class);
-        bind(Listener.class).to(UDPListener.class);
+        bind(Emitter.class).to(TCPEmitter.class);
+        bind(Listener.class).to(TCPListener.class);
 
+        bind(Integer.class).annotatedWith(Names.named("comm.retries")).toInstance(10);
+        bind(Integer.class).annotatedWith(Names.named("comm.retry_delay")).toInstance(10);
+        bind(Integer.class).annotatedWith(Names.named("comm.timeout")).toInstance(1000);
+
+        bind(Integer.class).annotatedWith(Names.named("tcp.partition.queue_size")).toInstance(256);
     }
-
 }

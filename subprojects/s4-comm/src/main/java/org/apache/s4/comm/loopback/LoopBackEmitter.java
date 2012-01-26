@@ -4,11 +4,11 @@ import org.apache.s4.base.Emitter;
 
 public class LoopBackEmitter implements Emitter {
     private LoopBackListener listener;
-    
+
     public LoopBackEmitter(LoopBackListener listener) {
         this.listener = listener;
     }
-    
+
     @Override
     public boolean send(int partitionId, byte[] message) {
         listener.put(message);
@@ -18,6 +18,12 @@ public class LoopBackEmitter implements Emitter {
     @Override
     public int getPartitionCount() {
         return 1;
+    }
+
+    @Override
+    public void close() {
+        // TODO Auto-generated method stub
+
     }
 
 }

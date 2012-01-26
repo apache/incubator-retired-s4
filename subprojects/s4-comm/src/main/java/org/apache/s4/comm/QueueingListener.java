@@ -1,6 +1,5 @@
 package org.apache.s4.comm;
 
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -16,8 +15,7 @@ public class QueueingListener implements Listener, Runnable {
     private volatile Thread thread;
 
     @Inject
-    public QueueingListener(@Named("ll") Listener listener,
-            @Named("comm.queue_listener_size") int queueSize) {
+    public QueueingListener(@Named("ll") Listener listener, @Named("comm.queue_listener_size") int queueSize) {
         this.listener = listener;
         queue = new LinkedBlockingQueue<byte[]>(queueSize);
     }
@@ -28,8 +26,7 @@ public class QueueingListener implements Listener, Runnable {
 
     public void start() {
         if (thread != null) {
-            throw new IllegalStateException(
-                    "QueueingListener is already started");
+            throw new IllegalStateException("QueueingListener is already started");
         }
         thread = new Thread(this, "QueueingListener");
         thread.start();
@@ -37,8 +34,7 @@ public class QueueingListener implements Listener, Runnable {
 
     public void stop() {
         if (thread == null) {
-            throw new IllegalStateException(
-                    "QueueingListener is already stopped");
+            throw new IllegalStateException("QueueingListener is already stopped");
         }
         thread.interrupt();
         thread = null;
@@ -68,5 +64,11 @@ public class QueueingListener implements Listener, Runnable {
                 // + message.length + " to queue");
             }
         }
+    }
+
+    @Override
+    public void close() {
+        // TODO Auto-generated method stub
+
     }
 }

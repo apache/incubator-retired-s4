@@ -19,19 +19,23 @@ import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyFromZK;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.name.Names;
 
 public class ZkBasedClusterManagementTestModule extends AbstractModule {
-
+    private static final Logger logger = LoggerFactory.getLogger(ZkBasedClusterManagementTestModule.class);
     protected PropertiesConfiguration config = null;
 
     private Class<? extends Emitter> emitterClass = null;
     private Class<? extends Listener> listenerClass = null;
 
     protected ZkBasedClusterManagementTestModule() {
+        this.emitterClass = TCPEmitter.class;
+        this.listenerClass = TCPListener.class;
     }
 
     protected ZkBasedClusterManagementTestModule(Class<? extends Emitter> emitterClass,
@@ -72,16 +76,17 @@ public class ZkBasedClusterManagementTestModule extends AbstractModule {
         bind(Assignment.class).to(AssignmentFromZK.class);
         bind(Topology.class).to(TopologyFromZK.class);
 
-        if (this.emitterClass != null) {
-            bind(Emitter.class).to(this.emitterClass);
-        } else {
-            bind(Emitter.class).to(TCPEmitter.class);
+        bind(Emitter.class).to(this.emitterClass);
+        bind(Listener.class).to(this.listenerClass);
+
+        bind(Integer.class).annotatedWith(Names.named("comm.retries")).toInstance(10);
+        bind(Integer.class).annotatedWith(Names.named("comm.retry_delay")).toInstance(10);
+        bind(Integer.class).annotatedWith(Names.named("comm.timeout")).toInstance(1000);
+
+        if (this.emitterClass.equals(TCPEmitter.class)) {
+            bind(Integer.class).annotatedWith(Names.named("tcp.partition.queue_size")).toInstance(256);
         }
 
-        if (this.listenerClass != null) {
-            bind(Listener.class).to(this.listenerClass);
-        } else {
-            bind(Listener.class).to(TCPListener.class);
-        }
+        logger.info("Emitter set to - {}; Listener set to - {}", this.emitterClass, this.listenerClass);
     }
 }

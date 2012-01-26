@@ -12,6 +12,7 @@ import org.apache.s4.base.Emitter;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyChangeListener;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
@@ -29,6 +30,8 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
 
     @Inject
     public UDPEmitter(Topology topology) {
+        LoggerFactory.getLogger(getClass()).debug("UDPEmitter with topology {}",
+                topology.getTopology().getPartitionCount());
         this.topology = topology;
         topology.addListener(this);
         nodes = HashBiMap.create(topology.getTopology().getNodes().size());
@@ -48,7 +51,10 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
         try {
             ClusterNode node = nodes.get(partitionId);
             if (node == null) {
-                throw new RuntimeException(String.format("Bad partition id %d", partitionId));
+                LoggerFactory.getLogger(getClass()).error(
+                        "Cannot send message to partition {} because this partition is not visible to this emitter",
+                        partitionId);
+                return false;
             }
             byte[] byteBuffer = new byte[message.length];
             System.arraycopy(message, 0, byteBuffer, 0, message.length);
@@ -77,8 +83,14 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
         synchronized (nodes) {
             for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
                 Integer partition = clusterNode.getPartition();
-                nodes.put(partition, clusterNode);
+                nodes.forcePut(partition, clusterNode);
             }
         }
+    }
+
+    @Override
+    public void close() {
+        // TODO Auto-generated method stub
+
     }
 }

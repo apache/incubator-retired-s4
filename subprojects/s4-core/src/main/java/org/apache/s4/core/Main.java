@@ -1,13 +1,8 @@
 package org.apache.s4.core;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.util.Arrays;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,16 +24,19 @@ public class Main {
      * @param args
      */
     public static void main(String[] args) {
-
-        if (args.length == 0) {
-            logger.info("Starting S4 node with default configuration");
-            startDefaultS4Node();
-        } else if (args.length == 1) {
-            logger.info("Starting S4 node with custom configuration from file {}", args[0]);
-            startCustomS4Node(args[0]);
-        } else {
-            logger.info("Starting S4 node in development mode");
-            startDevelopmentMode(args);
+        try {
+            if (args.length == 0) {
+                logger.info("Starting S4 node with default configuration");
+                startDefaultS4Node();
+            } else if (args.length == 1) {
+                logger.info("Starting S4 node with custom configuration from file {}", args[0]);
+                startCustomS4Node(args[0]);
+            } else {
+                logger.info("Starting S4 node in development mode");
+                startDevelopmentMode(args);
+            }
+        } catch (Exception e) {
+            logger.error("S4 node failure", e);
         }
     }
 
