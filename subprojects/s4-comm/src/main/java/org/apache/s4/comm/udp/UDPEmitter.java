@@ -77,8 +77,14 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
         synchronized (nodes) {
             for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
                 Integer partition = clusterNode.getPartition();
-                nodes.put(partition, clusterNode);
+                nodes.forcePut(partition, clusterNode);
             }
         }
+    }
+
+    @Override
+    public void close() {
+        // TODO Auto-generated method stub
+
     }
 }

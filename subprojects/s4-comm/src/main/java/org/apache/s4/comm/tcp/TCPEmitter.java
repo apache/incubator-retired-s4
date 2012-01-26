@@ -2,9 +2,10 @@ package org.apache.s4.comm.tcp;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.util.ArrayDeque;
 import java.util.Hashtable;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.s4.base.Emitter;
@@ -25,6 +26,8 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.slf4j.Logger;
@@ -32,76 +35,57 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 
-public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChangeListener {
+/*
+ * TCPEmitter - Uses TCP to send messages across to other partitions.
+ *            - Message ordering between partitions is preserved.
+ *            - For efficiency, NettyEmitter.send() queues the messages partition-wise, 
+ *              a threadPool sends the messages asynchronously; message dequeued only on success.
+ *            - Tolerates topology changes, partition re-mapping, and network glitches.
+ */
+
+public class TCPEmitter implements Emitter, TopologyChangeListener {
     private static final Logger logger = LoggerFactory.getLogger(TCPEmitter.class);
-    private static final int BUFFER_SIZE = 10;
-    private static final int NUM_RETRIES = 10;
-
+    private final int numRetries = 10;
+    private final int bufferSize;
     private Topology topology;
     private final ClientBootstrap bootstrap;
 
-    static class MessageQueuesPerPartition {
-        private Hashtable<Integer, Queue<byte[]>> queues = new Hashtable<Integer, Queue<byte[]>>();
-        private boolean bounded;
-
-        MessageQueuesPerPartition(boolean bounded) {
-            this.bounded = bounded;
-        }
-
-        private boolean add(int partitionId, byte[] message) {
-            Queue<byte[]> messages = queues.get(partitionId);
-
-            if (messages == null) {
-                messages = new ArrayDeque<byte[]>();
-                queues.put(partitionId, messages);
-            }
-
-            if (bounded && messages.size() >= BUFFER_SIZE) {
-                // Too many messages already queued
-                return false;
-            }
-
-            messages.offer(message);
-            return true;
-        }
-
-        private byte[] peek(int partitionId) {
-            Queue<byte[]> messages = queues.get(partitionId);
-
-            try {
-                return messages.peek();
-            } catch (NullPointerException npe) {
-                return null;
-            }
-        }
-
-        private void remove(int partitionId) {
-            Queue<byte[]> messages = queues.get(partitionId);
-
-            if (messages.isEmpty()) {
-                logger.error("Trying to remove messages from an empty queue for partition" + partitionId);
-                return;
-            }
-
-            if (messages != null)
-                messages.remove();
-        }
-    }
-
+    /*
+     * Channel used to send messages to each partition
+     */
     private HashBiMap<Integer, Channel> partitionChannelMap;
+
+    /*
+     * Node hosting each partition
+     */
     private HashBiMap<Integer, ClusterNode> partitionNodeMap;
-    private MessageQueuesPerPartition queuedMessages = new MessageQueuesPerPartition(true);
+
+    /*
+     * Messages to be sent, stored per partition
+     */
+    private Hashtable<Integer, SendQueue> sendQueues;
+
+    /*
+     * Thread pool to actually send messages
+     */
+    private ExecutorService sendService = Executors.newCachedThreadPool();
 
     @Inject
-    public TCPEmitter(Topology topology) throws InterruptedException {
+    public TCPEmitter(Topology topology, @Named("tcp.partition.queue_size") int bufferSize) throws InterruptedException {
+        this.bufferSize = bufferSize;
         this.topology = topology;
         topology.addListener(this);
         int clusterSize = this.topology.getTopology().getNodes().size();
 
         partitionChannelMap = HashBiMap.create(clusterSize);
         partitionNodeMap = HashBiMap.create(clusterSize);
+        sendQueues = new Hashtable<Integer, SendQueue>(clusterSize);
 
+        /*
+         * Initialize netty related structures
+         */
         ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
                 Executors.newCachedThreadPool());
 
@@ -112,13 +96,126 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
             public ChannelPipeline getPipeline() {
                 ChannelPipeline p = Channels.pipeline();
                 p.addLast("1", new LengthFieldPrepender(4));
-                p.addLast("2", new TestHandler());
+                p.addLast("2", new NotifyChannelInterestChange());
                 return p;
             }
         });
 
         bootstrap.setOption("tcpNoDelay", true);
         bootstrap.setOption("keepAlive", true);
+        bootstrap.setOption("reuseAddress", true);
+        bootstrap.setOption("connectTimeoutMillis", 100);
+    }
+
+    private static class Message implements ChannelFutureListener {
+        private final SendQueue sendQ;
+        private final byte[] message;
+        private boolean sendInProcess;
+
+        Message(SendQueue sendQ, byte[] message) {
+            this.sendQ = sendQ;
+            this.message = message;
+            this.sendInProcess = false;
+        }
+
+        private void sendMessage() {
+            if (sendInProcess)
+                return;
+
+            sendQ.emitter.sendMessage(sendQ.partitionId, this);
+            sendInProcess = true;
+        }
+
+        @Override
+        public synchronized void operationComplete(ChannelFuture future) throws Exception {
+            if (future.isSuccess()) {
+                synchronized (sendQ.messages) {
+                    sendQ.messages.remove(this);
+                }
+                return;
+            }
+
+            if (future.isCancelled()) {
+                logger.error("Send I/O cancelled to " + future.getChannel().getRemoteAddress());
+            }
+
+            // failed operation
+            sendInProcess = false;
+            future.getChannel().close().awaitUninterruptibly();
+            sendQ.spawnSendThread();
+        }
+    }
+
+    private static class SendQueue {
+        private final TCPEmitter emitter;
+        private final int partitionId;
+        private final int bufferSize;
+        private Queue<Message> messages;
+
+        private boolean sendThreadRecheck = false;
+        private Boolean sendThreadActive = false;
+
+        SendQueue(TCPEmitter emitter, int partitionId, int bufferSize) {
+            this.emitter = emitter;
+            this.partitionId = partitionId;
+            this.bufferSize = bufferSize;
+            this.messages = new ArrayBlockingQueue<Message>(this.bufferSize);
+        }
+
+        private void spawnSendThread() {
+            synchronized (sendThreadActive) {
+                if (sendThreadActive) {
+                    sendThreadRecheck = true;
+                } else {
+                    sendThreadActive = true;
+                    emitter.sendService.execute(new SendThread(this));
+                }
+            }
+        }
+
+        private boolean offer(byte[] message) {
+            Message m = new Message(this, message);
+            synchronized (messages) {
+                if (messages.offer(m)) {
+                    spawnSendThread();
+                    return true;
+                } else
+                    return false;
+            }
+        }
+
+        private void sendMessagesInQueue() {
+            synchronized (messages) {
+                for (Message message : messages) {
+                    message.sendMessage();
+                }
+            }
+        }
+    }
+
+    private static class SendThread extends Thread {
+        private final SendQueue sendQ;
+
+        SendThread(SendQueue sendQ) {
+            this.sendQ = sendQ;
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                sendQ.sendMessagesInQueue();
+
+                synchronized (sendQ.sendThreadActive) {
+                    if (sendQ.sendThreadRecheck) {
+                        sendQ.sendThreadRecheck = false;
+                        continue;
+                    } else {
+                        sendQ.sendThreadActive = false;
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     private boolean connectTo(Integer partitionId) {
@@ -134,7 +231,7 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
             return false;
         }
 
-        for (int retries = 0; retries < NUM_RETRIES; retries++) {
+        for (int retries = 0; retries < numRetries; retries++) {
             ChannelFuture f = this.bootstrap.connect(new InetSocketAddress(clusterNode.getMachineName(), clusterNode
                     .getPort()));
             f.awaitUninterruptibly();
@@ -153,90 +250,77 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
         return false;
     }
 
-    private void writeMessageToChannel(Channel channel, int partitionId, byte[] message) {
-        ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
-        buffer.writeBytes(message);
-        ChannelFuture f = channel.write(buffer);
-        f.addListener(this);
-    }
+    private void sendMessage(int partitionId, Message m) {
+        ChannelBuffer buffer = ChannelBuffers.buffer(m.message.length);
+        buffer.writeBytes(m.message);
 
-    private final Object sendLock = new Object();
-
-    @Override
-    public boolean send(int partitionId, byte[] message) {
-        Channel channel = partitionChannelMap.get(partitionId);
-        if (channel == null) {
-            if (connectTo(partitionId)) {
-                channel = partitionChannelMap.get(partitionId);
-            } else {
-                // could not connect, queue to the partitionBuffer
-                return queuedMessages.add(partitionId, message);
+        while (true) {
+            if (!partitionChannelMap.containsKey(partitionId)) {
+                connectTo(partitionId);
+                continue;
             }
-        }
 
-        /*
-         * Try limiting the size of the send queue inside Netty
-         */
-        if (!channel.isWritable()) {
-            synchronized (sendLock) {
-                // check again now that we have the lock
-                while (!channel.isWritable()) {
+            SendQueue sendQ = sendQueues.get(partitionId);
+            synchronized (sendQ) {
+                if (!partitionChannelMap.get(partitionId).isWritable()) {
                     try {
-                        sendLock.wait();
-                    } catch (InterruptedException ie) {
-                        return false;
+                        logger.debug("Waiting for channel to partition {} to become writable", partitionId);
+                        sendQ.wait();
+                    } catch (InterruptedException e) {
+                        continue;
                     }
                 }
             }
+
+            Channel c = partitionChannelMap.get(partitionId);
+            if (c != null && c.isWritable()) {
+                c.write(buffer).addListener(m);
+                break;
+            }
         }
-
-        /*
-         * Channel is available. Write messages in the following order: (1) Messages already on wire, (2) Previously
-         * buffered messages, and (3) the Current Message
-         * 
-         * Once the channel returns success delete from the messagesOnTheWire
-         */
-        byte[] messageBeingSent = null;
-        // while ((messageBeingSent = messagesOnTheWire.peek(partitionId)) != null) {
-        // writeMessageToChannel(channel, partitionId, messageBeingSent, false);
-        // }
-
-        while ((messageBeingSent = queuedMessages.peek(partitionId)) != null) {
-            writeMessageToChannel(channel, partitionId, messageBeingSent);
-            queuedMessages.remove(partitionId);
-        }
-
-        writeMessageToChannel(channel, partitionId, message);
-        return true;
     }
 
     @Override
-    public void operationComplete(ChannelFuture f) {
-        int partitionId = partitionChannelMap.inverse().get(f.getChannel());
-        if (f.isSuccess()) {
-            // messagesOnTheWire.remove(partitionId);
+    public boolean send(int partitionId, byte[] message) {
+        if (!sendQueues.containsKey(partitionId)) {
+            SendQueue sendQueue = new SendQueue(this, partitionId, this.bufferSize);
+            sendQueues.put(partitionId, sendQueue);
         }
 
-        if (f.isCancelled()) {
-            logger.error("Send I/O was cancelled!! " + f.getChannel().getRemoteAddress());
-        } else if (!f.isSuccess()) {
-            logger.error("Exception on I/O operation", f.getCause());
-            logger.error(String.format("I/O on partition %d failed!", partitionId));
-            partitionChannelMap.remove(partitionId);
+        SendQueue sendQueue = sendQueues.get(partitionId);
+        return sendQueue.offer(message);
+    }
+
+    public void close() {
+        ChannelGroup cg = new DefaultChannelGroup();
+        synchronized (partitionChannelMap) {
+            cg.addAll(partitionChannelMap.values());
+            partitionChannelMap.clear();
+        }
+        cg.close().awaitUninterruptibly();
+        bootstrap.releaseExternalResources();
+    }
+
+    protected void closeChannel(int partition) {
+        Channel c = partitionChannelMap.remove(partition);
+        if (c != null) {
+            c.close().awaitUninterruptibly();
         }
     }
 
     @Override
     public void onChange() {
-        /*
-         * Close the channels that correspond to changed partitions and update partitionNodeMap
-         */
         for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
             Integer partition = clusterNode.getPartition();
+            if (partition == null) {
+                logger.error("onChange(): Illegal partition for clusterNode - " + clusterNode);
+                return;
+            }
+
             ClusterNode oldNode = partitionNodeMap.get(partition);
 
             if (oldNode != null && !oldNode.equals(clusterNode)) {
-                partitionChannelMap.remove(partition).close();
+                closeChannel(partition);
             }
 
             partitionNodeMap.forcePut(partition, clusterNode);
@@ -249,14 +333,14 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
         return topology.getTopology().getPartitionCount();
     }
 
-    class TestHandler extends SimpleChannelHandler {
+    class NotifyChannelInterestChange extends SimpleChannelHandler {
         @Override
         public void channelInterestChanged(ChannelHandlerContext ctx, ChannelStateEvent e) {
-            // logger.info(String.format("%08x %08x %08x", e.getValue(),
-            // e.getChannel().getInterestOps(), Channel.OP_WRITE));
-            synchronized (sendLock) {
-                if (e.getChannel().isWritable()) {
-                    sendLock.notify();
+            Channel c = e.getChannel();
+            SendQueue sendQ = sendQueues.get(partitionChannelMap.inverse().get(c));
+            synchronized (sendQ) {
+                if (c.isWritable()) {
+                    sendQ.notify();
                 }
             }
             ctx.sendUpstream(e);
@@ -266,9 +350,10 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
         public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event) {
             Integer partitionId = partitionChannelMap.inverse().get(context.getChannel());
             if (partitionId == null) {
-                logger.error("Error on mystery channel!!");
+                return;
             }
             logger.error("Error on channel to partition " + partitionId);
+            partitionChannelMap.remove(partitionId);
 
             try {
                 throw event.getCause();
