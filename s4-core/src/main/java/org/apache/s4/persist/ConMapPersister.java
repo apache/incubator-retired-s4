@@ -17,6 +17,7 @@
  */
 package org.apache.s4.persist;
 
+import org.apache.s4.processor.AbstractPE;
 import org.apache.s4.util.clock.Clock;
 
 import java.util.Enumeration;
@@ -121,6 +122,9 @@ public class ConMapPersister implements Persister {
         ce.value = value;
         ce.period = period;
         ce.addTime = s4Clock.getCurrentTime();
+        if (value instanceof AbstractPE) {
+            ((AbstractPE)value).setCacheAddDate(ce.addTime); 
+        }
         cache.put(key, ce);
     }
 

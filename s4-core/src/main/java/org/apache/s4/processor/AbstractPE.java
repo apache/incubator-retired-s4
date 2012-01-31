@@ -83,7 +83,7 @@ public abstract class AbstractPE implements Cloneable {
         }
     }
 
-    transient private Clock clock;
+    private transient Clock clock;
     // FIXME replaces monitor wait on AbstractPE, for triggering possible extra
     // thread when checkpointing activated
     transient private CountDownLatch s4ClockSetSignal = new CountDownLatch(1);
@@ -120,6 +120,8 @@ public abstract class AbstractPE implements Cloneable {
     transient private int checkpointableEventCount = 0;
     transient private int checkpointsBeforePause = -1;
     transient private long checkpointingPauseTimeInMillis;
+	private boolean isRecoveryAfterExpiration;
+    private long cacheAddDate = -1;
 
     transient private OverloadDispatcher overloadDispatcher;
 
@@ -209,7 +211,7 @@ public abstract class AbstractPE implements Cloneable {
             // initialize checkpointing event flag
             this.isCheckpointingEvent = false;
             if (!recoveryAttempted) {
-                recover();
+           	    recover();
                 recoveryAttempted = true;
             }
         }
@@ -562,7 +564,9 @@ public abstract class AbstractPE implements Cloneable {
         }
         try {
             AbstractPE peInOldState = deserializeState(serializedState);
-            restoreState(peInOldState);
+            if (safeKeeper.mustRestoreState(peInOldState, ttl, clock)) {
+            	restoreState(peInOldState);
+            }
         } catch (RuntimeException e) {
             Logger.getLogger("s4-ft").error("Cannot restore state for key [" + getSafeKeeperId().toString()+"]: "+e.getMessage(), e);
         }
@@ -577,6 +581,10 @@ public abstract class AbstractPE implements Cloneable {
         if (safeKeeper != null) {
             this.safeKeeperSetSignal.countDown();
         }
+    }
+    
+    public SafeKeeper getSafeKeeper() {
+    	return this.safeKeeper;
     }
 
     public final void processEvent(InitiateCheckpointingEvent checkpointingEvent) {
@@ -777,4 +785,21 @@ public abstract class AbstractPE implements Cloneable {
         }
 
     }
+
+	public void setCacheAddDate(long cacheAddDate) {
+		this.cacheAddDate = cacheAddDate;
+	}
+
+	public long getCacheAddDate() {
+		return cacheAddDate;
+	}
+	
+	public boolean isRecoveryAfterExpiration() {
+		return isRecoveryAfterExpiration;
+	}
+
+	public void setRecoveryAfterExpiration(boolean isRecoveryAfterExpiration) {
+		this.isRecoveryAfterExpiration = isRecoveryAfterExpiration;
+	}
+
 }

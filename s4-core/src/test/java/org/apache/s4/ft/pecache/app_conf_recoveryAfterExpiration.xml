@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans             http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+
+	<bean id="cacheTestPE" class="org.apache.s4.ft.pecache.CacheTestPE">
+    <property name="id" value="cacheTestPE"/>
+    <property name="keys">
+      <list>
+        <value>Values key</value>
+      </list>
+    </property>
+    <property name="checkpointingFrequencyByEventCount" value="1" /> 
+    <property name="ttl" value="1"/> 
+    <property name="recoveryAfterExpiration" value="true"/>
+  </bean>
+	
+</beans>

@@ -51,7 +51,7 @@ public class RecoveryTest extends S4TestCase {
         final ZooKeeper zk = TestUtils.createZkClient();
         // 1. instantiate remote S4 app
         forkedS4App = TestUtils.forkS4App(getClass().getName(),
-                "s4_core_conf_fs_backend.xml");
+                "s4_core_conf_fs_backend.xml", "app_conf.xml");
         // TODO synchro
         Thread.sleep(4000);
 
@@ -93,7 +93,7 @@ public class RecoveryTest extends S4TestCase {
         StatefulTestPE.DATA_FILE.delete();
 
         forkedS4App = TestUtils.forkS4App(getClass().getName(),
-                "s4_core_conf_fs_backend.xml");
+                "s4_core_conf_fs_backend.xml", "app_conf.xml");
         // TODO synchro
         Thread.sleep(2000);
         // trigger recovery by sending application event to set value 2

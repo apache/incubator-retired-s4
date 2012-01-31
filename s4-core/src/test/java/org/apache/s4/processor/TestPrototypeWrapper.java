@@ -2,8 +2,8 @@ package org.apache.s4.processor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import org.apache.s4.util.clock.WallClock;
 
+import org.apache.s4.util.clock.WallClock;
 import org.junit.Test;
 
 public class TestPrototypeWrapper

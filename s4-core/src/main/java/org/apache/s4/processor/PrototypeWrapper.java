@@ -31,7 +31,6 @@ public class PrototypeWrapper {
     private static Logger logger = Logger.getLogger(PrototypeWrapper.class);
     private AbstractPE prototype;
     Persister lookupTable;
-	SafeKeeper safeKeeper;
 
     public String getId() {
         return prototype.getId();
@@ -125,7 +124,4 @@ public class PrototypeWrapper {
         return prototype.advise();
     }
 
-	public void setSafeKeeper(SafeKeeper safeKeeper) {
-		this.safeKeeper = safeKeeper;
-	}
 }

@@ -59,19 +59,23 @@ public class S4App {
      * @param args
      * @throws Exception
      */
-    public static void main(String[] args) throws Exception {
-        Class testClass = Class.forName(args[0]);
-        String s4CoreConfFile = args[1];
-        S4App app = new S4App(testClass, s4CoreConfFile);
-        S4TestCase.initS4Parameters();
-        app.initializeS4App();
-
+    public static void main(String[] args) {
+    	try {
+    		Class testClass = Class.forName(args[0]);
+    		String s4CoreConfFile = args[1];
+    		String s4AppConfFile = args[2];
+    		S4App app = new S4App(testClass, s4CoreConfFile);
+    		S4TestCase.initS4Parameters();
+    		app.initializeS4App(s4AppConfFile);
+    	} catch (Exception e) {
+    		Logger.getLogger(S4App.class).error("Cannot start S4 app", e);
+    	}
     }
 
     /**
      * Performs dependency injection and starts the S4 plaftform.
      */
-    public void initializeS4App()
+    public void initializeS4App(String s4AppConfFile)
             throws Exception {
         initConfigPaths(testClass, s4CoreConfFileName);
         ApplicationContext coreContext = null;
@@ -93,6 +97,7 @@ public class S4App {
         Watcher w = (Watcher) context.getBean("watcher");
         w.setConfigFilename(configBase + s4CoreConfFileName);
 
+        Logger.getLogger(getClass()).info("initializing app");
         // load extension modules
         // String[] configFileNames = getModuleConfigFiles(extsHome, prop);
         // if (configFileNames.length > 0) {
@@ -105,7 +110,8 @@ public class S4App {
         // }
 
         // load application modules
-        String applicationConfigFileName = configBase + "app_conf.xml";
+//        String applicationConfigFileName = configBase + "app_conf.xml";
+        String applicationConfigFileName = configBase + s4AppConfFile;
         String[] configFileUrls = new String[] { "file:"
                 + applicationConfigFileName };
         context = new FileSystemXmlApplicationContext(configFileUrls, context);
@@ -128,6 +134,7 @@ public class S4App {
                     }
                 }
                 ((AbstractPE)bean).setSafeKeeper((SafeKeeper) context.getBean("safeKeeper"));
+                
             } catch (NoSuchMethodException mnfe) {
                 // acceptable
             }

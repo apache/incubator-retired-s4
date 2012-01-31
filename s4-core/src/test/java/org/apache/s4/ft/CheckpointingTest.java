@@ -31,7 +31,7 @@ public class CheckpointingTest extends S4TestCase {
     public void prepare() throws Exception {
         zookeeperServerConnectionFactory = TestUtils.startZookeeperServer();
         app = new S4App(getClass(), "s4_core_conf_fs_backend.xml");
-        app.initializeS4App();
+        app.initializeS4App("app_conf.xml");
     }
 
     @After
@@ -101,6 +101,7 @@ public class CheckpointingTest extends S4TestCase {
             keyValueStringField.setAccessible(true);    
             keyValueStringField.set(refPE, "value");
             refPE.setId("statefulPE");
+            refPE.setCacheAddDate(pe.getCacheAddDate());
             refPE.setKeys(new String[] {});
             KryoSerDeser kryoSerDeser = new KryoSerDeser();
             byte[] refBytes = kryoSerDeser.serialize(refPE);

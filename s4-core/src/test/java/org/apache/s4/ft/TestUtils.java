@@ -35,7 +35,8 @@ import org.apache.zookeeper.server.ZooKeeperServer;
 public class TestUtils {
 
     public static final int ZK_PORT = 21810;
-    public static Process forkS4App(String testClassName, String s4CoreConfFileName) throws IOException,
+    
+    public static Process forkS4App(String testClassName, String s4CoreConfFileName, String s4AppConfFileName) throws IOException,
             InterruptedException {
         List<String> cmdList = new ArrayList<String>();
         cmdList.add("java");
@@ -53,6 +54,7 @@ public class TestUtils {
         cmdList.add(S4App.class.getName());
         cmdList.add(testClassName);
         cmdList.add(s4CoreConfFileName);
+        cmdList.add(s4AppConfFileName);
 
         ProcessBuilder pb = new ProcessBuilder(cmdList);
         pb.directory(new File(System.getProperty("user.dir")));

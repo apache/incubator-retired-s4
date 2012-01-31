@@ -46,7 +46,7 @@ public class WordCountTest extends S4TestCase {
     public void testSimple() throws Exception {
         
         S4App app = new S4App(getClass(), "s4_core_conf.xml");
-        app.initializeS4App();
+        app.initializeS4App("app_conf.xml");
         final ZooKeeper zk = TestUtils.createZkClient();
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);

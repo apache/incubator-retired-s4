@@ -83,7 +83,7 @@ public class FTWordCountTest extends S4TestCase {
             throws Exception {
         final ZooKeeper zk = TestUtils.createZkClient();
 
-        forkedS4App = TestUtils.forkS4App(getClass().getName(), backendConf);
+        forkedS4App = TestUtils.forkS4App(getClass().getName(), backendConf, "app_conf.xml");
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
         TestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed,
@@ -110,7 +110,7 @@ public class FTWordCountTest extends S4TestCase {
         forkedS4App.destroy();
 
         // recovering and making sure checkpointing still works
-        forkedS4App = TestUtils.forkS4App(getClass().getName(), backendConf);
+        forkedS4App = TestUtils.forkS4App(getClass().getName(), backendConf, "app_conf.xml");
 
         // add authorizations for continuing processing. Without these, the
         // WordClassifier processed keeps waiting
@@ -136,7 +136,7 @@ public class FTWordCountTest extends S4TestCase {
 
         // crash the app
         forkedS4App.destroy();
-        forkedS4App = TestUtils.forkS4App(getClass().getName(), backendConf);
+        forkedS4App = TestUtils.forkS4App(getClass().getName(), backendConf, "app_conf.xml");
 
         // add authorizations for continuing processing. Without these, the
         // WordClassifier processed keeps waiting

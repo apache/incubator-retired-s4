@@ -22,9 +22,12 @@ import org.apache.s4.dispatcher.partitioner.Hasher;
 import org.apache.s4.emitter.CommLayerEmitter;
 import org.apache.s4.processor.AbstractPE;
 import org.apache.s4.serialize.SerializerDeserializer;
+import org.apache.s4.util.clock.Clock;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
@@ -255,5 +258,30 @@ public class SafeKeeper {
     public void setMaxOutstandingWriteRequests(int maxOutstandingWriteRequests) {
         this.maxOutstandingWriteRequests = maxOutstandingWriteRequests;
     }
+
+	/**
+	 * Recovery depends on expiration settings: 
+	 * a PE may or may not recover its previous state if it was expired, depending on the "recoveryAfterExpiration" setting.
+	 * @param abstractPE TODO
+	 * @param pe TODO
+	 * 
+	 */
+	public boolean mustRestoreState(AbstractPE pe, int ttl, Clock clock) {
+		if (pe.isRecoveryAfterExpiration()) {
+			return true;
+		} else {
+			// NOTE : ttl is not checkpointed. Get the value from current prototype
+			if (pe.getCacheAddDate()!=-1 && ttl!=-1 && 
+					(pe.getCacheAddDate() + (1000 * ttl)) <= clock.getCurrentTime()
+					) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Not recovering PE ["+ pe.getSafeKeeperId() + "] because it was expired");
+				}
+				return false;
+			} else {
+				return true;
+			}
+		}
+	}
 
 }
