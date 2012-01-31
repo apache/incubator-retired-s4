@@ -151,6 +151,12 @@ public class FTWordCountTest extends S4TestCase {
         signalTextProcessed.await(10, TimeUnit.SECONDS);
         File results = new File(S4TestCase.DEFAULT_TEST_OUTPUT_DIR
                 + File.separator + "wordcount");
+        if (!results.exists()) {
+        	// in case the results file isn't ready yet
+        	Thread.sleep(1000);
+        	results = new File(S4TestCase.DEFAULT_TEST_OUTPUT_DIR
+                    + File.separator + "wordcount");
+        }
         String s = TestUtils.readFile(results);
         Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", s);
 
