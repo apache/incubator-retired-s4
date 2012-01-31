@@ -17,6 +17,11 @@
  */
 package org.apache.s4.ft;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+import org.apache.log4j.Logger;
+
 
 /**
  * 
@@ -26,20 +31,36 @@ package org.apache.s4.ft;
 public class SaveStateTask implements Runnable {
     
     SafeKeeperId safeKeeperId;
-    byte[] state;
+    byte[] serializedState;
+    Future<byte[]> futureSerializedState = null;
     StorageCallback storageCallback;
     StateStorage stateStorage;
     
     public SaveStateTask(SafeKeeperId safeKeeperId, byte[] state, StorageCallback storageCallback, StateStorage stateStorage) {
         super();
         this.safeKeeperId = safeKeeperId;
-        this.state = state;
+        this.serializedState = state;
+        this.storageCallback = storageCallback;
+        this.stateStorage = stateStorage;
+    }
+    
+    public SaveStateTask(SafeKeeperId safeKeeperId, Future<byte[]> futureSerializedState, StorageCallback storageCallback, StateStorage stateStorage) {
+    	this.safeKeeperId = safeKeeperId;
+        this.futureSerializedState = futureSerializedState;
         this.storageCallback = storageCallback;
         this.stateStorage = stateStorage;
     }
     
     @Override
     public void run() {
-        stateStorage.saveState(safeKeeperId, state, storageCallback);
+    	if (futureSerializedState!=null) {
+    		try {
+				stateStorage.saveState(safeKeeperId, futureSerializedState.get(), storageCallback);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			} catch (ExecutionException e) {
+				Logger.getLogger(SaveStateTask.class).warn("Cannot save checkpoint : " + safeKeeperId, e);
+			}
+    	}
     }
 }

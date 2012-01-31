@@ -53,7 +53,7 @@ public class RecoveryTest extends S4TestCase {
         forkedS4App = TestUtils.forkS4App(getClass().getName(),
                 "s4_core_conf_fs_backend.xml");
         // TODO synchro
-        Thread.sleep(4000);
+        Thread.sleep(5000);
 
         CountDownLatch signalValue1Set = new CountDownLatch(1);
         TestUtils.watchAndSignalCreation("/value1Set", signalValue1Set, zk);
@@ -75,13 +75,13 @@ public class RecoveryTest extends S4TestCase {
         // trigger checkpoint
         gen.injectValueEvent(new KeyValue("initiateCheckpoint", "blah"),
                 "Stream1", 0);
-        signalCheckpointed.await();
+        signalCheckpointed.await(10, TimeUnit.SECONDS);
         // signalCheckpointAddedByBK.await();
 
         signalValue1Set = new CountDownLatch(1);
         TestUtils.watchAndSignalCreation("/value1Set", signalValue1Set, zk);
         gen.injectValueEvent(new KeyValue("value1", "message1b"), "Stream1", 0);
-        signalValue1Set.await();
+        signalValue1Set.await(10, TimeUnit.SECONDS);
         Assert.assertEquals("value1=message1b ; value2=",
                 TestUtils.readFile(StatefulTestPE.DATA_FILE));
 

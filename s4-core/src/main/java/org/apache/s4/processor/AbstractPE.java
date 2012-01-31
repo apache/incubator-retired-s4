@@ -22,6 +22,7 @@ import org.apache.s4.dispatcher.partitioner.KeyInfo;
 import org.apache.s4.dispatcher.partitioner.KeyInfo.KeyPathElement;
 import org.apache.s4.dispatcher.partitioner.KeyInfo.KeyPathElementIndex;
 import org.apache.s4.dispatcher.partitioner.KeyInfo.KeyPathElementName;
+import org.apache.s4.ft.CheckpointingCoordinator;
 import org.apache.s4.ft.InitiateCheckpointingEvent;
 import org.apache.s4.ft.RecoveryEvent;
 import org.apache.s4.ft.SafeKeeper;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -120,6 +122,7 @@ public abstract class AbstractPE implements Cloneable {
     transient private int checkpointableEventCount = 0;
     transient private int checkpointsBeforePause = -1;
     transient private long checkpointingPauseTimeInMillis;
+    
 
     transient private OverloadDispatcher overloadDispatcher;
 
@@ -206,6 +209,7 @@ public abstract class AbstractPE implements Cloneable {
         this.streamName = streamName;
 
         if (safeKeeper != null) {
+        	safeKeeper.acquirePermitForProcessing(this);
             // initialize checkpointing event flag
             this.isCheckpointingEvent = false;
             if (!recoveryAttempted) {
@@ -241,7 +245,10 @@ public abstract class AbstractPE implements Cloneable {
                     checkpoint();
                 }
             }
-
+        }
+        
+        if (safeKeeper!=null) {
+            safeKeeper.releasePermitForProcessing(this);
         }
     }
 
@@ -539,15 +546,10 @@ public abstract class AbstractPE implements Cloneable {
 
     protected void checkpoint() {
 
-        byte[] serializedState = serializeState();
         // NOTE: assumes pe id is keyvalue from the PE...
-        saveState(getSafeKeeperId(), serializedState);
+        safeKeeper.saveState(this);
         // remove dirty flag
         checkpointable = false;
-    }
-
-    private void saveState(SafeKeeperId key, byte[] serializedState) {
-        safeKeeper.saveState(key, serializedState);
     }
 
     protected void recover() {
