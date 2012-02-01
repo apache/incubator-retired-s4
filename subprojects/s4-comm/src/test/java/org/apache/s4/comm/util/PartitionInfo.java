@@ -11,15 +11,15 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
-/*
+/**
  * Test util for communication protocols.
- *
+ * 
  * <ul>
- * <li> The util defines Send and Receive Threads </li>
- * <li> SendThread sends out a pre-defined number of messages to all the partitions </li>
- * <li> ReceiveThread receives all/most of these messages </li>
- * <li> To avoid the receiveThread waiting for ever, it spawns a TimerThread that would 
- * interrupt after a pre-defined but long enough interval </li>
+ * <li>The util defines Send and Receive Threads</li>
+ * <li>SendThread sends out a pre-defined number of messages to all the partitions</li>
+ * <li>ReceiveThread receives all/most of these messages</li>
+ * <li>To avoid the receiveThread waiting for ever, it spawns a TimerThread that would interrupt after a pre-defined but
+ * long enough interval</li>
  * </ul>
  * 
  */
@@ -53,15 +53,23 @@ public class PartitionInfo {
     }
 
     public class SendThread extends Thread {
+
+        public SendThread() {
+            super("SendThread");
+        }
+
         @Override
         public void run() {
             try {
                 for (int i = 0; i < numMessages; i++) {
                     for (int partition = 0; partition < emitter.getPartitionCount(); partition++) {
                         byte[] message = new String(partitionId + " " + i).getBytes();
-                        while (!emitter.send(partition, message)) {
+                        if (!emitter.send(partition, message)) {
                             logger.debug("SendThread {}: Resending message to {}", partitionId, partition);
                             Thread.sleep(interval);
+                            if (!emitter.send(partition, message)) {
+                                throw new RuntimeException("failed to send message");
+                            }
                         }
                     }
                 }
@@ -95,6 +103,7 @@ public class PartitionInfo {
         private Timer timer;
 
         ReceiveThread() {
+            super("ReceiveThread");
             receivedMessages = new int[emitter.getPartitionCount()];
             for (int i = 0; i < receivedMessages.length; i++)
                 receivedMessages[i] = -1;

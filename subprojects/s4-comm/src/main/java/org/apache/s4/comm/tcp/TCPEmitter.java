@@ -1,5 +1,6 @@
 package org.apache.s4.comm.tcp;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.Hashtable;
@@ -34,23 +35,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashBiMap;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
-/*
- * TCPEmitter - Uses TCP to send messages across to other partitions.
- *            - Message ordering between partitions is preserved.
- *            - For efficiency, NettyEmitter.send() queues the messages partition-wise, 
- *              a threadPool sends the messages asynchronously; message dequeued only on success.
- *            - Tolerates topology changes, partition re-mapping, and network glitches.
+/**
+ * TCPEmitter - Uses TCP to send messages across to other partitions. - Message ordering between partitions is
+ * preserved. - For efficiency, NettyEmitter.send() queues the messages partition-wise, a threadPool sends the messages
+ * asynchronously; message dequeued only on success. - Tolerates topology changes, partition re-mapping, and network
+ * glitches.
  */
 
 public class TCPEmitter implements Emitter, TopologyChangeListener {
     private static final Logger logger = LoggerFactory.getLogger(TCPEmitter.class);
+    // TODO must be configurable
     private final int numRetries = 10;
+    // TODO must be configurable
+    private final long retryDelayMs = 10;
     private final int bufferSize;
     private Topology topology;
     private final ClientBootstrap bootstrap;
+    // id for prefixing emitter threads names
+    private static int instanceId = 0;
+    private volatile long sentMsgCount = 0;
 
     /*
      * Channel used to send messages to each partition
@@ -70,7 +77,14 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
     /*
      * Thread pool to actually send messages
      */
-    private ExecutorService sendService = Executors.newCachedThreadPool();
+    private ExecutorService sendService = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
+            .setNameFormat("TCPEmitterSendServiceThread-#" + instanceId++ + "-%d")
+            .setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
+                    logger.error("Cannot send message", paramThrowable);
+                }
+            }).build());
 
     @Inject
     public TCPEmitter(Topology topology, @Named("tcp.partition.queue_size") int bufferSize) throws InterruptedException {
@@ -107,7 +121,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         bootstrap.setOption("connectTimeoutMillis", 100);
     }
 
-    private static class Message implements ChannelFutureListener {
+    private class Message implements ChannelFutureListener {
         private final SendQueue sendQ;
         private final byte[] message;
         private boolean sendInProcess;
@@ -129,8 +143,10 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         @Override
         public synchronized void operationComplete(ChannelFuture future) throws Exception {
             if (future.isSuccess()) {
+                sentMsgCount++;
                 synchronized (sendQ.messages) {
                     sendQ.messages.remove(this);
+                    logger.debug("sent messages {}, msg size {}", sentMsgCount, sendQ.messages.size());
                 }
                 return;
             }
@@ -146,7 +162,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         }
     }
 
-    private static class SendQueue {
+    private class SendQueue {
         private final TCPEmitter emitter;
         private final int partitionId;
         private final int bufferSize;
@@ -168,7 +184,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                     sendThreadRecheck = true;
                 } else {
                     sendThreadActive = true;
-                    emitter.sendService.execute(new SendThread(this));
+                    emitter.sendService.execute(new SendTask(this));
                 }
             }
         }
@@ -193,10 +209,10 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         }
     }
 
-    private static class SendThread extends Thread {
+    private static class SendTask implements Runnable {
         private final SendQueue sendQ;
 
-        SendThread(SendQueue sendQ) {
+        SendTask(SendQueue sendQ) {
             this.sendQ = sendQ;
         }
 
@@ -220,8 +236,10 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
 
     private boolean connectTo(Integer partitionId) {
         ClusterNode clusterNode = partitionNodeMap.get(partitionId);
-
         if (clusterNode == null) {
+            if (topology.getTopology().getNodes().size() <= partitionId) {
+                return false;
+            }
             clusterNode = topology.getTopology().getNodes().get(partitionId);
             partitionNodeMap.forcePut(partitionId, clusterNode);
         }
@@ -240,7 +258,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                 return true;
             }
             try {
-                Thread.sleep(10);
+                Thread.sleep(retryDelayMs);
             } catch (InterruptedException ie) {
                 logger.error(String.format("Interrupted while connecting to %s:%d", clusterNode.getMachineName(),
                         clusterNode.getPort()));
@@ -256,8 +274,9 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
 
         while (true) {
             if (!partitionChannelMap.containsKey(partitionId)) {
-                connectTo(partitionId);
-                continue;
+                if (!connectTo(partitionId)) {
+                    continue;
+                }
             }
 
             SendQueue sendQ = sendQueues.get(partitionId);
