@@ -32,9 +32,11 @@ allprojects {
 
     /* Search these repos to find artifacts. Gradle will download and cache. */
     repositories {
-        mavenLocal()
         mavenCentral()
-        mavenRepo name: "gson", urls: "http://google-gson.googlecode.com/svn/mavenrepo"
+
+        maven {
+           url "http://google-gson.googlecode.com/svn/mavenrepo"
+        }
 
         /* Add lib dir as a repo. Some jar files that are not available
          in a public repo are distributed in the lib dir. */
@@ -104,7 +106,9 @@ subprojects {
 
         /* Misc. */
         compile( libraries.jcip )
-        compile( libraries.zk )
+        compile( libraries.zk ) {
+		 transitive = false
+	}
         
         /* Testing. */
         testCompile( libraries.junit )
@@ -150,7 +154,7 @@ binDistImage = copySpec {
         into ("platform/lib") {
             from proj.sourceSets.main.resources
             from proj.configurations.runtime.getFiles()
-            from proj.configurations.archives.allArtifactFiles
+            from proj.configurations.archives.getAllArtifacts().getFiles()
         }
     }
 }
@@ -174,7 +178,7 @@ task listJars << {
 /* Generates the gradlew scripts.
  http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.0-milestone-3'
+    gradleVersion = '1.0-milestone-7'
 }
 
 class Version {
