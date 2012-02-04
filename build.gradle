@@ -106,9 +106,7 @@ subprojects {
 
         /* Misc. */
         compile( libraries.jcip )
-        compile( libraries.zk ) {
-		 transitive = false
-	}
+        compile( libraries.zk )
         
         /* Testing. */
         testCompile( libraries.junit )
