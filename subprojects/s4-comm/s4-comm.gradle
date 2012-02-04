@@ -22,9 +22,7 @@ dependencies {
     compile libraries.gson
     compile libraries.kryo
     compile libraries.netty
-    compile (libraries.zkclient) {
-    	    transitive = false
-    }
+    compile (libraries.zkclient)
 }
 
 task testJar(type: Jar) {
