@@ -87,7 +87,14 @@ subprojects {
 
     checkstyleConfigFileName = "$rootDir/config/checkstyle/s4-checkstyle.xml"
     
-
+    // The jmx points to a repo that is no longer available. We exclude these dependencies. 
+    configurations {
+        all*.exclude group: 'com.sun.jmx'
+        all*.exclude group: 'com.sun.jdmk'
+        all*.exclude group: 'javax.jms'
+        all*.exclude group: 'javax.mail'
+    }
+    
     dependencies {
         
         /* Google. */
@@ -107,7 +114,7 @@ subprojects {
         /* Misc. */
         compile( libraries.jcip )
         compile( libraries.zk )
-        
+             
         /* Testing. */
         testCompile( libraries.junit )
     }
