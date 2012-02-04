@@ -16,6 +16,7 @@
 include 's4-base'
 include 's4-core'
 include 's4-comm'
+include 's4-edsl'
 include 's4-example'
 include ':test-apps:simple-deployable-app-1'
 include ':test-apps:simple-deployable-app-2'

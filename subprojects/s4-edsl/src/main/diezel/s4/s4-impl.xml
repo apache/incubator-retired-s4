@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<diezelImplementation xmlns="http://diezel.ericaro.net/2.0.0/">
+	<package>org.apache.s4.core.edsl</package>
+	<name>Builder</name>
+	<implements>org.apache.s4.core.edsl.S4DSL</implements>
+	<transitions>
+		<transitionImplementation name="pe">
+			<body>
+				System.out.println("pe");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="type">
+			<body>
+				System.out.println("type");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="fireOn">
+			<body>
+				System.out.println("fireOn");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="ifInterval">
+			<body>
+				System.out.println("ifInterval");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="timer">
+			<body>
+				System.out.println("timer");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="withPeriod">
+			<body>
+				System.out.println("withPeriod");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="cache">
+			<body>
+				System.out.println("cache");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="expires">
+			<body>
+				System.out.println("expires");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="asSingleton">
+			<body>
+				System.out.println("asSingleton");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="emitEvent">
+			<body>
+				System.out.println("emitEvent");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="onField">
+			<body>
+				System.out.println("onField");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="onKey">
+			<body>
+				System.out.println("onKey");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="to">
+			<body>
+				System.out.println("to");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="info">
+			<body>
+				System.out.println("info");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="build">
+			<body>
+				System.out.println("build");
+				return "Done!";
+			</body>
+		</transitionImplementation>
+
+	</transitions>
+</diezelImplementation>

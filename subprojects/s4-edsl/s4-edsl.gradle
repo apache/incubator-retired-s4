@@ -1,0 +1,40 @@
+// Use the Diezel Maven plugin to build the project.
+// Gradle doesn't support Maven plugin as of version 1.0
+// Useful article: http://forums.gradle.org/gradle/topics/how_to_download_and_evoke_a_maven_plugin
+    
+def generatedSourceDir = "${buildDir}/generated-src/java"
+def diezelSrcDir = "${projectDir}/src/main/diezel";
+
+dependencies {
+    compile project(":s4-core")
+}
+
+
+sourceSets {
+    generated {
+        java { srcDir $generatedSourceDir }
+    }
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath libraries.diezel
+    }        
+}
+task generateSources << {
+    outputs.dir generatedSourceDir
+    def mojo = new net.ericaro.diezel.plugin.DiezelMojo()
+    mojo.sourceDirectory = new File(diezelSrcDir);
+    mojo.outputDirectory = new File(generatedSourceDir);
+    mojo.staleMillis = 0;
+    mojo.project = new org.apache.maven.project.MavenProject();
+    org.apache.maven.model.Build build = new org.apache.maven.model.Build();
+    build.setDirectory(mojo.sourceDirectory.getAbsolutePath());
+    mojo.project.setBuild(build);
+    mojo.execute();
+}
+
+compileJava.source generateSources.outputs.files, sourceSets.main.java

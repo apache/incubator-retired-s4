@@ -72,7 +72,8 @@ libraries = [
     zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
-    zkclient:           'com.github.sgroschupf:zkclient:0.1'
+    zkclient:           'com.github.sgroschupf:zkclient:0.1',
+    diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-3'
 ]
 
 subprojects {
@@ -90,6 +91,7 @@ subprojects {
 
     dependencies {
         
+        compile('javax.jms:jms:1.1')
         /* Google. */
         compile( libraries.guava )
         compile( libraries.guice )
@@ -107,7 +109,7 @@ subprojects {
         /* Misc. */
         compile( libraries.jcip )
         compile( libraries.zk ) {
-		 transitive = false
+		 //transitive = false
 	}
         
         /* Testing. */
@@ -125,7 +127,7 @@ subprojects {
 
 dependsOnChildren()
 
-platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm')]
+platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-edsl')]
 
 configurations {
     platformLibs

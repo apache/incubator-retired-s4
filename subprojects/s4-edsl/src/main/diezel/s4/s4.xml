@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<diezel xmlns="http://diezel.ericaro.net/2.0.0/">
+	<package>org.apache.s4.core.edsl</package>
+	<name>S4DSL</name>
+	<expression>(pe , type , (fireOn , ifInterval? )? , (timer, withPeriod)? , (cache, size , expires? )? , asSingleton? , (emitEvent, onField?, onKey?, to )+  )+ , info?, build</expression>
+	<transitions>
+		<transition name="pe">
+			<signature>pe()</signature>
+		</transition>
+		<transition name="type">
+			<signature>type()</signature>
+		</transition>
+		<transition name="fireOn">
+			<signature>fireOn()</signature>
+		</transition>
+		<transition name="ifInterval">
+			<signature>ifInterval()</signature>
+		</transition>
+		<transition name="timer">
+			<signature>timer()</signature>
+		</transition>
+		<transition name="withPeriod">
+			<signature>withPeriod()</signature>
+		</transition>
+		<transition name="cache">
+			<signature>cache()</signature>
+		</transition>
+		<transition name="size">
+			<signature>size()</signature>
+		</transition>
+		<transition name="expires">
+			<signature>expires()</signature>
+		</transition>
+		<transition name="asSingleton">
+			<signature>asSingleton()</signature>
+		</transition>
+		<transition name="emitEvent">
+			<signature>emitEvent()</signature>
+		</transition>
+		<transition name="onField">
+			<signature>onField()</signature>
+		</transition>
+		<transition name="onKey">
+			<signature>onKey()</signature>
+		</transition>
+		<transition name="to">
+			<signature>to()</signature>
+		</transition>
+		<transition name="info">
+			<signature>info()</signature>
+		</transition>
+		<transition name="build">
+			<return>java.lang.String</return>
+			<signature>build()</signature>
+		</transition>
+	</transitions>
+</diezel>
