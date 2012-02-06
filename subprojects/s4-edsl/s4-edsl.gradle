@@ -12,7 +12,7 @@ dependencies {
 
 sourceSets {
     generated {
-        java { srcDir $generatedSourceDir }
+        java { srcDir generatedSourceDir }
     }
 }
 
@@ -38,3 +38,4 @@ task generateSources << {
 }
 
 compileJava.source generateSources.outputs.files, sourceSets.main.java
+

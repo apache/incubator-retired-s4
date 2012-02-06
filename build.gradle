@@ -98,7 +98,6 @@ subprojects {
     
     dependencies {
         
-        compile('javax.jms:jms:1.1')
         /* Google. */
         compile( libraries.guava )
         compile( libraries.guice )
