@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -42,8 +43,11 @@ public abstract class App {
     /* PE prototype to streams relations. */
     final private Multimap<ProcessingElement, Streamable<? extends Event>> pe2stream = LinkedListMultimap.create();
 
-    /* Stream prototype to PE relations. */
+    /* Stream to PE prototype relations. */
     final private Multimap<Streamable<? extends Event>, ProcessingElement> stream2pe = LinkedListMultimap.create();
+
+    /* Pes indexed by name. */
+    Map<String, ProcessingElement> peByName = Maps.newHashMap();
 
     private ClockType clockType = ClockType.WALL_CLOCK;
     private int id = -1;
@@ -104,6 +108,10 @@ public abstract class App {
 
     protected abstract void onStart();
 
+    /**
+     * This method is called by the container after initialization. Once this method is called, threads get started and
+     * events start flowing.
+     */
     protected void start() {
 
         logger.info("Prepare to start App [{}].", getClass().getName());
@@ -122,6 +130,9 @@ public abstract class App {
         onStart();
     }
 
+    /**
+     * This method is called by the container to initialize applications.
+     */
     protected abstract void onInit();
 
     protected void init() {
@@ -129,6 +140,9 @@ public abstract class App {
         onInit();
     }
 
+    /**
+     * This method is called by the container before unloading the application.
+     */
     protected abstract void onClose();
 
     protected void close() {
@@ -164,7 +178,11 @@ public abstract class App {
 
         logger.info("Add PE prototype [{}] with stream [{}].", toString(pePrototype), toString(stream));
         pe2stream.put(pePrototype, stream);
+    }
 
+    public ProcessingElement getPE(String name) {
+
+        return peByName.get(name);
     }
 
     void addStream(Streamable<? extends Event> stream, ProcessingElement pePrototype) {
@@ -312,20 +330,36 @@ public abstract class App {
      * 
      * @param type
      *            the processing element type.
+     * @param name
+     *            a name for this PE prototype.
      * @return the processing element prototype.
      */
-    public <T extends ProcessingElement> T createPE(Class<T> type) {
+    public <T extends ProcessingElement> T createPE(Class<T> type, String name) {
 
         try {
             // TODO: make sure this doesn't crash if PE has a constructor other than with App as argument.
             Class<?>[] types = new Class<?>[] { App.class };
             T pe = type.getDeclaredConstructor(types).newInstance(this);
+            pe.setName(name);
             return pe;
 
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return null;
         }
+    }
+
+    /**
+     * Creates a {@link ProcessingElement} prototype.
+     * 
+     * @param type
+     *            the processing element type.
+     * @return the processing element prototype.
+     */
+    public <T extends ProcessingElement> T createPE(Class<T> type) {
+
+        return createPE(type, null);
+
     }
 
     static private String toString(ProcessingElement pe) {

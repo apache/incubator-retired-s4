@@ -88,6 +88,12 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
         targetPEs = new ProcessingElement[pes.size()];
         pes.toArray(targetPEs);
 
+        if (logger.isTraceEnabled()) {
+            for (ProcessingElement pe : pes) {
+                logger.trace("Starting stream [{}] with target PE [{}].", this.getName(), pe.getName());
+            }
+        }
+
         /* Start streaming. */
         thread = new Thread(this, name);
         thread.start();

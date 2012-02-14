@@ -73,7 +73,7 @@ libraries = [
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
-    diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-3'
+    diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4-SNAPSHOT'
 ]
 
 subprojects {
@@ -128,6 +128,7 @@ subprojects {
     'Implementation-Vendor-Id': 'io.s4'
     )
 }
+
 
 dependsOnChildren()
 

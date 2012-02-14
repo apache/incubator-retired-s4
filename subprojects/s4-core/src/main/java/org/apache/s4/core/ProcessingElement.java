@@ -76,7 +76,6 @@ import com.google.common.collect.Maps;
  *         objects in the {@link #onCreate()} method. For example, if each instance requires a
  *         <tt>List<tt/> object the PE should implement the following:
  *         <pre>
- *         {@code
  *         public class MyPE extends ProcessingElement {
  * 
  *           private Map<String, Integer> wordCount;
@@ -87,7 +86,6 @@ import com.google.common.collect.Maps;
  *           wordCount = new HashMap<String, Integer>;
  *           logger.trace("Created a map for instance PE with id {}, getId());
  *           }
- *         }
  *         }
  *         </pre>
  * 
@@ -124,7 +122,7 @@ abstract public class ProcessingElement implements Cloneable {
     private Timer timer;
     private boolean isPrototype = true;
     private boolean isThreadSafe = false;
-    private boolean isFirst = true;
+    private String name = null;
     private boolean isSingleton = false;
 
     private transient OverloadDispatcher overloadDispatcher;
@@ -235,6 +233,34 @@ abstract public class ProcessingElement implements Cloneable {
         Preconditions.checkArgument(isPrototype, "This method can only be used on the PE prototype. Trigger not set.");
 
         peInstances = CacheBuilder.newBuilder().expireAfterAccess(duration, timeUnit).maximumSize(maximumSize)
+                .build(new CacheLoader<String, ProcessingElement>() {
+                    @Override
+                    public ProcessingElement load(String key) throws Exception {
+                        return createPE(key);
+                    }
+                });
+
+        return this;
+    }
+
+    /**
+     * Sets the max size of the PE cache.
+     * 
+     * <p>
+     * Least accessed PEs will automatically be removed from the cache when the number of PEs approaches maximumSize.
+     * <p>
+     * When this method is called all existing PE instances are destroyed.
+     * 
+     * 
+     * @param maximumSize
+     *            the approximate maximum number of PEs in the cache.
+     * @return the PE prototype
+     */
+    public ProcessingElement setPECache(int maximumSize) {
+
+        Preconditions.checkArgument(isPrototype, "This method can only be used on the PE prototype. Trigger not set.");
+
+        peInstances = CacheBuilder.newBuilder().maximumSize(maximumSize)
                 .build(new CacheLoader<String, ProcessingElement>() {
                     @Override
                     public ProcessingElement load(String key) throws Exception {
@@ -502,9 +528,6 @@ abstract public class ProcessingElement implements Cloneable {
         /* Check if instance for key exists, otherwise create one. */
         try {
             if (isSingleton) {
-                logger.trace(
-                        "Requested a PE instance with key [{}]. The instance is a singleton and will ignore the key. The key should be set to null when requesting a singleton.",
-                        id);
                 return peInstances.get(SINGLETON);
             }
             return peInstances.get(id);
@@ -621,6 +644,29 @@ abstract public class ProcessingElement implements Cloneable {
                 }
             }
         }
+    }
+
+    /**
+     * @return the PE name
+     */
+    protected String getName() {
+        return name;
+    }
+
+    /**
+     * @param name
+     *            PE name
+     */
+    protected void setName(String name) {
+
+        if (name == null)
+            return;
+
+        this.name = name;
+        if (app.peByName.containsKey(name)) {
+            logger.warn("Using a duplicate PE name: [{}]. This is probbaly not what you wanted.", name);
+        }
+        app.peByName.put(name, this);
     }
 
     class Trigger {

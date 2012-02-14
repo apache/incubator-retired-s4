@@ -19,6 +19,13 @@ sourceSets {
 buildscript {
     repositories {
         mavenCentral()
+        
+        maven {
+            url "http://oss.sonatype.org/content/repositories/snapshots"
+        }
+        maven {
+            url "http://oss.sonatype.org/content/repositories/releases"
+        }
     }
     dependencies {
         classpath libraries.diezel
@@ -38,4 +45,6 @@ task generateSources << {
 }
 
 compileJava.source generateSources.outputs.files, sourceSets.main.java
+
+eclipseClasspath.dependsOn generateSources
 

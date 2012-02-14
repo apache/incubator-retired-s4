@@ -1,83 +1,109 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <diezelImplementation xmlns="http://diezel.ericaro.net/2.0.0/">
-	<package>org.apache.s4.core.edsl</package>
+	<package>org.apache.s4.edsl</package>
 	<name>Builder</name>
-	<implements>org.apache.s4.core.edsl.S4DSL</implements>
+	<extends>AppBuilder</extends>
+	<implements>org.apache.s4.edsl.S4DSL</implements>	
 	<transitions>
 		<transitionImplementation name="pe">
 			<body>
-				System.out.println("pe");
+			    clearPEState();peName = name;logger.debug("PE name: " + peName);
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="type">
 			<body>
-				System.out.println("type");
+				processingElement = createPE(peType, peName);
+				logger.debug("peType: " + peType);
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="prop">
+			<body>
+			    addProperty(propName, propValue);
+			    logger.debug("prop: " + propName + " = " + propValue);
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="fireOn">
 			<body>
-				System.out.println("fireOn");
+				triggerEventType = eventType;
+				logger.debug("EventType: " + eventType);
 			</body>
 		</transitionImplementation>
-		<transitionImplementation name="ifInterval">
+		<transitionImplementation name="afterInterval">
 			<body>
-				System.out.println("ifInterval");
+				triggerInterval = interval;	triggerTimeUnit = timeUnit; processingElement.setTrigger(triggerEventType, 1, triggerInterval, triggerTimeUnit); logger.debug("Interval: " + triggerInterval);
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="afterNumEvents">
+			<body>
+				processingElement.setTrigger(triggerEventType, numEvents, triggerInterval, triggerTimeUnit);
+				logger.debug("afterNumeEvents: " + numEvents);
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="timer">
 			<body>
-				System.out.println("timer");
+				logger.debug("timer on");
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="withPeriod">
 			<body>
-				System.out.println("withPeriod");
+				processingElement.setTimerInterval(interval, timeUnit);
+				logger.debug("withPeriod: " + interval);
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="cache">
 			<body>
-				System.out.println("cache");
+				logger.debug("cache");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="size">
+			<body>
+				cacheSize = size; processingElement.setPECache(size); logger.debug("cache size: " + cacheSize);
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="expires">
 			<body>
-				System.out.println("expires");
+				processingElement.setPECache(cacheSize, duration, timeUnit); logger.debug("expires: " + duration);
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="asSingleton">
 			<body>
-				System.out.println("asSingleton");
+				processingElement.setSingleton(true);
+				logger.debug("asSingleton");
 			</body>
 		</transitionImplementation>
-		<transitionImplementation name="emitEvent">
+		<transitionImplementation name="emit">
 			<body>
-				System.out.println("emitEvent");
+				streamBuilder = new StreamBuilder(app, event); streamBuilders.add(streamBuilder); addPe2Stream(processingElement, streamBuilder); logger.debug("emit event: " + event);
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="onField">
 			<body>
-				System.out.println("onField");
+				streamBuilder.setFieldName(fieldName);
+				logger.debug("onField");
 			</body>
 		</transitionImplementation>
-		<transitionImplementation name="onKey">
+		<transitionImplementation name="withKeyFinder">
 			<body>
-				System.out.println("onKey");
+				streamBuilder.setKeyFinder(keyFinder);
+				logger.debug("withKeyFinder");
+			</body>
+		</transitionImplementation>
+		<transitionImplementation name="withKey">
+			<body>
+				streamBuilder.setKey(key);
+				logger.debug("withKey");
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="to">
 			<body>
-				System.out.println("to");
-			</body>
-		</transitionImplementation>
-		<transitionImplementation name="info">
-			<body>
-				System.out.println("info");
+				streamBuilder.to(targetPeName);
+				logger.debug("to: " + targetPeName);
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="build">
 			<body>
-				System.out.println("build");
-				return "Done!";
+				logger.debug("build");
+				return buildApp();
 			</body>
 		</transitionImplementation>
 

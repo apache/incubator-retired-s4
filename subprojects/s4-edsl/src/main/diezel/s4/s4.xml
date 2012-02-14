@@ -1,56 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <diezel xmlns="http://diezel.ericaro.net/2.0.0/">
-	<package>org.apache.s4.core.edsl</package>
+	<package>org.apache.s4.edsl</package>
 	<name>S4DSL</name>
-	<expression>(pe , type , (fireOn , ifInterval? )? , (timer, withPeriod)? , (cache, size , expires? )? , asSingleton? , (emitEvent, onField?, onKey?, to )+  )+ , info?, build</expression>
+	<expression>(pe , type , prop* , (fireOn , afterInterval? , afterNumEvents?)? , (timer, withPeriod)? , (cache, size , expires? )? , asSingleton? , (emit, onField?, (withKey|withKeyFinder)?, to+ )*  )+ , build</expression>
 	<transitions>
 		<transition name="pe">
-			<signature>pe()</signature>
+			<signature>pe(java.lang.String name)</signature>
 		</transition>
 		<transition name="type">
-			<signature>type()</signature>
+			<signature><![CDATA[type(java.lang.Class<? extends org.apache.s4.core.ProcessingElement> peType)]]></signature>
+		</transition>
+		<transition name="prop">
+			<signature>prop(java.lang.String propName, java.lang.String propValue)</signature>
 		</transition>
 		<transition name="fireOn">
-			<signature>fireOn()</signature>
+			<signature><![CDATA[fireOn(java.lang.Class<? extends org.apache.s4.base.Event> eventType)]]></signature>
 		</transition>
-		<transition name="ifInterval">
-			<signature>ifInterval()</signature>
+		<transition name="afterInterval">
+			<signature>afterInterval(long interval, java.util.concurrent.TimeUnit timeUnit)</signature>
+		</transition>
+		<transition name="afterNumEvents">
+			<signature>afterNumEvents(int numEvents)</signature>
 		</transition>
 		<transition name="timer">
 			<signature>timer()</signature>
 		</transition>
 		<transition name="withPeriod">
-			<signature>withPeriod()</signature>
+			<signature>withPeriod(long interval, java.util.concurrent.TimeUnit timeUnit)</signature>
 		</transition>
 		<transition name="cache">
 			<signature>cache()</signature>
 		</transition>
 		<transition name="size">
-			<signature>size()</signature>
+			<signature>size(int size)</signature>
 		</transition>
 		<transition name="expires">
-			<signature>expires()</signature>
+			<signature>expires(long duration, java.util.concurrent.TimeUnit timeUnit)</signature>
 		</transition>
 		<transition name="asSingleton">
 			<signature>asSingleton()</signature>
 		</transition>
-		<transition name="emitEvent">
-			<signature>emitEvent()</signature>
+		<transition name="emit">
+			<signature><![CDATA[emit(java.lang.Class<? extends org.apache.s4.base.Event> event)]]></signature>
 		</transition>
 		<transition name="onField">
-			<signature>onField()</signature>
+			<signature>onField(java.lang.String fieldName)</signature>
 		</transition>
-		<transition name="onKey">
-			<signature>onKey()</signature>
+		<transition name="withKeyFinder">
+			<signature><![CDATA[withKeyFinder(org.apache.s4.base.KeyFinder<? extends org.apache.s4.base.Event> keyFinder)]]></signature>
 		</transition>
+		<transition name="withKey">
+			<signature>withKey(java.lang.String key)</signature>
+		</transition>		
 		<transition name="to">
-			<signature>to()</signature>
-		</transition>
-		<transition name="info">
-			<signature>info()</signature>
+			<signature>to(java.lang.String targetPeName)</signature>
 		</transition>
 		<transition name="build">
-			<return>java.lang.String</return>
+			<return>org.apache.s4.core.App</return>
 			<signature>build()</signature>
 		</transition>
 	</transitions>
