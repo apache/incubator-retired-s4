@@ -6,6 +6,8 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
 import org.apache.s4.core.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -16,6 +18,8 @@ import com.google.common.collect.Sets;
  * 
  */
 class StreamBuilder<T extends Event> {
+
+    private static final Logger logger = LoggerFactory.getLogger(StreamBuilder.class);
 
     Class<T> type;
     String fieldName;
@@ -65,8 +69,11 @@ class StreamBuilder<T extends Event> {
 
     // Not all PE may have been created, we use PE Name as a placeholder. The PE prototypes will be assigned in the
     // buildApp() method in AppBuilder.
-    void to(String peName) {
-        pes.add(peName);
+    void to(String[] peNames) {
+        for (int i = 0; i < peNames.length; i++) {
+            logger.debug("to: " + peNames[i]);
+            pes.add(peNames[i]);
+        }
     }
 
     void setFieldName(String fieldName) {

@@ -96,8 +96,7 @@
 		</transitionImplementation>
 		<transitionImplementation name="to">
 			<body>
-				streamBuilder.to(targetPeName);
-				logger.debug("to: " + targetPeName);
+				streamBuilder.to(targetPeNames);
 			</body>
 		</transitionImplementation>
 		<transitionImplementation name="build">

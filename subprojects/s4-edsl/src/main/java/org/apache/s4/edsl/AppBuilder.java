@@ -59,7 +59,7 @@ import com.google.common.collect.Sets;
  * <pre>
  *  (pe , type , prop* , (fireOn , afterInterval? , afterNumEvents?)? , (timer, withPeriod)? , 
  *  (cache, size , expires? )? , asSingleton? , (emit, onField?, 
- *  (withKey|withKeyFinder)?, to+ )*  )+ , build
+ *  (withKey|withKeyFinder)?, to )*  )+ , build
  * </pre>
  * 
  * <p>

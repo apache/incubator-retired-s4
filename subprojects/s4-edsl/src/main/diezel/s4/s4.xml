@@ -2,7 +2,7 @@
 <diezel xmlns="http://diezel.ericaro.net/2.0.0/">
 	<package>org.apache.s4.edsl</package>
 	<name>S4DSL</name>
-	<expression>(pe , type , prop* , (fireOn , afterInterval? , afterNumEvents?)? , (timer, withPeriod)? , (cache, size , expires? )? , asSingleton? , (emit, onField?, (withKey|withKeyFinder)?, to+ )*  )+ , build</expression>
+	<expression>(pe , type , prop* , (fireOn , afterInterval? , afterNumEvents?)? , (timer, withPeriod)? , (cache, size , expires? )? , asSingleton? , (emit, onField?, (withKey|withKeyFinder)?, to )*  )+ , build</expression>
 	<transitions>
 		<transition name="pe">
 			<signature>pe(java.lang.String name)</signature>
@@ -53,7 +53,7 @@
 			<signature>withKey(java.lang.String key)</signature>
 		</transition>		
 		<transition name="to">
-			<signature>to(java.lang.String targetPeName)</signature>
+			<signature>to(java.lang.String... targetPeNames)</signature>
 		</transition>
 		<transition name="build">
 			<return>org.apache.s4.core.App</return>

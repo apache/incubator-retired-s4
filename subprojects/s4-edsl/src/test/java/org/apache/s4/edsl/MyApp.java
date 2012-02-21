@@ -16,7 +16,7 @@ public class MyApp extends BuilderS4DSL {
                 .withKeyFinder(new HeightKeyFinder()).to("PEZ").
 
                 pe("PEX").type(PEX.class).prop("query", "money").cache().size(100).expires(1, TimeUnit.MINUTES)
-                .asSingleton().emit(EventB.class).withKeyFinder(new QueryKeyFinder()).to("PEY").to("PEZ").
+                .asSingleton().emit(EventB.class).withKeyFinder(new QueryKeyFinder()).to("PEY", "PEZ").
 
                 build();
     }

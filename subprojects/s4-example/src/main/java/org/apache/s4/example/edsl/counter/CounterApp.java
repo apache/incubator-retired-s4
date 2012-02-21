@@ -5,6 +5,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.s4.base.Event;
 import org.apache.s4.edsl.BuilderS4DSL;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+
 /**
  * This is a sample application to test the S4 embedded domain-specific language (EDSL).
  * 
@@ -14,7 +17,7 @@ import org.apache.s4.edsl.BuilderS4DSL;
  * <pre>
  *  (pe , type , prop* , (fireOn , afterInterval? , afterNumEvents?)? , (timer, withPeriod)? , 
  *  (cache, size , expires? )? , asSingleton? , (emit, onField?, 
- *  (withKey|withKeyFinder)?, to+ )*  )+ , build
+ *  (withKey|withKeyFinder)?, to )*  )+ , build
  * </pre>
  * 
  * <p>
@@ -22,6 +25,22 @@ import org.apache.s4.edsl.BuilderS4DSL;
  * 
  */
 final public class CounterApp extends BuilderS4DSL {
+
+    public static void main(String[] args) {
+        Injector injector = Guice.createInjector(new Module());
+        CounterApp myApp = injector.getInstance(CounterApp.class);
+
+        /* Normally. the container will handle this but this is just a test. */
+        myApp.init();
+        myApp.start();
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        myApp.close();
+    }
 
     @Override
     protected void onInit() {
