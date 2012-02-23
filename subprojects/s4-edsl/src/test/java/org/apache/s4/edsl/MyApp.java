@@ -12,11 +12,11 @@ public class MyApp extends BuilderS4DSL {
 
                 pe("PEY").type(PEY.class).prop("duration", "4").prop("height", "99").timer()
                 .withPeriod(2, TimeUnit.MINUTES).emit(EventA.class).onField("stream3")
-                .withKeyFinder(new DurationKeyFinder()).to("PEZ").emit(EventA.class).onField("heightpez")
-                .withKeyFinder(new HeightKeyFinder()).to("PEZ").
+                .withKeyFinder(DurationKeyFinder.class).to("PEZ").emit(EventA.class).onField("heightpez")
+                .withKeyFinder(HeightKeyFinder.class).to("PEZ").
 
                 pe("PEX").type(PEX.class).prop("query", "money").cache().size(100).expires(1, TimeUnit.MINUTES)
-                .asSingleton().emit(EventB.class).withKeyFinder(new QueryKeyFinder()).to("PEY", "PEZ").
+                .asSingleton().emit(EventB.class).withKeyFinder(QueryKeyFinder.class).to("PEY", "PEZ").
 
                 build();
     }

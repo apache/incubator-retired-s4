@@ -48,22 +48,22 @@ final public class CounterApp extends BuilderS4DSL {
         pe("Print").type(PrintPE.class).asSingleton().
 
         pe("User Count").type(CounterPE.class).fireOn(Event.class).afterInterval(100, TimeUnit.MILLISECONDS)
-                .emit(CountEvent.class).withKeyFinder(new CountKeyFinder()).to("Print").
+                .emit(CountEvent.class).withKeyFinder(CountKeyFinder.class).to("Print").
 
                 pe("Gender Count").type(CounterPE.class).fireOn(Event.class).afterInterval(100, TimeUnit.MILLISECONDS)
-                .emit(CountEvent.class).withKeyFinder(new CountKeyFinder()).to("Print").
+                .emit(CountEvent.class).withKeyFinder(CountKeyFinder.class).to("Print").
 
                 pe("Age Count").type(CounterPE.class).fireOn(Event.class).afterInterval(100, TimeUnit.MILLISECONDS)
-                .emit(CountEvent.class).withKeyFinder(new CountKeyFinder()).to("Print").
+                .emit(CountEvent.class).withKeyFinder(CountKeyFinder.class).to("Print").
 
                 pe("Generate User Event").type(GenerateUserEventPE.class).timer().withPeriod(1, TimeUnit.MILLISECONDS)
                 .asSingleton().
 
-                emit(UserEvent.class).withKeyFinder(new UserIDKeyFinder()).to("User Count").
+                emit(UserEvent.class).withKeyFinder(UserIDKeyFinder.class).to("User Count").
 
                 emit(UserEvent.class).withKey("gender").to("Gender Count").
 
-                emit(UserEvent.class).withKeyFinder(new AgeKeyFinder()).to("Age Count").
+                emit(UserEvent.class).withKeyFinder(AgeKeyFinder.class).to("Age Count").
 
                 build();
     }

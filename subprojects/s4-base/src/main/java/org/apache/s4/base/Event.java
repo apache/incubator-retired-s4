@@ -22,6 +22,14 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 
+/**
+ * The base event class in S4. The base class supports generic key/value pairs which us useful for rapid prototyping and
+ * for inter-application communication. For greater efficiency and type safety, extend this class to create custom event
+ * types.
+ * 
+ * @author leo
+ * 
+ */
 public class Event {
 
     private static final Logger logger = LoggerFactory.getLogger(Event.class);

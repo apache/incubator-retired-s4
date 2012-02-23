@@ -61,6 +61,16 @@ class StreamBuilder<T extends Event> {
         stream.setName(type.getCanonicalName() + "," + keyFinder.getClass().getCanonicalName());
     }
 
+    @SuppressWarnings("unchecked")
+    void setKeyFinder(Class<?> type) {
+        try {
+            stream.setKey((KeyFinder<T>) type.newInstance());
+        } catch (Exception e) {
+            logger.error("Unable to create instance of KeyFinder [{}].", type.toString());
+            e.printStackTrace();
+        }
+    }
+
     void setKey(String keyDescriptor) {
 
         stream.setKey(keyDescriptor);

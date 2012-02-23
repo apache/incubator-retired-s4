@@ -5,57 +5,134 @@
 	<expression>(pe , type , prop* , (fireOn , afterInterval? , afterNumEvents?)? , (timer, withPeriod)? , (cache, size , expires? )? , asSingleton? , (emit, onField?, (withKey|withKeyFinder)?, to )*  )+ , build</expression>
 	<transitions>
 		<transition name="pe">
+			<javadoc>
+				Creates a new {@link org.apache.s4.core.ProcessingElement} prototype. 
+				@param name the PE name.
+				@see org.apache.s4.core.ProcessingElement
+			</javadoc>
 			<signature>pe(java.lang.String name)</signature>
 		</transition>
 		<transition name="type">
+			<javadoc>
+				Specifies the type of {@link org.apache.s4.core.ProcessingElement}. 
+				@param type the PE type.
+				@see org.apache.s4.core.ProcessingElement
+			</javadoc>			
 			<signature><![CDATA[type(java.lang.Class<? extends org.apache.s4.core.ProcessingElement> peType)]]></signature>
 		</transition>
 		<transition name="prop">
+			<javadoc>
+				Set a PE property value. The PE class must have a field name that matches {@code propName}. Otherwise, a runtime error will be thrown.  
+				@param propName the property name that matches a field name.
+				@param propValue the property value specified as a string.
+			</javadoc>
 			<signature>prop(java.lang.String propName, java.lang.String propValue)</signature>
 		</transition>
 		<transition name="fireOn">
+			<javadoc>
+				Creates a {@link org.apache.s4.core.ProcessingElement} trigger that fires when an {@link org.apache.s4.base.Event} arrives. 
+				@param eventType the type of event that fires this trigger.
+				@see org.apache.s4.core.ProcessingElement#setTrigger
+			</javadoc>
 			<signature><![CDATA[fireOn(java.lang.Class<? extends org.apache.s4.base.Event> eventType)]]></signature>
 		</transition>
 		<transition name="afterInterval">
+			<javadoc>Sets a trigger condition that specifies the minimum amount of time before the trigger is fired again. 
+				@param interval the minimum time interval between trigger events.
+				@param timeUnit the time unit used to express the interval.
+				@see org.apache.s4.core.ProcessingElement#setTrigger
+			</javadoc>
 			<signature>afterInterval(long interval, java.util.concurrent.TimeUnit timeUnit)</signature>
 		</transition>
 		<transition name="afterNumEvents">
+			<javadoc>Sets a trigger condition that specifies the minimum of events that need to arrive before the trigger is fired again. 
+				@param numEvents the minimum number of events between trigger activations.
+				@see org.apache.s4.core.ProcessingElement#setTrigger
+			</javadoc>
 			<signature>afterNumEvents(int numEvents)</signature>
 		</transition>
 		<transition name="timer">
+			<javadoc>Activate the PE timer. 
+				@see org.apache.s4.core.ProcessingElement#setTimerInterval
+			</javadoc>
 			<signature>timer()</signature>
 		</transition>
 		<transition name="withPeriod">
+			<javadoc>Set the PE timer interval.
+				@param interval in timeUnit.
+     			@param timeUnit the interval timeUnit
+				@see org.apache.s4.core.ProcessingElement#setTimerInterval
+			</javadoc>
 			<signature>withPeriod(long interval, java.util.concurrent.TimeUnit timeUnit)</signature>
 		</transition>
 		<transition name="cache">
+			<javadoc>Configure the PE cache.
+				@see org.apache.s4.core.ProcessingElement#setPECache
+			</javadoc>
 			<signature>cache()</signature>
 		</transition>
 		<transition name="size">
+			<javadoc>Sets the maximum number of PE instances in the cache.
+			    @param size maximum number of PE instances 
+				@see org.apache.s4.core.ProcessingElement#setPECache
+			</javadoc>
 			<signature>size(int size)</signature>
 		</transition>
 		<transition name="expires">
+			<javadoc>Sets the cache duration.
+				@param duration time in timeUnit.
+     			@param timeUnit the expiration timeUnit				
+     			@see org.apache.s4.core.ProcessingElement#setPECache
+			</javadoc>
 			<signature>expires(long duration, java.util.concurrent.TimeUnit timeUnit)</signature>
 		</transition>
 		<transition name="asSingleton">
+			<javadoc>Make this prototype a singleton. Only one PE instance will be created.
+     			@see org.apache.s4.core.ProcessingElement#setSingleton
+			</javadoc>
 			<signature>asSingleton()</signature>
 		</transition>
 		<transition name="emit">
+			<javadoc>Specify the type of event that will be emitted by this PE.
+			   @param event the event type.
+			   @see org.apache.s4.core.Stream
+			</javadoc>
 			<signature><![CDATA[emit(java.lang.Class<? extends org.apache.s4.base.Event> event)]]></signature>
 		</transition>
 		<transition name="onField">
+			<javadoc>.
+			   @param onField the PE field name to which we need to bing this stream. This field is required to disambiguate when there is more than one target stream with the same Event type.
+			   @see org.apache.s4.edsl.AppBuilder
+			   @see org.apache.s4.core.Stream
+			</javadoc>
 			<signature>onField(java.lang.String fieldName)</signature>
 		</transition>
 		<transition name="withKeyFinder">
-			<signature><![CDATA[withKeyFinder(org.apache.s4.base.KeyFinder<? extends org.apache.s4.base.Event> keyFinder)]]></signature>
+			<javadoc>Use a {@link org.apache.s4.base.KeyFinder} to retrieve the key value.
+			   @param keyFinder
+			   @see org.apache.s4.core.Stream
+			   @see org.apache.s4.base.KeyFinder
+			   @see org.apache.s4.base.Key
+			</javadoc>
+			<signature><![CDATA[withKeyFinder(Class<?> keyFinder)]]></signature>
 		</transition>
 		<transition name="withKey">
+			<javadoc>Provide the key name that matches a key in the generic {@link org.apache.s4.base.Event} class.
+			   @param key
+			   @see org.apache.s4.core.Stream
+			   @see org.apache.s4.base.Event
+			   @see org.apache.s4.base.Key
+			</javadoc>
 			<signature>withKey(java.lang.String key)</signature>
 		</transition>		
 		<transition name="to">
+			<javadoc>Provide the target PEs to which this event is sent.
+			   @param targetPeNames array of target PEs.
+			</javadoc>
 			<signature>to(java.lang.String... targetPeNames)</signature>
 		</transition>
 		<transition name="build">
+			<javadoc>Final method creates the S4 app.</javadoc>
 			<return>org.apache.s4.core.App</return>
 			<signature>build()</signature>
 		</transition>
