@@ -2,6 +2,7 @@ package org.apache.s4.wordcount;
 
 import org.apache.s4.ft.KeyValue;
 import org.apache.s4.ft.S4TestCase;
+import org.apache.s4.ft.StatefulTestPE;
 import org.apache.s4.ft.TestUtils;
 import org.apache.s4.processor.AbstractPE;
 
@@ -28,6 +29,7 @@ public class WordClassifier extends AbstractPE implements Watcher {
     transient private ZooKeeper zk;
     private String id;
     public final static String ROUTING_KEY = "classifier";
+	public static final String WORD_COUNT_ZNODE = "/wordcount";
 
     public void setId(String id) {
         this.id = id;
@@ -59,20 +61,17 @@ public class WordClassifier extends AbstractPE implements Watcher {
         }
         ++counter;
         if (counter == WordCountTest.TOTAL_WORDS) {
-            File results = new File(S4TestCase.DEFAULT_TEST_OUTPUT_DIR
-                    + File.separator + "wordcount");
-            if (results.exists()) {
-                if (!results.delete()) {
-                    throw new RuntimeException("cannot delete results file");
-                }
-            }
+            try {
+    			zk.delete(WordClassifier.WORD_COUNT_ZNODE, -1);
+    		} catch (Exception ignored) {
+    		}
             Set<Entry<String, Integer>> entrySet = counts.entrySet();
             StringBuilder sb = new StringBuilder();
             for (Entry<String, Integer> entry : entrySet) {
                 sb.append(entry.getKey() + "=" + entry.getValue() + ";");
             }
-            TestUtils.writeStringToFile(sb.toString(), results);
-
+            zk.create(WordClassifier.WORD_COUNT_ZNODE, sb.toString().getBytes(), Ids.OPEN_ACL_UNSAFE,
+                    CreateMode.PERSISTENT);
             zk.create("/textProcessed", new byte[0], Ids.OPEN_ACL_UNSAFE,
                     CreateMode.PERSISTENT);
         } else {

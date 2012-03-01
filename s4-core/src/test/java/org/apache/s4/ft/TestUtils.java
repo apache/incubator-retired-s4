@@ -180,9 +180,9 @@ public class TestUtils {
             Assert.assertTrue("waiting for server down",
                     waitForServerDown("localhost", ZK_PORT, 3000));
         }
-        
-        
-        
+
+
+
         // List<String> cmdList = new ArrayList<String>();
         // cmdList.add(System.getProperty("user.dir")
         // + "/src/test/scripts/killJavaProcessForPort.sh");
@@ -297,7 +297,7 @@ public class TestUtils {
             }
         });
     }
-    
+
     public static void watchAndSignalChangedChildren(String path,
             final CountDownLatch latch, final ZooKeeper zk)
             throws KeeperException, InterruptedException {
@@ -393,7 +393,7 @@ public class TestUtils {
             deleteDirectoryContents(S4TestCase.DEFAULT_TEST_OUTPUT_DIR);
         }
         S4TestCase.DEFAULT_STORAGE_DIR.mkdirs();
-    
+
     }
 
 }
