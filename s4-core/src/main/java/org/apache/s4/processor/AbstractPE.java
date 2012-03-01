@@ -17,14 +17,21 @@
  */
 package org.apache.s4.processor;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.CountDownLatch;
+
+import org.apache.log4j.Logger;
 import org.apache.s4.dispatcher.partitioner.CompoundKeyInfo;
 import org.apache.s4.dispatcher.partitioner.KeyInfo;
 import org.apache.s4.dispatcher.partitioner.KeyInfo.KeyPathElement;
 import org.apache.s4.dispatcher.partitioner.KeyInfo.KeyPathElementIndex;
 import org.apache.s4.dispatcher.partitioner.KeyInfo.KeyPathElementName;
-import org.apache.s4.ft.CheckpointingCoordinator;
-import org.apache.s4.ft.InitiateCheckpointingEvent;
-import org.apache.s4.ft.RecoveryEvent;
 import org.apache.s4.ft.SafeKeeper;
 import org.apache.s4.ft.SafeKeeperId;
 import org.apache.s4.persist.Persister;
@@ -32,23 +39,6 @@ import org.apache.s4.schema.Schema;
 import org.apache.s4.schema.Schema.Property;
 import org.apache.s4.schema.SchemaContainer;
 import org.apache.s4.util.clock.Clock;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.apache.log4j.Logger;
 
 /**
  * This is the base class for processor classes.
@@ -86,7 +76,7 @@ public abstract class AbstractPE implements Cloneable {
     }
 
     transient private Clock clock;
-    // FIXME replaces monitor wait on AbstractPE, for triggering possible extra
+    // replaces monitor wait on AbstractPE, for triggering possible extra
     // thread when checkpointing activated
     transient private CountDownLatch s4ClockSetSignal = new CountDownLatch(1);
     transient private int outputFrequency = 1;
@@ -110,9 +100,7 @@ public abstract class AbstractPE implements Cloneable {
 
     transient private boolean recoveryAttempted = false;
     // true if state may have changed
-    transient private boolean checkpointable = false;
-    // use a flag for identifying checkpointing events
-    transient private boolean isCheckpointingEvent = false;
+    transient private volatile boolean checkpointable = false;
 
     transient private SafeKeeper safeKeeper; // handles fault tolerance
     transient private CountDownLatch safeKeeperSetSignal = new CountDownLatch(1);
@@ -122,7 +110,7 @@ public abstract class AbstractPE implements Cloneable {
     transient private int checkpointableEventCount = 0;
     transient private int checkpointsBeforePause = -1;
     transient private long checkpointingPauseTimeInMillis;
-    
+
 
     transient private OverloadDispatcher overloadDispatcher;
 
@@ -209,9 +197,7 @@ public abstract class AbstractPE implements Cloneable {
         this.streamName = streamName;
 
         if (safeKeeper != null) {
-        	safeKeeper.acquirePermitForProcessing(this);
-            // initialize checkpointing event flag
-            this.isCheckpointingEvent = false;
+            safeKeeper.acquirePermitForProcessing(this);
             if (!recoveryAttempted) {
                 recover();
                 recoveryAttempted = true;
@@ -224,7 +210,7 @@ public abstract class AbstractPE implements Cloneable {
             keyRecord.clear(); // the PE doesn't need it anymore
         }
 
-        if (outputFrequencyType == FrequencyType.EVENTCOUNT && outputFrequency > 0 && !isCheckpointingEvent) {
+        if (outputFrequencyType == FrequencyType.EVENTCOUNT && outputFrequency > 0) {
             eventCount++;
             if (eventCount % outputFrequency == 0) {
                 try {
@@ -235,18 +221,17 @@ public abstract class AbstractPE implements Cloneable {
             }
         }
 
-        // do not take into account checkpointing/recovery trigger messages
-        if (!isCheckpointingEvent) {
-            checkpointable = true; // dirty flag
-            if (checkpointingFrequencyType == FrequencyType.EVENTCOUNT && checkpointingFrequency > 0) {
-                checkpointableEventCount++;
-                if (checkpointableEventCount % checkpointingFrequency == 0) {
-                    // for count-based frequency, we directly checkpoint here
-                    checkpoint();
-                }
+        setCheckpointable(true); // dirty flag
+        if (checkpointingFrequencyType == FrequencyType.EVENTCOUNT && checkpointingFrequency > 0) {
+            checkpointableEventCount++;
+            if (checkpointableEventCount % checkpointingFrequency == 0) {
+                // for count-based frequency, we directly checkpoint here
+            	if (isCheckpointable()) {
+            		checkpoint();
+            	}
             }
         }
-        
+
         if (safeKeeper!=null) {
             safeKeeper.releasePermitForProcessing(this);
         }
@@ -261,7 +246,7 @@ public abstract class AbstractPE implements Cloneable {
      * <p>
      * The key value is a list because the key may be a compound (composite)
      * key, in which case the key will have one value for each simple key.
-     * 
+     *
      * @return the key value as a List of Objects (each element contains the
      *         value of a simple key).
      **/
@@ -363,7 +348,7 @@ public abstract class AbstractPE implements Cloneable {
      * "by event count" with an output frequency of 1. (That is,
      * <code>output</code> is called after after each return from
      * <code>processEvent</code>).
-     * 
+     *
      * @param outputFrequency
      *            the number of application events passed to
      *            <code>processEvent</code> before output is called.
@@ -377,7 +362,7 @@ public abstract class AbstractPE implements Cloneable {
     /**
      * Sets the frequency strategy to "by event count". Uses the same mechanism
      * than {@link #setOutputFrequencyByEventCount(int)}
-     * 
+     *
      * @param checkpointingFrequency
      *            the number of application events passed to
      *            <code>processEvent</code> before output is called (ignoring
@@ -386,7 +371,6 @@ public abstract class AbstractPE implements Cloneable {
     public void setCheckpointingFrequencyByEventCount(int checkpointingFrequency) {
         this.checkpointingFrequency = checkpointingFrequency;
         this.checkpointingFrequencyType = FrequencyType.EVENTCOUNT;
-        supplementAdviceForCheckpointingAndRecovery();
     }
 
     /**
@@ -414,7 +398,7 @@ public abstract class AbstractPE implements Cloneable {
      * "by event count" with an output frequency of 1. (That is,
      * <code>output</code> is called after after each return from
      * <code>processEvent</code>).
-     * 
+     *
      * @param outputFrequency
      *            the time boundary in seconds
      **/
@@ -427,14 +411,13 @@ public abstract class AbstractPE implements Cloneable {
     /**
      * Sets the frequency of checkpointing. It uses the same mechanism than
      * {@link #setOutputFrequencyByTimeBoundary(int)}
-     * 
+     *
      * @param checkpointingFrequency
      *            the time boundary in seconds
      */
     public void setCheckpointingFrequencyByTimeBoundary(int checkpointingFrequency) {
         this.checkpointingFrequency = checkpointingFrequency;
         this.checkpointingFrequencyType = FrequencyType.TIMEBOUNDARY;
-        supplementAdviceForCheckpointingAndRecovery();
         initFrequency(PeriodicInvokerType.CHECKPOINTING);
     }
 
@@ -458,13 +441,12 @@ public abstract class AbstractPE implements Cloneable {
      * Set the offset from the time boundary at which calls to checkpoint should
      * be performed. It uses the same mechanism than
      * {@link AbstractPE#setOutputFrequencyOffset(int)}
-     * 
+     *
      * @param checkpointingFrequencyOffset
      *            checkpointing frequency offset in seconds
      */
     public void setCheckpointingFrequencyOffset(int checkpointingFrequencyOffset) {
         this.checkpointingFrequencyOffset = checkpointingFrequencyOffset;
-        supplementAdviceForCheckpointingAndRecovery();
     }
 
     public void setKeys(String[] keys) {
@@ -472,7 +454,6 @@ public abstract class AbstractPE implements Cloneable {
             StringTokenizer st = new StringTokenizer(key);
             eventAdviceList.add(new EventAdvice(st.nextToken(), st.nextToken()));
         }
-        supplementAdviceForCheckpointingAndRecovery();
     }
 
     private void initFrequency(PeriodicInvokerType type) {
@@ -519,7 +500,7 @@ public abstract class AbstractPE implements Cloneable {
     }
 
     /**
-     * 
+     *
      */
     public int getTtl() {
         return ttl;
@@ -530,7 +511,7 @@ public abstract class AbstractPE implements Cloneable {
     }
 
     /**
-     * 
+     *
      */
     public void setLookupTable(Persister lookupTable) {
         this.lookupTable = lookupTable;
@@ -548,8 +529,6 @@ public abstract class AbstractPE implements Cloneable {
 
         // NOTE: assumes pe id is keyvalue from the PE...
         safeKeeper.saveState(this);
-        // remove dirty flag
-        checkpointable = false;
     }
 
     protected void recover() {
@@ -581,26 +560,22 @@ public abstract class AbstractPE implements Cloneable {
         }
     }
 
-    public final void processEvent(InitiateCheckpointingEvent checkpointingEvent) {
-        isCheckpointingEvent = true;
-        if (isCheckpointable()) {
-            checkpoint();
-        }
-    }
-
+    /**
+     * Indicates whether this PE is dirty and therefore checkpointable.
+     * Developers can override this method in order to precisely define the conditions of checkpointability.
+     * @return true if this PE can be checkpointed, false otherwise
+     */
     protected boolean isCheckpointable() {
         return checkpointable;
     }
 
-    protected void setCheckpointable(boolean checkpointable) {
+    /**
+     * Marks the PE as clean or dirty. Only dirty PEs are checkpointed.
+     * Developers can override this method in order to have more control
+     * @param checkpointable true|false for setting the dirty state of the PE
+     */
+    public void setCheckpointable(boolean checkpointable) {
         this.checkpointable = checkpointable;
-    }
-
-    public final void initiateCheckpoint() {
-        // enqueue checkpointing event
-        if (safeKeeper != null) {
-            safeKeeper.generateCheckpoint(this);
-        }
     }
 
     public byte[] serializeState() {
@@ -642,23 +617,6 @@ public abstract class AbstractPE implements Cloneable {
         }
     }
 
-    /**
-     * Subscribes this PE to the checkpointing stream
-     */
-    private void supplementAdviceForCheckpointingAndRecovery() {
-        // don't do anything until both conditions are true
-        Logger.getLogger("s4").info(
-                "Maybe adding for " + this.getId() + ": " + checkpointingFrequency + " and " + eventAdviceList.size());
-        if (checkpointingFrequency > 0 && eventAdviceList.size() > 0) {
-            eventAdviceList.add(new EventAdvice(this.getId() + "_checkpointing", "key"));
-        }
-    }
-
-    public void processEvent(RecoveryEvent recoveryEvent) {
-        isCheckpointingEvent = true;
-        recover();
-    }
-    
     /**
      * This method expires the current PE.
      **/
@@ -751,7 +709,7 @@ public abstract class AbstractPE implements Cloneable {
                         } else if (PeriodicInvokerType.CHECKPOINTING.equals(type)) {
                             try {
                                 if (pe.isCheckpointable()) {
-                                    pe.initiateCheckpoint();
+                                    pe.checkpoint();
                                     checkpointCount++;
                                 }
                             } catch (Exception e) {

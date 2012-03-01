@@ -21,11 +21,15 @@ import java.util.concurrent.Callable;
 
 import org.apache.s4.processor.AbstractPE;
 
+/**
+ * Encapsulates serialiation operation. Ensures semaphore taken on PE when serializing.
+ *
+ */
 public class SerializeTask implements Callable<byte[]> {
 
 	AbstractPE pe;
 	private CheckpointingCoordinator coordinator;
-	
+
 	public SerializeTask(AbstractPE pe, CheckpointingCoordinator coordinator) {
 		super();
 		this.pe = pe;
@@ -38,6 +42,9 @@ public class SerializeTask implements Callable<byte[]> {
 			coordinator.acquireForSerialization(pe);
 			return pe.serializeState();
 		} finally {
+	        // remove dirty flag
+	        pe.setCheckpointable(false);
+
 			coordinator.releaseFromSerialization(pe);
 		}
 	}

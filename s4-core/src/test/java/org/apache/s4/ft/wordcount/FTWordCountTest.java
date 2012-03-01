@@ -5,6 +5,7 @@ import org.apache.s4.ft.KeyValue;
 import org.apache.s4.ft.S4TestCase;
 import org.apache.s4.ft.TestRedisStateStorage;
 import org.apache.s4.ft.TestUtils;
+import org.apache.s4.wordcount.WordClassifier;
 import org.apache.s4.wordcount.WordCountTest;
 
 import java.io.File;
@@ -22,23 +23,23 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * 
+ *
  * We use 2 lists of words that we inject in a word counting s4 system.
- * 
+ *
  * After processing the first sentence, we just kill the platform and restart
  * it.
- * 
+ *
  * Then we inject the second sentence.
- * 
- * 
+ *
+ *
  * We verify that no state was lost, i.e. that the words count includes words
  * from both the first and the second sentence.
- * 
+ *
  * NOTE 1: we synchronize through zookeeper to control when to kill the
  * application, and when to verify assertions. NOTE 2: we use some additional
  * explicit waits for bookkeeper backend so that it gets correctly initialized.
- * 
- * 
+ *
+ *
  */
 public class FTWordCountTest extends S4TestCase {
 
@@ -104,8 +105,8 @@ public class FTWordCountTest extends S4TestCase {
                 "Sentences", 0);
         signalSentence1Processed.await(10, TimeUnit.SECONDS);
         Thread.sleep(1000);
-        
-        
+
+
         // crash the app
         forkedS4App.destroy();
 
@@ -149,16 +150,8 @@ public class FTWordCountTest extends S4TestCase {
                 new KeyValue("sentence", WordCountTest.SENTENCE_3),
                 "Sentences", 0);
         signalTextProcessed.await(10, TimeUnit.SECONDS);
-        File results = new File(S4TestCase.DEFAULT_TEST_OUTPUT_DIR
-                + File.separator + "wordcount");
-        if (!results.exists()) {
-        	// in case the results file isn't ready yet
-        	Thread.sleep(1000);
-        	results = new File(S4TestCase.DEFAULT_TEST_OUTPUT_DIR
-                    + File.separator + "wordcount");
-        }
-        String s = TestUtils.readFile(results);
-        Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", s);
+
+        Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", new String(zk.getData(WordClassifier.WORD_COUNT_ZNODE, null, null)));
 
     }
 

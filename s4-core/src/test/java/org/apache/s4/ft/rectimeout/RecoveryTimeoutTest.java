@@ -1,22 +1,30 @@
-package org.apache.s4.ft;
+package org.apache.s4.ft.rectimeout;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
+import org.apache.s4.ft.EventGenerator;
+import org.apache.s4.ft.KeyValue;
+import org.apache.s4.ft.S4TestCase;
+import org.apache.s4.ft.StatefulTestPE;
+import org.apache.s4.ft.TestUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
+import org.json.JSONException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class RecoveryTest extends S4TestCase {
+public class RecoveryTimeoutTest extends S4TestCase {
 
-    public static long ZOOKEEPER_PORT = 21810;
+	public static long ZOOKEEPER_PORT = 21810;
     private Process forkedS4App = null;
     private static Factory zookeeperServerConnectionFactory = null;
+	private CountDownLatch signalValue2Set;
 
     @Before
     public void prepare() throws Exception {
@@ -47,12 +55,24 @@ public class RecoveryTest extends S4TestCase {
     }
 
     @Test
-    public void testCheckpointRestorationThroughApplicationEvent()
+    public void testRecoveryTimeout()
             throws Exception {
-        final ZooKeeper zk = TestUtils.createZkClient();
+        checkpointAndRecover();
+        signalValue2Set.await(10, TimeUnit.SECONDS);
+
+        // we should NOT get value1 since the checkpoint is not recovered"
+        ZooKeeper zk = TestUtils.createZkClient();
+        Assert.assertEquals("value1= ; value2=message2",
+        		new String(zk.getData(StatefulTestPE.STATEFUL_TEST_PE_DATA_ZNODE, null, null)));
+
+    }
+
+	private void checkpointAndRecover() throws IOException,
+			InterruptedException, KeeperException, JSONException {
+		ZooKeeper zk = TestUtils.createZkClient();
         // 1. instantiate remote S4 app
         forkedS4App = TestUtils.forkS4App(getClass().getName(),
-                "s4_core_conf_fs_backend.xml");
+                "s4_core_conf_broken_backend.xml");
         // TODO synchro
         Thread.sleep(5000);
 
@@ -84,12 +104,13 @@ public class RecoveryTest extends S4TestCase {
         gen.injectValueEvent(new KeyValue("value1", "message1b"), "Stream1", 0);
         signalValue1Set.await(10, TimeUnit.SECONDS);
         Assert.assertEquals("value1=message1b ; value2=",
-                new String(zk.getData(StatefulTestPE.STATEFUL_TEST_PE_DATA_ZNODE, null, null)));
+        		new String(zk.getData(StatefulTestPE.STATEFUL_TEST_PE_DATA_ZNODE, null, null)));
 
         Thread.sleep(2000);
         // kill app
         forkedS4App.destroy();
         // S4App.killS4App(getClass().getName());
+
 
         try {
 			zk.delete(StatefulTestPE.STATEFUL_TEST_PE_DATA_ZNODE, -1);
@@ -97,21 +118,13 @@ public class RecoveryTest extends S4TestCase {
 		}
 
         forkedS4App = TestUtils.forkS4App(getClass().getName(),
-                "s4_core_conf_fs_backend.xml");
+                "s4_core_conf_broken_backend.xml");
         // TODO synchro
         Thread.sleep(2000);
-        // trigger recovery by sending application event to set value 2
-        CountDownLatch signalValue2Set = new CountDownLatch(1);
+        signalValue2Set = new CountDownLatch(1);
         TestUtils.watchAndSignalCreation("/value2Set", signalValue2Set, zk);
 
         gen.injectValueEvent(new KeyValue("value2", "message2"), "Stream1", 0);
-        signalValue2Set.await(10, TimeUnit.SECONDS);
-
-        // we should get "message1" (checkpointed) instead of "message1b"
-        // (latest)
-        Assert.assertEquals("value1=message1 ; value2=message2",
-        		new String(zk.getData(StatefulTestPE.STATEFUL_TEST_PE_DATA_ZNODE, null, null)));
-
-    }
+	}
 
 }

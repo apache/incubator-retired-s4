@@ -24,18 +24,18 @@ import org.apache.log4j.Logger;
 
 
 /**
- * 
+ *
  * Encapsulates a checkpoint request. It is scheduled by the checkpointing framework.
  *
  */
 public class SaveStateTask implements Runnable {
-    
+
     SafeKeeperId safeKeeperId;
     byte[] serializedState;
     Future<byte[]> futureSerializedState = null;
     StorageCallback storageCallback;
     StateStorage stateStorage;
-    
+
     public SaveStateTask(SafeKeeperId safeKeeperId, byte[] state, StorageCallback storageCallback, StateStorage stateStorage) {
         super();
         this.safeKeeperId = safeKeeperId;
@@ -43,14 +43,14 @@ public class SaveStateTask implements Runnable {
         this.storageCallback = storageCallback;
         this.stateStorage = stateStorage;
     }
-    
+
     public SaveStateTask(SafeKeeperId safeKeeperId, Future<byte[]> futureSerializedState, StorageCallback storageCallback, StateStorage stateStorage) {
     	this.safeKeeperId = safeKeeperId;
         this.futureSerializedState = futureSerializedState;
         this.storageCallback = storageCallback;
         this.stateStorage = stateStorage;
     }
-    
+
     @Override
     public void run() {
     	if (futureSerializedState!=null) {

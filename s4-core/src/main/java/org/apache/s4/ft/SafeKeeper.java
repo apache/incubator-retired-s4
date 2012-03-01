@@ -23,10 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.log4j.Logger;
 import org.apache.s4.dispatcher.Dispatcher;
@@ -38,19 +40,19 @@ import org.apache.s4.serialize.SerializerDeserializer;
 import org.apache.s4.util.MetricsName;
 
 /**
- * 
+ *
  * <p>
  * This class is responsible for coordinating interactions between the S4 event
  * processor and the checkpoint storage backend. In particular, it schedules
  * asynchronous save tasks to be executed on the backend.
  * </p>
- * 
- * 
- * 
+ *
+ *
+ *
  */
 public class SafeKeeper {
 
-    public enum StorageResultCode { 
+    public enum StorageResultCode {
         SUCCESS, FAILURE
     }
 
@@ -66,19 +68,26 @@ public class SafeKeeper {
 
     private ThreadPoolExecutor storageThreadPool;
     private ThreadPoolExecutor serializationThreadPool;
-    
+    private ThreadPoolExecutor fetchingThreadPool;
+
     private CheckpointingCoordinator processingSerializationSynchro;
-    
-    private Monitor monitor;
-    
+
+    Monitor monitor;
+
     int storageMaxThreads = 1;
     int storageThreadKeepAliveSeconds = 120;
     int storageMaxOutstandingRequests = 1000;
-    
-    int serializationMaxThreads=1;
+
     int serializationThreadKeepAliveSeconds = 120;
     int serializationMaxOutstandingRequests = 1000;
-    
+
+    long fetchingMaxWaitMs = 1000;
+    int fetchingMaxConsecutiveFailuresBeforeDisabling = 10;
+    int fetchingCurrentConsecutiveFailures = 0;
+    long fetchingDisabledDurationMs = 600000;
+    long fetchingDisabledInitTime=-1;
+
+
     long maxSerializationLockTime = 1000;
 
     public SafeKeeper() {
@@ -103,9 +112,11 @@ public class SafeKeeper {
         }
         storageThreadPool = new ThreadPoolExecutor(1, storageMaxThreads, storageThreadKeepAliveSeconds, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<Runnable>(storageMaxOutstandingRequests));
-        serializationThreadPool = new ThreadPoolExecutor(1, serializationMaxThreads, serializationThreadKeepAliveSeconds, TimeUnit.SECONDS,
+        serializationThreadPool = new ThreadPoolExecutor(1, 1, serializationThreadKeepAliveSeconds, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<Runnable>(serializationMaxOutstandingRequests));
-        
+        fetchingThreadPool = new ThreadPoolExecutor(1, 1, serializationThreadKeepAliveSeconds, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<Runnable>(serializationMaxOutstandingRequests));
+
         processingSerializationSynchro = new CheckpointingCoordinator(maxSerializationLockTime);
 
         logger.debug("Started thread pool with maxWriteThreads=[" + storageMaxThreads
@@ -121,68 +132,68 @@ public class SafeKeeper {
             }
             nodeCount = getLoopbackDispatcher().getEventEmitter().getNodeCount();
         }
-        
+
         signalNodesAvailable.countDown();
     }
-    
+
     /**
      * Synchronization to prevent race conditions with serialization threads
      */
     public void acquirePermitForProcessing(AbstractPE pe) {
-    	processingSerializationSynchro.acquireForProcessing(pe);
+        processingSerializationSynchro.acquireForProcessing(pe);
     }
-    
+
     /**
      * Notification part of the mechanism for preventing race condition with serialization threads
      */
-	public void releasePermitForProcessing(AbstractPE pe) {
-		processingSerializationSynchro.releaseFromProcessing(pe);
-	}
+    public void releasePermitForProcessing(AbstractPE pe) {
+        processingSerializationSynchro.releaseFromProcessing(pe);
+    }
 
 
-	/**
-	 * Serializes and stores state to the storage backend. Serialization and storage operations are asynchronous.
-	 * 
-	 * @return a callback for getting notified of the result of the storage operation
-	 */
-	public StorageCallback saveState(AbstractPE pe) {
-		StorageCallback storageCallback = storageCallbackFactory.createStorageCallback();
-		Future<byte[]> futureSerializedState = null;
-		try {
-			futureSerializedState = serializeState(pe, processingSerializationSynchro);
-		} catch (RejectedExecutionException e) {
-			if (monitor!=null) {
-				monitor.increment(MetricsName.checkpointing_dropped_from_serialization_queue.toString(), 1, S4_CORE_METRICS.toString());
-			}
-			storageCallback.storageOperationResult(StorageResultCode.FAILURE,
-					"Serialization task queue is full. An older serialization task was dumped in order to serialize PE ["+ pe.getId()+"]" +
-							"	Remaining capacity for the serialization task queue is ["
-							+ serializationThreadPool.getQueue().remainingCapacity() + "] ; number of elements is ["
-							+ serializationThreadPool.getQueue().size() + "] ; maximum capacity is [" + serializationThreadPool
-							+ "]");
-			return storageCallback;
-		}
-		submitSaveStateTask(new SaveStateTask(pe.getSafeKeeperId(), futureSerializedState, storageCallback, stateStorage), storageCallback);
-		return storageCallback;
-	}
-    
+    /**
+     * Serializes and stores state to the storage backend. Serialization and storage operations are asynchronous.
+     *
+     * @return a callback for getting notified of the result of the storage operation
+     */
+    public StorageCallback saveState(AbstractPE pe) {
+        StorageCallback storageCallback = storageCallbackFactory.createStorageCallback();
+        Future<byte[]> futureSerializedState = null;
+        try {
+            futureSerializedState = serializeState(pe, processingSerializationSynchro);
+        } catch (RejectedExecutionException e) {
+            if (monitor!=null) {
+                monitor.increment(MetricsName.checkpointing_dropped_from_serialization_queue.toString(), 1, S4_CORE_METRICS.toString());
+            }
+            storageCallback.storageOperationResult(StorageResultCode.FAILURE,
+                    "Serialization task queue is full. An older serialization task was dumped in order to serialize PE ["+ pe.getId()+"]" +
+                            "    Remaining capacity for the serialization task queue is ["
+                            + serializationThreadPool.getQueue().remainingCapacity() + "] ; number of elements is ["
+                            + serializationThreadPool.getQueue().size() + "] ; maximum capacity is [" + serializationThreadPool
+                            + "]");
+            return storageCallback;
+        }
+        submitSaveStateTask(new SaveStateTask(pe.getSafeKeeperId(), futureSerializedState, storageCallback, stateStorage), storageCallback);
+        return storageCallback;
+    }
+
     private Future<byte[]> serializeState(AbstractPE pe, CheckpointingCoordinator coordinator) {
         Future<byte[]> future = serializationThreadPool.submit(new SerializeTask(pe, coordinator));
-    	if(monitor!=null) {
+        if(monitor!=null) {
             monitor.increment(MetricsName.checkpointing_added_to_serialization_queue.toString(), 1, S4_CORE_METRICS.toString());
         }
-    	return future;
+        return future;
     }
-    
+
     private void submitSaveStateTask(SaveStateTask task, StorageCallback storageCallback) {
-    	try {
+        try {
             storageThreadPool.execute(task);
             if (monitor!=null) {
-                monitor.increment(MetricsName.checkpointing_added_to_storage_queue.toString(), 1);
+                monitor.increment(MetricsName.checkpointing_added_to_storage_queue.toString(), 1, S4_CORE_METRICS.toString());
             }
-    	} catch (RejectedExecutionException e) {
+        } catch (RejectedExecutionException e) {
             if (monitor!=null) {
-                monitor.increment(MetricsName.checkpointing_dropped_from_storage_queue.toString(), 1);
+                monitor.increment(MetricsName.checkpointing_dropped_from_storage_queue.toString(), 1, S4_CORE_METRICS.toString());
             }
             storageCallback.storageOperationResult(StorageResultCode.FAILURE,
                     "Storage checkpoint queue is full. Removed an old task to handle latest task. Remaining capacity for task queue is ["
@@ -194,7 +205,7 @@ public class SafeKeeper {
 
     /**
      * Fetches checkpoint data from storage for a given PE
-     * 
+     *
      * @param key
      *            safeKeeperId
      * @return checkpoint data
@@ -206,38 +217,32 @@ public class SafeKeeper {
         } catch (InterruptedException ignored) {
         }
         byte[] result = null;
-        result = stateStorage.fetchState(key);
-        return result;
-    }
-
-    /**
-     * Generates a checkpoint event for a given PE, and enqueues it in the local
-     * event queue.
-     * 
-     * @param pe
-     *            reference to a PE
-     */
-    public void generateCheckpoint(AbstractPE pe) {
-        InitiateCheckpointingEvent initiateCheckpointingEvent = new InitiateCheckpointingEvent(pe.getSafeKeeperId());
-
-        List<List<String>> compoundKeyNames;
-        if (pe.getKeyValueString() == null) {
-            logger.warn("Only keyed PEs can be checkpointed. Current PE [" + pe.getSafeKeeperId()
-                    + "] will not be checkpointed.");
-        } else {
-            List<String> list = new ArrayList<String>(1);
-            list.add("");
-            compoundKeyNames = new ArrayList<List<String>>(1);
-            compoundKeyNames.add(list);
-            loopbackDispatcher.dispatchEvent(pe.getId() + "_checkpointing", compoundKeyNames,
-                    initiateCheckpointingEvent);
+        if ((fetchingCurrentConsecutiveFailures>0 && (fetchingCurrentConsecutiveFailures== fetchingMaxConsecutiveFailuresBeforeDisabling))) {
+            if((fetchingDisabledInitTime+fetchingDisabledDurationMs)<System.currentTimeMillis()) {
+                return null;
+            } else {
+                // reached time, reinit
+                fetchingCurrentConsecutiveFailures=0;
+            }
         }
+        Future<byte[]> fetched = fetchingThreadPool.submit(new FetchTask(stateStorage, this, key));
+        try {
+            result = fetched.get(fetchingMaxWaitMs, TimeUnit.MILLISECONDS);
+            fetchingCurrentConsecutiveFailures=0;
+        } catch (Exception e) {
+            logger.error("Cannot fetch checkpoint from backend for key ["+ key.getStringRepresentation()+"]", e);
+            fetchingCurrentConsecutiveFailures++;
+            if (fetchingCurrentConsecutiveFailures==fetchingMaxConsecutiveFailuresBeforeDisabling) {
+                fetchingDisabledInitTime = System.currentTimeMillis();
+            }
+        }
+        return result;
     }
 
     /**
      * Generates a recovery event, and enqueues it in the local event queue.<br/>
      * This can be used for an eager recovery mechanism.
-     * 
+     *
      * @param safeKeeperId
      *            safeKeeperId to recover
      */
@@ -296,62 +301,54 @@ public class SafeKeeper {
         this.storageCallbackFactory = storageCallbackFactory;
     }
 
-	public int getStorageMaxThreads() {
-		return storageMaxThreads;
-	}
+    public int getStorageMaxThreads() {
+        return storageMaxThreads;
+    }
 
-	public void setStorageMaxThreads(int storageMaxThreads) {
-		this.storageMaxThreads = storageMaxThreads;
-	}
+    public void setStorageMaxThreads(int storageMaxThreads) {
+        this.storageMaxThreads = storageMaxThreads;
+    }
 
-	public int getStorageThreadKeepAliveSeconds() {
-		return storageThreadKeepAliveSeconds;
-	}
+    public int getStorageThreadKeepAliveSeconds() {
+        return storageThreadKeepAliveSeconds;
+    }
 
-	public void setStorageThreadKeepAliveSeconds(int storageThreadKeepAliveSeconds) {
-		this.storageThreadKeepAliveSeconds = storageThreadKeepAliveSeconds;
-	}
+    public void setStorageThreadKeepAliveSeconds(int storageThreadKeepAliveSeconds) {
+        this.storageThreadKeepAliveSeconds = storageThreadKeepAliveSeconds;
+    }
 
-	public int getStorageMaxOutstandingRequests() {
-		return storageMaxOutstandingRequests;
-	}
+    public int getStorageMaxOutstandingRequests() {
+        return storageMaxOutstandingRequests;
+    }
 
-	public void setStorageMaxOutstandingRequests(int storageMaxOutstandingRequests) {
-		this.storageMaxOutstandingRequests = storageMaxOutstandingRequests;
-	}
+    public void setStorageMaxOutstandingRequests(int storageMaxOutstandingRequests) {
+        this.storageMaxOutstandingRequests = storageMaxOutstandingRequests;
+    }
 
-	public int getSerializationMaxThreads() {
-		return serializationMaxThreads;
-	}
+    public int getSerializationThreadKeepAliveSeconds() {
+        return serializationThreadKeepAliveSeconds;
+    }
 
-	public void setSerializationMaxThreads(int serializationMaxThreads) {
-		this.serializationMaxThreads = serializationMaxThreads;
-	}
+    public void setSerializationThreadKeepAliveSeconds(
+            int serializationThreadKeepAliveSeconds) {
+        this.serializationThreadKeepAliveSeconds = serializationThreadKeepAliveSeconds;
+    }
 
-	public int getSerializationThreadKeepAliveSeconds() {
-		return serializationThreadKeepAliveSeconds;
-	}
+    public int getSerializationMaxOutstandingRequests() {
+        return serializationMaxOutstandingRequests;
+    }
 
-	public void setSerializationThreadKeepAliveSeconds(
-			int serializationThreadKeepAliveSeconds) {
-		this.serializationThreadKeepAliveSeconds = serializationThreadKeepAliveSeconds;
-	}
+    public void setSerializationMaxOutstandingRequests(
+            int serializationMaxOutstandingRequests) {
+        this.serializationMaxOutstandingRequests = serializationMaxOutstandingRequests;
+    }
 
-	public int getSerializationMaxOutstandingRequests() {
-		return serializationMaxOutstandingRequests;
-	}
+    public long getMaxSerializationLockTime() {
+        return maxSerializationLockTime;
+    }
 
-	public void setSerializationMaxOutstandingRequests(
-			int serializationMaxOutstandingRequests) {
-		this.serializationMaxOutstandingRequests = serializationMaxOutstandingRequests;
-	}
-
-	public long getMaxSerializationLockTime() {
-		return maxSerializationLockTime;
-	}
-
-	public void setMaxSerializationLockTime(long maxSerializationLockTime) {
-		this.maxSerializationLockTime = maxSerializationLockTime;
-	}
+    public void setMaxSerializationLockTime(long maxSerializationLockTime) {
+        this.maxSerializationLockTime = maxSerializationLockTime;
+    }
 
 }

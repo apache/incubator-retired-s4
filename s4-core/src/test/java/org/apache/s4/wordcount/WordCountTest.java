@@ -34,7 +34,7 @@ public class WordCountTest extends S4TestCase {
             + SENTENCE_2_TOTAL_WORDS + SENTENCE_3_TOTAL_WORDS;
     private static Factory zookeeperServerConnectionFactory;
 
-    
+
     @Before
     public void prepare() throws IOException, InterruptedException, KeeperException {
         TestUtils.cleanupTmpDirs();
@@ -44,7 +44,7 @@ public class WordCountTest extends S4TestCase {
 
     @Test
     public void testSimple() throws Exception {
-        
+
         S4App app = new S4App(getClass(), "s4_core_conf.xml");
         app.initializeS4App();
         final ZooKeeper zk = TestUtils.createZkClient();
@@ -53,7 +53,7 @@ public class WordCountTest extends S4TestCase {
         TestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed,
                 zk);
         EventGenerator gen = new EventGenerator();
-        
+
         // add authorizations for processing
         for (int i = 1; i <= SENTENCE_1_TOTAL_WORDS + SENTENCE_2_TOTAL_WORDS
                 + 1; i++) {
@@ -67,11 +67,8 @@ public class WordCountTest extends S4TestCase {
         gen.injectValueEvent(new KeyValue("sentence", SENTENCE_3), "Sentences",
                 0);
         signalTextProcessed.await();
-        File results = new File(S4TestCase.DEFAULT_TEST_OUTPUT_DIR
-                + File.separator + "wordcount");
-        String s = TestUtils.readFile(results);
-        Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", s);
-        
+        Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", new String(zk.getData(WordClassifier.WORD_COUNT_ZNODE, null, null)));
+
     }
 
     @After
