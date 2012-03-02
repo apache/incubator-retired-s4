@@ -1,12 +1,13 @@
 // Use the Diezel Maven plugin to build the project.
 // Gradle doesn't support Maven plugin as of version 1.0
 // Useful article: http://forums.gradle.org/gradle/topics/how_to_download_and_evoke_a_maven_plugin
-    
+
 def generatedSourceDir = "${buildDir}/generated-src/java"
 def diezelSrcDir = "${projectDir}/src/main/diezel";
 
 dependencies {
     compile project(":s4-core")
+    testCompile project(path: ':s4-core', configuration: 'tests')
 }
 
 
@@ -19,7 +20,7 @@ sourceSets {
 buildscript {
     repositories {
         mavenCentral()
-        
+
         maven {
             url "http://oss.sonatype.org/content/repositories/snapshots"
         }
@@ -29,7 +30,7 @@ buildscript {
     }
     dependencies {
         classpath libraries.diezel
-    }        
+    }
 }
 task generateSources << {
     outputs.dir generatedSourceDir
