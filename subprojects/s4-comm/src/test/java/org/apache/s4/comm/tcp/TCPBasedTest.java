@@ -31,7 +31,7 @@ public abstract class TCPBasedTest extends ProtocolTestUtil {
             super.configure();
             bind(Integer.class).annotatedWith(Names.named("tcp.partition.queue_size")).toInstance(256);
             bind(Integer.class).annotatedWith(Names.named("emitter.send.interval")).toInstance(2);
-            bind(Integer.class).annotatedWith(Names.named("emitter.send.numMessages")).toInstance(250);
+            bind(Integer.class).annotatedWith(Names.named("emitter.send.numMessages")).toInstance(5000);
         }
     }
 

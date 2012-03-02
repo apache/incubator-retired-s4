@@ -68,8 +68,9 @@ public class PartitionInfo {
                     for (int partition = 0; partition < emitter.getPartitionCount(); partition++) {
                         byte[] message = new String(partitionId + " " + i).getBytes();
                         for (int retries = 0; retries < numRetries; retries++) {
-                            if (emitter.send(partition, message))
+                            if (emitter.send(partition, message)) {
                                 break;
+                            }
                             logger.debug("SendThread {}: Resending message to {}", partitionId, partition);
                             Thread.sleep(retryDelayMs);
                         }

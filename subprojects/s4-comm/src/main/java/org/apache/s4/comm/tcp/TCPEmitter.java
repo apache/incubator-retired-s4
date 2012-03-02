@@ -279,8 +279,8 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         }
 
         private void sendPendingMessages() {
-            while (!pending.isEmpty()) {
-                Message msg = pending.remove();
+            Message msg = null;
+            while ((msg = pending.poll()) != null) {
                 msg.sendMessage();
                 wire.add(msg);
             }
