@@ -28,14 +28,14 @@ public class PartitionInfo {
     private static final Logger logger = LoggerFactory.getLogger(PartitionInfo.class);
     public Emitter emitter;
     public Listener listener;
+    public SendThread sendThread;
+    public ReceiveThread receiveThread;
+
     private final int numRetries;
     private final int retryDelayMs;
     private int numMessages;
     private int partitionId;
-
-    public SendThread sendThread;
-    public ReceiveThread receiveThread;
-    private int messagesExpected;
+    private ProtocolTestUtil ptu;
 
     @Inject
     public PartitionInfo(Emitter emitter, Listener listener, @Named("comm.retries") int retries,
@@ -49,29 +49,35 @@ public class PartitionInfo {
         this.numRetries = retries;
         this.retryDelayMs = retryDelay;
         this.numMessages = numMessages;
-        this.messagesExpected = numMessages * this.emitter.getPartitionCount();
+        // this.messagesExpected = numMessages * this.emitter.getPartitionCount();
 
         this.sendThread = new SendThread();
         this.receiveThread = new ReceiveThread();
     }
 
+    public void setProtocolTestUtil(ProtocolTestUtil ptu) {
+        this.ptu = ptu;
+        this.ptu.expectedMessages[partitionId] = numMessages * this.emitter.getPartitionCount();
+    }
+
     public class SendThread extends Thread {
+        public int[] sendCounts = new int[emitter.getPartitionCount()];
+
         public SendThread() {
-            super("SendThread");
+            super("SendThread-" + partitionId);
         }
 
         @Override
         public void run() {
-            logger.debug("SendThread {}: started", partitionId);
             try {
                 for (int i = 0; i < numMessages; i++) {
                     for (int partition = 0; partition < emitter.getPartitionCount(); partition++) {
                         byte[] message = new String(partitionId + " " + i).getBytes();
                         for (int retries = 0; retries < numRetries; retries++) {
                             if (emitter.send(partition, message)) {
+                                sendCounts[partition]++;
                                 break;
                             }
-                            logger.debug("SendThread {}: Resending message to {}", partitionId, partition);
                             Thread.sleep(retryDelayMs);
                         }
                     }
@@ -81,23 +87,28 @@ public class PartitionInfo {
                 return;
             }
 
-            logger.debug("SendThread {}: Exiting", partitionId);
+            for (int i = 0; i < sendCounts.length; i++) {
+                if (sendCounts[i] < numMessages) {
+                    ptu.decreaseExpectedMessages(i, (numMessages - sendCounts[i]));
+                }
+            }
+
+            logger.debug("Exiting");
         }
     }
 
     public class ReceiveThread extends Thread {
-        private int messagesReceived = 0;
+        protected int messagesReceived = 0;
         private Hashtable<Integer, List<Integer>> receivedMessages;
 
         ReceiveThread() {
-            super("ReceiveThread");
+            super("ReceiveThread-" + partitionId);
             receivedMessages = new Hashtable<Integer, List<Integer>>();
         }
 
         @Override
         public void run() {
-            logger.debug("ReceiveThread    {}: started", partitionId);
-            while (messagesReceived < messagesExpected) {
+            while (messagesReceived < ptu.expectedMessages[partitionId]) {
                 byte[] message = listener.recv();
                 if (message == null) {
                     logger.error("ReceiveThread {}: received a null message", partitionId);
@@ -117,7 +128,6 @@ public class PartitionInfo {
                 List<Integer> messagesList = receivedMessages.get(senderPartition);
 
                 if (messagesList.contains(receivedMsg)) {
-                    // logger.debug("ReceiveThread {}: Already received message - {}", partitionId, msgString);
                     messagesList.remove(receivedMsg);
                 } else {
                     messagesReceived++;
@@ -125,7 +135,7 @@ public class PartitionInfo {
                 messagesList.add(receivedMsg);
             }
 
-            logger.debug("ReceiveThread {}: Exiting with {} messages left", partitionId, moreMessages());
+            logger.debug("Exiting");
         }
 
         public boolean orderedDelivery() {
@@ -141,26 +151,26 @@ public class PartitionInfo {
         }
 
         public boolean messageDelivery() {
-            for (List<Integer> messagesList : receivedMessages.values()) {
-                if (messagesList.size() < numMessages) {
-                    printRecvdCounts();
-                    return false;
-                }
-            }
-            return true;
+            if (messagesReceived < ptu.expectedMessages[partitionId]) {
+                printCounts();
+                return false;
+            } else
+                return true;
         }
 
-        public void printRecvdCounts() {
-            int recvdCount[] = new int[emitter.getPartitionCount()];
+        public void printCounts() {
+            logger.debug("ReceiveThread {}: Messages not received = {}", partitionId,
+                    (ptu.expectedMessages[partitionId] - messagesReceived));
+            int counts[] = new int[emitter.getPartitionCount()];
             for (Integer sender : receivedMessages.keySet()) {
-                recvdCount[sender] = receivedMessages.get(sender).size();
+                counts[sender] = receivedMessages.get(sender).size();
             }
 
-            logger.debug("ReceiveThread {}: recvdCounts: {}", partitionId, recvdCount);
+            logger.debug("ReceiveThread {}: recvdCounts: {}", partitionId, counts);
         }
 
         public int moreMessages() {
-            return (messagesExpected - messagesReceived);
+            return (int) (ptu.expectedMessages[partitionId] - messagesReceived);
         }
     }
 }
