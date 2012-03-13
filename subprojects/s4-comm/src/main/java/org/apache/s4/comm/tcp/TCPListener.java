@@ -110,9 +110,15 @@ public class TCPListener implements Listener {
 
         public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event) {
             logger.error("Error", event.getCause());
-            if (context.getChannel().isOpen()) {
+            Channel c = context.getChannel();
+            if (c.isOpen()) {
                 logger.error("Closing channel due to exception");
-                context.getChannel().close();
+                try {
+                    if (c.close().await().isSuccess())
+                        channels.remove(c);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
