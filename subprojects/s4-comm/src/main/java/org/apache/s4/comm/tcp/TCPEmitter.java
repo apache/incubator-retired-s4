@@ -3,14 +3,13 @@ package org.apache.s4.comm.tcp;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.Hashtable;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.comm.topology.ClusterNode;
@@ -20,7 +19,6 @@ import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -35,7 +33,6 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
-import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,10 +56,8 @@ import com.google.inject.name.Named;
  * <ul>
  * <li>maintains per-partition queue of {@code Message}s</li>
  * <li> <code>send(p, m)</code> queues the message 'm' to partition 'p'</li>
- * <li>a thread-pool from {@link http
- * ://docs.jboss.org/netty/3.2/api/org/jboss/netty/handler/execution/OrderedMemoryAwareThreadPoolExecutor.html} is used
- * to send the messages asynchronously to the appropriate partitions; send operations between a pair of partitions are
- * serialized</li>
+ * <li>a thread-pool is used to send the messages asynchronously to the appropriate partitions; send operations between
+ * a pair of partitions are serialized</li>
  * <li>Each {@code Message} implements the {@link ChannelFutureListener} and listens on the {@link ChannelFuture}
  * corresponding to the send operation</li>
  * <li>On success, the message marks itself as sent; messages marked sent at the head of the queue are removed</li>
@@ -86,28 +81,31 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
      * debug information
      */
     private volatile int instanceId = 0;
-    private volatile long sentMsgCount = 0;
-    private volatile long ackRecvdCount = 0;
+
+    /*
+     * All channels
+     */
+    private final ChannelGroup channels = new DefaultChannelGroup();
 
     /*
      * Channel used to send messages to each partition
      */
-    private HashBiMap<Integer, Channel> partitionChannelMap;
+    private final HashBiMap<Integer, Channel> partitionChannelMap;
 
     /*
      * Node hosting each partition
      */
-    private HashBiMap<Integer, ClusterNode> partitionNodeMap;
+    private final HashBiMap<Integer, ClusterNode> partitionNodeMap;
 
     /*
      * Messages to be sent, stored per partition
      */
-    private Hashtable<Integer, SendQueue> sendQueues;
+    private final Hashtable<Integer, SendQueue> sendQueues;
 
     /*
      * Thread pool to actually send messages
      */
-    private PartitionBasedOMATPE sendService;
+    private final ExecutorService sendService;
 
     @Inject
     public TCPEmitter(Topology topology, @Named("tcp.partition.queue_size") int bufferSize,
@@ -117,24 +115,30 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         this.retryDelayMs = retryDelay;
         this.nettyTimeout = timeout;
         this.bufferSize = bufferSize;
-
         this.topology = topology;
-        topology.addListener(this);
-        int clusterSize = this.topology.getTopology().getNodes().size();
+        this.topology.addListener(this);
 
+        // Initialize data structures
+        int clusterSize = this.topology.getTopology().getNodes().size();
         partitionChannelMap = HashBiMap.create(clusterSize);
         partitionNodeMap = HashBiMap.create(clusterSize);
         sendQueues = new Hashtable<Integer, SendQueue>(clusterSize);
-        sendService = new PartitionBasedOMATPE();
 
-        /*
-         * Initialize netty related structures
-         */
+        // Initialize sendService
+        int numCores = Runtime.getRuntime().availableProcessors();
+        sendService = Executors.newFixedThreadPool(2 * numCores,
+                new ThreadFactoryBuilder().setNameFormat("TCPEmitterSendServiceThread-#" + instanceId++ + "-%d")
+                        .setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+                            @Override
+                            public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
+                                logger.error("Cannot send message", paramThrowable);
+                            }
+                        }).build());
+
+        // Initialize netty related structures
         ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
                 Executors.newCachedThreadPool());
-
         bootstrap = new ClientBootstrap(factory);
-
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             @Override
             public ChannelPipeline getPipeline() {
@@ -151,37 +155,6 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         bootstrap.setOption("connectTimeoutMillis", this.nettyTimeout);
     }
 
-    private class PartitionBasedOMATPE extends OrderedMemoryAwareThreadPoolExecutor {
-        public PartitionBasedOMATPE() {
-            /*
-             * Create ordered thread pool - memory limit is enforced by the per-partition queues
-             */
-            super(getPartitionCount(), 0, 0, nettyTimeout, TimeUnit.MILLISECONDS, new ThreadFactoryBuilder()
-                    .setNameFormat("TCPEmitterSendServiceThread-#" + instanceId++ + "-%d")
-                    .setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-                        @Override
-                        public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
-                            logger.error("Cannot send message", paramThrowable);
-                        }
-                    }).build());
-        }
-
-        @Override
-        protected ConcurrentMap<Object, Executor> newChildExecutorMap() {
-            return new ConcurrentHashMap<Object, Executor>();
-        }
-
-        @Override
-        protected Object getChildExecutorKey(ChannelEvent e) {
-            return partitionChannelMap.inverse().get(e.getChannel());
-        }
-
-        @Override
-        public boolean removeChildExecutor(Object key) {
-            return super.removeChildExecutor(key);
-        }
-    }
-
     private class Message implements ChannelFutureListener {
         private final SendQueue sendQ;
         private final byte[] message;
@@ -194,21 +167,20 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
 
         private void sendMessage() {
             sendQ.emitter.sendMessage(sendQ.partitionId, this);
-            sentMsgCount++;
         }
 
         private void messageSendFailure() {
+            logger.debug("Message send to partition {} has failed", sendQ.partitionId);
             synchronized (sendQ.failureFound) {
                 sendQ.failureFound = true;
             }
-            closeAndRemoveChannel(sendQ.partitionId);
+            removeChannel(sendQ.partitionId);
             sendQ.spawnSendTask();
         }
 
         @Override
-        public synchronized void operationComplete(ChannelFuture future) throws Exception {
+        public void operationComplete(ChannelFuture future) throws Exception {
             if (future.isSuccess()) {
-                ackRecvdCount++;
                 sendSuccess = true;
                 sendQ.clearWire();
                 return;
@@ -231,7 +203,9 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         private final Queue<Message> wire; // messages in transit
 
         private Integer bufferSize = 0;
+        private ReentrantLock queueLock = new ReentrantLock();
         private Boolean failureFound = false;
+        private Boolean newMessages = false;
 
         SendQueue(TCPEmitter emitter, int partitionId, int bufferCapacity) {
             this.emitter = emitter;
@@ -247,12 +221,13 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                 if (bufferSize >= bufferCapacity) {
                     return false;
                 }
-
-                pending.add(m);
                 bufferSize++;
-                spawnSendTask();
-                return true;
             }
+
+            pending.add(m);
+            spawnSendTask();
+            return true;
+
         }
 
         public void clearWire() {
@@ -301,20 +276,54 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                     resendWiredMessages();
             }
 
-            sendPendingMessages();
+            while (true) {
+                sendPendingMessages();
+                synchronized (newMessages) {
+                    if (newMessages) {
+                        newMessages = false;
+                        continue;
+                    } else {
+                        queueLock.unlock();
+                        break;
+                    }
+                }
+            }
         }
+
     }
 
-    private static class SendTask implements Runnable {
+    private class SendTask implements Runnable {
         private final SendQueue sendQ;
 
         SendTask(SendQueue sendQ) {
             this.sendQ = sendQ;
         }
 
+        private boolean lock() {
+            return sendQ.queueLock.tryLock();
+        }
+
+        private void unlock() {
+            if (sendQ.queueLock.isHeldByCurrentThread())
+                sendQ.queueLock.unlock();
+        }
+
         @Override
         public void run() {
-            sendQ.sendMessages();
+            // Lock before sending messages
+            // Send messages while they exist
+            boolean acquired = lock();
+            if (acquired) {
+                try {
+                    sendQ.sendMessages();
+                } finally {
+                    unlock();
+                }
+            } else {
+                synchronized (sendQ.newMessages) {
+                    sendQ.newMessages = true;
+                }
+            }
         }
     }
 
@@ -328,11 +337,12 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         }
 
         try {
-            ChannelFuture f = this.bootstrap.connect(new InetSocketAddress(clusterNode.getMachineName(), clusterNode
-                    .getPort()));
-            f.await(nettyTimeout);
-            if (f.isSuccess()) {
-                partitionChannelMap.forcePut(partitionId, f.getChannel());
+            ChannelFuture connectFuture = this.bootstrap.connect(new InetSocketAddress(clusterNode.getMachineName(),
+                    clusterNode.getPort()));
+            connectFuture.await();
+            if (connectFuture.isSuccess()) {
+                channels.add(connectFuture.getChannel());
+                partitionChannelMap.forcePut(partitionId, connectFuture.getChannel());
                 return true;
             }
             Thread.sleep(retryDelayMs);
@@ -355,19 +365,23 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                 }
             }
 
-            SendQueue sendQ = sendQueues.get(partitionId);
-            synchronized (sendQ) {
-                if (!partitionChannelMap.get(partitionId).isWritable()) {
-                    try {
-                        logger.debug("Waiting for channel to partition {} to become writable", partitionId);
+            Channel c = partitionChannelMap.get(partitionId);
+            if (c == null)
+                continue;
+            if (!c.isWritable()) {
+                try {
+                    logger.debug("Waiting for channel to partition {} to become writable", partitionId);
+                    // Though we wait for the channel to be writable, it could immediately become non-writable. Hence,
+                    // the wait is just a precaution to minimize failed writes.
+                    SendQueue sendQ = sendQueues.get(partitionId);
+                    synchronized (sendQ) {
                         sendQ.wait();
-                    } catch (InterruptedException e) {
-                        continue;
                     }
+                } catch (InterruptedException e) {
+                    continue;
                 }
             }
 
-            Channel c = partitionChannelMap.get(partitionId);
             if (c != null && c.isWritable()) {
                 c.write(buffer).addListener(m);
                 messageSent = true;
@@ -387,14 +401,27 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
             sendQueues.put(partitionId, sendQueue);
         }
 
-        SendQueue sendQueue = sendQueues.get(partitionId);
-        return sendQueue.offer(message);
+        return sendQueues.get(partitionId).offer(message);
+    }
+
+    protected void removeChannel(int partition) {
+        Channel c = partitionChannelMap.remove(partition);
+        if (c == null)
+            return;
+
+        try {
+            if (c.close().await().isSuccess()) {
+                channels.remove(c);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (c.isOpen()) {
+            logger.error("FAILED to close channel");
+        }
     }
 
     public void close() {
-        // debug
-        logger.debug("Sent {} messages, and received ACKs for {} messages", sentMsgCount, ackRecvdCount);
-
         for (SendQueue sendQ : sendQueues.values()) {
             if (!sendQ.wire.isEmpty()) {
                 logger.error("TCPEmitter could not deliver {} messages to partition {}", sendQ.wire.size(),
@@ -409,37 +436,12 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
             }
         }
 
-        ChannelGroup cg = new DefaultChannelGroup();
-        synchronized (partitionChannelMap) {
-            cg.addAll(partitionChannelMap.values());
-            partitionChannelMap.clear();
-        }
         try {
-            cg.close().await(nettyTimeout);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        // bootstrap.releaseExternalResources();
-    }
-
-    protected void closeAndRemoveChannel(int partition) {
-        SendQueue sendQ = sendQueues.get(partition);
-
-        if (sendQ == null)
-            return;
-
-        synchronized (sendQ) {
-            Channel c = partitionChannelMap.remove(partition);
-            sendService.removeChildExecutor(partition);
-            if (c != null) {
-                try {
-                    c.close().await(nettyTimeout);
-                    c.disconnect().await(nettyTimeout);
-                } catch (InterruptedException e) {
-                    logger.error("Could not close channel to partition {} gracefully", partition);
-                    e.printStackTrace();
-                }
-            }
+            channels.close().await();
+            bootstrap.releaseExternalResources();
+        } catch (InterruptedException ie) {
+            logger.error("Interrupted while closing");
+            ie.printStackTrace();
         }
     }
 
@@ -452,19 +454,16 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                 return;
             }
 
-            ClusterNode oldNode = partitionNodeMap.get(partition);
-
+            ClusterNode oldNode = partitionNodeMap.remove(partition);
             if (oldNode != null && !oldNode.equals(clusterNode)) {
-                closeAndRemoveChannel(partition);
+                removeChannel(partition);
             }
-
             partitionNodeMap.forcePut(partition, clusterNode);
         }
     }
 
     @Override
     public int getPartitionCount() {
-        // Number of nodes is not same as number of partitions
         return topology.getTopology().getPartitionCount();
     }
 
@@ -472,7 +471,13 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         @Override
         public void channelInterestChanged(ChannelHandlerContext ctx, ChannelStateEvent e) {
             Channel c = e.getChannel();
-            SendQueue sendQ = sendQueues.get(partitionChannelMap.inverse().get(c));
+            Integer partitionId = partitionChannelMap.inverse().get(c);
+            if (partitionId == null) {
+                logger.debug("channelInterestChanged for an unknown/deleted channel");
+                return;
+            }
+
+            SendQueue sendQ = sendQueues.get(partitionId);
             synchronized (sendQ) {
                 if (c.isWritable()) {
                     sendQ.notify();
@@ -483,30 +488,14 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event) {
-            Channel c = context.getChannel();
-            Integer partitionId = partitionChannelMap.inverse().get(c);
-            if (partitionId == null) {
-                return;
-            }
-            logger.error("Error on channel to partition " + partitionId);
-            closeAndRemoveChannel(partitionId);
-
-            SendQueue sendQ = sendQueues.get(partitionId);
-            synchronized (sendQ.failureFound) {
-                sendQ.failureFound = true;
-            }
-            sendQ.spawnSendTask();
-
             try {
                 throw event.getCause();
+            } catch (ClosedChannelException cce) {
+                return;
             } catch (ConnectException ce) {
-                logger.error(ce.getMessage(), ce);
-            } catch (Throwable err) {
-                logger.error("Error", err);
-                if (context.getChannel().isOpen()) {
-                    logger.error("Closing channel due to exception");
-                    context.getChannel().close();
-                }
+                return;
+            } catch (Throwable e) {
+                e.printStackTrace();
             }
         }
     }

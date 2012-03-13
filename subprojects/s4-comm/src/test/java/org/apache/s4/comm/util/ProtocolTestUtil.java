@@ -11,8 +11,9 @@ import org.junit.Test;
 import com.google.inject.Injector;
 
 public abstract class ProtocolTestUtil extends ZkBasedTest {
-    protected PartitionInfo[] partitions;
+    protected int[] expectedMessages;
     protected Injector injector;
+    protected PartitionInfo[] partitions;
 
     protected ProtocolTestUtil() {
         super();
@@ -24,10 +25,25 @@ public abstract class ProtocolTestUtil extends ZkBasedTest {
 
     @Before
     public void setup() throws IOException, InterruptedException, KeeperException {
+        expectedMessages = new int[super.numTasks];
         partitions = new PartitionInfo[super.numTasks];
         for (int i = 0; i < this.numTasks; i++) {
             partitions[i] = injector.getInstance(PartitionInfo.class);
+            partitions[i].setProtocolTestUtil(this);
         }
+    }
+
+    protected void decreaseExpectedMessages(int partition, long amount) {
+        synchronized (expectedMessages) {
+            expectedMessages[partition] -= amount;
+        }
+
+        if (partitions[partition].receiveThread.messagesReceived >= expectedMessages[partition])
+            interrupt(partition);
+    }
+
+    protected void interrupt(int partition) {
+        partitions[partition].receiveThread.interrupt();
     }
 
     protected void startThreads() {
@@ -64,7 +80,7 @@ public abstract class ProtocolTestUtil extends ZkBasedTest {
     public void tearDown() {
         for (PartitionInfo partition : partitions) {
             // debug
-            partition.receiveThread.printRecvdCounts();
+            partition.receiveThread.printCounts();
             if (partition.emitter != null) {
                 partition.emitter.close();
                 partition.emitter = null;

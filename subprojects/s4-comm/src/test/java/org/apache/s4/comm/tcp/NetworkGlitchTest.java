@@ -16,9 +16,11 @@ public class NetworkGlitchTest extends TCPBasedTest {
 
         startThreads();
 
-        for (int i = 1; i < 10; i++) {
-            Thread.sleep(100);
-            ((TCPEmitter) util.emitter).closeAndRemoveChannel(0);
+        for (int i = 0; i < 4; i++) {
+            Thread.sleep(500);
+            logger.debug("Messages sent so far - {}", util.sendThread.sendCounts);
+            ((TCPEmitter) util.emitter).removeChannel(0);
+            logger.debug("Channel closed");
         }
 
         waitForThreads();

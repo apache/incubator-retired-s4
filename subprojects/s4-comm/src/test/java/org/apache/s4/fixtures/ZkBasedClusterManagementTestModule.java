@@ -81,7 +81,7 @@ public class ZkBasedClusterManagementTestModule extends AbstractModule {
 
         bind(Integer.class).annotatedWith(Names.named("comm.retries")).toInstance(10);
         bind(Integer.class).annotatedWith(Names.named("comm.retry_delay")).toInstance(10);
-        bind(Integer.class).annotatedWith(Names.named("comm.timeout")).toInstance(1000);
+        bind(Integer.class).annotatedWith(Names.named("comm.timeout")).toInstance(100);
 
         if (this.emitterClass.equals(TCPEmitter.class)) {
             bind(Integer.class).annotatedWith(Names.named("tcp.partition.queue_size")).toInstance(256);
