@@ -12,6 +12,8 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -111,15 +113,15 @@ public class TCPListener implements Listener {
         public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event) {
             logger.error("Error", event.getCause());
             Channel c = context.getChannel();
-            if (c.isOpen()) {
-                logger.error("Closing channel due to exception");
-                try {
-                    if (c.close().await().isSuccess())
-                        channels.remove(c);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            c.close().addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (future.isSuccess())
+                        channels.remove(future.getChannel());
+                    else
+                        logger.error("FAILED to close channel");
                 }
-            }
+            });
         }
     }
 }

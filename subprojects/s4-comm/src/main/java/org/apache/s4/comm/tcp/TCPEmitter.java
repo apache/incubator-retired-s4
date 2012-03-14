@@ -233,7 +233,6 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                     return false;
                 }
                 bufferSize++;
-                // logger.debug("buffer size = " + bufferSize);
             }
 
             pending.add(m);
