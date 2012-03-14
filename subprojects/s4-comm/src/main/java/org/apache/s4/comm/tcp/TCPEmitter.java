@@ -9,7 +9,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.comm.topology.ClusterNode;
@@ -72,7 +71,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
     private final int numRetries;
     private final int retryDelayMs;
     private final int nettyTimeout;
-    private final int bufferSize;
+    private final int bufferCapacity;
 
     private Topology topology;
     private final ClientBootstrap bootstrap;
@@ -114,7 +113,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         this.numRetries = retries;
         this.retryDelayMs = retryDelay;
         this.nettyTimeout = timeout;
-        this.bufferSize = bufferSize;
+        this.bufferCapacity = bufferSize;
         this.topology = topology;
         this.topology.addListener(this);
 
@@ -203,7 +202,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         private final Queue<Message> wire; // messages in transit
 
         private Integer bufferSize = 0;
-        private ReentrantLock queueLock = new ReentrantLock();
+        private Boolean sending = false;
         private Boolean failureFound = false;
         private Boolean newMessages = false;
 
@@ -215,6 +214,18 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
             this.wire = new ConcurrentLinkedQueue<Message>();
         }
 
+        private boolean lock() {
+            if (sending)
+                return false;
+
+            sending = true;
+            return true;
+        }
+
+        private void unlock() {
+            sending = false;
+        }
+
         private boolean offer(byte[] message) {
             Message m = new Message(this, message);
             synchronized (bufferSize) {
@@ -222,6 +233,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                     return false;
                 }
                 bufferSize++;
+                // logger.debug("buffer size = " + bufferSize);
             }
 
             pending.add(m);
@@ -243,7 +255,19 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         }
 
         private void spawnSendTask() {
-            emitter.sendService.execute(new SendTask(this));
+            // Lock before spawning a new SendTask
+            boolean acquired = lock();
+            if (acquired) {
+                try {
+                    emitter.sendService.execute(new SendTask(this));
+                } finally {
+                    unlock();
+                }
+            } else {
+                synchronized (newMessages) {
+                    newMessages = true;
+                }
+            }
         }
 
         private void resendWiredMessages() {
@@ -283,13 +307,12 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                         newMessages = false;
                         continue;
                     } else {
-                        queueLock.unlock();
+                        unlock();
                         break;
                     }
                 }
             }
         }
-
     }
 
     private class SendTask implements Runnable {
@@ -299,31 +322,9 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
             this.sendQ = sendQ;
         }
 
-        private boolean lock() {
-            return sendQ.queueLock.tryLock();
-        }
-
-        private void unlock() {
-            if (sendQ.queueLock.isHeldByCurrentThread())
-                sendQ.queueLock.unlock();
-        }
-
         @Override
         public void run() {
-            // Lock before sending messages
-            // Send messages while they exist
-            boolean acquired = lock();
-            if (acquired) {
-                try {
-                    sendQ.sendMessages();
-                } finally {
-                    unlock();
-                }
-            } else {
-                synchronized (sendQ.newMessages) {
-                    sendQ.newMessages = true;
-                }
-            }
+            sendQ.sendMessages();
         }
     }
 
@@ -397,7 +398,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
     @Override
     public boolean send(int partitionId, byte[] message) {
         if (!sendQueues.containsKey(partitionId)) {
-            SendQueue sendQueue = new SendQueue(this, partitionId, this.bufferSize);
+            SendQueue sendQueue = new SendQueue(this, partitionId, this.bufferCapacity);
             sendQueues.put(partitionId, sendQueue);
         }
 
@@ -409,16 +410,15 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         if (c == null)
             return;
 
-        try {
-            if (c.close().await().isSuccess()) {
-                channels.remove(c);
+        c.close().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (future.isSuccess())
+                    channels.remove(future.getChannel());
+                else
+                    logger.error("FAILED to close channel");
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        if (c.isOpen()) {
-            logger.error("FAILED to close channel");
-        }
+        });
     }
 
     public void close() {
