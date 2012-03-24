@@ -1,8 +1,5 @@
 package org.apache.s4.core;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -37,17 +34,23 @@ import com.google.inject.name.Names;
  */
 public class CustomModule extends AbstractModule {
 
-    File configFile;
+    InputStream configFileInputStream;
     private PropertiesConfiguration config;
 
-    public CustomModule(File customConfigFile) {
-        this.configFile = customConfigFile;
+    public CustomModule(InputStream configFileInputStream) {
+        this.configFileInputStream = configFileInputStream;
     }
 
     @Override
     protected void configure() {
         if (config == null) {
             loadProperties(binder());
+        }
+        if (configFileInputStream != null) {
+            try {
+                configFileInputStream.close();
+            } catch (IOException ignored) {
+            }
         }
 
         int numHosts = config.getList("cluster.hosts").size();
@@ -73,11 +76,9 @@ public class CustomModule extends AbstractModule {
     }
 
     private void loadProperties(Binder binder) {
-        InputStream is = null;
         try {
-            is = new FileInputStream(configFile);
             config = new PropertiesConfiguration();
-            config.load(is);
+            config.load(configFileInputStream);
 
             System.out.println(ConfigurationUtils.toString(config));
             // TODO - validate properties.
@@ -87,16 +88,6 @@ public class CustomModule extends AbstractModule {
         } catch (ConfigurationException e) {
             binder.addError(e);
             e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            binder.addError(e);
-            e.printStackTrace();
-        } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException ignored) {
-                }
-            }
         }
     }
 

@@ -119,10 +119,10 @@ public class DistributedDeploymentManager implements DeploymentManager {
             App loaded = server.loadApp(s4rFile);
             if (loaded != null) {
                 logger.info("Successfully installed application {}", newApp);
-                server.startApp(loaded);
+                server.startApp(loaded, newApp, clusterName);
             } else {
                 throw new DeploymentFailedException("Cannot deploy application [" + newApp + "] from URI ["
-                        + uri.toString() + "] : cannot load application");
+                        + uri.toString() + "] : cannot start application");
             }
             // TODO sync with other nodes? (e.g. wait for other apps deployed before starting?
 

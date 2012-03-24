@@ -1,20 +1,20 @@
 package org.apache.s4.comm.serialize;
 
-
 import java.nio.ByteBuffer;
 
 import org.apache.s4.base.SerializerDeserializer;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.ObjectBuffer;
+import com.esotericsoftware.kryo.serialize.ClassSerializer;
 import com.esotericsoftware.kryo.serialize.SimpleSerializer;
 
 public class KryoSerDeser implements SerializerDeserializer {
 
     private Kryo kryo = new Kryo();
-    
+
     private int initialBufferSize = 2048;
-    private int maxBufferSize = 256*1024;
+    private int maxBufferSize = 256 * 1024;
 
     public void setInitialBufferSize(int initialBufferSize) {
         this.initialBufferSize = initialBufferSize;
@@ -27,22 +27,21 @@ public class KryoSerDeser implements SerializerDeserializer {
     public KryoSerDeser() {
         kryo.setRegistrationOptional(true);
 
+        kryo.register(Class.class, new ClassSerializer(kryo));
         // UUIDs don't have a no-arg constructor.
-        kryo.register(java.util.UUID.class,
-                      new SimpleSerializer<java.util.UUID>() {
-                          @Override
-                          public java.util.UUID read(ByteBuffer buf) {
-                              return new java.util.UUID(buf.getLong(),
-                                                        buf.getLong());
-                          }
+        kryo.register(java.util.UUID.class, new SimpleSerializer<java.util.UUID>() {
+            @Override
+            public java.util.UUID read(ByteBuffer buf) {
+                return new java.util.UUID(buf.getLong(), buf.getLong());
+            }
 
-                          @Override
-                          public void write(ByteBuffer buf, java.util.UUID uuid) {
-                              buf.putLong(uuid.getMostSignificantBits());
-                              buf.putLong(uuid.getLeastSignificantBits());
-                          }
+            @Override
+            public void write(ByteBuffer buf, java.util.UUID uuid) {
+                buf.putLong(uuid.getMostSignificantBits());
+                buf.putLong(uuid.getLeastSignificantBits());
+            }
 
-                      });
+        });
     }
 
     @Override

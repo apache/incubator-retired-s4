@@ -2,19 +2,26 @@ package org.apache.s4.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
 
+import org.I0Itec.zkclient.IZkChildListener;
+import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.exception.ZkException;
+import org.apache.s4.base.Event;
 import org.apache.s4.base.util.S4RLoader;
+import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.deploy.DeploymentManager;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
 
+import com.google.common.collect.Maps;
 import com.google.common.io.PatternFilenameFilter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -35,7 +42,9 @@ public class Server {
     public static final String MANIFEST_S4_APP_CLASS = "S4-App-Class";
     // local applications directory
     private final String appsDir;
-    List<App> apps = new ArrayList<App>();
+    Map<String, App> apps = Maps.newHashMap();
+    Map<String, Streamable> streams = Maps.newHashMap();
+    Map<String, EventSource> eventSources = Maps.newHashMap();
     CountDownLatch signalOneAppLoaded = new CountDownLatch(1);
 
     private Injector injector;
@@ -43,15 +52,60 @@ public class Server {
     @Inject
     private DeploymentManager deploymentManager;
 
+    private String clusterName;
+
+    private ZkClient zkClient;
+
     /**
-     * 
+     *
      */
     @Inject
     public Server(@Named("comm.module") String commModuleName, @Named("s4.logger_level") String logLevel,
-            @Named("appsDir") String appsDir) {
+            @Named("appsDir") String appsDir, @Named("cluster.name") String clusterName,
+            @Named("cluster.zk_address") String zookeeperAddress,
+            @Named("cluster.zk_session_timeout") int sessionTimeout,
+            @Named("cluster.zk_connection_timeout") int connectionTimeout) {
         this.commModuleName = commModuleName;
         this.logLevel = logLevel;
         this.appsDir = appsDir;
+        this.clusterName = clusterName;
+
+        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
+        zkClient.setZkSerializer(new ZNRecordSerializer());
+        initializeZkStreams(clusterName);
+        watchZkStreams();
+    }
+
+    private void watchZkStreams() {
+        zkClient.subscribeChildChanges("/" + clusterName + "/streams/producers", new IZkChildListener() {
+
+            @Override
+            public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
+                // synchronized (streams) {
+                // for (String child : currentChilds) {
+                // if (apps.containsKey(child)) {
+                // eventSources.put(paramK, paramV)
+                // }
+                // }
+                // }
+
+            }
+        });
+
+    }
+
+    private void initializeZkStreams(String clusterName) {
+        try {
+            zkClient.createPersistent("/" + clusterName + "/streams");
+            zkClient.createPersistent("/" + clusterName + "/streams/producers");
+            zkClient.createPersistent("/" + clusterName + "/streams/consumers");
+        } catch (ZkException e) {
+            if (e.getCause() instanceof KeeperException.NodeExistsException) {
+                // ignore: this stream already exists
+            } else {
+                throw e;
+            }
+        }
     }
 
     public void start() throws Exception {
@@ -72,7 +126,6 @@ public class Server {
 
         /* After some indirection we get the injector. */
         injector = Guice.createInjector(module);
-        Thread.sleep(10000);
 
         File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter("\\w+\\.s4r"));
         for (File s4rFile : s4rFiles) {
@@ -80,39 +133,19 @@ public class Server {
         }
 
         /* Now init + start apps. TODO: implement dynamic loading/unloading using ZK. */
-        for (App app : apps) {
-            logger.info("Starting app " + app.getClass().getName());
-            startApp(app);
+        for (Map.Entry<String, App> appEntry : apps.entrySet()) {
+            logger.info("Initializing app " + appEntry.getValue().getClass().getName());
+            appEntry.getValue().init();
         }
 
-        EventSource savedES = null;
-        App consumerApp = null;
-        for (App app : apps) {
-            logger.info("Resolving dependencies for " + app.getClass().getName());
-            List<EventSource> eventSources = app.getEventSources();
-            if (eventSources.size() > 0) {
-                EventSource es = eventSources.get(0);
-                logger.info("App [{}] exports event source [{}].", app.getClass().getName(), es.getName());
-                savedES = es; // hardcoded
-            } else {
-
-                // hardcoded (one app has event source the other one doesn't.
-                consumerApp = app;
-            }
+        for (Map.Entry<String, App> appEntry : apps.entrySet()) {
+            logger.info("Initializing app streams " + appEntry.getValue().getClass().getName());
+            updateStreams(appEntry.getValue(), appEntry.getKey());
         }
-        // hardcoded: make savedApp subscribe to savedES
-        logger.info("The consumer app is [{}].", consumerApp.getClass().getName());
-        // get the list of streams and find the one we are looking for that has name: "I need the time."
-        List<Streamable> streams = consumerApp.getStreams();
-        for (Streamable aStream : streams) {
 
-            String streamName = aStream.getName();
-
-            if (streamName.contentEquals("I need the time.")) {
-                logger.info("Subscribing stream [{}] from app [{}] to event source.", streamName, consumerApp
-                        .getClass().getName());
-                savedES.subscribeStream(aStream);
-            }
+        for (Map.Entry<String, App> appEntry : apps.entrySet()) {
+            logger.info("Starting app " + appEntry.getKey() + "/" + appEntry.getValue().getClass().getName());
+            appEntry.getValue().start();
         }
 
         logger.info("Completed local applications startup.");
@@ -131,6 +164,54 @@ public class Server {
     }
 
     public App loadApp(File s4r) {
+        logger.info("Local app deployment: using s4r file name [{}] as application name",
+                s4r.getName().substring(0, s4r.getName().indexOf(".s4r")));
+        return loadApp(s4r, s4r.getName().substring(0, s4r.getName().indexOf(".s4r")));
+    }
+
+    public void updateStreams(App app, String appName) {
+        // register streams
+        List<Streamable<Event>> appStreams = app.getStreams();
+        for (Streamable<Event> streamable : appStreams) {
+            if (streams.containsKey(streamable.getName())) {
+                logger.error("Application {} defines the stream {} but there is already a stream with that name",
+                        new String[] { appName, streamable.getName() });
+            } else {
+                // zkClient.createEphemeral("/" + clusterName + "/streams/producers/" + appName);
+                logger.debug("Adding stream {} for app {}");
+                streams.put(streamable.getName(), streamable);
+                if (eventSources.containsKey(streamable.getName())) {
+                    logger.debug("Connecting matching event source for stream {} for app {}", streamable.getName(),
+                            appName);
+                    eventSources.get(streamable.getName()).subscribeStream(streams.get(streamable.getName()));
+                }
+            }
+        }
+
+        List<EventSource> appEventSources = app.getEventSources();
+        for (EventSource eventSource : appEventSources) {
+            if (eventSources.containsKey(eventSource.getName())) {
+                logger.error(
+                        "Application {} defines the event source {} but there is already an event source with that name, from app {}",
+                        new String[] { appName, eventSource.getName(),
+                                String.valueOf(streams.get(eventSource.getName())) });
+            } else {
+                // zkClient.createEphemeral("/" + clusterName + "/streams/consumers/" + appName);
+                logger.debug("adding event source {} from app {}", eventSource.getName(), appName);
+                eventSources.put(eventSource.getName(), eventSource);
+            }
+            if (streams.containsKey(eventSource.getName())) {
+                logger.debug("Connecting matching stream from app {} to event source {}", appName,
+                        eventSource.getName());
+                eventSource.subscribeStream(streams.get(eventSource.getName()));
+            }
+        }
+
+    }
+
+    public App loadApp(File s4r, String appName) {
+
+        // TODO handle application upgrade
 
         Sender sender = injector.getInstance(Sender.class);
         Receiver receiver = injector.getInstance(Receiver.class);
@@ -160,7 +241,7 @@ public class Server {
             }
 
             app.setCommLayer(sender, receiver);
-            apps.add(app);
+            App previous = apps.put(appName, app);
             logger.info("Loaded application from file {}", s4r.getAbsolutePath());
             signalOneAppLoaded.countDown();
             return app;
@@ -171,8 +252,12 @@ public class Server {
 
     }
 
-    public void startApp(App app) {
+    public void startApp(App app, String appName, String clusterName) {
+
         app.init();
+
+        updateStreams(app, appName);
+
         app.start();
     }
 }

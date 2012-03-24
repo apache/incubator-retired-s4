@@ -53,7 +53,7 @@ public class EventSource implements Streamable {
      */
     @Override
     public void put(Event event) {
-        for (Streamable stream : streamables) {
+        for (Streamable<Event> stream : streamables) {
             stream.put(event);
         }
     }
@@ -90,5 +90,11 @@ public class EventSource implements Streamable {
      */
     public Set<Streamable> getStreamables() {
         return streamables;
+    }
+
+    @Override
+    public void start() {
+        // TODO Auto-generated method stub
+
     }
 }

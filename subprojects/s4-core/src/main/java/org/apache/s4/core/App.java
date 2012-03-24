@@ -41,7 +41,7 @@ public abstract class App {
     final private List<ProcessingElement> pePrototypes = new ArrayList<ProcessingElement>();
 
     /* All the internal streams in this app. */
-    final private List<Streamable> streams = new ArrayList<Streamable>();
+    final private List<Streamable<Event>> streams = new ArrayList<Streamable<Event>>();
 
     /* All the the event sources exported by this app. */
     final private List<EventSource> eventSources = new ArrayList<EventSource>();
@@ -107,25 +107,27 @@ public abstract class App {
     }
 
     /* Returns list of internal streams. Should only be used within the core package. */
-    List<Streamable> getStreams() {
+    // TODO visibility
+    public List<Streamable<Event>> getStreams() {
         return streams;
     }
 
     /* Returns list of the event sources to be exported. Should only be used within the core package. */
-    List<EventSource> getEventSources() {
+    // TODO visibility
+    public List<EventSource> getEventSources() {
         return eventSources;
     }
 
     protected abstract void onStart();
 
-    protected void start() {
+    public final void start() {
 
         // logger.info("Prepare to start App [{}].", getClass().getName());
         //
-        // /* Start all streams. */
-        // for (Streamable<? extends Event> stream : getStreams()) {
-        // stream.start();
-        // }
+        /* Start all streams. */
+        for (Streamable<? extends Event> stream : getStreams()) {
+            stream.start();
+        }
         //
         // /* Allow abstract PE to initialize. */
         // for (ProcessingElement pe : getPePrototypes()) {
@@ -138,14 +140,14 @@ public abstract class App {
 
     protected abstract void onInit();
 
-    protected void init() {
+    public final void init() {
 
         onInit();
     }
 
     protected abstract void onClose();
 
-    protected void close() {
+    public final void close() {
 
         onClose();
         removeAll();

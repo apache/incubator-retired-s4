@@ -10,6 +10,11 @@ import org.apache.s4.base.Event;
 public interface Streamable<T extends Event> {
 
     /**
+     * Starting the stream starts the associated dequeuing thread.
+     */
+    void start();
+
+    /**
      * Put an event into the streams.
      * 
      * @param event
