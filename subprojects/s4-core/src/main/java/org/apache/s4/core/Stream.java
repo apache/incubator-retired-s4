@@ -46,7 +46,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     private Thread thread;
     final private Sender sender;
     final private Receiver receiver;
-    final private int id;
+    // final private int id;
     final private App app;
 
     /**
@@ -63,9 +63,9 @@ public class Stream<T extends Event> implements Runnable, Streamable {
      *            the target PE prototypes for this stream.
      */
     public Stream(App app, String name, KeyFinder<T> finder, ProcessingElement... processingElements) {
-        synchronized (Stream.class) {
-            id = idCounter++;
-        }
+        // synchronized (Stream.class) {
+        // id = idCounter++;
+        // }
         this.app = app;
         app.addStream(this);
         this.name = name;
@@ -111,7 +111,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     @SuppressWarnings("unchecked")
     public void put(Event event) {
         try {
-            event.setStreamId(getId());
+            event.setStreamId(getName());
             event.setAppId(app.getId());
 
             /*
@@ -182,9 +182,9 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     /**
      * @return the stream id
      */
-    int getId() {
-        return id;
-    }
+    // int getId() {
+    // return id;
+    // }
 
     /**
      * @return the app

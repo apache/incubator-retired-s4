@@ -70,7 +70,9 @@ libraries = [
     zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
-    zkclient:           'com.github.sgroschupf:zkclient:0.1'
+    zkclient:           'com.github.sgroschupf:zkclient:0.1',
+    diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
+    jcommander:         'com.beust:jcommander:1.23'
 ]
 
 subprojects {
@@ -84,10 +86,10 @@ subprojects {
     targetCompatibility = 1.6
 
     checkstyleConfigFileName = "$rootDir/config/checkstyle/s4-checkstyle.xml"
-    
+
 
     dependencies {
-        
+
         /* Google. */
         compile( libraries.guava )
         compile( libraries.guice )
@@ -105,7 +107,7 @@ subprojects {
         /* Misc. */
         compile( libraries.jcip )
         compile( libraries.zk )
-        
+
         /* Testing. */
         testCompile( libraries.junit )
     }

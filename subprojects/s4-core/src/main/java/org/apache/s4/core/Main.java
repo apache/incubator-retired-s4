@@ -63,7 +63,7 @@ public class Main {
     private static void startServer(final Logger logger, Injector injector) {
         Server server = injector.getInstance(Server.class);
         try {
-            server.start();
+            server.start(injector);
         } catch (Exception e) {
             logger.error("Failed to start the controller.", e);
         }

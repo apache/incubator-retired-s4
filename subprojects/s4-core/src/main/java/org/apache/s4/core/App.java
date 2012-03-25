@@ -92,7 +92,7 @@ public abstract class App {
     }
 
     /* Should only be used within the core package. */
-    void addStream(Streamable stream) {
+    public void addStream(Streamable stream) {
         streams.add(stream);
     }
 
@@ -130,10 +130,10 @@ public abstract class App {
         }
         //
         // /* Allow abstract PE to initialize. */
-        // for (ProcessingElement pe : getPePrototypes()) {
-        // logger.info("Init prototype [{}].", pe.getClass().getName());
-        // pe.initPEPrototypeInternal();
-        // }
+        for (ProcessingElement pe : getPePrototypes()) {
+            logger.info("Init prototype [{}].", pe.getClass().getName());
+            pe.initPEPrototypeInternal();
+        }
 
         onStart();
     }

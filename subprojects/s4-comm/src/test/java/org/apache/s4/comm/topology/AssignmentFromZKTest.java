@@ -1,8 +1,9 @@
 package org.apache.s4.comm.topology;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import static org.junit.Assert.*;
 
 import org.apache.s4.comm.tools.TaskSetup;
 import org.junit.Test;
@@ -14,7 +15,7 @@ public class AssignmentFromZKTest extends ZKBaseTest {
         TaskSetup taskSetup = new TaskSetup(zookeeperAddress);
         final String clusterName = "test-s4-cluster";
         taskSetup.clean(clusterName);
-        taskSetup.setup(clusterName, 10);
+        taskSetup.setup(clusterName, 10, 1300);
         final CountDownLatch latch = new CountDownLatch(10);
         for (int i = 0; i < 10; i++) {
             Runnable runnable = new Runnable() {

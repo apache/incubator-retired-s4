@@ -22,7 +22,7 @@ public class TaskSetup {
         zkclient.deleteRecursive("/" + clusterName);
     }
 
-    public void setup(String clusterName, int tasks) {
+    public void setup(String clusterName, int tasks, int initialPort) {
         zkclient.createPersistent("/" + clusterName + "/tasks", true);
         zkclient.createPersistent("/" + clusterName + "/process", true);
         zkclient.createPersistent("/" + clusterName + "/apps", true);
@@ -30,7 +30,7 @@ public class TaskSetup {
             String taskId = "Task-" + i;
             ZNRecord record = new ZNRecord(taskId);
             record.putSimpleField("taskId", taskId);
-            record.putSimpleField("port", String.valueOf(1300 + i));
+            record.putSimpleField("port", String.valueOf(initialPort + i));
             record.putSimpleField("partition", String.valueOf(i));
             record.putSimpleField("cluster", clusterName);
             zkclient.createPersistent("/" + clusterName + "/tasks/" + taskId,
@@ -42,7 +42,7 @@ public class TaskSetup {
         TaskSetup taskSetup = new TaskSetup("localhost:2181");
         String clusterName = "test-s4-cluster";
         taskSetup.clean(clusterName);
-        taskSetup.setup(clusterName, 10);
+        taskSetup.setup(clusterName, 10, 1300);
         String zookeeperAddress = "localhost:2181";
         for (int i = 0; i < 10; i++) {
             AssignmentFromZK assignmentFromZK = new AssignmentFromZK(

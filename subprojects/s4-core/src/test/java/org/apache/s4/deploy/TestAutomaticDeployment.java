@@ -296,7 +296,7 @@ public class TestAutomaticDeployment {
         clusterName = config.getString("cluster.name");
         TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
         taskSetup.clean(clusterName);
-        taskSetup.setup(clusterName, 1);
+        taskSetup.setup(clusterName, 1, 1300);
 
         zkClient = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
         zkClient.setZkSerializer(new ZNRecordSerializer());

@@ -31,7 +31,7 @@ public class Receiver implements Runnable {
 
     final private Listener listener;
     final private SerializerDeserializer serDeser;
-    private Map<Integer, Map<Integer, Stream<? extends Event>>> streams;
+    private Map<Integer, Map<String, Stream<? extends Event>>> streams;
     private Thread thread;
 
     @Inject
@@ -52,23 +52,23 @@ public class Receiver implements Runnable {
     /** Save stream keyed by app id and stream id. */
     void addStream(Stream<? extends Event> stream) {
         int appId = stream.getApp().getId();
-        Map<Integer, Stream<? extends Event>> appMap = streams.get(appId);
+        Map<String, Stream<? extends Event>> appMap = streams.get(appId);
         if (appMap == null) {
             appMap = new MapMaker().makeMap();
             streams.put(appId, appMap);
         }
-        appMap.put(stream.getId(), stream);
+        appMap.put(stream.getName(), stream);
     }
 
     /** Remove stream when it is no longer needed. */
     void removeStream(Stream<? extends Event> stream) {
         int appId = stream.getApp().getId();
-        Map<Integer, Stream<? extends Event>> appMap = streams.get(appId);
+        Map<String, Stream<? extends Event>> appMap = streams.get(appId);
         if (appMap == null) {
             logger.error("Tried to remove a stream that is not registered in the receiver.");
             return;
         }
-        appMap.remove(stream.getId());
+        appMap.remove(stream.getName());
     }
 
     public void run() {
@@ -79,7 +79,7 @@ public class Receiver implements Runnable {
             Event event = (Event) serDeser.deserialize(message);
 
             int appId = event.getAppId();
-            int streamId = event.getStreamId();
+            String streamId = event.getStreamName();
 
             /*
              * Match appId and streamId in event to the target stream and pass the event to the target stream. TODO:

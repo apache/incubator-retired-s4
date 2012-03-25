@@ -8,14 +8,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
 
-import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.ZkClient;
-import org.I0Itec.zkclient.exception.ZkException;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.util.S4RLoader;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
+import org.apache.s4.core.adapter.Adapter;
 import org.apache.s4.deploy.DeploymentManager;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +22,6 @@ import ch.qos.logback.classic.Level;
 import com.google.common.collect.Maps;
 import com.google.common.io.PatternFilenameFilter;
 import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Named;
@@ -72,44 +69,11 @@ public class Server {
 
         zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
         zkClient.setZkSerializer(new ZNRecordSerializer());
-        initializeZkStreams(clusterName);
-        watchZkStreams();
     }
 
-    private void watchZkStreams() {
-        zkClient.subscribeChildChanges("/" + clusterName + "/streams/producers", new IZkChildListener() {
+    public void start(Injector injector) throws Exception {
 
-            @Override
-            public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
-                // synchronized (streams) {
-                // for (String child : currentChilds) {
-                // if (apps.containsKey(child)) {
-                // eventSources.put(paramK, paramV)
-                // }
-                // }
-                // }
-
-            }
-        });
-
-    }
-
-    private void initializeZkStreams(String clusterName) {
-        try {
-            zkClient.createPersistent("/" + clusterName + "/streams");
-            zkClient.createPersistent("/" + clusterName + "/streams/producers");
-            zkClient.createPersistent("/" + clusterName + "/streams/consumers");
-        } catch (ZkException e) {
-            if (e.getCause() instanceof KeeperException.NodeExistsException) {
-                // ignore: this stream already exists
-            } else {
-                throw e;
-            }
-        }
-    }
-
-    public void start() throws Exception {
-
+        this.injector = injector;
         /* Set up logger basic configuration. */
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
                 .getLogger(Logger.ROOT_LOGGER_NAME);
@@ -118,14 +82,15 @@ public class Server {
         AbstractModule module = null;
 
         /* Initialize communication layer module. */
-        try {
-            module = (AbstractModule) Class.forName(commModuleName).newInstance();
-        } catch (Exception e) {
-            logger.error("Unable to instantiate communication layer module.", e);
-        }
-
-        /* After some indirection we get the injector. */
-        injector = Guice.createInjector(module);
+        // TODO do we need a separate comm layer?
+        // try {
+        // module = (AbstractModule) Class.forName(commModuleName).newInstance();
+        // } catch (Exception e) {
+        // logger.error("Unable to instantiate communication layer module.", e);
+        // }
+        //
+        // /* After some indirection we get the injector. */
+        // injector = Guice.createInjector(module);
 
         File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter("\\w+\\.s4r"));
         for (File s4rFile : s4rFiles) {
@@ -241,6 +206,12 @@ public class Server {
             }
 
             app.setCommLayer(sender, receiver);
+
+            if (app instanceof Adapter) {
+                RemoteSender remoteSender = injector.getInstance(RemoteSender.class);
+                ((Adapter) app).setRemoteSender(remoteSender);
+            }
+
             App previous = apps.put(appName, app);
             logger.info("Loaded application from file {}", s4r.getAbsolutePath());
             signalOneAppLoaded.countDown();

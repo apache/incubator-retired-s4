@@ -6,6 +6,7 @@ import org.I0Itec.zkclient.IDefaultNameSpace;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkServer;
 import org.apache.s4.comm.tools.TaskSetup;
+import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,15 @@ public abstract class ZkBasedTest {
         TaskSetup taskSetup = new TaskSetup(zookeeperAddress);
         final String clusterName = "s4-test-cluster";
         taskSetup.clean(clusterName);
-        taskSetup.setup(clusterName, 1);
+        taskSetup.setup(clusterName, 1, 1300);
+    }
+
+    @After
+    public void cleanupZkBasedTest() {
+        if (zkServer != null) {
+            zkServer.shutdown();
+            zkServer = null;
+        }
+        CommTestUtils.cleanupTmpDirs();
     }
 }
