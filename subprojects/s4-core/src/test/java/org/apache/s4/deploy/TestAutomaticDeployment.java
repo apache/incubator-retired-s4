@@ -20,7 +20,6 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
-import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.zookeeper.CreateMode;
@@ -186,7 +185,7 @@ public class TestAutomaticDeployment {
         record2.putSimpleField(DistributedDeploymentManager.S4R_URI, uri2);
         zkClient.create("/" + clusterName + "/apps/testApp2", record2, CreateMode.PERSISTENT);
 
-        Assert.assertTrue(signalApp1Initialized.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(signalApp1Initialized.await(20, TimeUnit.SECONDS));
         Assert.assertTrue(signalApp1Started.await(10, TimeUnit.SECONDS));
 
         Assert.assertTrue(signalApp2Initialized.await(10, TimeUnit.SECONDS));

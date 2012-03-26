@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.junit.Assert.*;
 
 import org.apache.s4.comm.tools.TaskSetup;
+import org.apache.s4.fixtures.ZkBasedTest;
 import org.junit.Test;
 
 public class TopologyFromZKTest extends ZKBaseTest {

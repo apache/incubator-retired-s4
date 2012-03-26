@@ -12,11 +12,10 @@ import org.apache.s4.comm.topology.ClusterNode;
 
 import com.google.inject.Inject;
 
-
 /**
  * 
  * Implementation of a simple UDP listener.
- *
+ * 
  */
 public class UDPListener implements Listener, Runnable {
 
@@ -54,8 +53,7 @@ public class UDPListener implements Listener, Runnable {
             while (!Thread.interrupted()) {
                 socket.receive(datagram);
                 byte[] data = new byte[datagram.getLength()];
-                System.arraycopy(datagram.getData(), datagram.getOffset(),
-                        data, 0, data.length);
+                System.arraycopy(datagram.getData(), datagram.getOffset(), data, 0, data.length);
                 datagram.setLength(BUFFER_LENGTH);
                 try {
                     handoffQueue.put(data);
@@ -72,12 +70,18 @@ public class UDPListener implements Listener, Runnable {
         try {
             return handoffQueue.take();
         } catch (InterruptedException e) {
-        	return null;
+            return null;
         }
     }
 
     public int getPartitionId() {
         return node.getPartition();
+    }
+
+    @Override
+    public void close() {
+        // TODO Auto-generated method stub
+
     }
 
 }

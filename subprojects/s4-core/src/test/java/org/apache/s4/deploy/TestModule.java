@@ -57,6 +57,12 @@ public class TestModule extends AbstractModule {
         bind(Topology.class).to(TopologyFromZK.class);
         bind(Emitter.class).to(TCPEmitter.class);
         bind(Listener.class).to(TCPListener.class);
+
+        bind(Integer.class).annotatedWith(Names.named("comm.retries")).toInstance(10);
+        bind(Integer.class).annotatedWith(Names.named("comm.retry_delay")).toInstance(10);
+        bind(Integer.class).annotatedWith(Names.named("comm.timeout")).toInstance(1000);
+
+        bind(Integer.class).annotatedWith(Names.named("tcp.partition.queue_size")).toInstance(256);
     }
 
 }

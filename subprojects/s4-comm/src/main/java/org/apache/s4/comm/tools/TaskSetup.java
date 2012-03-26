@@ -33,8 +33,7 @@ public class TaskSetup {
             record.putSimpleField("port", String.valueOf(1300 + i));
             record.putSimpleField("partition", String.valueOf(i));
             record.putSimpleField("cluster", clusterName);
-            zkclient.createPersistent("/" + clusterName + "/tasks/" + taskId,
-                    record);
+            zkclient.createPersistent("/" + clusterName + "/tasks/" + taskId, record);
         }
     }
 
@@ -45,13 +44,11 @@ public class TaskSetup {
         taskSetup.setup(clusterName, 10);
         String zookeeperAddress = "localhost:2181";
         for (int i = 0; i < 10; i++) {
-            AssignmentFromZK assignmentFromZK = new AssignmentFromZK(
-                    clusterName, zookeeperAddress, 30000, 30000);
-            ClusterNode assignClusterNode = assignmentFromZK
-                    .assignClusterNode();
-            System.out.println(i+"-->"+assignClusterNode);
+            AssignmentFromZK assignmentFromZK = new AssignmentFromZK(clusterName, zookeeperAddress, 30000, 30000);
+            ClusterNode assignClusterNode = assignmentFromZK.assignClusterNode();
+            System.out.println(i + "-->" + assignClusterNode);
         }
-        TopologyFromZK topologyFromZK=new TopologyFromZK(clusterName, zookeeperAddress, 30000, 30000);
+        TopologyFromZK topologyFromZK = new TopologyFromZK(clusterName, zookeeperAddress, 30000, 30000);
         Thread.sleep(3000);
         Cluster topology = topologyFromZK.getTopology();
         System.out.println(topology.getNodes().size());

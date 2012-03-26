@@ -56,7 +56,7 @@ libraries = [
     bcel:               'org.apache.bcel:bcel:5.2',
     jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
     kryo:               'com.googlecode:kryo:1.04',
-    netty:              'org.jboss.netty:netty:3.2.5.Final',
+    netty:              'io.netty:netty:3.3.1.Final',
     reflectasm:         'com.esotericsoftware:reflectasm:0.8',
     minlog:             'com.esotericsoftware:minlog:1.2',
     asm:                'asm:asm:3.2',
@@ -73,7 +73,7 @@ libraries = [
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
-    diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4-SNAPSHOT'
+    diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4'
 ]
 
 subprojects {
@@ -87,17 +87,17 @@ subprojects {
     targetCompatibility = 1.6
 
     checkstyleConfigFileName = "$rootDir/config/checkstyle/s4-checkstyle.xml"
-    
-    // The jmx points to a repo that is no longer available. We exclude these dependencies. 
+
+    // The jmx points to a repo that is no longer available. We exclude these dependencies.
     configurations {
         all*.exclude group: 'com.sun.jmx'
         all*.exclude group: 'com.sun.jdmk'
         all*.exclude group: 'javax.jms'
         all*.exclude group: 'javax.mail'
     }
-    
+
     dependencies {
-        
+
         /* Google. */
         compile( libraries.guava )
         compile( libraries.guice )
@@ -115,7 +115,7 @@ subprojects {
         /* Misc. */
         compile( libraries.jcip )
         compile( libraries.zk )
-		
+
         /* Testing. */
         testCompile( libraries.junit )
     }
