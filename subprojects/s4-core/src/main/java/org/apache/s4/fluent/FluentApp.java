@@ -35,15 +35,4 @@ public class FluentApp extends App {
         appMaker.close();
     }
 
-    public void start() {
-        super.start();
-    }
-
-    public void init() {
-        super.init();
-    }
-
-    public void close() {
-        super.close();
-    }
 }

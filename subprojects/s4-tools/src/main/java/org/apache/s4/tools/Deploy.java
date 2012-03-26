@@ -1,4 +1,4 @@
-package org.apache.s4.deploy.util;
+package org.apache.s4.tools;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -26,9 +26,10 @@ import com.beust.jcommander.Parameters;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
-public class DeployApp {
+public class Deploy {
 
     private static File tmpAppsDir;
+    static org.slf4j.Logger logger = LoggerFactory.getLogger(Deploy.class);
 
     /**
      * @param args
@@ -45,34 +46,36 @@ public class DeployApp {
         try {
             jc.parse(args);
         } catch (Exception e) {
+            e.printStackTrace();
             jc.usage();
             System.exit(-1);
         }
         try {
-            ZkClient zkClient = new ZkClient(appArgs.zkConnectionString);
+            ZkClient zkClient = new ZkClient(appArgs.zkConnectionString, appArgs.timeout);
             zkClient.setZkSerializer(new ZNRecordSerializer());
 
             tmpAppsDir = Files.createTempDir();
 
-            // File gradlewFile = CoreTestUtils.findGradlewInRootDir();
-
-            // CoreTestUtils.callGradleTask(gradlewFile, new File(appArgs.gradleBuildFilePath), "installS4R",
-            // new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
-            ExecGradle.exec(appArgs.gradleExecPath, appArgs.gradleBuildFilePath, "installS4R",
-                    new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
-
             File s4rToDeploy = File.createTempFile("testapp" + System.currentTimeMillis(), "s4r");
 
-            Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath() + "/"
-                    + appArgs.appName + ".s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
+            String generatedS4RPath = null;
+
+            ExecGradle.exec(appArgs.gradleExecPath, appArgs.gradleBuildFilePath, "installS4R",
+                    new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
+            generatedS4RPath = tmpAppsDir.getAbsolutePath() + "/" + appArgs.appName + ".s4r";
+
+            Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(generatedS4RPath)),
+                    Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
 
             final String uri = s4rToDeploy.toURI().toString();
             ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
             record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
             zkClient.create("/" + appArgs.clusterName + "/apps/" + appArgs.appName, record, CreateMode.PERSISTENT);
+            logger.info("uploaded application [{}] to cluster [{}], using zookeeper znode [{}]", new String[] {
+                    appArgs.appName, appArgs.clusterName, "/" + appArgs.clusterName + "/apps/" + appArgs.appName });
 
         } catch (Exception e) {
-            LoggerFactory.getLogger(DeployApp.class).error("Cannot deploy app", e);
+            LoggerFactory.getLogger(Deploy.class).error("Cannot deploy app", e);
         }
 
     }
@@ -95,25 +98,32 @@ public class DeployApp {
         @Parameter(names = "-zk", description = "zookeeper connection string")
         String zkConnectionString = "localhost:2181";
 
+        @Parameter(names = "-timeout", description = "connection timeout to Zookeeper, in ms")
+        int timeout = 10000;
+
     }
 
     static class ExecGradle {
 
         public static void exec(String gradlewExecPath, String buildFilePath, String taskName, String[] params)
                 throws Exception {
+            // Thread.sleep(10000);
             List<String> cmdList = new ArrayList<String>();
+            // cmdList.add("sleep");
+            // cmdList.add("2");
+            // cmdList.add(";");
             cmdList.add(gradlewExecPath);
             // cmdList.add("-c");
             // cmdList.add(gradlewFile.getParentFile().getAbsolutePath() + "/settings.gradle");
             cmdList.add("-b");
             cmdList.add(buildFilePath);
             cmdList.add(taskName);
+            cmdList.add("-stacktrace");
             if (params.length > 0) {
                 for (int i = 0; i < params.length; i++) {
                     cmdList.add("-P" + params[i]);
                 }
             }
-
             System.out.println(Arrays.toString(cmdList.toArray(new String[] {})).replace(",", ""));
             ProcessBuilder pb = new ProcessBuilder(cmdList);
 
@@ -137,6 +147,7 @@ public class DeployApp {
                     }
                 }
             }).start();
+
             process.waitFor();
 
             // try {

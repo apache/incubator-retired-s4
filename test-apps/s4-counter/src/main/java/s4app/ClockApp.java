@@ -12,44 +12,27 @@ public class ClockApp extends App {
     private ClockPE clockPE;
 
     @Override
-    protected void start() {
+    protected void onStart() {
         System.out.println("Starting CounterApp...");
         clockPE.getInstanceForKey("single");
     }
 
     // generic array due to varargs generates a warning.
     @Override
-    protected void init() {
+    protected void onInit() {
         System.out.println("Initing CounterApp...");
 
         clockPE = new ClockPE(this);
         clockPE.setTimerInterval(1, TimeUnit.SECONDS);
 
-        eventSource = new EventSource(this, "I can give you the time!");
+        eventSource = new EventSource(this, "clockStream");
         clockPE.setStreams((Streamable) eventSource);
     }
 
     @Override
-    protected void close() {
+    protected void onClose() {
         System.out.println("Closing CounterApp...");
         eventSource.close();
     }
 
-    @Override
-    protected void onStart() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    protected void onInit() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    protected void onClose() {
-        // TODO Auto-generated method stub
-
-    }
 }

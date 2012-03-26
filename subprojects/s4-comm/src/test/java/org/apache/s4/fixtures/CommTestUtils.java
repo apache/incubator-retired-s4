@@ -38,7 +38,7 @@ public class CommTestUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(CommTestUtils.class);
 
-    public static final int ZK_PORT = 21810;
+    public static final int ZK_PORT = 2181;
     public static final int INITIAL_BOOKIE_PORT = 5000;
     public static File DEFAULT_TEST_OUTPUT_DIR = new File(System.getProperty("java.io.tmpdir") + File.separator + "tmp");
     public static File DEFAULT_STORAGE_DIR = new File(DEFAULT_TEST_OUTPUT_DIR.getAbsolutePath() + File.separator

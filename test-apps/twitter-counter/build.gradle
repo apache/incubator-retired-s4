@@ -49,6 +49,7 @@ group = 'org.apache.s4'
 
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin:'application'
 
 /* The app classname is set automatically from the source files. */
 def appClassname = ''

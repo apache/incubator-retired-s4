@@ -29,13 +29,13 @@ public class TwitterCounterApp extends App {
             TopNTopicPE topNTopicPE = createPE(TopNTopicPE.class);
             topNTopicPE.setTimerInterval(10, TimeUnit.SECONDS);
             @SuppressWarnings("unchecked")
-            Stream<TopicSeenEvent> aggregatedTopicStream = createStream("AggregatedTopicSeen", new KeyFinder() {
+            Stream<Event> aggregatedTopicStream = createStream("AggregatedTopicSeen", new KeyFinder() {
 
                 @Override
                 public List<String> get(Event arg0) {
                     return new ArrayList<String>() {
                         {
-                            add("x");
+                            add("aggregationKey");
                         }
                     };
                 }
@@ -44,13 +44,13 @@ public class TwitterCounterApp extends App {
             TopicCountAndReportPE topicCountAndReportPE = createPE(TopicCountAndReportPE.class);
             topicCountAndReportPE.setDownstream(aggregatedTopicStream);
             topicCountAndReportPE.setTimerInterval(10, TimeUnit.SECONDS);
-            Stream<TopicSeenEvent> topicSeenStream = createStream("TopicSeen", new KeyFinder<TopicSeenEvent>() {
+            Stream<Event> topicSeenStream = createStream("TopicSeen", new KeyFinder<Event>() {
 
                 @Override
-                public List<String> get(final TopicSeenEvent arg0) {
+                public List<String> get(final Event arg0) {
                     return new ArrayList<String>() {
                         {
-                            add(arg0.topic);
+                            add(arg0.get("topic"));
                         }
                     };
                 }

@@ -46,13 +46,7 @@ public class AdapterMain {
     @Parameters(separators = "=")
     static class AdapterArgs {
 
-        @Parameter(names = "-moduleClass", description = "module class name")
-        String moduleClass;
-
-        @Parameter(names = "-adapterClass", description = "adapter class name")
-        String adapterClass;
-
-        @Parameter(names = "-s4Properties", description = "s4 properties file path")
+        @Parameter(names = "-s4Properties", description = "s4 properties file path", required = true)
         String s4PropertiesFilePath;
     }
 

@@ -29,16 +29,19 @@ public class Main {
      * @param args
      */
     public static void main(String[] args) {
-
-        if (args.length == 0) {
-            logger.info("Starting S4 node with default configuration");
-            startDefaultS4Node();
-        } else if (args.length == 1) {
-            logger.info("Starting S4 node with custom configuration from file {}", args[0]);
-            startCustomS4Node(args[0]);
-        } else {
-            logger.info("Starting S4 node in development mode");
-            startDevelopmentMode(args);
+        try {
+            if (args.length == 0) {
+                logger.info("Starting S4 node with default configuration");
+                startDefaultS4Node();
+            } else if (args.length == 1) {
+                logger.info("Starting S4 node with custom configuration from file {}", args[0]);
+                startCustomS4Node(args[0]);
+            } else {
+                logger.info("Starting S4 node in development mode");
+                startDevelopmentMode(args);
+            }
+        } catch (Exception e) {
+            logger.error("Cannot start S4 node", e);
         }
     }
 

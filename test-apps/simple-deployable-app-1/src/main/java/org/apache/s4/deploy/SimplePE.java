@@ -41,7 +41,7 @@ public class SimplePE extends ProcessingElement implements Watcher {
     protected void onCreate() {
         if (zk == null) {
             try {
-                zk = new ZooKeeper("localhost:" + 21810, 4000, this);
+                zk = new ZooKeeper("localhost:" + 2181, 4000, this);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

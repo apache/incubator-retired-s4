@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.s4.base.Event;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 import org.slf4j.Logger;
@@ -14,16 +15,16 @@ import com.google.common.collect.Sets;
 
 public class TopNTopicPE extends ProcessingElement {
 
+    static Logger logger = LoggerFactory.getLogger(TopNTopicPE.class);
+    Map<String, Integer> countedTopics = Maps.newHashMap();
+
     public TopNTopicPE(App app) {
         super(app);
-        // TODO Auto-generated constructor stub
+        logger.info("key: [{}]", getId());
     }
 
-    Map<String, Integer> countedTopics = Maps.newHashMap();
-    static Logger logger = LoggerFactory.getLogger(TopNTopicPE.class);
-
-    public void onEvent(TopicSeenEvent event) {
-        countedTopics.put(event.topic, event.count);
+    public void onEvent(Event event) {
+        countedTopics.put(event.get("topic"), event.get("count", Integer.class));
     }
 
     public void onTime() {
@@ -32,6 +33,8 @@ public class TopNTopicPE extends ProcessingElement {
             sortedTopics.add(new TopNEntry(topicCount.getKey(), topicCount.getValue()));
         }
 
+        logger.info("\n------------------");
+
         int i = 0;
         Iterator<TopNEntry> iterator = sortedTopics.iterator();
         long time = System.currentTimeMillis();
@@ -39,6 +42,7 @@ public class TopNTopicPE extends ProcessingElement {
             TopNEntry entry = iterator.next();
             logger.info("{} : topic [{}] count [{}]",
                     new String[] { String.valueOf(time), entry.topic, String.valueOf(entry.count) });
+            i++;
         }
     }
 

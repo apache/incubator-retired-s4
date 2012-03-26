@@ -1,6 +1,9 @@
 package org.apache.s4.example.twitter;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.net.ServerSocket;
+import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.I0Itec.zkclient.ZkClient;
@@ -15,6 +18,7 @@ import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
 import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
+import twitter4j.conf.ConfigurationBuilder;
 
 public class TwitterInputAdapter extends Adapter {
 
@@ -49,7 +53,20 @@ public class TwitterInputAdapter extends Adapter {
 
     public void connectAndRead() throws Exception {
 
-        TwitterStream twitterStream = TwitterStreamFactory.getSingleton();
+        ConfigurationBuilder cb = new ConfigurationBuilder();
+        Properties twitterProperties = new Properties();
+        File twitter4jPropsFile = new File(System.getProperty("user.home") + "/twitter4j.properties");
+        if (!twitter4jPropsFile.exists()) {
+            logger.error(
+                    "Cannot find twitter4j.properties file in this location :[{}]. Make sure it is available at this place and includes user/password credentials",
+                    twitter4jPropsFile.getAbsolutePath());
+            return;
+        }
+        twitterProperties.load(new FileInputStream(twitter4jPropsFile));
+
+        cb.setDebugEnabled(Boolean.valueOf(twitterProperties.getProperty("debug")))
+                .setUser(twitterProperties.getProperty("user")).setPassword(twitterProperties.getProperty("password"));
+        TwitterStream twitterStream = new TwitterStreamFactory(cb.build()).getInstance();
         StatusListener statusListener = new StatusListener() {
 
             @Override

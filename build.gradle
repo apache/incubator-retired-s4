@@ -72,7 +72,8 @@ libraries = [
     junit:              'junit:junit:4.10',
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
-    jcommander:         'com.beust:jcommander:1.23'
+    jcommander:         'com.beust:jcommander:1.23',
+    commons_io:         'commons-io:commons-io:2.1'
 ]
 
 subprojects {
