@@ -2,16 +2,10 @@
 
 # NOTE: "./gradlew s4-tools:installApp" will prepare/update the tools subproject and related startup scripts
 
-echo $0
-echo $1
-
 GRADLE=`pwd`/gradlew
 
 case "$1" in
 "deploy")
-# examples:
-# ./s4 deploy -appName=twitter-counter -buildFile=<s4-dir>/test-apps/twitter-counter/build.gradle -cluster=s4-test-cluster
-# ./s4 deploy -appName=twitter-adapter -buildFile=<s4-dir>/test-apps/twitter-adapter/build.gradle -cluster=s4-adapter-cluster
 	shift
     subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.tools.Deploy -gradle=$GRADLE $@
 ;;
@@ -20,25 +14,32 @@ case "$1" in
     subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.tools.ZKServer $@
 ;;
 "newCluster")
-# examples:
-#./s4 newCluster -name=s4-test-cluster -firstListeningPort=11000 -nbTasks=2 ; ./s4 newCluster -name=s4-adapter-cluster -firstListeningPort=13000 -nbTasks=1
 	shift
     subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.tools.DefineCluster $@
 ;;
 "appNode")
-# example:
-# ./s4 appNode <s4-dir>/subprojects/s4-core/src/test/resources/default.s4.properties
 	shift
   	subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.core.Main $@
 ;;
 "adapterNode")
-# example:
-# ./s4 adapterNode -s4Properties=<s4-dir>/test-apps/twitter-adapter/src/main/resources/s4.properties
 	shift
   	subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.core.adapter.AdapterMain $@
 ;;
 
-
-
 esac
+
+# EXAMPLES
+# deploy:
+# ./s4 deploy -appName=twitter-counter -buildFile=test-apps/twitter-counter/build.gradle -cluster=s4-test-cluster
+# ./s4 deploy -appName=twitter-adapter -buildFile=test-apps/twitter-adapter/build.gradle -cluster=s4-adapter-cluster
+
+# newCluster:
+# # examples:
+#./s4 newCluster -name=s4-test-cluster -firstListeningPort=11000 -nbTasks=2 ; ./s4 newCluster -name=s4-adapter-cluster -firstListeningPort=13000 -nbTasks=1
+
+# appNode:
+# ./s4 appNode subprojects/s4-core/src/test/resources/default.s4.properties
+
+# adapterNode:
+# ./s4 adapterNode -s4Properties=test-apps/twitter-adapter/src/main/resources/s4.properties
 

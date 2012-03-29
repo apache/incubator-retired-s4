@@ -1,14 +1,11 @@
 package org.apache.s4.tools;
 
-import java.util.Arrays;
-
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.s4.comm.tools.TaskSetup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
@@ -23,15 +20,7 @@ public class DefineCluster {
         org.apache.log4j.Logger.getLogger("org.I0Itec").setLevel(Level.ERROR);
 
         ZKServerArgs clusterArgs = new ZKServerArgs();
-        JCommander jc = new JCommander(clusterArgs);
-        try {
-            jc.parse(args);
-        } catch (Exception e) {
-            System.out.println(Arrays.toString(args));
-            e.printStackTrace();
-            jc.usage();
-            System.exit(-1);
-        }
+        Tools.parseArgs(clusterArgs, args);
         try {
 
             logger.info("preparing new cluster [{}] with [{}] node(s)", clusterArgs.clusterName, clusterArgs.nbTasks);
@@ -46,8 +35,8 @@ public class DefineCluster {
 
     }
 
-    @Parameters(separators = "=", commandDescription = "Setup new S4 logical cluster")
-    static class ZKServerArgs {
+    @Parameters(commandNames = "s4 newCluster", separators = "=", commandDescription = "Setup new S4 logical cluster")
+    static class ZKServerArgs extends S4ArgsBase {
 
         @Parameter(names = "-name", description = "S4 cluster name", required = true)
         String clusterName = "s4-test-cluster";

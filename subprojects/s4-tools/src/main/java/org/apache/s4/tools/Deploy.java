@@ -20,7 +20,6 @@ import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.LoggerFactory;
 
-import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.common.io.ByteStreams;
@@ -36,22 +35,16 @@ public class Deploy {
      */
     public static void main(String[] args) {
 
-        DeployAppArgs appArgs = new DeployAppArgs();
-        JCommander jc = new JCommander(appArgs);
+        DeployAppArgs deployArgs = new DeployAppArgs();
+
+        Tools.parseArgs(deployArgs, args);
         // configure log4j for Zookeeper
         BasicConfigurator.configure();
         Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
         Logger.getLogger("org.I0Itec").setLevel(Level.ERROR);
 
         try {
-            jc.parse(args);
-        } catch (Exception e) {
-            e.printStackTrace();
-            jc.usage();
-            System.exit(-1);
-        }
-        try {
-            ZkClient zkClient = new ZkClient(appArgs.zkConnectionString, appArgs.timeout);
+            ZkClient zkClient = new ZkClient(deployArgs.zkConnectionString, deployArgs.timeout);
             zkClient.setZkSerializer(new ZNRecordSerializer());
 
             tmpAppsDir = Files.createTempDir();
@@ -60,9 +53,9 @@ public class Deploy {
 
             String generatedS4RPath = null;
 
-            ExecGradle.exec(appArgs.gradleExecPath, appArgs.gradleBuildFilePath, "installS4R", new String[] {
-                    "appsDir=" + tmpAppsDir.getAbsolutePath(), "appName=" + appArgs.appName });
-            generatedS4RPath = tmpAppsDir.getAbsolutePath() + "/" + appArgs.appName + ".s4r";
+            ExecGradle.exec(deployArgs.gradleExecPath, deployArgs.gradleBuildFilePath, "installS4R", new String[] {
+                    "appsDir=" + tmpAppsDir.getAbsolutePath(), "appName=" + deployArgs.appName });
+            generatedS4RPath = tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r";
 
             Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(generatedS4RPath)),
                     Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
@@ -70,9 +63,10 @@ public class Deploy {
             final String uri = s4rToDeploy.toURI().toString();
             ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
             record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-            zkClient.create("/" + appArgs.clusterName + "/apps/" + appArgs.appName, record, CreateMode.PERSISTENT);
+            zkClient.create("/" + deployArgs.clusterName + "/apps/" + deployArgs.appName, record, CreateMode.PERSISTENT);
             logger.info("uploaded application [{}] to cluster [{}], using zookeeper znode [{}]", new String[] {
-                    appArgs.appName, appArgs.clusterName, "/" + appArgs.clusterName + "/apps/" + appArgs.appName });
+                    deployArgs.appName, deployArgs.clusterName,
+                    "/" + deployArgs.clusterName + "/apps/" + deployArgs.appName });
 
         } catch (Exception e) {
             LoggerFactory.getLogger(Deploy.class).error("Cannot deploy app", e);
@@ -80,8 +74,8 @@ public class Deploy {
 
     }
 
-    @Parameters(separators = "=")
-    static class DeployAppArgs {
+    @Parameters(commandNames = "s4 deploy", commandDescription = "Package and deploy application to S4 cluster", separators = "=")
+    static class DeployAppArgs extends S4ArgsBase {
 
         @Parameter(names = "-gradle", description = "path to gradle/gradlew executable", required = true)
         String gradleExecPath;
