@@ -4,97 +4,96 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.s4.base.Emitter;
+import org.apache.s4.base.EventMessage;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
 public class QueueingEmitter implements Emitter, Runnable {
-	private Emitter emitter;
-	private BlockingQueue<MessageHolder> queue;
-	private long dropCount = 0;
-	private volatile Thread thread;
 
-	@Inject
-	public QueueingEmitter(@Named("ll") Emitter emitter,
-			@Named("comm.queue_emmiter_size") int queueSize) {
-		this.emitter = emitter;
-		queue = new LinkedBlockingQueue<MessageHolder>(queueSize);
-	}
+    private Emitter emitter;
+    private BlockingQueue<MessageHolder> queue;
+    private long dropCount = 0;
+    private volatile Thread thread;
 
-	public long getDropCount() {
-		return dropCount;
-	}
+    @Inject
+    public QueueingEmitter(@Named("ll") Emitter emitter, @Named("comm.queue_emmiter_size") int queueSize) {
+        this.emitter = emitter;
+        queue = new LinkedBlockingQueue<MessageHolder>(queueSize);
+    }
 
-	public void start() {
-		if (thread != null) {
-			throw new IllegalStateException(
-					"QueueingEmitter is already started");
-		}
-		thread = new Thread(this, "QueueingEmitter");
-		thread.start();
-	}
+    public long getDropCount() {
+        return dropCount;
+    }
 
-	public void stop() {
-		if (thread == null) {
-			throw new IllegalStateException(
-					"QueueingEmitter is already stopped");
-		}
-		thread.interrupt();
-		thread = null;
-	}
+    public void start() {
+        if (thread != null) {
+            throw new IllegalStateException("QueueingEmitter is already started");
+        }
+        thread = new Thread(this, "QueueingEmitter");
+        thread.start();
+    }
 
-	@Override
-	public boolean send(int partitionId, byte[] message) {
-		MessageHolder mh = new MessageHolder(partitionId, message);
-		if (!queue.offer(mh)) {
-			dropCount++;
-			return true;
-		} else {
-			return false;
-		}
-	}
+    public void stop() {
+        if (thread == null) {
+            throw new IllegalStateException("QueueingEmitter is already stopped");
+        }
+        thread.interrupt();
+        thread = null;
+    }
 
-	public void run() {
-		while (!Thread.interrupted()) {
-			try {
-				MessageHolder mh = queue.take();
-				// System.out.println("QueueingEmitter: Sending message on low-level emitter");
-				emitter.send(mh.getPartitionId(), mh.getMessage());
-			} catch (InterruptedException ie) {
-				Thread.currentThread().interrupt();
-			}
-		}
-	}
+    @Override
+    public boolean send(int partitionId, EventMessage message) {
+        MessageHolder mh = new MessageHolder(partitionId, message);
+        if (!queue.offer(mh)) {
+            dropCount++;
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-	public int getPartitionCount() {
-		return emitter.getPartitionCount();
-	}
+    public void run() {
+        while (!Thread.interrupted()) {
+            try {
+                MessageHolder mh = queue.take();
+                // System.out.println("QueueingEmitter: Sending message on low-level emitter");
+                emitter.send(mh.getPartitionId(), mh.getMessage());
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 
-	class MessageHolder {
-		private int partitionId;
-		private byte[] message;
+    public int getPartitionCount() {
+        return emitter.getPartitionCount();
+    }
 
-		public int getPartitionId() {
-			return partitionId;
-		}
+    class MessageHolder {
+        private int partitionId;
+        private EventMessage message;
 
-		public void setPartitionId(int partitionId) {
-			this.partitionId = partitionId;
-		}
+        public int getPartitionId() {
+            return partitionId;
+        }
 
-		public byte[] getMessage() {
-			return message;
-		}
+        public void setPartitionId(int partitionId) {
+            this.partitionId = partitionId;
+        }
 
-		public void setMessage(byte[] message) {
-			this.message = message;
-		}
+        public EventMessage getMessage() {
+            return message;
+        }
 
-		public MessageHolder(int partitionId, byte[] message) {
-			super();
-			this.partitionId = partitionId;
-			this.message = message;
-		}
-	}
+        public void setMessage(EventMessage message) {
+            this.message = message;
+        }
+
+        public MessageHolder(int partitionId, EventMessage message) {
+            super();
+            this.partitionId = partitionId;
+            this.message = message;
+        }
+    }
 
 }

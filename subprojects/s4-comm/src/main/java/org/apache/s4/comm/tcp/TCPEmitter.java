@@ -8,6 +8,8 @@ import java.util.Queue;
 import java.util.concurrent.Executors;
 
 import org.apache.s4.base.Emitter;
+import org.apache.s4.base.EventMessage;
+import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyChangeListener;
@@ -41,6 +43,9 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
     private Topology topology;
     private final ClientBootstrap bootstrap;
 
+    @Inject
+    SerializerDeserializer serDeser;
+
     static class MessageQueuesPerPartition {
         private Hashtable<Integer, Queue<byte[]>> queues = new Hashtable<Integer, Queue<byte[]>>();
         private boolean bounded;
@@ -73,6 +78,7 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
                 return messages.peek();
             } catch (NullPointerException npe) {
                 return null;
+
             }
         }
 
@@ -163,14 +169,14 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
     private final Object sendLock = new Object();
 
     @Override
-    public boolean send(int partitionId, byte[] message) {
+    public boolean send(int partitionId, EventMessage message) {
         Channel channel = partitionChannelMap.get(partitionId);
         if (channel == null) {
             if (connectTo(partitionId)) {
                 channel = partitionChannelMap.get(partitionId);
             } else {
                 // could not connect, queue to the partitionBuffer
-                return queuedMessages.add(partitionId, message);
+                return queuedMessages.add(partitionId, serDeser.serialize(message));
             }
         }
 
@@ -206,8 +212,9 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
             queuedMessages.remove(partitionId);
         }
 
-        writeMessageToChannel(channel, partitionId, message);
+        writeMessageToChannel(channel, partitionId, serDeser.serialize(message));
         return true;
+
     }
 
     @Override
@@ -236,7 +243,9 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
             ClusterNode oldNode = partitionNodeMap.get(partition);
 
             if (oldNode != null && !oldNode.equals(clusterNode)) {
-                partitionChannelMap.remove(partition).close();
+                if (partitionChannelMap.containsKey(partition)) {
+                    partitionChannelMap.remove(partition).close();
+                }
             }
 
             partitionNodeMap.forcePut(partition, clusterNode);

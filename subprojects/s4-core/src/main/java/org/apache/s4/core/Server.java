@@ -12,7 +12,6 @@ import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.util.S4RLoader;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
-import org.apache.s4.core.adapter.Adapter;
 import org.apache.s4.deploy.DeploymentManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,9 +177,6 @@ public class Server {
 
         // TODO handle application upgrade
 
-        Sender sender = injector.getInstance(Sender.class);
-        Receiver receiver = injector.getInstance(Receiver.class);
-
         S4RLoader cl = new S4RLoader(s4r.getAbsolutePath());
         try {
             JarFile s4rFile = new JarFile(s4r);
@@ -200,17 +196,12 @@ public class Server {
             try {
                 Object o = (cl.loadClass(appClassName)).newInstance();
                 app = (App) o;
+                injector.injectMembers(app);
             } catch (Exception e) {
                 logger.error("Could not load s4 application form s4r file [{" + s4r.getAbsolutePath() + "}]", e);
                 return null;
             }
 
-            app.setCommLayer(sender, receiver);
-
-            if (app instanceof Adapter) {
-                RemoteSender remoteSender = injector.getInstance(RemoteSender.class);
-                ((Adapter) app).setRemoteSender(remoteSender);
-            }
 
             App previous = apps.put(appName, app);
             logger.info("Loaded application from file {}", s4r.getAbsolutePath());

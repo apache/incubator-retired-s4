@@ -23,8 +23,8 @@ public class TopNTopicPE extends ProcessingElement {
         logger.info("key: [{}]", getId());
     }
 
-    public void onEvent(Event event) {
-        countedTopics.put(event.get("topic"), event.get("count", Integer.class));
+    public void onEvent(TopicEvent event) {
+        countedTopics.put(event.getTopic(), event.getCount());
     }
 
     public void onTime() {

@@ -20,6 +20,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.KeyFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     final private String name;
     final private Key<T> key;
     final private ProcessingElement[] targetPEs;
-    final private BlockingQueue<Event> queue = new ArrayBlockingQueue<Event>(CAPACITY);
+    final private BlockingQueue<EventMessage> queue = new ArrayBlockingQueue<EventMessage>(CAPACITY);
     private Thread thread;
     final private Sender sender;
     final private Receiver receiver;
@@ -129,7 +130,8 @@ public class Stream<T extends Event> implements Runnable, Streamable {
                      * Sender checked and decided that the target is local so we simply put the event in the queue and
                      * we save the trip over the network.
                      */
-                    queue.put(event);
+                    queue.put(new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), app
+                            .getSerDeser().serialize(event)));
                 }
 
             } else {
@@ -140,7 +142,8 @@ public class Stream<T extends Event> implements Runnable, Streamable {
                  * the queue.
                  */
                 sender.sendToRemotePartitions(event);
-                queue.put(event);
+                queue.put(new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), app.getSerDeser()
+                        .serialize(event)));
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -153,11 +156,9 @@ public class Stream<T extends Event> implements Runnable, Streamable {
      * Implements the {@link ReceiverListener} interface. The low level {@link Receiver} object call this method when a
      * new {@link Event} is available.
      */
-    @SuppressWarnings("unchecked")
-    // Need casting because we don't know the concrete event type.
-    public void receiveEvent(Event event) {
+    public void receiveEvent(EventMessage event) {
         try {
-            queue.put((T) event);
+            queue.put(event);
         } catch (InterruptedException e) {
             e.printStackTrace();
             logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
@@ -226,8 +227,10 @@ public class Stream<T extends Event> implements Runnable, Streamable {
         while (true) {
             try {
                 /* Get oldest event in queue. */
+                EventMessage eventMessage = queue.take();
+
                 @SuppressWarnings("unchecked")
-                T event = (T) queue.take();
+                T event = (T) app.getSerDeser().deserialize(eventMessage.getSerializedEvent());
 
                 /* Send event to each target PE. */
                 for (int i = 0; i < targetPEs.length; i++) {

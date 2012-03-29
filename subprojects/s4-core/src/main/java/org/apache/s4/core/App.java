@@ -23,6 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.base.KeyFinder;
+import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +57,8 @@ public abstract class App {
     @Inject
     private Receiver receiver;
 
-    // @Inject private @Named("isCluster") Boolean isCluster;
+    // serialization uses the application class loader
+    private SerializerDeserializer serDeser = new KryoSerDeser(getClass().getClassLoader());
 
     /**
      * The internal clock can be configured as "wall clock" or "event clock". The wall clock computes time from the
@@ -240,6 +243,10 @@ public abstract class App {
      */
     public Receiver getReceiver() {
         return receiver;
+    }
+
+    public SerializerDeserializer getSerDeser() {
+        return serDeser;
     }
 
     /**

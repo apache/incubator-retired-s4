@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.s4.base.Emitter;
+import org.apache.s4.base.EventMessage;
+import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.Topology;
 import org.apache.s4.comm.topology.TopologyChangeListener;
@@ -22,6 +24,9 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
     private final Map<Integer, InetAddress> inetCache = new HashMap<Integer, InetAddress>();
     private final long messageDropInQueueCount = 0;
     private final Topology topology;
+
+    @Inject
+    SerializerDeserializer serDeser;
 
     public long getMessageDropInQueueCount() {
         return messageDropInQueueCount;
@@ -44,8 +49,9 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
     }
 
     @Override
-    public boolean send(int partitionId, byte[] message) {
+    public boolean send(int partitionId, EventMessage eventMessage) {
         try {
+            byte[] message = serDeser.serialize(eventMessage);
             ClusterNode node = nodes.get(partitionId);
             if (node == null) {
                 throw new RuntimeException(String.format("Bad partition id %d", partitionId));

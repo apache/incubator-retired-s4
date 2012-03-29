@@ -25,6 +25,17 @@ public class KryoSerDeser implements SerializerDeserializer {
     }
 
     public KryoSerDeser() {
+        this(Thread.currentThread().getContextClassLoader());
+    }
+
+    /**
+     * 
+     * @param classLoader
+     *            classloader able to handle classes to serialize/deserialize. For instance, application-level events
+     *            can only be handled by the application classloader.
+     */
+    public KryoSerDeser(ClassLoader classLoader) {
+        kryo.setClassLoader(classLoader);
         kryo.setRegistrationOptional(true);
 
         kryo.register(Class.class, new ClassSerializer(kryo));
@@ -42,6 +53,7 @@ public class KryoSerDeser implements SerializerDeserializer {
             }
 
         });
+
     }
 
     @Override

@@ -39,10 +39,7 @@ public class TopicExtractorPE extends ProcessingElement {
                     .split(text.substring(text.indexOf("#") + 1, text.length()));
             for (String topic : split) {
                 String topicOnly = topic.split(" ")[0];
-                Event event2 = new Event();
-                event2.put("topic", String.class, topicOnly);
-                event2.put("count", Integer.class, 1);
-                downStream.put(event2);
+                downStream.put(new TopicEvent(topicOnly, 1));
             }
         }
     }

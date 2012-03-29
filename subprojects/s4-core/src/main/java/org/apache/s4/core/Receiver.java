@@ -3,6 +3,7 @@ package org.apache.s4.core;
 import java.util.Map;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
 import org.slf4j.Logger;
@@ -76,9 +77,9 @@ public class Receiver implements Runnable {
         // here?
         while (!Thread.interrupted()) {
             byte[] message = listener.recv();
-            Event event = (Event) serDeser.deserialize(message);
+            EventMessage event = (EventMessage) serDeser.deserialize(message);
 
-            int appId = event.getAppId();
+            int appId = Integer.valueOf(event.getAppName());
             String streamId = event.getStreamName();
 
             /*

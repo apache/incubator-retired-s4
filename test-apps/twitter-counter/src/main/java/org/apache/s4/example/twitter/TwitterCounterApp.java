@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.s4.base.Event;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
 import org.apache.s4.core.Stream;
@@ -29,10 +28,10 @@ public class TwitterCounterApp extends App {
             TopNTopicPE topNTopicPE = createPE(TopNTopicPE.class);
             topNTopicPE.setTimerInterval(10, TimeUnit.SECONDS);
             @SuppressWarnings("unchecked")
-            Stream<Event> aggregatedTopicStream = createStream("AggregatedTopicSeen", new KeyFinder() {
+            Stream<TopicEvent> aggregatedTopicStream = createStream("AggregatedTopicSeen", new KeyFinder<TopicEvent>() {
 
                 @Override
-                public List<String> get(Event arg0) {
+                public List<String> get(final TopicEvent arg0) {
                     return new ArrayList<String>() {
                         {
                             add("aggregationKey");
@@ -44,13 +43,13 @@ public class TwitterCounterApp extends App {
             TopicCountAndReportPE topicCountAndReportPE = createPE(TopicCountAndReportPE.class);
             topicCountAndReportPE.setDownstream(aggregatedTopicStream);
             topicCountAndReportPE.setTimerInterval(10, TimeUnit.SECONDS);
-            Stream<Event> topicSeenStream = createStream("TopicSeen", new KeyFinder<Event>() {
+            Stream<TopicEvent> topicSeenStream = createStream("TopicSeen", new KeyFinder<TopicEvent>() {
 
                 @Override
-                public List<String> get(final Event arg0) {
+                public List<String> get(final TopicEvent arg0) {
                     return new ArrayList<String>() {
                         {
-                            add(arg0.get("topic"));
+                            add(arg0.getTopic());
                         }
                     };
                 }

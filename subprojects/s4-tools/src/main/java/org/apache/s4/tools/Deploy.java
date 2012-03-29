@@ -60,8 +60,8 @@ public class Deploy {
 
             String generatedS4RPath = null;
 
-            ExecGradle.exec(appArgs.gradleExecPath, appArgs.gradleBuildFilePath, "installS4R",
-                    new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
+            ExecGradle.exec(appArgs.gradleExecPath, appArgs.gradleBuildFilePath, "installS4R", new String[] {
+                    "appsDir=" + tmpAppsDir.getAbsolutePath(), "appName=" + appArgs.appName });
             generatedS4RPath = tmpAppsDir.getAbsolutePath() + "/" + appArgs.appName + ".s4r";
 
             Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(generatedS4RPath)),
@@ -119,6 +119,7 @@ public class Deploy {
             cmdList.add(buildFilePath);
             cmdList.add(taskName);
             cmdList.add("-stacktrace");
+            cmdList.add("-info");
             if (params.length > 0) {
                 for (int i = 0; i < params.length; i++) {
                     cmdList.add("-P" + params[i]);

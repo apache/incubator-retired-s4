@@ -1,6 +1,7 @@
 package org.apache.s4.comm;
 
 import org.apache.s4.base.Emitter;
+import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Listener;
 
 import com.google.inject.Inject;
@@ -13,10 +14,10 @@ import com.google.inject.name.Named;
  * <li> The util defines Send and Receive Threads </li>
  * <li> SendThread sends out a pre-defined number of messages to all the partitions </li>
  * <li> ReceiveThread receives all/most of these messages </li>
- * <li> To avoid the receiveThread waiting for ever, it spawns a TimerThread that would 
+ * <li> To avoid the receiveThread waiting for ever, it spawns a TimerThread that would
  * interrupt after a pre-defined but long enough interval </li>
  * </ul>
- * 
+ *
  */
 public class DeliveryTestUtil {
 
@@ -50,7 +51,7 @@ public class DeliveryTestUtil {
                 for (int partition = 0; partition < emitter.getPartitionCount(); partition++) {
                     for (int i = 0; i < numMessages; i++) {
                         byte[] message = (new String("message-" + i)).getBytes();
-                        emitter.send(partition, message);
+                        emitter.send(partition, new EventMessage(null, null, message));
                         Thread.sleep(interval);
                     }
                 }
