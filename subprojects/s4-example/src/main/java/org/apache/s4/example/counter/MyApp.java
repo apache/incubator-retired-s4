@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *          http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied. See the License for the specific
  * language governing permissions and limitations under the
- * License. See accompanying LICENSE file. 
+ * License. See accompanying LICENSE file.
  */
 package org.apache.s4.example.counter;
 
@@ -27,9 +27,9 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 /*
- * This is a sample application to test a new S4 API. 
+ * This is a sample application to test a new S4 API.
  * See README file for details.
- * 
+ *
  * */
 
 final public class MyApp extends App {
@@ -61,20 +61,11 @@ final public class MyApp extends App {
         /* PE that prints counts to console. */
         PrintPE printPE = createPE(PrintPE.class);
 
-        Stream<CountEvent> userCountStream = createStream(CountEvent.class);
-        userCountStream.setName("User Count Stream");
-        userCountStream.setKey(new CountKeyFinder());
-        userCountStream.setPE(printPE);
+        Stream<CountEvent> userCountStream = createStream("User Count Stream", new CountKeyFinder(), printPE);
 
-        Stream<CountEvent> genderCountStream = createStream(CountEvent.class);
-        genderCountStream.setName("Gender Count Stream");
-        genderCountStream.setKey(new CountKeyFinder());
-        genderCountStream.setPE(printPE);
+        Stream<CountEvent> genderCountStream = createStream("Gender Count Stream", new CountKeyFinder(), printPE);
 
-        Stream<CountEvent> ageCountStream = createStream(CountEvent.class);
-        ageCountStream.setName("Age Count Stream");
-        ageCountStream.setKey(new CountKeyFinder());
-        ageCountStream.setPE(printPE);
+        Stream<CountEvent> ageCountStream = createStream("Age Count Stream", new CountKeyFinder(), printPE);
 
         /* PEs that count events by user, gender, and age. */
         CounterPE userCountPE = createPE(CounterPE.class);
@@ -90,22 +81,11 @@ final public class MyApp extends App {
         ageCountPE.setCountStream(ageCountStream);
 
         /* Streams that output user events keyed on user, gender, and age. */
-        Stream<UserEvent> userStream = createStream(UserEvent.class);
-        userStream.setName("User Stream");
-        userStream.setKey(new UserIDKeyFinder());
-        userStream.setPE(userCountPE);
+        Stream<UserEvent> userStream = createStream("User Stream", new UserIDKeyFinder(), userCountPE);
 
-        Stream<UserEvent> genderStream = createStream(UserEvent.class);
-        genderStream.setName("Gender Stream");
-        /* It is possible to specify a field name of a primitive type as a string instead of using a KeyFinder object. */
-        // genderStream.setKey(new GenderKeyFinder());
-        genderStream.setKey("gender");
-        genderStream.setPE(genderCountPE);
+        Stream<UserEvent> genderStream = createStream("Gender Stream", new GenderKeyFinder(), genderCountPE);
 
-        Stream<UserEvent> ageStream = createStream(UserEvent.class);
-        ageStream.setName("Age Stream");
-        ageStream.setKey(new AgeKeyFinder());
-        ageStream.setPE(ageCountPE);
+        Stream<UserEvent> ageStream = createStream("Age Stream", new AgeKeyFinder(), ageCountPE);
 
         generateUserEventPE = createPE(GenerateUserEventPE.class);
         generateUserEventPE.setStreams(userStream, genderStream, ageStream);
