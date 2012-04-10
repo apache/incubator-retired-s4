@@ -1,24 +1,23 @@
 /*
  * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *          http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied. See the License for the specific
  * language governing permissions and limitations under the
- * License. See accompanying LICENSE file. 
+ * License. See accompanying LICENSE file.
  */
 package org.apache.s4.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
@@ -28,14 +27,13 @@ import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Maps;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 
 /*
- * Container base class to hold all processing elements. We will implement administrative methods here. 
+ * Container base class to hold all processing elements. We will implement administrative methods here.
  */
 public abstract class App {
 
@@ -312,11 +310,30 @@ public abstract class App {
         try {
             // TODO: make sure this doesn't crash if PE has a constructor other than with App as argument.
             Class<?>[] types = new Class<?>[] { App.class };
-            T pe = type.getDeclaredConstructor(types).newInstance(this);
-            return pe;
-
+            try {
+                T pe = type.getDeclaredConstructor(types).newInstance(this);
+                return pe;
+            } catch (NoSuchMethodException e) {
+                // no such constructor. Use the setter
+                T pe = type.getDeclaredConstructor(new Class[] {}).newInstance();
+                pe.setApp(this);
+                return pe;
+            }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public <T extends WindowingPE<?>> T createWindowingPE(Class<T> type, long slotDuration, TimeUnit timeUnit,
+            int numSlots) {
+        try {
+            Class<?>[] types = new Class<?>[] { App.class, long.class, TimeUnit.class, int.class };
+            T pe = type.getDeclaredConstructor(types).newInstance(
+                    new Object[] { this, slotDuration, timeUnit, numSlots });
+            return pe;
+        } catch (Exception e) {
+            logger.error("Cannot instantiate pe for class [{}]", type.getName(), e);
             return null;
         }
     }

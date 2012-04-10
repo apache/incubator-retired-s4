@@ -91,6 +91,11 @@ public class Server {
         // /* After some indirection we get the injector. */
         // injector = Guice.createInjector(module);
 
+        if (!new File(appsDir).exists()) {
+            if (!new File(appsDir).mkdirs()) {
+                logger.error("Cannot create apps directory [{}]", appsDir);
+            }
+        }
         File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter("\\w+\\.s4r"));
         for (File s4rFile : s4rFiles) {
             loadApp(s4rFile);
@@ -201,7 +206,6 @@ public class Server {
                 logger.error("Could not load s4 application form s4r file [{" + s4r.getAbsolutePath() + "}]", e);
                 return null;
             }
-
 
             App previous = apps.put(appName, app);
             logger.info("Loaded application from file {}", s4r.getAbsolutePath());

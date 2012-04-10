@@ -131,6 +131,10 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
         ClusterNode clusterNode = partitionNodeMap.get(partitionId);
 
         if (clusterNode == null) {
+            if (topology.getTopology().getNodes().size() == 0) {
+                logger.error("No node in cluster ");
+                return false;
+            }
             clusterNode = topology.getTopology().getNodes().get(partitionId);
             partitionNodeMap.forcePut(partitionId, clusterNode);
         }

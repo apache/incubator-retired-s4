@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *          http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied. See the License for the specific
  * language governing permissions and limitations under the
- * License. See accompanying LICENSE file. 
+ * License. See accompanying LICENSE file.
  */
 package org.apache.s4.core;
 
@@ -80,9 +80,9 @@ import com.google.common.collect.Maps;
  *         public class MyPE extends ProcessingElement {
  * 
  *           private Map<String, Integer> wordCount;
- *         
+ * 
  *           ...
- *         
+ * 
  *           onCreate() {
  *           wordCount = new HashMap<String, Integer>;
  *           logger.trace("Created a map for instance PE with id {}, getId());
@@ -130,15 +130,6 @@ public abstract class ProcessingElement implements Cloneable {
     private transient OverloadDispatcher overloadDispatcher;
 
     protected ProcessingElement() {
-    }
-
-    /**
-     * Create a PE prototype. By default, PE instances will never expire. Use {@code #configurePECache} to configure.
-     * 
-     * @param app
-     *            the app that contains this PE
-     */
-    public ProcessingElement(App app) {
         OverloadDispatcherGenerator oldg = new OverloadDispatcherGenerator(this.getClass());
         Class<?> overloadDispatcherClass = oldg.generate();
         try {
@@ -146,10 +137,6 @@ public abstract class ProcessingElement implements Cloneable {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        this.app = app;
-        app.addPEPrototype(this, null);
-
         peInstances = CacheBuilder.newBuilder().build(new CacheLoader<String, ProcessingElement>() {
             @Override
             public ProcessingElement load(String key) throws Exception {
@@ -164,6 +151,17 @@ public abstract class ProcessingElement implements Cloneable {
          * to the prototype.
          */
         this.pePrototype = this;
+    }
+
+    /**
+     * Create a PE prototype. By default, PE instances will never expire. Use {@code #configurePECache} to configure.
+     * 
+     * @param app
+     *            the app that contains this PE
+     */
+    public ProcessingElement(App app) {
+        this();
+        setApp(app);
     }
 
     /**
@@ -195,6 +193,15 @@ public abstract class ProcessingElement implements Cloneable {
      */
     public App getApp() {
         return app;
+    }
+
+    public void setApp(App app) {
+        if (this.app != null) {
+            throw new RuntimeException("Application was already assigne to this processing element");
+        }
+        this.app = app;
+        app.addPEPrototype(this, null);
+
     }
 
     /**
