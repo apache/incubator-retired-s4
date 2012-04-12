@@ -113,9 +113,7 @@ public abstract class WindowingPE<T> extends ProcessingElement {
     }
 
     protected void onCreate() {
-        if (circularBuffer == null) {
-            circularBuffer = new CircularFifoBuffer<T>(numSlots);
-        }
+        circularBuffer = new CircularFifoBuffer<T>(numSlots);
     }
 
     /**

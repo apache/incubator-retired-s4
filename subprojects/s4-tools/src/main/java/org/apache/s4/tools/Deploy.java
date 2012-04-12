@@ -51,13 +51,19 @@ public class Deploy {
 
             File s4rToDeploy = File.createTempFile("testapp" + System.currentTimeMillis(), "s4r");
 
-            String generatedS4RPath = null;
+            String s4rPath = null;
 
-            ExecGradle.exec(deployArgs.gradleExecPath, deployArgs.gradleBuildFilePath, "installS4R", new String[] {
-                    "appsDir=" + tmpAppsDir.getAbsolutePath(), "appName=" + deployArgs.appName });
-            generatedS4RPath = tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r";
-
-            Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(generatedS4RPath)),
+            if (deployArgs.s4rPath != null) {
+                s4rPath = deployArgs.s4rPath;
+                logger.info(
+                        "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
+                        s4rPath);
+            } else {
+                ExecGradle.exec(deployArgs.gradleExecPath, deployArgs.gradleBuildFilePath, "installS4R", new String[] {
+                        "appsDir=" + tmpAppsDir.getAbsolutePath(), "appName=" + deployArgs.appName });
+                s4rPath = tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r";
+            }
+            Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(s4rPath)),
                     Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
 
             final String uri = s4rToDeploy.toURI().toString();
@@ -77,11 +83,14 @@ public class Deploy {
     @Parameters(commandNames = "s4 deploy", commandDescription = "Package and deploy application to S4 cluster", separators = "=")
     static class DeployAppArgs extends S4ArgsBase {
 
-        @Parameter(names = "-gradle", description = "path to gradle/gradlew executable", required = true)
+        @Parameter(names = "-gradle", description = "path to gradle/gradlew executable", required = false)
         String gradleExecPath;
 
-        @Parameter(names = "-buildFile", description = "path to gradle build file for the S4 application", required = true)
+        @Parameter(names = "-buildFile", description = "path to gradle build file for the S4 application", required = false)
         String gradleBuildFilePath;
+
+        @Parameter(names = "-s4r", description = "path to s4r file", required = false)
+        String s4rPath;
 
         @Parameter(names = "-appName", description = "name of S4 application", required = true)
         String appName;
