@@ -36,7 +36,7 @@ public class ZKServer {
                 }
             };
 
-            ZkServer zkServer = new ZkServer(zkArgs.dataDir, zkArgs.logDir, defaultNameSpace);
+            ZkServer zkServer = new ZkServer(zkArgs.dataDir, zkArgs.logDir, defaultNameSpace, zkArgs.zkPort);
             zkServer.start();
         } catch (Exception e) {
             logger.error("Cannot initialize zookeeper with specified configuration", e);
@@ -47,7 +47,7 @@ public class ZKServer {
     static class ZKServerArgs extends S4ArgsBase {
 
         @Parameter(names = "-port", description = "Zookeeper port")
-        String zkPort = "2181";
+        int zkPort = 2181;
 
         @Parameter(names = "-dataDir", description = "data directory", required = false)
         String dataDir = new File(System.getProperty("java.io.tmpdir") + File.separator + "tmp" + File.separator
