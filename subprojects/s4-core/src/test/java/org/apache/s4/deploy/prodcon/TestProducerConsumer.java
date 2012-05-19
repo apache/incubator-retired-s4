@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
 import com.sun.net.httpserver.HttpServer;
 
 public class TestProducerConsumer {
@@ -46,17 +47,17 @@ public class TestProducerConsumer {
         Assert.assertTrue(tmpAppsDir.exists());
         File gradlewFile = CoreTestUtils.findGradlewInRootDir();
 
-        CoreTestUtils.callGradleTask(gradlewFile, new File(gradlewFile.getParentFile().getAbsolutePath()
+        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/s4-showtime/build.gradle"), "installS4R",
                 new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
 
-        CoreTestUtils.callGradleTask(gradlewFile, new File(gradlewFile.getParentFile().getAbsolutePath()
+        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/s4-counter/build.gradle"), "installS4R",
                 new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
     }
 
     @Before
-    public void cleanLocalAppsDir() throws ConfigurationException {
+    public void cleanLocalAppsDir() throws ConfigurationException, IOException {
         PropertiesConfiguration config = loadConfig();
 
         if (!new File(config.getString("appsDir")).exists()) {
@@ -88,10 +89,10 @@ public class TestProducerConsumer {
         CommTestUtils.killS4App(forkedNode);
     }
 
-    private PropertiesConfiguration loadConfig() throws org.apache.commons.configuration.ConfigurationException {
-        InputStream is = this.getClass().getResourceAsStream("/org.apache.s4.deploy.s4.properties");
+    private PropertiesConfiguration loadConfig() throws org.apache.commons.configuration.ConfigurationException,
+            IOException {
         PropertiesConfiguration config = new PropertiesConfiguration();
-        config.load(is);
+        config.load(Resources.newInputStreamSupplier(Resources.getResource("default.s4.properties")).getInput());
         return config;
     }
 
@@ -117,11 +118,11 @@ public class TestProducerConsumer {
 
         ZNRecord record1 = new ZNRecord(String.valueOf(System.currentTimeMillis()));
         record1.putSimpleField(DistributedDeploymentManager.S4R_URI, uriShowtime);
-        zkClient.create("/" + clusterName + "/apps/showtime", record1, CreateMode.PERSISTENT);
+        zkClient.create("/s4/clusters/" + clusterName + "/apps/showtime", record1, CreateMode.PERSISTENT);
 
         ZNRecord record2 = new ZNRecord(String.valueOf(System.currentTimeMillis()));
         record2.putSimpleField(DistributedDeploymentManager.S4R_URI, uriCounter);
-        zkClient.create("/" + clusterName + "/apps/counter", record2, CreateMode.PERSISTENT);
+        zkClient.create("/s4/clusters/" + clusterName + "/apps/counter", record2, CreateMode.PERSISTENT);
 
         // TODO validate test through some Zookeeper notifications
         Thread.sleep(10000);
@@ -133,22 +134,25 @@ public class TestProducerConsumer {
         // current package .
 
         // 1. start s4 nodes. Check that no app is deployed.
-        InputStream is = this.getClass().getResourceAsStream("/org.apache.s4.deploy.s4.properties");
+        // PropertiesConfiguration config = new PropertiesConfiguration();
+        // config.load(Resources.newInputStreamSupplier(Resources.getResource("/org.apache.s4.deploy.s4.properties"))
+        // .getInput());
+        InputStream is = this.getClass().getResourceAsStream("/default.s4.properties");
         PropertiesConfiguration config = new PropertiesConfiguration();
         config.load(is);
 
         clusterName = config.getString("cluster.name");
         TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
-        taskSetup.clean(clusterName);
+        taskSetup.clean("s4");
         taskSetup.setup(clusterName, 1, 1300);
 
         zkClient = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
         zkClient.setZkSerializer(new ZNRecordSerializer());
-        List<String> processes = zkClient.getChildren("/" + clusterName + "/process");
+        List<String> processes = zkClient.getChildren("/s4/clusters/" + clusterName + "/process");
         Assert.assertTrue(processes.size() == 0);
         final CountDownLatch signalProcessesReady = new CountDownLatch(1);
 
-        zkClient.subscribeChildChanges("/" + clusterName + "/process", new IZkChildListener() {
+        zkClient.subscribeChildChanges("/s4/clusters/" + clusterName + "/process", new IZkChildListener() {
 
             @Override
             public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
@@ -160,7 +164,7 @@ public class TestProducerConsumer {
         });
 
         File tmpConfig = File.createTempFile("tmp", "config");
-        Assert.assertTrue(ByteStreams.copy(getClass().getResourceAsStream("/org.apache.s4.deploy.s4.properties"),
+        Assert.assertTrue(ByteStreams.copy(getClass().getResourceAsStream("/default.s4.properties"),
                 Files.newOutputStreamSupplier(tmpConfig)) > 0);
         forkedNode = CoreTestUtils.forkS4Node(new String[] { tmpConfig.getAbsolutePath() });
 

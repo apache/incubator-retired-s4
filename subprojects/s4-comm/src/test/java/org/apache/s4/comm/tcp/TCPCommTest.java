@@ -1,9 +1,8 @@
 package org.apache.s4.comm.tcp;
 
 import java.io.IOException;
+
 import org.apache.s4.comm.DeliveryTestUtil;
-import org.apache.s4.comm.tcp.TCPEmitter;
-import org.apache.s4.comm.tcp.TCPListener;
 import org.apache.s4.fixtures.ZkBasedClusterManagementTestModule;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.zookeeper.KeeperException;
@@ -26,7 +25,7 @@ public class TCPCommTest extends ZkBasedTest {
 
     class TCPCommTestModule extends ZkBasedClusterManagementTestModule {
         TCPCommTestModule() {
-            super(TCPEmitter.class, TCPListener.class);
+            super(TCPEmitter.class, TCPRemoteEmitter.class, TCPListener.class);
         }
 
         @Override

@@ -21,9 +21,11 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.base.Hasher;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
+import org.apache.s4.comm.topology.RemoteStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.name.Named;
 
 /*
  * Container base class to hold all processing elements. We will implement administrative methods here.
@@ -50,10 +53,24 @@ public abstract class App {
 
     private ClockType clockType = ClockType.WALL_CLOCK;
     private int id = -1;
+
     @Inject
     private Sender sender;
     @Inject
     private Receiver receiver;
+
+    @Inject
+    RemoteSenders remoteSenders;
+
+    @Inject
+    Hasher hasher;
+
+    @Inject
+    RemoteStreams remoteStreams;
+
+    @Inject
+    @Named("cluster.name")
+    String clusterName;
 
     // serialization uses the application class loader
     private SerializerDeserializer serDeser = new KryoSerDeser(getClass().getClassLoader());
@@ -254,9 +271,9 @@ public abstract class App {
      *            - receives events from the communication layer.
      */
     public void setCommLayer(Sender sender, Receiver receiver) {
-        this.sender = sender;
-        this.receiver = receiver;
-        sender.setPartition(receiver.getPartition());
+        // this.sender = sender;
+        // this.receiver = receiver;
+        // sender.setPartition(receiver.getPartition());
     }
 
     /**
@@ -296,6 +313,27 @@ public abstract class App {
     protected <T extends Event> Stream<T> createStream(String name, ProcessingElement... processingElements) {
 
         return new Stream<T>(this, name, processingElements);
+    }
+
+    protected <T extends Event> RemoteStream createOutputStream(String name) {
+        return createOutputStream(name, null);
+    }
+
+    protected <T extends Event> RemoteStream createOutputStream(String name, KeyFinder<Event> finder) {
+        return new RemoteStream(this, name, finder, remoteSenders, hasher, remoteStreams, clusterName);
+    }
+
+    protected <T extends Event> Stream<T> createInputStream(String streamName, KeyFinder<T> finder,
+            ProcessingElement... processingElements) {
+        remoteStreams.addInputStream(getId(), clusterName, streamName);
+        return createStream(streamName, finder, processingElements);
+
+    }
+
+    protected <T extends Event> Stream<T> createInputStream(String streamName, ProcessingElement... processingElements) {
+        remoteStreams.addInputStream(getId(), clusterName, streamName);
+        return createStream(streamName, processingElements);
+
     }
 
     /**

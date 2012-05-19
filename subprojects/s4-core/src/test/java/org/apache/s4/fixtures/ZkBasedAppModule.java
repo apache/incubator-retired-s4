@@ -5,6 +5,8 @@ import java.lang.reflect.Type;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Listener;
+import org.apache.s4.base.RemoteEmitter;
+import org.apache.s4.core.RemoteSenders;
 
 public class ZkBasedAppModule<T> extends ZkBasedClusterManagementTestModule {
     private final Class<?> appClass;
@@ -22,8 +24,9 @@ public class ZkBasedAppModule<T> extends ZkBasedClusterManagementTestModule {
         this.appClass = findAppClass();
     }
 
-    protected ZkBasedAppModule(Class<? extends Emitter> emitterClass, Class<? extends Listener> listenerClass) {
-        super(emitterClass, listenerClass);
+    protected ZkBasedAppModule(Class<? extends Emitter> emitterClass,
+            Class<? extends RemoteEmitter> remoteEmitterClass, Class<? extends Listener> listenerClass) {
+        super(emitterClass, remoteEmitterClass, listenerClass);
         this.appClass = findAppClass();
     }
 
@@ -31,5 +34,7 @@ public class ZkBasedAppModule<T> extends ZkBasedClusterManagementTestModule {
     protected void configure() {
         super.configure();
         bind(appClass);
+        bind(RemoteSenders.class);
+
     }
 }

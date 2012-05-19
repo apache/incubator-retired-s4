@@ -11,8 +11,8 @@ import org.apache.s4.base.Emitter;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.topology.ClusterNode;
-import org.apache.s4.comm.topology.Topology;
-import org.apache.s4.comm.topology.TopologyChangeListener;
+import org.apache.s4.comm.topology.Cluster;
+import org.apache.s4.comm.topology.ClusterChangeListener;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -35,12 +35,17 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
 
-public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChangeListener {
+/**
+ * 
+ * Sends messages through TCP, to the associated subcluster.
+ * 
+ */
+public class TCPEmitter implements Emitter, ChannelFutureListener, ClusterChangeListener {
     private static final Logger logger = LoggerFactory.getLogger(TCPEmitter.class);
     private static final int BUFFER_SIZE = 10;
     private static final int NUM_RETRIES = 10;
 
-    private Topology topology;
+    private Cluster topology;
     private final ClientBootstrap bootstrap;
 
     @Inject
@@ -100,10 +105,10 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
     private MessageQueuesPerPartition queuedMessages = new MessageQueuesPerPartition(true);
 
     @Inject
-    public TCPEmitter(Topology topology) throws InterruptedException {
+    public TCPEmitter(Cluster topology) throws InterruptedException {
         this.topology = topology;
         topology.addListener(this);
-        int clusterSize = this.topology.getTopology().getNodes().size();
+        int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
 
         partitionChannelMap = HashBiMap.create(clusterSize);
         partitionNodeMap = HashBiMap.create(clusterSize);
@@ -117,8 +122,8 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
             @Override
             public ChannelPipeline getPipeline() {
                 ChannelPipeline p = Channels.pipeline();
-                p.addLast("1", new LengthFieldPrepender(4));
-                p.addLast("2", new TestHandler());
+                p.addLast("Framing", new LengthFieldPrepender(4));
+                p.addLast("ChannelStateMonitor", new ChannelStateMonitoringHandler());
                 return p;
             }
         });
@@ -131,11 +136,11 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
         ClusterNode clusterNode = partitionNodeMap.get(partitionId);
 
         if (clusterNode == null) {
-            if (topology.getTopology().getNodes().size() == 0) {
+            if (topology.getPhysicalCluster().getNodes().size() == 0) {
                 logger.error("No node in cluster ");
                 return false;
             }
-            clusterNode = topology.getTopology().getNodes().get(partitionId);
+            clusterNode = topology.getPhysicalCluster().getNodes().get(partitionId);
             partitionNodeMap.forcePut(partitionId, clusterNode);
         }
 
@@ -184,37 +189,44 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
             }
         }
 
-        /*
-         * Try limiting the size of the send queue inside Netty
-         */
-        if (!channel.isWritable()) {
-            synchronized (sendLock) {
-                // check again now that we have the lock
-                while (!channel.isWritable()) {
-                    try {
-                        sendLock.wait();
-                    } catch (InterruptedException ie) {
-                        return false;
-                    }
-                }
-            }
-        }
+        // /*
+        // * Try limiting the size of the send queue inside Netty
 
-        /*
-         * Channel is available. Write messages in the following order: (1) Messages already on wire, (2) Previously
-         * buffered messages, and (3) the Current Message
-         * 
-         * Once the channel returns success delete from the messagesOnTheWire
-         */
-        byte[] messageBeingSent = null;
-        // while ((messageBeingSent = messagesOnTheWire.peek(partitionId)) != null) {
-        // writeMessageToChannel(channel, partitionId, messageBeingSent, false);
+        // FIXME this does not work: in case of a disconnection, the channel remains non writeable, and the lock is
+        // never released, hence blocking.
+        // should be fixed using: 1/ configurable timeouts (should drop pending messages after the timeout) 2/ make sure
+        // the handler is correctly responding to disconnections/reconnections 3/ there should be a lock per channel,
+        // no?
+
+        // */
+        // if (!channel.isWritable()) {
+        // synchronized (sendLock) {
+        // // check again now that we have the lock
+        // while (!channel.isWritable()) {
+        // try {
+        // sendLock.wait();
+        // } catch (InterruptedException ie) {
+        // return false;
+        // }
+        // }
+        // }
         // }
 
-        while ((messageBeingSent = queuedMessages.peek(partitionId)) != null) {
-            writeMessageToChannel(channel, partitionId, messageBeingSent);
-            queuedMessages.remove(partitionId);
-        }
+        // /*
+        // * Channel is available. Write messages in the following order: (1) Messages already on wire, (2) Previously
+        // * buffered messages, and (3) the Current Message
+        // *
+        // * Once the channel returns success delete from the messagesOnTheWire
+        // */
+        // byte[] messageBeingSent = null;
+        // // while ((messageBeingSent = messagesOnTheWire.peek(partitionId)) != null) {
+        // // writeMessageToChannel(channel, partitionId, messageBeingSent, false);
+        // // }
+        //
+        // while ((messageBeingSent = queuedMessages.peek(partitionId)) != null) {
+        // writeMessageToChannel(channel, partitionId, messageBeingSent);
+        // queuedMessages.remove(partitionId);
+        // }
 
         writeMessageToChannel(channel, partitionId, serDeser.serialize(message));
         return true;
@@ -242,7 +254,7 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
         /*
          * Close the channels that correspond to changed partitions and update partitionNodeMap
          */
-        for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
+        for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
             Integer partition = clusterNode.getPartition();
             ClusterNode oldNode = partitionNodeMap.get(partition);
 
@@ -259,19 +271,20 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, TopologyChang
     @Override
     public int getPartitionCount() {
         // Number of nodes is not same as number of partitions
-        return topology.getTopology().getPartitionCount();
+        return topology.getPhysicalCluster().getPartitionCount();
     }
 
-    class TestHandler extends SimpleChannelHandler {
+    class ChannelStateMonitoringHandler extends SimpleChannelHandler {
         @Override
         public void channelInterestChanged(ChannelHandlerContext ctx, ChannelStateEvent e) {
             // logger.info(String.format("%08x %08x %08x", e.getValue(),
             // e.getChannel().getInterestOps(), Channel.OP_WRITE));
-            synchronized (sendLock) {
-                if (e.getChannel().isWritable()) {
-                    sendLock.notify();
-                }
-            }
+            // FIXME see above comments about fixing the buffering of messages
+            // synchronized (sendLock) {
+            // if (e.getChannel().isWritable()) {
+            // sendLock.notify();
+            // }
+            // }
             ctx.sendUpstream(e);
         }
 

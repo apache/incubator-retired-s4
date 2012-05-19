@@ -25,7 +25,7 @@ public class UDPCommTest extends ZkBasedTest {
 
     class UDPCommTestModule extends ZkBasedClusterManagementTestModule {
         UDPCommTestModule() {
-            super(UDPEmitter.class, UDPListener.class);
+            super(UDPEmitter.class, null, UDPListener.class);
         }
 
         @Override

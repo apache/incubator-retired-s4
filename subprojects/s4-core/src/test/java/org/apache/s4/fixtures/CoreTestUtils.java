@@ -1,17 +1,19 @@
 package org.apache.s4.fixtures;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import junit.framework.Assert;
 
 import org.apache.s4.core.App;
 import org.apache.s4.core.Main;
+import org.gradle.tooling.BuildLauncher;
+import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.ProjectConnection;
+
+import sun.net.ProgressListener;
 
 import com.google.common.io.PatternFilenameFilter;
 
@@ -53,53 +55,38 @@ public class CoreTestUtils extends CommTestUtils {
         return gradlewFile;
     }
 
-    public static void callGradleTask(File gradlewFile, File buildFile, String taskName, String[] params)
-            throws Exception {
-    
-        List<String> cmdList = new ArrayList<String>();
-        cmdList.add(gradlewFile.getAbsolutePath());
-        cmdList.add("-c");
-        cmdList.add(gradlewFile.getParentFile().getAbsolutePath() + "/settings.gradle");
-        cmdList.add("-b");
-        cmdList.add(buildFile.getAbsolutePath());
-        cmdList.add(taskName);
-        if (params.length > 0) {
-            for (int i = 0; i < params.length; i++) {
-                cmdList.add("-P" + params[i]);
-            }
-        }
-    
-        System.out.println(Arrays.toString(cmdList.toArray(new String[] {})).replace(",", ""));
-        ProcessBuilder pb = new ProcessBuilder(cmdList);
-    
-        pb.directory(buildFile.getParentFile());
-        pb.redirectErrorStream();
-        final Process process = pb.start();
-    
-        process.waitFor();
-    
-        // try {
-        // int exitValue = process.exitValue();
-        // Assert.fail("forked process failed to start correctly. Exit code is [" + exitValue + "]");
-        // } catch (IllegalThreadStateException ignored) {
-        // }
-    
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                try {
-                    line = br.readLine();
-                    while (line != null) {
-                        System.out.println(line);
-                        line = br.readLine();
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+    public static void callGradleTask(File buildFile, String taskName, String[] params) throws Exception {
+
+        ProjectConnection connection = GradleConnector.newConnector().forProjectDirectory(buildFile.getParentFile())
+                .connect();
+
+        try {
+            BuildLauncher build = connection.newBuild();
+
+            // select tasks to run:
+            build.forTasks(taskName);
+
+            List<String> buildArgs = new ArrayList<String>();
+            // buildArgs.add("-b");
+            // buildArgs.add(buildFilePath);
+            buildArgs.add("-stacktrace");
+            buildArgs.add("-info");
+            if (params.length > 0) {
+                for (int i = 0; i < params.length; i++) {
+                    buildArgs.add("-P" + params[i]);
                 }
             }
-        }).start();
-    
+
+            build.withArguments(buildArgs.toArray(new String[] {}));
+
+            // if you want to listen to the progress events:
+            ProgressListener listener = null; // use your implementation
+
+            // kick the build off:
+            build.run();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 }

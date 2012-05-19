@@ -80,7 +80,7 @@ public class DistributedDeploymentManager implements DeploymentManager {
         zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
         zkClient.setZkSerializer(new ZNRecordSerializer());
         IZkChildListener appListener = new AppsChangeListener();
-        appsPath = "/" + clusterName + "/apps";
+        appsPath = "/s4/clusters/" + clusterName + "/apps";
         if (!zkClient.exists(appsPath)) {
             zkClient.create(appsPath, null, CreateMode.PERSISTENT);
         }

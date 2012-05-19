@@ -38,7 +38,7 @@ public class DefineCluster {
     @Parameters(commandNames = "s4 newCluster", separators = "=", commandDescription = "Setup new S4 logical cluster")
     static class ZKServerArgs extends S4ArgsBase {
 
-        @Parameter(names = "-name", description = "S4 cluster name", required = true)
+        @Parameter(names = "-cluster", description = "S4 cluster name", required = true)
         String clusterName = "s4-test-cluster";
 
         @Parameter(names = "-nbTasks", description = "number of tasks for the cluster", required = true)

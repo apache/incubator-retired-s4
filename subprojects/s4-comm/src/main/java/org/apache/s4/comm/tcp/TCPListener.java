@@ -14,6 +14,7 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
@@ -25,21 +26,22 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
-
+/**
+ * Receives messages through TCP for the assigned subcluster.
+ * 
+ */
 public class TCPListener implements Listener {
     private BlockingQueue<byte[]> handoffQueue = new SynchronousQueue<byte[]>();
     private ClusterNode node;
     private static final Logger logger = LoggerFactory.getLogger(TCPListener.class);
-    
+
     @Inject
     public TCPListener(Assignment assignment) {
         // wait for an assignment
         node = assignment.assignClusterNode();
-        
-        ChannelFactory factory =
-            new NioServerSocketChannelFactory(
-                    Executors.newCachedThreadPool(),
-                    Executors.newCachedThreadPool());
+
+        ChannelFactory factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
+                Executors.newCachedThreadPool());
 
         ServerBootstrap bootstrap = new ServerBootstrap(factory);
 
@@ -48,38 +50,37 @@ public class TCPListener implements Listener {
                 ChannelPipeline p = Channels.pipeline();
                 p.addLast("1", new LengthFieldBasedFrameDecoder(999999, 0, 4, 0, 4));
                 p.addLast("2", new ChannelHandler(handoffQueue));
-                
+
                 return p;
             }
         });
 
         bootstrap.setOption("child.tcpNoDelay", true);
         bootstrap.setOption("child.keepAlive", true);
-        
+
         bootstrap.bind(new InetSocketAddress(node.getPort()));
     }
-    
+
     public byte[] recv() {
         try {
             return handoffQueue.take();
         } catch (InterruptedException e) {
-        	return null;
+            return null;
         }
     }
-    
+
     public int getPartitionId() {
         return node.getPartition();
     }
-    
+
     public class ChannelHandler extends SimpleChannelHandler {
         private BlockingQueue<byte[]> handoffQueue;
-        
+
         public ChannelHandler(BlockingQueue<byte[]> handOffQueue) {
             this.handoffQueue = handOffQueue;
         }
-        
-        public void messageReceived(ChannelHandlerContext ctx,
-                MessageEvent e) {
+
+        public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
             ChannelBuffer buffer = (ChannelBuffer) e.getMessage();
             try {
                 handoffQueue.put(buffer.array()); // this holds up the Netty upstream I/O thread if
@@ -88,7 +89,7 @@ public class TCPListener implements Listener {
                 Thread.currentThread().interrupt();
             }
         }
-        
+
         public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event) {
             logger.error("Error", event.getCause());
             if (context.getChannel().isOpen()) {
@@ -96,5 +97,12 @@ public class TCPListener implements Listener {
                 context.getChannel().close();
             }
         }
+
+        @Override
+        public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+            // TODO Auto-generated method stub
+            super.channelClosed(ctx, e);
+        }
+
     }
 }

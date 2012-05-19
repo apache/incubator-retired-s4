@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
+import org.I0Itec.zkclient.exception.ZkNodeExistsException;
 import org.I0Itec.zkclient.serialize.ZkSerializer;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.data.Stat;
@@ -23,11 +24,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
 public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateListener, IZkDataListener {
-    private static final Logger logger = LoggerFactory.getLogger(TopologyFromZK.class);
-    /*
-     * Name of the cluster
-     */
-    private final String clusterName;
+    private static final Logger logger = LoggerFactory.getLogger(AssignmentFromZK.class);
     /**
      * Current state of connection with ZK
      */
@@ -64,15 +61,19 @@ public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateL
      * Holds the reference to ClusterNode which points to the current partition owned
      */
     AtomicReference<ClusterNode> clusterNodeRef;
+    private int connectionTimeout;
+    private String clusterName;
 
+    // TODO we currently have a single assignment per node (i.e. a node can only belong to 1 topology)
     @Inject
     public AssignmentFromZK(@Named("cluster.name") String clusterName,
             @Named("cluster.zk_address") String zookeeperAddress,
             @Named("cluster.zk_session_timeout") int sessionTimeout,
             @Named("cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
         this.clusterName = clusterName;
-        taskPath = "/" + clusterName + "/" + "tasks";
-        processPath = "/" + clusterName + "/" + "process";
+        this.connectionTimeout = connectionTimeout;
+        taskPath = "/s4/clusters/" + clusterName + "/tasks";
+        processPath = "/s4/clusters/" + clusterName + "/process";
         lock = new ReentrantLock();
         clusterNodeRef = new AtomicReference<ClusterNode>();
         taskAcquired = lock.newCondition();
@@ -89,7 +90,9 @@ public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateL
         ZkSerializer serializer = new ZNRecordSerializer();
         zkClient.setZkSerializer(serializer);
         zkClient.subscribeStateChanges(this);
-        zkClient.waitUntilConnected(connectionTimeout, TimeUnit.MILLISECONDS);
+        if (!zkClient.waitUntilConnected(connectionTimeout, TimeUnit.MILLISECONDS)) {
+            throw new Exception("cannot connect to zookeeper");
+        }
         // bug in zkClient, it does not invoke handleNewSession the first time
         // it connects
         this.handleStateChanged(KeeperState.SyncConnected);
@@ -109,11 +112,17 @@ public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateL
     @Override
     public void handleStateChanged(KeeperState state) throws Exception {
         this.state = state;
+        if (!state.equals(KeeperState.SyncConnected)) {
+            logger.warn("Session not connected for cluster [{}]: [{}]. Trying to reconnect", clusterName, state.name());
+            zkClient.close();
+            zkClient.connect(connectionTimeout, null);
+            handleNewSession();
+        }
     }
 
     @Override
     public void handleNewSession() {
-        logger.info("New session:" + zkClient.getSessionId());
+        logger.info("New session:" + zkClient.getSessionId() + "; state is : " + state.name());
         currentlyOwningTask.set(false);
         zkClient.subscribeChildChanges(taskPath, this);
         zkClient.subscribeChildChanges(processPath, this);
@@ -174,13 +183,17 @@ public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateL
                         zkClient.createEphemeral(processPath + "/" + taskName, process);
 
                     } catch (Throwable e) {
-                        logger.warn("Exception trying to acquire task:" + taskName
-                                + " This is warning and can be ignored. " + e);
-                        // Any exception does not means we failed to acquire
-                        // task because we might have acquired task but there
-                        // was ZK connection loss
-                        // We will check again in the next section if we created
-                        // the process node successfully
+                        if (e instanceof ZkNodeExistsException) {
+                            logger.trace("Task already created");
+                        } else {
+                            logger.debug("Exception trying to acquire task:" + taskName
+                                    + " This is warning and can be ignored. " + e);
+                            // Any exception does not means we failed to acquire
+                            // task because we might have acquired task but there
+                            // was ZK connection loss
+                            // We will check again in the next section if we created
+                            // the process node successfully
+                        }
                     }
                     // check if the process node is created and we own it
                     Stat stat = zkClient.getStat(processPath + "/" + taskName);

@@ -64,32 +64,29 @@ public class DeliveryTestUtil {
 
     /*
      * TimerThread - interrupts the passed thread, after specified time-interval.
+     * 
+     * FIXME we should use number of events rather than time-based interval
      */
     class TimerThread extends Thread {
         private final Thread watchThread;
-        private Integer sleepCounter;
+        private volatile int sleepCounter;
 
         TimerThread(Thread watchThread) {
             this.watchThread = watchThread;
-            this.sleepCounter = new Integer(sleepCount);
+            this.sleepCounter = sleepCount;
         }
 
         public void resetSleepCounter() {
-            synchronized (this.sleepCounter) {
-                this.sleepCounter = sleepCount;
-            }
+            this.sleepCounter = sleepCount;
         }
 
         public void clearSleepCounter() {
-            synchronized (this.sleepCounter) {
-                this.sleepCounter = 0;
-            }
+            this.sleepCounter = 0;
         }
 
         private int getCounter() {
-            synchronized (this.sleepCounter) {
-                return this.sleepCounter--;
-            }
+            return sleepCounter--;
+
         }
 
         @Override

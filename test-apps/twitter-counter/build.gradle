@@ -115,7 +115,7 @@ appDependencies = ( configurations.compile )
 task s4r(type: Jar) {
    dependsOn jar
    from { appDependencies.collect { it.isDirectory() ? it : zipTree(it) } }
-   from { configurations.archives.allArtifactFiles.collect { it.isDirectory() ? it : zipTree(it) } }
+   from { configurations.archives.allArtifacts.files.collect { zipTree(it) } }
    manifest = project.manifest
    extension = 's4r'
 
@@ -139,10 +139,11 @@ task s4r(type: Jar) {
    }
 }
 
+
 /* List the artifacts that will br added to the s4 archive (and explode if needed). */
 s4r << {
    appDependencies.each { File file -> println 'Adding to s4 archive: ' + file.name }
-   configurations.archives.allArtifactFiles.each { File file -> println 'Adding to s4 archive: ' + file.name }
+   configurations.archives.allArtifacts.files.each { println 'Adding to s4 archive: ' + it.name }
 
    /* This is for debugging. */
    //configurations.s4All.each { File file -> println 's4All: ' + file.name }

@@ -3,7 +3,6 @@ package org.apache.s4.deploy;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -20,7 +19,6 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
-import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.zookeeper.CreateMode;
@@ -31,10 +29,12 @@ import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -63,17 +63,17 @@ public class TestAutomaticDeployment {
 
         File gradlewFile = CoreTestUtils.findGradlewInRootDir();
 
-        CoreTestUtils.callGradleTask(gradlewFile, new File(gradlewFile.getParentFile().getAbsolutePath()
+        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/simple-deployable-app-1/build.gradle"), "installS4R", new String[] { "appsDir="
                 + tmpAppsDir.getAbsolutePath() });
 
-        CoreTestUtils.callGradleTask(gradlewFile, new File(gradlewFile.getParentFile().getAbsolutePath()
+        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/simple-deployable-app-2/build.gradle"), "installS4R", new String[] { "appsDir="
                 + tmpAppsDir.getAbsolutePath() });
     }
 
     @Before
-    public void cleanLocalAppsDir() throws ConfigurationException {
+    public void cleanLocalAppsDir() throws ConfigurationException, IOException {
         PropertiesConfiguration config = loadConfig();
 
         if (!new File(config.getString("appsDir")).exists()) {
@@ -86,14 +86,15 @@ public class TestAutomaticDeployment {
         }
     }
 
-    private PropertiesConfiguration loadConfig() throws ConfigurationException {
-        InputStream is = this.getClass().getResourceAsStream("/org.apache.s4.deploy.s4.properties");
+    private PropertiesConfiguration loadConfig() throws ConfigurationException, IOException {
         PropertiesConfiguration config = new PropertiesConfiguration();
-        config.load(is);
+        config.load(Resources.newInputStreamSupplier(Resources.getResource("default.s4.properties")).getInput());
         return config;
     }
 
+    // ignore this test since now we only deploy from artifacts published through zookeeper
     @Test
+    @Ignore
     public void testInitialDeploymentFromFileSystem() throws Exception {
 
         File s4rToDeploy = new File(loadConfig().getString("appsDir") + File.separator + "testapp"
@@ -142,7 +143,7 @@ public class TestAutomaticDeployment {
         if (!initial) {
             ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
             record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-            zkClient.create("/" + clusterName + "/apps/testApp", record, CreateMode.PERSISTENT);
+            zkClient.create("/s4/clusters/" + clusterName + "/apps/testApp", record, CreateMode.PERSISTENT);
         }
 
         Assert.assertTrue(signalAppInitialized.await(10, TimeUnit.SECONDS));
@@ -180,16 +181,16 @@ public class TestAutomaticDeployment {
 
         ZNRecord record1 = new ZNRecord(String.valueOf(System.currentTimeMillis()) + "-app1");
         record1.putSimpleField(DistributedDeploymentManager.S4R_URI, uri1);
-        zkClient.create("/" + clusterName + "/apps/testApp1", record1, CreateMode.PERSISTENT);
+        zkClient.create("/s4/clusters/" + clusterName + "/apps/testApp1", record1, CreateMode.PERSISTENT);
 
         ZNRecord record2 = new ZNRecord(String.valueOf(System.currentTimeMillis()) + "-app2");
         record2.putSimpleField(DistributedDeploymentManager.S4R_URI, uri2);
-        zkClient.create("/" + clusterName + "/apps/testApp2", record2, CreateMode.PERSISTENT);
+        zkClient.create("/s4/clusters/" + clusterName + "/apps/testApp2", record2, CreateMode.PERSISTENT);
 
-        Assert.assertTrue(signalApp1Initialized.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(signalApp1Initialized.await(20, TimeUnit.SECONDS));
         Assert.assertTrue(signalApp1Started.await(10, TimeUnit.SECONDS));
 
-        Assert.assertTrue(signalApp2Initialized.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(signalApp2Initialized.await(20, TimeUnit.SECONDS));
         Assert.assertTrue(signalApp2Started.await(10, TimeUnit.SECONDS));
 
     }
@@ -221,32 +222,24 @@ public class TestAutomaticDeployment {
     }
 
     /**
-     * 
-     * Tests that classes with same signature are loaded in different class loaders (through the S4RLoader), even when
-     * referenced through reflection, and even when referencing classes present in the classpath of the S4 node
-     * 
-     * Works in the following manner:
-     * 
-     * - we have app1 and app2, very simple apps
-     * 
-     * - app1 and app2 have 3 classes with same name: A, AppConstants and TestApp
-     * 
-     * - app1 in addition has a PE and a socket adapter so that it can react to injected events
-     * 
-     * - upon initialization of the application, TestApp writes a znode in Zookeeper, corresponding to the application
-     * index (1 or 2), using the corresponding constant from the AppConstant class (which is part of the S4 node
-     * classpath, and therefore loaded by the standard classloader, not from an s4 app classloader)
+     * * * Tests that classes with same signature are loaded in different class loaders (through the S4RLoader), even
+     * when referenced through reflection, and even when referencing classes present in the classpath of the S4 nod * *
+     * Works in the following manne * * - we have app1 and app2, very simple a * * - app1 and app2 have 3 classes with
+     * same name: A, AppConstants and Tes * * - app1 in addition has a PE and a socket adapter so that it can react to
+     * injected e * * - upon initialization of the application, TestApp writes a znode in Zookeeper, corresponding to
+     * the application index (1 or 2), using the corresponding constant from the AppConstant class (which is part of the
+     * S4 node classpath, and therefore loaded by the standard classloader, not from an s4 app classl *
      * 
      * - upon startup of the application, TestApp creates A by reflection, and A writes a znode specific to the current
-     * app
+     * p
      * 
      * - app1 and app2 are generated through gradle scripts, called by executing the "gradlew" executable at the root of
-     * the project, and using the build.gradle file available for these applications
+     * the project, and using the build.gradle file available for these appl * ns
      * 
-     * - app1 and app2 s4r archives are copied to a web server and published to Zookeeper
+     * - app1 and app2 s4r archives are copied to a web server and published to * per
      * 
      * - they automatically get deployed, and we verify that 2 apps are correctly started, therefore that classes
-     * TestApp and A were independently loaded for independent applications
+     * TestApp and A were independently loaded for independent ap * ions
      * 
      */
 
@@ -289,9 +282,8 @@ public class TestAutomaticDeployment {
         // current package .
 
         // 1. start s4 nodes. Check that no app is deployed.
-        InputStream is = this.getClass().getResourceAsStream("/org.apache.s4.deploy.s4.properties");
         PropertiesConfiguration config = new PropertiesConfiguration();
-        config.load(is);
+        config.load(Resources.newInputStreamSupplier(Resources.getResource("default.s4.properties")).getInput());
 
         clusterName = config.getString("cluster.name");
         TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
@@ -300,11 +292,11 @@ public class TestAutomaticDeployment {
 
         zkClient = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
         zkClient.setZkSerializer(new ZNRecordSerializer());
-        List<String> processes = zkClient.getChildren("/" + clusterName + "/process");
+        List<String> processes = zkClient.getChildren("/s4/clusters/" + clusterName + "/process");
         Assert.assertTrue(processes.size() == 0);
         final CountDownLatch signalProcessesReady = new CountDownLatch(1);
 
-        zkClient.subscribeChildChanges("/" + clusterName + "/process", new IZkChildListener() {
+        zkClient.subscribeChildChanges("/s4/clusters/" + clusterName + "/process", new IZkChildListener() {
 
             @Override
             public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
@@ -316,7 +308,7 @@ public class TestAutomaticDeployment {
         });
 
         File tmpConfig = File.createTempFile("tmp", "config");
-        Assert.assertTrue(ByteStreams.copy(getClass().getResourceAsStream("/org.apache.s4.deploy.s4.properties"),
+        Assert.assertTrue(ByteStreams.copy(getClass().getResourceAsStream("/default.s4.properties"),
                 Files.newOutputStreamSupplier(tmpConfig)) > 0);
         forkedNode = CoreTestUtils.forkS4Node(new String[] { tmpConfig.getAbsolutePath() });
 

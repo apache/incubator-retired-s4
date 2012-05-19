@@ -1,7 +1,7 @@
 package org.apache.s4.wordcount;
 
-import org.apache.s4.fixtures.FileBasedClusterManagementTestModule;
+import org.apache.s4.fixtures.ZkBasedAppModule;
 
-public class WordCountModule extends FileBasedClusterManagementTestModule<WordCountApp> {
+public class WordCountModule extends ZkBasedAppModule<WordCountApp> {
 
 }

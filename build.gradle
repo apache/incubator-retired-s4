@@ -73,7 +73,11 @@ libraries = [
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
     jcommander:         'com.beust:jcommander:1.23',
-    commons_io:         'commons-io:commons-io:2.1'
+    commons_io:         'commons-io:commons-io:2.1',
+    gradle_base_services: 'gradle-base-services:gradle-base-services:1.0-rc-3',
+    gradle_core: 'gradle-core:gradle-core:1.0-rc-3',
+    gradle_tooling_api: 'gradle-tooling-api:gradle-tooling-api:1.0-rc-3',
+    gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0-rc-3'
 ]
 
 subprojects {
@@ -94,6 +98,7 @@ subprojects {
         /* Google. */
         compile( libraries.guava )
         compile( libraries.guice )
+        compile (libraries.guice_assist)
 
         /* Logging. */
         compile( libraries.slf4j )
@@ -109,6 +114,16 @@ subprojects {
         compile( libraries.jcip )
         compile( libraries.zk )
 
+//        // added here since from 1.0 dependencies don't seem to
+//        // be copied in through the application plugin (s4-tools)
+//        compile libraries.jcommander
+//        compile libraries.zkclient
+//        compile libraries.commons_io
+//        compile libraries.gradle_base_services
+//        compile libraries.gradle_core
+//        compile libraries.gradle_tooling_api
+//        compile libraries.gradle_wrapper
+//
         /* Testing. */
         testCompile( libraries.junit )
     }
@@ -124,7 +139,7 @@ subprojects {
 
 dependsOnChildren()
 
-platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm')]
+platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-tools')]
 
 configurations {
     platformLibs
@@ -153,7 +168,7 @@ binDistImage = copySpec {
         into ("platform/lib") {
             from proj.sourceSets.main.resources
             from proj.configurations.runtime.getFiles()
-            from proj.configurations.archives.allArtifactFiles
+            from proj.configurations.archives.allArtifacts.files
         }
     }
 }
@@ -177,7 +192,8 @@ task listJars << {
 /* Generates the gradlew scripts.
  http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.0-milestone-3'
+    gradleVersion = '1.0-rc-3'
+    jarFile='lib/gradle-wrapper-1.0-rc-3.jar'
 }
 
 class Version {

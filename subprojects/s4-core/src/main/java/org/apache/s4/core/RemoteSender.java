@@ -1,18 +1,28 @@
 package org.apache.s4.core;
 
+import org.apache.s4.base.Emitter;
+import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
-import org.apache.s4.base.RemoteEmitter;
-import org.apache.s4.base.SerializerDeserializer;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+public class RemoteSender {
 
-@Singleton
-public class RemoteSender extends Sender {
+    final private Emitter emitter;
+    final private Hasher hasher;
 
-    @Inject
-    public RemoteSender(RemoteEmitter emitter, SerializerDeserializer serDeser, Hasher hasher) {
-        super(emitter, serDeser, hasher);
+    public RemoteSender(Emitter emitter, Hasher hasher) {
+        super();
+        this.emitter = emitter;
+        this.hasher = hasher;
     }
 
+    public void send(String hashKey, EventMessage eventMessage) {
+        if (hashKey == null) {
+            for (int i = 0; i < emitter.getPartitionCount(); i++) {
+                emitter.send(i, eventMessage);
+            }
+        } else {
+            int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
+            emitter.send(partition, eventMessage);
+        }
+    }
 }

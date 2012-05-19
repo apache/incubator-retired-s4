@@ -4,6 +4,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/**
+ * ZooKeeper's custom znode data structure. Allows for easily information addition and retrieval.
+ * 
+ */
 public class ZNRecord {
 
     String id;
@@ -16,7 +20,7 @@ public class ZNRecord {
     Map<String, List<String>> listFields;
     Map<String, Map<String, String>> mapFields;
 
-    public ZNRecord() {
+    private ZNRecord() {
 
     }
 
@@ -56,6 +60,17 @@ public class ZNRecord {
 
     public Map<String, String> getMapField(String key) {
         return mapFields.get(key);
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + ((listFields == null) ? 0 : listFields.hashCode());
+        result = prime * result + ((mapFields == null) ? 0 : mapFields.hashCode());
+        result = prime * result + ((simpleFields == null) ? 0 : simpleFields.hashCode());
+        return result;
     }
 
     @Override

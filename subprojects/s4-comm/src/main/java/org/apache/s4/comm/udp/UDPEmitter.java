@@ -12,18 +12,18 @@ import org.apache.s4.base.Emitter;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.topology.ClusterNode;
-import org.apache.s4.comm.topology.Topology;
-import org.apache.s4.comm.topology.TopologyChangeListener;
+import org.apache.s4.comm.topology.Cluster;
+import org.apache.s4.comm.topology.ClusterChangeListener;
 
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
 
-public class UDPEmitter implements Emitter, TopologyChangeListener {
+public class UDPEmitter implements Emitter, ClusterChangeListener {
     private DatagramSocket socket;
     private final HashBiMap<Integer, ClusterNode> nodes;
     private final Map<Integer, InetAddress> inetCache = new HashMap<Integer, InetAddress>();
     private final long messageDropInQueueCount = 0;
-    private final Topology topology;
+    private final Cluster topology;
 
     @Inject
     SerializerDeserializer serDeser;
@@ -33,11 +33,11 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
     }
 
     @Inject
-    public UDPEmitter(Topology topology) {
+    public UDPEmitter(Cluster topology) {
         this.topology = topology;
         topology.addListener(this);
-        nodes = HashBiMap.create(topology.getTopology().getNodes().size());
-        for (ClusterNode node : topology.getTopology().getNodes()) {
+        nodes = HashBiMap.create(topology.getPhysicalCluster().getNodes().size());
+        for (ClusterNode node : topology.getPhysicalCluster().getNodes()) {
             nodes.forcePut(node.getPartition(), node);
         }
 
@@ -74,14 +74,14 @@ public class UDPEmitter implements Emitter, TopologyChangeListener {
 
     @Override
     public int getPartitionCount() {
-        return topology.getTopology().getPartitionCount();
+        return topology.getPhysicalCluster().getPartitionCount();
     }
 
     @Override
     public void onChange() {
         // topology changes when processes pick tasks
         synchronized (nodes) {
-            for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
+            for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
                 Integer partition = clusterNode.getPartition();
                 nodes.put(partition, clusterNode);
             }

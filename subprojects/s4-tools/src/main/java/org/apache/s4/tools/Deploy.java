@@ -1,9 +1,6 @@
 package org.apache.s4.tools;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,7 +15,12 @@ import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.apache.zookeeper.CreateMode;
+import org.gradle.tooling.BuildLauncher;
+import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.ProjectConnection;
 import org.slf4j.LoggerFactory;
+
+import sun.net.ProgressListener;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
@@ -69,10 +71,11 @@ public class Deploy {
             final String uri = s4rToDeploy.toURI().toString();
             ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
             record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-            zkClient.create("/" + deployArgs.clusterName + "/apps/" + deployArgs.appName, record, CreateMode.PERSISTENT);
+            zkClient.create("/s4/clusters/" + deployArgs.clusterName + "/apps/" + deployArgs.appName, record,
+                    CreateMode.PERSISTENT);
             logger.info("uploaded application [{}] to cluster [{}], using zookeeper znode [{}]", new String[] {
                     deployArgs.appName, deployArgs.clusterName,
-                    "/" + deployArgs.clusterName + "/apps/" + deployArgs.appName });
+                    "/s4/clusters/" + deployArgs.clusterName + "/apps/" + deployArgs.appName });
 
         } catch (Exception e) {
             LoggerFactory.getLogger(Deploy.class).error("Cannot deploy app", e);
@@ -110,57 +113,43 @@ public class Deploy {
 
         public static void exec(String gradlewExecPath, String buildFilePath, String taskName, String[] params)
                 throws Exception {
-            // Thread.sleep(10000);
-            List<String> cmdList = new ArrayList<String>();
-            // cmdList.add("sleep");
-            // cmdList.add("2");
-            // cmdList.add(";");
-            cmdList.add(gradlewExecPath);
-            // cmdList.add("-c");
-            // cmdList.add(gradlewFile.getParentFile().getAbsolutePath() + "/settings.gradle");
-            cmdList.add("-b");
-            cmdList.add(buildFilePath);
-            cmdList.add(taskName);
-            cmdList.add("-stacktrace");
-            cmdList.add("-info");
-            if (params.length > 0) {
-                for (int i = 0; i < params.length; i++) {
-                    cmdList.add("-P" + params[i]);
-                }
-            }
-            System.out.println(Arrays.toString(cmdList.toArray(new String[] {})).replace(",", ""));
-            ProcessBuilder pb = new ProcessBuilder(cmdList);
 
-            pb.directory(new File(buildFilePath).getParentFile());
-            pb.redirectErrorStream();
+            ProjectConnection connection = GradleConnector.newConnector()
+                    .forProjectDirectory(new File(buildFilePath).getParentFile()).connect();
 
-            final Process process = pb.start();
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    String line;
-                    try {
-                        line = br.readLine();
-                        while (line != null) {
-                            System.out.println(line);
-                            line = br.readLine();
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+            try {
+                BuildLauncher build = connection.newBuild();
+
+                // select tasks to run:
+                build.forTasks(taskName);
+
+                List<String> buildArgs = new ArrayList<String>();
+                // buildArgs.add("-b");
+                // buildArgs.add(buildFilePath);
+                buildArgs.add("-stacktrace");
+                buildArgs.add("-info");
+                if (params.length > 0) {
+                    for (int i = 0; i < params.length; i++) {
+                        buildArgs.add("-P" + params[i]);
                     }
                 }
-            }).start();
 
-            process.waitFor();
+                logger.info(Arrays.toString(buildArgs.toArray()));
 
-            // try {
-            // int exitValue = process.exitValue();
-            // Assert.fail("forked process failed to start correctly. Exit code is [" + exitValue + "]");
-            // } catch (IllegalThreadStateException ignored) {
-            // }
+                build.withArguments(buildArgs.toArray(new String[] {}));
 
+
+                // if you want to listen to the progress events:
+                ProgressListener listener = null; // use your implementation
+                // build.addProgressListener(listener);
+
+                // kick the build off:
+                build.run();
+            } finally {
+                connection.close();
+            }
         }
+
     }
 
 }

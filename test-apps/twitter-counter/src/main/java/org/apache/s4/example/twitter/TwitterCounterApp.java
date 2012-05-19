@@ -58,7 +58,7 @@ public class TwitterCounterApp extends App {
             TopicExtractorPE topicExtractorPE = createPE(TopicExtractorPE.class);
             topicExtractorPE.setDownStream(topicSeenStream);
             topicExtractorPE.setSingleton(true);
-            createStream("RawStatus", topicExtractorPE);
+            createInputStream("RawStatus", topicExtractorPE);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -67,10 +67,6 @@ public class TwitterCounterApp extends App {
 
     @Override
     protected void onStart() {
-        // try {
-        // t.start();
-        // } catch (Exception e) {
-        // throw new RuntimeException(e);
-        // }
+
     }
 }

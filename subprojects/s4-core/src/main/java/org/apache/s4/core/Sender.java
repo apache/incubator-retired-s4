@@ -7,7 +7,6 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * The {@link Sender} and its counterpart {@link Receiver} are the top level classes of the communication layer.
@@ -17,7 +16,6 @@ import com.google.inject.Singleton;
  * Details on how the cluster is partitioned and how events are serialized and transmitted to its destination are hidden
  * from the application developer.
  */
-@Singleton
 public class Sender {
     final private Emitter emitter;
     final private SerializerDeserializer serDeser;

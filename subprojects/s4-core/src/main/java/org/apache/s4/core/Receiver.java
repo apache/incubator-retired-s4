@@ -20,10 +20,12 @@ import com.google.inject.Singleton;
  * <p>
  * A Listener implementation receives data from the network and passes an event as a byte array to the {@link Receiver}.
  * The byte array is de-serialized and converted into an {@link Event}. Finally the event is passed to the matching
- * streams. There is a single {@link Receiver} instance per node.
+ * streams.
+ * </p>
+ * There is a single {@link Receiver} instance per node.
  * 
  * Details on how the cluster is partitioned and how events are serialized and transmitted to its destination are hidden
- * from the application developer.
+ * from the application developer. </p>
  */
 @Singleton
 public class Receiver implements Runnable {

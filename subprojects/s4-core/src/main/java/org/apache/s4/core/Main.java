@@ -48,7 +48,8 @@ public class Main {
     private static void startCustomS4Node(String s4PropertiesFilePath) throws FileNotFoundException {
         // TODO that's quite inconvenient anyway: we still need to specify the comm module in the config
         // file passed as a parameter...
-        Injector injector = Guice.createInjector(new CustomModule(new FileInputStream(new File(s4PropertiesFilePath))));
+        Injector injector = Guice
+                .createInjector(new DefaultModule(new FileInputStream(new File(s4PropertiesFilePath))));
         startServer(logger, injector);
     }
 
@@ -104,7 +105,7 @@ public class Main {
             } else {
                 URL defaultS4Config = null;
                 try {
-                    defaultS4Config = Resources.getResource("/default.s4.properties");
+                    defaultS4Config = Resources.getResource("default.s4.properties");
                 } catch (IllegalArgumentException e) {
                     logger.error(
                             "Module loading error: cannot load default s4 configuration file default.s4.properties from classpath",

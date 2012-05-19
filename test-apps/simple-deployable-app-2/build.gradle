@@ -100,7 +100,7 @@ dependencies {
    compile project(":s4-base")
    compile project(":s4-comm")
    compile project(":s4-core")
-   
+
    /* Logging. */
    compile( libraries.slf4j )
    compile( libraries.logback_core )
@@ -138,10 +138,10 @@ appDependencies = ( configurations.compile )
 task s4r(type: Jar) {
    dependsOn jar
    from { appDependencies.collect { it.isDirectory() ? it : zipTree(it) } }
-   from { configurations.archives.allArtifactFiles.collect { it.isDirectory() ? it : zipTree(it) } }
+   from { configurations.archives.allArtifacts.files.collect { it.isDirectory() ? it : zipTree(it) } }
    manifest = project.manifest
    extension = 's4r'
-   
+
    /* Set class name in manifest. Parse source files until we find a class that extends App.
     * Get fully qualified Java class name and set attribute in Manifest.
     */
@@ -154,9 +154,9 @@ task s4r(type: Jar) {
            }
        }
    }
-   
+
    if (appClassname == "UNKNOWN") {
-       
+
        println "Couldn't find App class in source files...aborting."
        exit(1)
    }
@@ -165,7 +165,7 @@ task s4r(type: Jar) {
 /* List the artifacts that will br added to the s4 archive (and explode if needed). */
 s4r << {
    appDependencies.each { File file -> println 'Adding to s4 archive: ' + file.name }
-   configurations.archives.allArtifactFiles.each { File file -> println 'Adding to s4 archive: ' + file.name }
+   configurations.archives.allArtifacts.files.each { File file -> println 'Adding to s4 archive: ' + file.name }
 
    /* This is for debugging. */
    //configurations.s4All.each { File file -> println 's4All: ' + file.name }
@@ -173,7 +173,7 @@ s4r << {
 
    // more debugging statements.
    //sourceSets.main.compileClasspath.each { File file -> println 'compileClasspath: ' + file.name }
-   
+
 }
 
 /* Install the S4 archive to the install directory. */
@@ -195,12 +195,12 @@ def getAppClassname(file) {
    def classname = "UNKNOWN"
    lines= file.readLines()
    for(line in lines) {
-       
+
        def pn = line =~ /.*package\s+([\w\.]+)\s*;.*/
        if(pn) {
            packageName = pn[0][1] + "."
        }
-       
+
        def an = line =~ /.*public\s+class\s+(\w+)\s+extends.+App.*\{/
        if (an) {
            classname = packageName + an[0][1]

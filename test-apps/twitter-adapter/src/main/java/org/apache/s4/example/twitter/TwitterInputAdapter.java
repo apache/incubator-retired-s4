@@ -6,10 +6,9 @@ import java.net.ServerSocket;
 import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.base.Event;
-import org.apache.s4.core.adapter.Adapter;
-import org.apache.s4.core.adapter.RemoteStream;
+import org.apache.s4.core.App;
+import org.apache.s4.core.RemoteStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,11 +19,9 @@ import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class TwitterInputAdapter extends Adapter {
+public class TwitterInputAdapter extends App {
 
-    private ZkClient zkClient;
     private static Logger logger = LoggerFactory.getLogger(TwitterInputAdapter.class);
-    private String urlString = "https://stream.twitter.com/1/statuses/sample.json";
 
     public TwitterInputAdapter() {
     }
@@ -47,7 +44,7 @@ public class TwitterInputAdapter extends Adapter {
 
     @Override
     protected void onInit() {
-        remoteStream = createRemoteStream("RawStatus");
+        remoteStream = createOutputStream("RawStatus");
         t = new Thread(new Dequeuer());
     }
 
@@ -114,7 +111,7 @@ public class TwitterInputAdapter extends Adapter {
 
         @Override
         public void run() {
-            while (!Thread.interrupted()) {
+            while (true) {
                 try {
                     Status status = messageQueue.take();
                     Event event = new Event();

@@ -30,10 +30,27 @@ dependencies {
     compile libraries.jcommander
     compile libraries.zkclient
     compile libraries.commons_io
+    compile libraries.gradle_base_services
+    compile libraries.gradle_core
+    compile libraries.gradle_tooling_api
+    compile libraries.gradle_wrapper
+
 }
 
 apply plugin:'application'
 mainClassName = "org.apache.s4.tools.Tools"
+
+applicationDistribution.from(configurations.compile) {
+    // this is supposed to be done by default but is not anymore in 1.0-rc-3
+    include "*.jar"
+    into("lib")
+}
+
+startScripts {
+    classpath = files('$APP_HOME/lib/*')
+}
+
+
 
 run {
     // run doesn't yet directly accept command line parameters...
