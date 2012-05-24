@@ -48,4 +48,8 @@ public class TaskSetup {
         }
     }
 
+    public void disconnect() {
+        zkclient.close();
+    }
+
 }

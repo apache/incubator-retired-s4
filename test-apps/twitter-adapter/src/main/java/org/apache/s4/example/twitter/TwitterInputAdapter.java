@@ -7,8 +7,7 @@ import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.core.App;
-import org.apache.s4.core.RemoteStream;
+import org.apache.s4.core.adapter.AdapterApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +18,7 @@ import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class TwitterInputAdapter extends App {
+public class TwitterInputAdapter extends AdapterApp {
 
     private static Logger logger = LoggerFactory.getLogger(TwitterInputAdapter.class);
 
@@ -32,19 +31,13 @@ public class TwitterInputAdapter extends App {
 
     private Thread t;
 
-    private int messageCount;
-
-    private RemoteStream remoteStream;
-
     @Override
     protected void onClose() {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     protected void onInit() {
-        remoteStream = createOutputStream("RawStatus");
+        super.onInit();
         t = new Thread(new Dequeuer());
     }
 
@@ -116,7 +109,7 @@ public class TwitterInputAdapter extends App {
                     Status status = messageQueue.take();
                     Event event = new Event();
                     event.put("statusText", String.class, status.getText());
-                    remoteStream.put(event);
+                    getRemoteStream().put(event);
                 } catch (Exception e) {
 
                 }

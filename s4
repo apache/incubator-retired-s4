@@ -4,29 +4,10 @@
 
 GRADLE=`pwd`/gradlew
 
-case "$1" in
-"deploy")
-	shift
-    subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.tools.Deploy -gradle=$GRADLE $@
-;;
-"zkServer")
-	shift
-    subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.tools.ZKServer $@
-;;
-"newCluster")
-	shift
-    subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.tools.DefineCluster $@
-;;
-"appNode")
-	shift
-  	subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.core.Main $@
-;;
-"adapterNode")
-	shift
-  	subprojects/s4-tools/build/install/s4-tools/bin/s4-tools org.apache.s4.core.adapter.AdapterMain $@
-;;
+S4_DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+S4_SCRIPT_PATH="$S4_DIR/s4"
 
-esac
+subprojects/s4-tools/build/install/s4-tools/bin/s4-tools -s4ScriptPath=$S4_SCRIPT_PATH $@
 
 # EXAMPLES
 # deploy:
@@ -35,11 +16,8 @@ esac
 
 # newCluster:
 # # examples:
-#./s4 newCluster -name=s4-test-cluster -firstListeningPort=11000 -nbTasks=2 ; ./s4 newCluster -name=s4-adapter-cluster -firstListeningPort=13000 -nbTasks=1
+#./s4 newCluster -c=s4-test-cluster -flp=11000 -nbTasks=2 ; ./s4 newCluster -c=s4-adapter-cluster -flp=13000 -nbTasks=1
 
-# appNode:
-# ./s4 appNode subprojects/s4-core/src/test/resources/default.s4.properties
-
-# adapterNode:
-# ./s4 adapterNode -s4Properties=test-apps/twitter-adapter/src/main/resources/s4.properties
+# node:
+# ./s4 node -c=s4-test-cluster
 

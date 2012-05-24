@@ -38,7 +38,7 @@ public class DefineCluster {
     @Parameters(commandNames = "s4 newCluster", separators = "=", commandDescription = "Setup new S4 logical cluster")
     static class ZKServerArgs extends S4ArgsBase {
 
-        @Parameter(names = "-cluster", description = "S4 cluster name", required = true)
+        @Parameter(names = { "-c", "-cluster" }, description = "S4 cluster name", required = true)
         String clusterName = "s4-test-cluster";
 
         @Parameter(names = "-nbTasks", description = "number of tasks for the cluster", required = true)
@@ -47,7 +47,7 @@ public class DefineCluster {
         @Parameter(names = "-zk", description = "Zookeeper connection string")
         String zkConnectionString = "localhost:2181";
 
-        @Parameter(names = "-firstListeningPort", description = "Initial listening port for nodes in this cluster. First node listens on the specified port, other nodes listen on port initial + nodeIndex", required = true)
+        @Parameter(names = { "-flp", "-firstListeningPort" }, description = "Initial listening port for nodes in this cluster. First node listens on the specified port, other nodes listen on port initial + nodeIndex", required = true)
         int firstListeningPort = -1;
     }
 

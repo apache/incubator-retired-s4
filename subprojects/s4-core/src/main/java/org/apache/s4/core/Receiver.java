@@ -43,6 +43,7 @@ public class Receiver implements Runnable {
         this.serDeser = serDeser;
 
         thread = new Thread(this, "Receiver");
+        // TODO avoid starting the thread here
         thread.start();
 
         streams = new MapMaker().makeMap();

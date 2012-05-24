@@ -40,6 +40,13 @@ dependencies {
 apply plugin:'application'
 mainClassName = "org.apache.s4.tools.Tools"
 
+task copyTemplates << {
+    copy {
+        from 'src/main/java/hello'
+        into 'src/main/resources'
+    }
+}
+
 applicationDistribution.from(configurations.compile) {
     // this is supposed to be done by default but is not anymore in 1.0-rc-3
     include "*.jar"
@@ -49,6 +56,7 @@ applicationDistribution.from(configurations.compile) {
 startScripts {
     classpath = files('$APP_HOME/lib/*')
 }
+
 
 
 

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+case "$1" in
+"adapter")
+    # we need something different in order to pass the classpath of the current project
+    # you must specify: appClassName (extends AdapterApp class) , cluster name, output stream name
+    # current syntax is not yet straightforward:
+    # example : ./s4 adapter -cluster=c1 -appClass=org.apache.s4.example.twitter.TwitterInputAdapter -namedStringParameters=adapter.output.stream:s1
+	shift 1
+	<s4_install_dir>/gradlew cp
+	java -cp `cat classpath.txt` org.apache.s4.core.Main $@
+;;
+*)
+	echo "calling referenced s4 script : <s4_script_path>"
+	(cd <s4_install_dir> && <s4_script_path> $@)
+;;
+esac

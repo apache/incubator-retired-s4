@@ -188,6 +188,13 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener {
         zkClient.createPersistent(StreamType.CONSUMER.getPath(streamName), true);
     }
 
+    /**
+     * Publishes interest in a stream from an application.
+     * 
+     * @param appId
+     * @param clusterName
+     * @param streamName
+     */
     public void addInputStream(int appId, String clusterName, String streamName) {
         lock.lock();
         try {
@@ -198,6 +205,7 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener {
             consumer.putSimpleField("appId", String.valueOf(appId));
             consumer.putSimpleField("clusterName", clusterName);
             try {
+                // NOTE: We create 1 sequential znode per consumer node instance
                 zkClient.createEphemeralSequential(StreamType.CONSUMER.getPath(streamName) + "/consumer-", consumer);
             } catch (Throwable e) {
                 logger.error("Exception trying to create consumer stream [{}] for app [{}] and cluster [{}] : [{}] :",

@@ -15,7 +15,6 @@ import junit.framework.Assert;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
@@ -34,7 +33,6 @@ import org.junit.Test;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
-import com.google.common.io.Resources;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -53,7 +51,7 @@ public class TestAutomaticDeployment {
     private Factory zookeeperServerConnectionFactory;
     private Process forkedNode;
     private ZkClient zkClient;
-    private String clusterName;
+    private static final String CLUSTER_NAME = "clusterZ";
     private HttpServer httpServer;
     private static File tmpAppsDir;
 
@@ -72,43 +70,23 @@ public class TestAutomaticDeployment {
                 + tmpAppsDir.getAbsolutePath() });
     }
 
-    @Before
-    public void cleanLocalAppsDir() throws ConfigurationException, IOException {
-        PropertiesConfiguration config = loadConfig();
-
-        if (!new File(config.getString("appsDir")).exists()) {
-            Assert.assertTrue(new File(config.getString("appsDir")).mkdirs());
-        } else {
-            if (!config.getString("appsDir").startsWith("/tmp")) {
-                Assert.fail("apps dir should a subdir of /tmp for safety");
-            }
-            CommTestUtils.deleteDirectoryContents(new File(config.getString("appsDir")));
-        }
-    }
-
-    private PropertiesConfiguration loadConfig() throws ConfigurationException, IOException {
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        config.load(Resources.newInputStreamSupplier(Resources.getResource("default.s4.properties")).getInput());
-        return config;
-    }
-
     // ignore this test since now we only deploy from artifacts published through zookeeper
     @Test
     @Ignore
     public void testInitialDeploymentFromFileSystem() throws Exception {
 
-        File s4rToDeploy = new File(loadConfig().getString("appsDir") + File.separator + "testapp"
-                + System.currentTimeMillis() + ".s4r");
-
-        Assert.assertTrue(ByteStreams.copy(
-                Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-                        + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
-
-        initializeS4Node();
-
-        final String uri = s4rToDeploy.toURI().toString();
-
-        assertDeployment(uri, true);
+        // File s4rToDeploy = new File(loadConfig().getString("appsDir") + File.separator + "testapp"
+        // + System.currentTimeMillis() + ".s4r");
+        //
+        // Assert.assertTrue(ByteStreams.copy(
+        // Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
+        // + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
+        //
+        // initializeS4Node();
+        //
+        // final String uri = s4rToDeploy.toURI().toString();
+        //
+        // assertDeployment(uri, true);
 
     }
 
@@ -143,7 +121,7 @@ public class TestAutomaticDeployment {
         if (!initial) {
             ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
             record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-            zkClient.create("/s4/clusters/" + clusterName + "/apps/testApp", record, CreateMode.PERSISTENT);
+            zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/apps/testApp", record, CreateMode.PERSISTENT);
         }
 
         Assert.assertTrue(signalAppInitialized.await(10, TimeUnit.SECONDS));
@@ -181,11 +159,11 @@ public class TestAutomaticDeployment {
 
         ZNRecord record1 = new ZNRecord(String.valueOf(System.currentTimeMillis()) + "-app1");
         record1.putSimpleField(DistributedDeploymentManager.S4R_URI, uri1);
-        zkClient.create("/s4/clusters/" + clusterName + "/apps/testApp1", record1, CreateMode.PERSISTENT);
+        zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/apps/testApp1", record1, CreateMode.PERSISTENT);
 
         ZNRecord record2 = new ZNRecord(String.valueOf(System.currentTimeMillis()) + "-app2");
         record2.putSimpleField(DistributedDeploymentManager.S4R_URI, uri2);
-        zkClient.create("/s4/clusters/" + clusterName + "/apps/testApp2", record2, CreateMode.PERSISTENT);
+        zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/apps/testApp2", record2, CreateMode.PERSISTENT);
 
         Assert.assertTrue(signalApp1Initialized.await(20, TimeUnit.SECONDS));
         Assert.assertTrue(signalApp1Started.await(10, TimeUnit.SECONDS));
@@ -282,21 +260,17 @@ public class TestAutomaticDeployment {
         // current package .
 
         // 1. start s4 nodes. Check that no app is deployed.
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        config.load(Resources.newInputStreamSupplier(Resources.getResource("default.s4.properties")).getInput());
-
-        clusterName = config.getString("cluster.name");
         TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
-        taskSetup.clean(clusterName);
-        taskSetup.setup(clusterName, 1, 1300);
+        taskSetup.clean(CLUSTER_NAME);
+        taskSetup.setup(CLUSTER_NAME, 1, 1300);
 
         zkClient = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
         zkClient.setZkSerializer(new ZNRecordSerializer());
-        List<String> processes = zkClient.getChildren("/s4/clusters/" + clusterName + "/process");
+        List<String> processes = zkClient.getChildren("/s4/clusters/" + CLUSTER_NAME + "/process");
         Assert.assertTrue(processes.size() == 0);
         final CountDownLatch signalProcessesReady = new CountDownLatch(1);
 
-        zkClient.subscribeChildChanges("/s4/clusters/" + clusterName + "/process", new IZkChildListener() {
+        zkClient.subscribeChildChanges("/s4/clusters/" + CLUSTER_NAME + "/process", new IZkChildListener() {
 
             @Override
             public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
@@ -307,10 +281,7 @@ public class TestAutomaticDeployment {
             }
         });
 
-        File tmpConfig = File.createTempFile("tmp", "config");
-        Assert.assertTrue(ByteStreams.copy(getClass().getResourceAsStream("/default.s4.properties"),
-                Files.newOutputStreamSupplier(tmpConfig)) > 0);
-        forkedNode = CoreTestUtils.forkS4Node(new String[] { tmpConfig.getAbsolutePath() });
+        forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + CLUSTER_NAME });
 
         // TODO synchro with ready state from zk
         Thread.sleep(10000);

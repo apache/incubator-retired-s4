@@ -2,14 +2,21 @@ package org.apache.s4.core;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import org.apache.s4.comm.DefaultCommModule;
+import org.apache.s4.core.util.ParametersInjectionModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 import com.google.common.io.Resources;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -29,121 +36,126 @@ public class Main {
      * @param args
      */
     public static void main(String[] args) {
+
+        MainArgs mainArgs = new MainArgs();
+        JCommander jc = new JCommander(mainArgs);
+
         try {
-            if (args.length == 0) {
-                logger.info("Starting S4 node with default configuration");
-                startDefaultS4Node();
-            } else if (args.length == 1) {
-                logger.info("Starting S4 node with custom configuration from file {}", args[0]);
-                startCustomS4Node(args[0]);
+            jc.parse(args);
+        } catch (Exception e) {
+            JCommander.getConsole().println("Cannot parse arguments: " + e.getMessage());
+            jc.usage();
+            System.exit(1);
+        }
+
+        startNode(mainArgs);
+    }
+
+    private static void startNode(MainArgs mainArgs) {
+        try {
+            Injector injector;
+            InputStream commConfigFileInputStream;
+            InputStream coreConfigFileInputStream;
+            String commConfigString;
+            if (mainArgs.commConfigFilePath == null) {
+                commConfigFileInputStream = Resources.getResource("default.s4.comm.properties").openStream();
+                commConfigString = "default.s4.comm.properties from classpath";
             } else {
-                logger.info("Starting S4 node in development mode");
-                startDevelopmentMode(args);
+                commConfigFileInputStream = new FileInputStream(new File(mainArgs.commConfigFilePath));
+                commConfigString = mainArgs.commConfigFilePath;
+            }
+
+            String coreConfigString;
+            if (mainArgs.coreConfigFilePath == null) {
+                coreConfigFileInputStream = Resources.getResource("default.s4.core.properties").openStream();
+                coreConfigString = "default.s4.core.properties from classpath";
+            } else {
+                coreConfigFileInputStream = new FileInputStream(new File(mainArgs.coreConfigFilePath));
+                coreConfigString = mainArgs.coreConfigFilePath;
+            }
+
+            AbstractModule commModule = (AbstractModule) Class.forName(mainArgs.commModuleClass)
+                    .getConstructor(InputStream.class, String.class)
+                    .newInstance(commConfigFileInputStream, mainArgs.clusterName);
+            AbstractModule coreModule = (AbstractModule) Class.forName(mainArgs.coreModuleClass)
+                    .getConstructor(InputStream.class).newInstance(coreConfigFileInputStream);
+
+            List<com.google.inject.Module> extraModules = new ArrayList<com.google.inject.Module>();
+            for (String moduleClass : mainArgs.extraModulesClasses) {
+                extraModules.add((com.google.inject.Module) Class.forName(moduleClass).newInstance());
+            }
+
+            List<com.google.inject.Module> modules = new ArrayList<com.google.inject.Module>();
+            modules.add((com.google.inject.Module) commModule);
+            modules.add((com.google.inject.Module) coreModule);
+            modules.addAll(extraModules);
+
+            logger.info(
+                    "Initializing S4 node with : \n- comm module class [{}]\n- comm configuration file [{}]\n- core module class [{}]\n- core configuration file[{}]\n-extra modules: "
+                            + Arrays.toString(mainArgs.extraModulesClasses.toArray(new String[] {})), new String[] {
+                            mainArgs.commModuleClass, commConfigString, mainArgs.coreModuleClass, coreConfigString });
+
+            if (!mainArgs.extraNamedParameters.isEmpty()) {
+                logger.debug("Adding named parameters for injection : {}",
+                        Arrays.toString(mainArgs.extraNamedParameters.toArray(new String[] {})));
+                Map<String, String> namedParameters = new HashMap<String, String>();
+                for (String namedParam : mainArgs.extraNamedParameters) {
+                    namedParameters.put(namedParam.split("[:]")[0].trim(), namedParam.split("[:]")[1].trim());
+                }
+                modules.add(new ParametersInjectionModule(namedParameters));
+            }
+
+            injector = Guice.createInjector(modules);
+
+            if (mainArgs.appClass != null) {
+                logger.info("Starting S4 node with single application from class [{}]", mainArgs.appClass);
+                App app = (App) injector.getInstance(Class.forName(mainArgs.appClass));
+                app.init();
+                app.start();
+            } else {
+                logger.info("Starting S4 node. This node will automatically download applications published for the cluster it belongs to");
+                Server server = injector.getInstance(Server.class);
+                try {
+                    server.start(injector);
+                } catch (Exception e) {
+                    logger.error("Failed to start the controller.", e);
+                }
             }
         } catch (Exception e) {
             logger.error("Cannot start S4 node", e);
         }
     }
 
-    private static void startCustomS4Node(String s4PropertiesFilePath) throws FileNotFoundException {
-        // TODO that's quite inconvenient anyway: we still need to specify the comm module in the config
-        // file passed as a parameter...
-        Injector injector = Guice
-                .createInjector(new DefaultModule(new FileInputStream(new File(s4PropertiesFilePath))));
-        startServer(logger, injector);
+    @Parameters(separators = "=")
+    public static class MainArgs {
+
+        @Parameter(names = { "-c", "-cluster" }, description = "cluster name", required = true)
+        String clusterName = null;
+
+        @Parameter(names = "-commModuleClass", description = "configuration module class for the communication layer", required = false)
+        String commModuleClass = DefaultCommModule.class.getName();
+
+        @Parameter(names = "-commConfig", description = "s4 communication layer configuration file", required = false)
+        String commConfigFilePath;
+
+        @Parameter(names = "-coreModuleClass", description = "s4-core configuration module class", required = false)
+        String coreModuleClass = DefaultCoreModule.class.getName();
+
+        @Parameter(names = "-coreConfig", description = "s4 core configuration file", required = false)
+        String coreConfigFilePath = null;
+
+        @Parameter(names = "-appClass", description = "App class to load. This will disable dynamic downloading but allows to start apps directly. These app classes must have been loaded first, usually through a custom module.", required = false, hidden = true)
+        String appClass = null;
+
+        @Parameter(names = "-extraModulesClasses", description = "additional configuration modules (they will be instantiated through their constructor without arguments).", variableArity = true, required = false, hidden = true)
+        List<String> extraModulesClasses = new ArrayList<String>();
+
+        @Parameter(names = "-namedStringParameters", description = "Guice @Named parameters, used when starting in non dynamic mode, for instance for the adapter. Syntax: '-namedStringParameters=name1:value1,name2:value2 etc...'", hidden = true)
+        List<String> extraNamedParameters = new ArrayList<String>();
+
+        @Parameter(names = "-zk", description = "Zookeeper connection string", required = false)
+        String zkConnectionString = "localhost:2181";
+
     }
 
-    private static void startDefaultS4Node() {
-        final Logger logger = LoggerFactory.getLogger(Main.class);
-
-        /*
-         * Need to get name of plugin module. Load ControllerModule to get configuration.
-         */
-        Injector injector = Guice.createInjector(new org.apache.s4.core.Module());
-
-        startServer(logger, injector);
-    }
-
-    private static void startServer(final Logger logger, Injector injector) {
-        Server server = injector.getInstance(Server.class);
-        try {
-            server.start(injector);
-        } catch (Exception e) {
-            logger.error("Failed to start the controller.", e);
-        }
-    }
-
-    /**
-     * Facility for starting S4 apps by passing a module class and an application class
-     * 
-     * Usage: java &ltclasspath+params&gt org.apache.s4.core.Main &ltappClassName&gt &ltmoduleClassName&gt
-     * 
-     */
-    private static void startDevelopmentMode(String[] args) {
-        if (args.length < 2 && args.length > 3) {
-            usageForDevelopmentMode(args);
-        }
-        logger.info("Starting S4 app with module [{}] and app [{}]", args[0], args[1]);
-        Injector injector = null;
-        try {
-            if (!AbstractModule.class.isAssignableFrom(Class.forName(args[0]))) {
-                logger.error("Module class [{}] is not an instance of [{}]", args[0], AbstractModule.class.getName());
-                System.exit(-1);
-            }
-            if (args.length == 3) {
-                if (!(new File(args[2]).exists())) {
-                    logger.error("Cannot find S4 config file {}", args[2]);
-                    System.exit(-1);
-                }
-                try {
-                    injector = Guice.createInjector((AbstractModule) Class.forName(args[0])
-                            .getConstructor(InputStream.class).newInstance(new FileInputStream(new File(args[2]))));
-                } catch (Exception e) {
-                    logger.error("Module loading error", e);
-                    System.exit(-1);
-                }
-            } else {
-                URL defaultS4Config = null;
-                try {
-                    defaultS4Config = Resources.getResource("default.s4.properties");
-                } catch (IllegalArgumentException e) {
-                    logger.error(
-                            "Module loading error: cannot load default s4 configuration file default.s4.properties from classpath",
-                            e);
-                    System.exit(-1);
-                }
-
-                try {
-                    injector = Guice.createInjector((AbstractModule) Class.forName(args[0]).getConstructor(File.class)
-                            .newInstance(Resources.newInputStreamSupplier(defaultS4Config).getInput()));
-                } catch (Exception e) {
-                    logger.error(
-                            "Module loading error: cannot load default s4 configuration file default.s4.properties from classpath",
-                            e);
-                    System.exit(-1);
-                }
-            }
-        } catch (ClassNotFoundException e) {
-            logger.error("Invalid module class [{}]", args[0], e);
-            System.exit(-1);
-        }
-        App app;
-        try {
-            app = (App) injector.getInstance(Class.forName(args[1]));
-            app.init();
-            app.start();
-        } catch (ClassNotFoundException e) {
-            logger.error("Invalid S4 application class [{}] : {}", args[1], e.getMessage());
-        }
-    }
-
-    static void usageForDevelopmentMode(String[] args) {
-        logger.info("Invalid parameters "
-                + Arrays.toString(args)
-                + " \nUsage: java <classpath+params> org.apache.s4.core.Main <moduleClassName> <appClassName>"
-                + "\n(this uses default.s4.properties from the classpath)"
-                + "\nor:"
-                + " java <classpath+params> org.apache.s4.core.Main <moduleClassName> <appClassName> <pathToConfigFile>");
-        System.exit(-1);
-    }
 }

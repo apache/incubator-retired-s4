@@ -1,6 +1,5 @@
 package org.apache.s4.comm.tcp;
 
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.Hashtable;
@@ -10,9 +9,9 @@ import java.util.concurrent.Executors;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterChangeListener;
+import org.apache.s4.comm.topology.ClusterNode;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -198,6 +197,8 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, ClusterChange
         // the handler is correctly responding to disconnections/reconnections 3/ there should be a lock per channel,
         // no?
 
+        // NOTE: might be fixed in S4-7
+
         // */
         // if (!channel.isWritable()) {
         // synchronized (sendLock) {
@@ -241,7 +242,7 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, ClusterChange
         }
 
         if (f.isCancelled()) {
-            logger.error("Send I/O was cancelled!! " + f.getChannel().getRemoteAddress());
+            logger.error("Send I/O was cancelled! " + f.getChannel().getRemoteAddress());
         } else if (!f.isSuccess()) {
             logger.error("Exception on I/O operation", f.getCause());
             logger.error(String.format("I/O on partition %d failed!", partitionId));
@@ -291,22 +292,23 @@ public class TCPEmitter implements Emitter, ChannelFutureListener, ClusterChange
         @Override
         public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event) {
             Integer partitionId = partitionChannelMap.inverse().get(context.getChannel());
+            String target;
             if (partitionId == null) {
-                logger.error("Error on mystery channel!!");
+                target = "unknown channel";
+            } else {
+                target = "channel for partition [" + partitionId + "], target node host ["
+                        + partitionNodeMap.get(partitionId).getMachineName() + "], target node port ["
+                        + partitionNodeMap.get(partitionId).getPort() + "]";
             }
-            logger.error("Error on channel to partition " + partitionId);
+            logger.error(
+                    "Error on [{}]. This can be due to a disconnection of the receiver node. Channel will be closed.",
+                    target);
 
-            try {
-                throw event.getCause();
-            } catch (ConnectException ce) {
-                logger.error(ce.getMessage(), ce);
-            } catch (Throwable err) {
-                logger.error("Error", err);
-                if (context.getChannel().isOpen()) {
-                    logger.error("Closing channel due to exception");
-                    context.getChannel().close();
-                }
+            if (context.getChannel().isOpen()) {
+                logger.info("Closing channel [{}] due to exception [{}]", target, event.getCause().getMessage());
+                context.getChannel().close();
             }
+
         }
     }
 }

@@ -166,6 +166,11 @@ task installS4R (type: Copy) {
 http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
 task wrapper(type: Wrapper) { gradleVersion = '1.0-milestone-3' }
 
+task cp << {
+    description='dumps the classpath for running a class from this project, into a \'classpath.txt\' file in the current directory'
+    new File("classpath.txt").write(sourceSets.main.runtimeClasspath.asPath)
+}
+
 
 /* Parse source file to get the app classname so we can use it in the manifest.
 * TODO: Use a real Java parser. (This is not skippong comments for example.)

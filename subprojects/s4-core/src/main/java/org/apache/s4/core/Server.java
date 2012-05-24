@@ -96,24 +96,6 @@ public class Server {
 
         // disabled app loading from local files
 
-        // File[] s4rFiles = new File(appsDir).listFiles(new PatternFilenameFilter("\\w+\\.s4r"));
-        // for (File s4rFile : s4rFiles) {
-        // loadApp(s4rFile);
-        // }
-
-        /* Now init + start apps. TODO: implement dynamic loading/unloading using ZK. */
-        for (Map.Entry<String, App> appEntry : apps.entrySet()) {
-            logger.info("Initializing app " + appEntry.getValue().getClass().getName());
-            appEntry.getValue().init();
-        }
-
-        for (Map.Entry<String, App> appEntry : apps.entrySet()) {
-            logger.info("Starting app " + appEntry.getKey() + "/" + appEntry.getValue().getClass().getName());
-            appEntry.getValue().start();
-        }
-
-        logger.info("Completed local applications startup.");
-
         if (deploymentManager != null) {
             deploymentManager.start();
         }

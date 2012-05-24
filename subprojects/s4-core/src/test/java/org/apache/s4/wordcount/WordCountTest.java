@@ -6,9 +6,8 @@ import java.util.concurrent.CountDownLatch;
 
 import junit.framework.Assert;
 
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.comm.tools.TaskSetup;
-import org.apache.s4.core.App;
+import org.apache.s4.core.Main;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -18,8 +17,6 @@ import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.google.common.io.Resources;
 
 public class WordCountTest {
 
@@ -58,12 +55,12 @@ public class WordCountTest {
     public void testSimple() throws Exception {
         final ZooKeeper zk = CommTestUtils.createZkClient();
         TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        config.load(Resources.newInputStreamSupplier(Resources.getResource("default.s4.properties")).getInput());
+        String clusterName = "clusterA";
         taskSetup.clean("s4");
-        taskSetup.setup(config.getString("cluster.name"), 1, 10000);
+        taskSetup.setup(clusterName, 1, 10000);
 
-        App.main(new String[] { WordCountModule.class.getName(), WordCountApp.class.getName() });
+        Main.main(new String[] { "-cluster=" + clusterName, "-appClass=" + WordCountApp.class.getName(),
+                "-extraModulesClasses=" + WordCountModule.class.getName() });
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed, zk);

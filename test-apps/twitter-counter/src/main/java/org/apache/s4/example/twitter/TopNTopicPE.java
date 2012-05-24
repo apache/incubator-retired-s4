@@ -1,17 +1,22 @@
 package org.apache.s4.example.twitter;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.apache.s4.base.Event;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 
 public class TopNTopicPE extends ProcessingElement {
 
@@ -33,16 +38,24 @@ public class TopNTopicPE extends ProcessingElement {
             sortedTopics.add(new TopNEntry(topicCount.getKey(), topicCount.getValue()));
         }
 
-        logger.info("\n------------------");
+        File f = new File("TopNTopics.txt");
 
+        StringBuilder sb = new StringBuilder();
         int i = 0;
         Iterator<TopNEntry> iterator = sortedTopics.iterator();
-        long time = System.currentTimeMillis();
+        sb.append("----\n" + new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss").format(new Date()) + "\n");
+
         while (iterator.hasNext() && i < 10) {
             TopNEntry entry = iterator.next();
-            logger.info("{} : topic [{}] count [{}]",
-                    new String[] { String.valueOf(time), entry.topic, String.valueOf(entry.count) });
+            sb.append("topic [" + entry.topic + "] count [" + entry.count + "]\n");
             i++;
+        }
+        sb.append("\n");
+        try {
+            Files.append(sb.toString(), f, Charsets.UTF_8);
+            logger.info("Wrote top 10 topics to file [{}] ", f.getAbsolutePath());
+        } catch (IOException e) {
+            logger.error("Cannot write top 10 topics to file [{}]", f.getAbsolutePath(), e);
         }
     }
 

@@ -9,9 +9,9 @@ import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.tcp.RemoteEmitters;
-import org.apache.s4.comm.topology.StreamConsumer;
-import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.comm.topology.Clusters;
+import org.apache.s4.comm.topology.RemoteStreams;
+import org.apache.s4.comm.topology.StreamConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,10 +42,11 @@ public class RemoteSenders {
 
         Set<StreamConsumer> consumers = streams.getConsumers(event.getStreamName());
         for (StreamConsumer consumer : consumers) {
+            // NOTE: even though there might be several ephemeral znodes for the same app and topology, they are
+            // represented by a single stream consumer
             RemoteSender sender = sendersByTopology.get(consumer.getClusterName());
             if (sender == null) {
-                sender = new RemoteSender(emitters.getEmitter(topologies.getCluster(consumer.getClusterName())),
-                        hasher);
+                sender = new RemoteSender(emitters.getEmitter(topologies.getCluster(consumer.getClusterName())), hasher);
                 // TODO cleanup when remote topologies die
                 sendersByTopology.put(consumer.getClusterName(), sender);
             }
