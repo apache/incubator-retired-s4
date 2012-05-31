@@ -92,6 +92,11 @@ subprojects {
 
     checkstyleConfigFileName = "$rootDir/config/checkstyle/s4-checkstyle.xml"
 
+    configurations.all {
+        exclude group: 'com.sun.jdmk', module: 'jmxtools'
+        exclude group: 'com.sun.jmx', module: 'jmxri'
+        exclude group: 'javax.jms', module: 'jms'
+    }
 
     dependencies {
 

@@ -33,6 +33,7 @@ public class Tools {
                 Method main = target.getMethod("main", String[].class);
                 main.invoke(null, new Object[] { args });
             } catch (Exception e) {
+                e.printStackTrace();
                 logger.error("Cannot dispatch to task [{}]: wrong arguments [{}]", this.name(), Arrays.toString(args));
             }
         }
