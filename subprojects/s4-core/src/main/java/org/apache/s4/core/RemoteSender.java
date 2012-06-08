@@ -8,6 +8,7 @@ public class RemoteSender {
 
     final private Emitter emitter;
     final private Hasher hasher;
+    int targetPartition = 0;
 
     public RemoteSender(Emitter emitter, Hasher hasher) {
         super();
@@ -17,9 +18,8 @@ public class RemoteSender {
 
     public void send(String hashKey, EventMessage eventMessage) {
         if (hashKey == null) {
-            for (int i = 0; i < emitter.getPartitionCount(); i++) {
-                emitter.send(i, eventMessage);
-            }
+            // round robin by default
+            emitter.send(Math.abs(targetPartition++ % emitter.getPartitionCount()), eventMessage);
         } else {
             int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
             emitter.send(partition, eventMessage);
