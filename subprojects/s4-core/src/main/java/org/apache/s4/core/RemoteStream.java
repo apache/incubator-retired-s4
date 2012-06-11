@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Stream that dispatches events to a remote cluster
+ * Stream that dispatches events to interested apps in remote clusters
  * 
  */
 public class RemoteStream implements Streamable<Event> {

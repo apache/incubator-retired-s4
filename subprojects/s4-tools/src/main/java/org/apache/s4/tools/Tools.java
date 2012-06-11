@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
 import org.apache.s4.core.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +22,7 @@ public class Tools {
 
     enum Task {
         deploy(Deploy.class), node(Main.class), zkServer(ZKServer.class), newCluster(DefineCluster.class), adapter(null), newApp(
-                CreateApp.class);
+                CreateApp.class), s4r(Package.class);
 
         Class<?> target;
 
@@ -41,6 +43,11 @@ public class Tools {
     }
 
     public static void main(String[] args) {
+
+        // configure log4j for Zookeeper
+        BasicConfigurator.configure();
+        org.apache.log4j.Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
+        org.apache.log4j.Logger.getLogger("org.I0Itec").setLevel(Level.ERROR);
 
         if (!(args.length > 1)) {
             List<String> taskNames = getTaskNames();

@@ -8,22 +8,19 @@ import java.util.List;
 import junit.framework.Assert;
 
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.apache.zookeeper.CreateMode;
 import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.ProgressListener;
 import org.gradle.tooling.ProjectConnection;
 import org.slf4j.LoggerFactory;
 
-import sun.net.ProgressListener;
-
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.beust.jcommander.converters.FileConverter;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
@@ -40,10 +37,6 @@ public class Deploy extends S4ArgsBase {
         DeployAppArgs deployArgs = new DeployAppArgs();
 
         Tools.parseArgs(deployArgs, args);
-        // configure log4j for Zookeeper
-        BasicConfigurator.configure();
-        Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
-        Logger.getLogger("org.I0Itec").setLevel(Level.ERROR);
 
         try {
             ZkClient zkClient = new ZkClient(deployArgs.zkConnectionString, deployArgs.timeout);
@@ -61,8 +54,13 @@ public class Deploy extends S4ArgsBase {
                         "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
                         s4rPath);
             } else {
-                ExecGradle.exec(deployArgs.gradleBuildFilePath, "installS4R",
-                        new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath(), "appName=" + deployArgs.appName });
+                List<String> params = new ArrayList<String>();
+                // prepare gradle -P parameters, including passed gradle opts
+                params.addAll(deployArgs.gradleOpts);
+                params.add("appClass=" + deployArgs.appClass);
+                params.add("appsDir=" + tmpAppsDir.getAbsolutePath());
+                params.add("appName=" + deployArgs.appName);
+                ExecGradle.exec(deployArgs.gradleBuildFile, "installS4R", params.toArray(new String[] {}));
                 s4rPath = tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r";
             }
             Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(s4rPath)),
@@ -86,32 +84,35 @@ public class Deploy extends S4ArgsBase {
     @Parameters(commandNames = "s4 deploy", commandDescription = "Package and deploy application to S4 cluster", separators = "=")
     static class DeployAppArgs extends S4ArgsBase {
 
-        @Parameter(names = { "-b", "-buildFile" }, description = "path to gradle build file for the S4 application", required = false)
-        String gradleBuildFilePath;
+        @Parameter(names = { "-b", "-buildFile" }, description = "Full path to gradle build file for the S4 application", required = false, converter = FileConverter.class, validateWith = FileExistsValidator.class)
+        File gradleBuildFile;
 
-        @Parameter(names = "-s4r", description = "path to s4r file", required = false)
+        @Parameter(names = "-s4r", description = "Path to s4r file", required = false)
         String s4rPath;
 
-        @Parameter(names = "-appName", description = "name of S4 application", required = true)
+        @Parameter(names = { "-a", "-appClass" }, description = "Full class name of the application class (extending App or AdapterApp)", required = false)
+        String appClass = "";
+
+        @Parameter(names = "-appName", description = "Name of S4 application. This will be the name of the s4r file as well", required = true)
         String appName;
 
-        @Parameter(names = { "-c", "-cluster" }, description = "logical name of the S4 cluster", required = true)
+        @Parameter(names = { "-c", "-cluster" }, description = "Logical name of the S4 cluster", required = true)
         String clusterName;
 
-        @Parameter(names = "-zk", description = "zookeeper connection string")
+        @Parameter(names = "-zk", description = "ZooKeeper connection string")
         String zkConnectionString = "localhost:2181";
 
-        @Parameter(names = "-timeout", description = "connection timeout to Zookeeper, in ms")
+        @Parameter(names = "-timeout", description = "Connection timeout to Zookeeper, in ms")
         int timeout = 10000;
 
     }
 
     static class ExecGradle {
 
-        public static void exec(String buildFilePath, String taskName, String[] params) throws Exception {
+        public static void exec(File buildFile, String taskName, String[] params) throws Exception {
 
             ProjectConnection connection = GradleConnector.newConnector()
-                    .forProjectDirectory(new File(buildFilePath).getParentFile()).connect();
+                    .forProjectDirectory(buildFile.getParentFile()).connect();
 
             try {
                 BuildLauncher build = connection.newBuild();

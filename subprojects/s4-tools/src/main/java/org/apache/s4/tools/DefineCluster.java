@@ -1,7 +1,5 @@
 package org.apache.s4.tools;
 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
 import org.apache.s4.comm.tools.TaskSetup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,10 +12,6 @@ public class DefineCluster {
     static Logger logger = LoggerFactory.getLogger(DefineCluster.class);
 
     public static void main(String[] args) {
-        // configure log4j for Zookeeper
-        BasicConfigurator.configure();
-        org.apache.log4j.Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
-        org.apache.log4j.Logger.getLogger("org.I0Itec").setLevel(Level.ERROR);
 
         ZKServerArgs clusterArgs = new ZKServerArgs();
         Tools.parseArgs(clusterArgs, args);

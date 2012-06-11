@@ -17,6 +17,7 @@ public class ZKServer {
     static Logger logger = LoggerFactory.getLogger(ZKServer.class);
 
     public static void main(String[] args) {
+
         ZKServerArgs zkArgs = new ZKServerArgs();
         Tools.parseArgs(zkArgs, args);
         try {

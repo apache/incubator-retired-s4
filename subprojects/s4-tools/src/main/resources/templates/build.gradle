@@ -15,15 +15,13 @@
 *
 */
 
-/* Set the destination where we want to install the apps. */
+project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
 
-s4AppInstallDir = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
-
-s4Version = '0.5.0-SNAPSHOT'
+project.ext["s4Version"] = '0.5.0-SNAPSHOT'
 description = 'Apache S4 App'
 //defaultTasks 'installS4R'
-archivesBaseName = "$project.name"
-distRootFolder = "$archivesBaseName-${-> version}"
+project.ext["archivesBaseName"] = "$project.name"
+project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
 
 // Append the suffix 'SNAPSHOT' when the build is not for release.
@@ -44,7 +42,7 @@ targetCompatibility = 1.6
 repositories {
     mavenLocal()
     mavenCentral()
-    mavenRepo name: "gson", urls: "http://google-gson.googlecode.com/svn/mavenrepo"
+    mavenRepo name: "gson", url: "http://google-gson.googlecode.com/svn/mavenrepo"
 
     /* Add lib dir as a repo. Some jar files that are not available
      in a public repo are distributed in the lib dir. */
@@ -52,7 +50,7 @@ repositories {
 }
 
 /* All project libraries must be defined here. */
-libraries = [
+project.ext["libraries"] = [
             // for instance, adding twitter4j 2.2.5 will be:
             //twitter4j_core:     'org.twitter4j:twitter4j-core:2.2.5'
             // http://mvnrepository.com/ is a good source
@@ -92,34 +90,42 @@ manifest.mainAttributes(
        'S4-Version': s4Version
        )
 
-appDependencies = ( configurations.compile )
+project.ext["appDependencies"] = ( configurations.compile )
 
 /* This task will extract all the class files and create a fat jar. We set the manifest and the extension to make it an S4 archive file. */
 // TODO: exclude schenma files as needed (not critical) see: http://forums.gradle.org/gradle/topics/using_gradle_to_fat_jar_a_spring_project
 task s4r(type: Jar) {
+
+   if (rootProject.hasProperty("appName")) {
+       archiveName= "$appName"+".s4r"
+   }
    dependsOn jar
    from { appDependencies.collect { it.isDirectory() ? it : zipTree(it) } }
    from { configurations.archives.allArtifacts.files.collect { zipTree(it) } }
    manifest = project.manifest
-   extension = 's4r'
 
-   /* Set class name in manifest. Parse source files until we find a class that extends App.
-    * Get fully qualified Java class name and set attribute in Manifest.
-    */
-   sourceSets.main.allSource.files.each {  File file ->
-       if (appClassname =="" || appClassname == "UNKNOWN") {
-           // only execute the closure for this file if we haven't already found the app class name
-           appClassname = getAppClassname(file)
-           if(appClassname != "") {
-               manifest.mainAttributes('S4-App-Class': appClassname)
-           }
-       }
-   }
+   // check -PappClassName, need to refer to rootProject to check property, see http://issues.gradle.org/browse/GRADLE-1826
+    if (!rootProject.hasProperty('appClass') || !"$appClass") {
+        /* Set class name in manifest. Parse source files until we find a class that extends App.
+         * Get fully qualified Java class name and set attribute in Manifest.
+         */
+        sourceSets.main.allSource.files.each {  File file ->
+            if (appClassname =="" || appClassname == "UNKNOWN") {
+                // only execute the closure for this file if we haven't already found the app class name
+                appClassname = getAppClassname(file)
+                if(appClassname != "") {
+                    manifest.mainAttributes('S4-App-Class': appClassname)
+                }
+            }
+        }
+    } else {
+        manifest.mainAttributes('S4-App-Class': "$appClass")
+    }
 
    if (appClassname == "UNKNOWN") {
 
        println "Couldn't find App class in source files...aborting."
-       exit(1)
+       System.exit(1)
    }
 }
 
@@ -132,7 +138,7 @@ s4r << {
 }
 
 task cp << {
-    description='dumps the classpath for running a class from this project, into a \'classpath.txt\' file in the current directory'
+    description='Dumps the classpath for running a class from this project, into a \'classpath.txt\' file in the current directory'
     new File("classpath.txt").write(sourceSets.main.runtimeClasspath.asPath)
 }
 
@@ -148,15 +154,16 @@ task installS4R (type: Copy) {
 */
 def getAppClassname(file) {
    def classname = "UNKNOWN"
-   lines= file.readLines()
+   def lines= file.readLines()
+   def packageName = ""
    for(line in lines) {
 
        def pn = line =~ /.*package\s+([\w\.]+)\s*;.*/
        if(pn) {
            packageName = pn[0][1] + "."
        }
-
        def an = line =~ /.*public\s+class\s+(\w+)\s+extends.+App.*\{/
+
        if (an) {
            classname = packageName + an[0][1]
            println "Found app class name: " + classname

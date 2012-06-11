@@ -2,10 +2,11 @@
 
 # NOTE: "./gradlew s4-tools:installApp" will prepare/update the tools subproject and related startup scripts
 
-GRADLE=`pwd`/gradlew
-
 S4_DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 S4_SCRIPT_PATH="$S4_DIR/s4"
+
+# JVM options for starting nodes and for other s4 tools can be configured here
+# export JAVA_OPTS=-Xmx1G
 
 subprojects/s4-tools/build/install/s4-tools/bin/s4-tools -s4ScriptPath=$S4_SCRIPT_PATH $@
 

@@ -44,9 +44,16 @@ public class CreateApp extends S4ArgsBase {
             Files.copy(gradlewTempFile, new File(appArgs.getAppDir() + "/gradlew"));
             new File(appArgs.getAppDir() + "/gradlew").setExecutable(true);
 
-            // copy build file
+            // copy build file contents
             Files.copy(Resources.newInputStreamSupplier(Resources.getResource("templates/build.gradle")), new File(
                     appArgs.getAppDir() + "/build.gradle"));
+
+            // update app settings
+            String settingsFileContents = Resources.toString(Resources.getResource("templates/settings.gradle"),
+                    Charsets.UTF_8);
+            settingsFileContents = settingsFileContents.replaceFirst("rootProject.name=<project-name>",
+                    "rootProject.name=\"" + appArgs.appName.get(0) + "\"");
+            Files.write(settingsFileContents, new File(appArgs.getAppDir() + "/settings.gradle"), Charsets.UTF_8);
             // copy hello app files
             Files.copy(Resources.newInputStreamSupplier(Resources.getResource("templates/HelloPE.java.txt")), new File(
                     appArgs.getAppDir() + "/src/main/java/hello/HelloPE.java"));

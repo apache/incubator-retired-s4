@@ -21,8 +21,8 @@
 
 description = 'Apache S4'
 defaultTasks 'assemble'
-archivesBaseName = 's4'
-distRootFolder = "$archivesBaseName-${-> version}"
+project.ext["archivesBaseName"] = 's4'
+project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
 allprojects {
 
@@ -34,7 +34,7 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
-        mavenRepo name: "gson", urls: "http://google-gson.googlecode.com/svn/mavenrepo"
+        mavenRepo name: "gson", url: "http://google-gson.googlecode.com/svn/mavenrepo"
 
         /* Add lib dir as a repo. Some jar files that are not available
          in a public repo are distributed in the lib dir. */
@@ -43,7 +43,7 @@ allprojects {
 }
 
 /* All project libraries must be defined here. */
-libraries = [
+project.ext["libraries"] = [
     json:               'org.json:json:20090211',
     guava:              'com.google.guava:guava:10.0.1',
     gson:               'com.google.code.gson:gson:1.6',
@@ -84,13 +84,13 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'eclipse'
     apply plugin: 'maven'
-    apply plugin: 'code-quality'
+//    apply plugin: 'checkstyle'
 
     /* Set Java version. */
     sourceCompatibility = 1.6
     targetCompatibility = 1.6
 
-    checkstyleConfigFileName = "$rootDir/config/checkstyle/s4-checkstyle.xml"
+    project.ext["checkstyleConfigFileName"] = "$rootDir/config/checkstyle/s4-checkstyle.xml"
 
     configurations.all {
         exclude group: 'com.sun.jdmk', module: 'jmxtools'
@@ -142,9 +142,9 @@ subprojects {
     )
 }
 
-dependsOnChildren()
+evaluationDependsOnChildren()
 
-platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-tools')]
+project.ext["platformProjects"] = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-tools')]
 
 configurations {
     platformLibs
@@ -168,7 +168,7 @@ dependencies {
 //    }
 //}
 
-binDistImage = copySpec {
+project.ext["binDistImage"] = copySpec {
     platformProjects.collect {proj ->
         into ("platform/lib") {
             from proj.sourceSets.main.resources

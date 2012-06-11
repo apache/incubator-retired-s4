@@ -100,7 +100,8 @@ public class Main {
                         Arrays.toString(mainArgs.extraNamedParameters.toArray(new String[] {})));
                 Map<String, String> namedParameters = new HashMap<String, String>();
                 for (String namedParam : mainArgs.extraNamedParameters) {
-                    namedParameters.put(namedParam.split("[:]")[0].trim(), namedParam.split("[:]")[1].trim());
+                    namedParameters.put(namedParam.split("[:]")[0].trim(),
+                            namedParam.substring(namedParam.indexOf(':') + 1).trim());
                 }
                 modules.add(new ParametersInjectionModule(namedParameters));
             }
