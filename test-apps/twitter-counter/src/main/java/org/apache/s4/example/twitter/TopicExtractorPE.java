@@ -34,13 +34,19 @@ public class TopicExtractorPE extends ProcessingElement {
     public void onEvent(Event event) {
         String text = event.get("statusText", String.class);
         logger.trace("event text [{}]", text);
-        if (text.contains("#")) {
-            Iterable<String> split = Splitter.on("#").omitEmptyStrings().trimResults()
-                    .split(text.substring(text.indexOf("#") + 1, text.length()));
-            for (String topic : split) {
-                String topicOnly = topic.split(" ")[0];
-                downStream.put(new TopicEvent(topicOnly, 1));
+        if (!text.contains("#")) {
+            return;
+        }
+        Iterable<String> split = Splitter.on(' ').omitEmptyStrings().trimResults().split(text);
+        for (String topic : split) {
+            if (!topic.startsWith("#")) {
+                continue;
             }
+            String topicOnly = topic.substring(1);
+            if (topicOnly.length() == 0 || topicOnly.contains("#")) {
+                continue;
+            }
+            downStream.put(new TopicEvent(topicOnly, 1));
         }
     }
 

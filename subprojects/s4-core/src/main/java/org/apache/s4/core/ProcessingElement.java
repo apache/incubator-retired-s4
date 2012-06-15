@@ -356,9 +356,6 @@ public abstract class ProcessingElement implements Cloneable {
             return this;
 
         timer = new Timer();
-        logger.info("Created timer for PE prototype [{}] with interval [{}].", this.getClass().getName(),
-                timerIntervalInMilliseconds);
-        timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);
         return this;
     }
 
@@ -482,7 +479,8 @@ public abstract class ProcessingElement implements Cloneable {
         /* Start timer. */
         if (timer != null) {
             timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);
-            logger.info("Started timer for PE [{}] with ID [{}].", this.getClass().getName(), id);
+            logger.debug("Started timer for PE prototype [{}], ID [{}] with interval [{}].", new String[] {
+                    this.getClass().getName(), id, String.valueOf(timerIntervalInMilliseconds) });
         }
 
         /* Check if this PE is annotated as thread safe. */

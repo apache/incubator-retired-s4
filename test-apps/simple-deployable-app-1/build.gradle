@@ -39,8 +39,8 @@ project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/app
 project.ext["s4Version"] = '0.5.0-SNAPSHOT'
 description = 'Apache S4 App'
 //defaultTasks 'installS4R'
-archivesBaseName = "$project.name"
-distRootFolder = "$archivesBaseName-${-> version}"
+project.ext["archivesBaseName"] = "$project.name"
+project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
 
 // Append the suffix 'SNAPSHOT' when the build is not for release.

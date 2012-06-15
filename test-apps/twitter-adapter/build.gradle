@@ -34,13 +34,13 @@
 /* Set the destination where we want to install the apps. */
 //s4AppInstallDir = "/tmp/s4Apps" // TODO: decide how to standarize dirs, use env var?
 
-s4AppInstallDir = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
+project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
 
-s4Version = '0.5.0-SNAPSHOT'
+project.ext["s4Version"] = '0.5.0-SNAPSHOT'
 description = 'Apache S4 App'
 //defaultTasks 'installS4R'
-archivesBaseName = "$project.name"
-distRootFolder = "$archivesBaseName-${-> version}"
+project.ext["archivesBaseName"] = "$project.name"
+project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
 
 // Append the suffix 'SNAPSHOT' when the build is not for release.
@@ -63,7 +63,7 @@ targetCompatibility = 1.6
 repositories {
     mavenLocal()
     mavenCentral()
-    mavenRepo name: "gson", urls: "http://google-gson.googlecode.com/svn/mavenrepo"
+    mavenRepo name: "gson", url: "http://google-gson.googlecode.com/svn/mavenrepo"
 
     /* Add lib dir as a repo. Some jar files that are not available
      in a public repo are distributed in the lib dir. */
@@ -71,7 +71,7 @@ repositories {
 }
 
 /* All project libraries must be defined here. */
-libraries = [
+project.ext["libraries"] = [
            twitter4j_core:     'org.twitter4j:twitter4j-core:2.2.5',
            twitter4j_stream:   'org.twitter4j:twitter4j-stream:2.2.5',
            s4_base:            'org.apache.s4:s4-base:0.5.0-SNAPSHOT',
@@ -110,7 +110,7 @@ manifest.mainAttributes(
        'S4-Version': s4Version
        )
 
-appDependencies = ( configurations.compile )
+project.ext["appDependencies"] = ( configurations.compile )
 
 /* This task will extract all the class files and create a fat jar. We set the manifest and the extension to make it an S4 archive file. */
 // TODO: exclude schenma files as needed (not critical) see: http://forums.gradle.org/gradle/topics/using_gradle_to_fat_jar_a_spring_project
@@ -177,7 +177,8 @@ task cp << {
 */
 def getAppClassname(file) {
    def classname = "UNKNOWN"
-   lines= file.readLines()
+   def lines= file.readLines()
+   def packageName = ""
    for(line in lines) {
 
        def pn = line =~ /.*package\s+([\w\.]+)\s*;.*/
