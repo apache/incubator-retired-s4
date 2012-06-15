@@ -5,7 +5,9 @@ import java.util.Hashtable;
 import java.util.List;
 
 import org.apache.s4.base.Emitter;
+import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Listener;
+import org.apache.s4.base.SerializerDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,9 @@ public class PartitionInfo {
     private int numMessages;
     private int partitionId;
     private ProtocolTestUtil ptu;
+
+    @Inject
+    SerializerDeserializer serDeser;
 
     @Inject
     public PartitionInfo(Emitter emitter, Listener listener, @Named("comm.retries") int retries,
@@ -72,7 +77,8 @@ public class PartitionInfo {
             try {
                 for (int i = 0; i < numMessages; i++) {
                     for (int partition = 0; partition < emitter.getPartitionCount(); partition++) {
-                        byte[] message = new String(partitionId + " " + i).getBytes();
+                        EventMessage message = new EventMessage("app1", "stream1",
+                                new String(partitionId + " " + i).getBytes());
                         for (int retries = 0; retries < numRetries; retries++) {
                             if (emitter.send(partition, message)) {
                                 sendCounts[partition]++;
@@ -115,8 +121,9 @@ public class PartitionInfo {
                     break;
                 }
 
+                EventMessage deserialized = (EventMessage) serDeser.deserialize(message);
                 // process and store the message
-                String msgString = new String(message);
+                String msgString = new String(deserialized.getSerializedEvent());
                 String[] msgTokens = msgString.split(" ");
                 Integer senderPartition = Integer.parseInt(msgTokens[0]);
                 Integer receivedMsg = Integer.parseInt(msgTokens[1]);

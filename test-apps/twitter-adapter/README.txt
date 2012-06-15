@@ -1,0 +1,1 @@
+Please refer to README.txt in twitter-counter application

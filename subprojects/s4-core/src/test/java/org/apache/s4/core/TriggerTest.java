@@ -6,15 +6,16 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
+import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.core.triggers.TriggeredApp;
-import org.apache.s4.core.triggers.TriggeredModule;
 import org.apache.s4.fixtures.CommTestUtils;
+import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.junit.After;
-import org.junit.Before;
 
+import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -23,7 +24,7 @@ import com.google.inject.Injector;
  * instantiating new S4 nodes
  */
 // NOTE: placed in this package so that App#start(), init() and close() can be called without modifying their visibility
-public abstract class TriggerTest {
+public abstract class TriggerTest extends ZkBasedTest {
 
     private Factory zookeeperServerConnectionFactory;
     public static TriggerType triggerType;
@@ -33,27 +34,24 @@ public abstract class TriggerTest {
         TIME_BASED, COUNT_BASED, NONE
     }
 
-    @Before
-    public void prepare() throws IOException, InterruptedException, KeeperException {
-        CommTestUtils.cleanupTmpDirs();
-        zookeeperServerConnectionFactory = CommTestUtils.startZookeeperServer();
-    }
-
     @After
     public void cleanup() throws IOException, InterruptedException {
         if (app != null) {
             app.close();
             app = null;
         }
-        CommTestUtils.stopZookeeperServer(zookeeperServerConnectionFactory);
+        cleanupZkBasedTest();
     }
 
     protected CountDownLatch createTriggerAppAndSendEvent() throws IOException, KeeperException, InterruptedException {
         final ZooKeeper zk = CommTestUtils.createZkClient();
-        Injector injector = Guice.createInjector(new TriggeredModule());
+        Injector injector = Guice.createInjector(
+                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
+                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream()));
         app = injector.getInstance(TriggeredApp.class);
         app.init();
         app.start();
+        // app.close();
 
         String time1 = String.valueOf(System.currentTimeMillis());
 

@@ -1,7 +1,13 @@
 package org.apache.s4.wordcount;
 
-import org.apache.s4.fixtures.FileBasedClusterManagementTestModule;
+import com.google.inject.AbstractModule;
 
-public class WordCountModule extends FileBasedClusterManagementTestModule<WordCountApp> {
+public class WordCountModule extends AbstractModule {
+
+    @Override
+    protected void configure() {
+        bind(WordCountApp.class);
+
+    }
 
 }

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# NOTE: "./gradlew s4-tools:installApp" will prepare/update the tools subproject and related startup scripts
+
+S4_DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+S4_SCRIPT_PATH="$S4_DIR/s4"
+
+# JVM options for starting nodes and for other s4 tools can be configured here
+# export JAVA_OPTS=-Xmx1G
+
+subprojects/s4-tools/build/install/s4-tools/bin/s4-tools -s4ScriptPath=$S4_SCRIPT_PATH $@
+
+# EXAMPLES
+# deploy:
+# ./s4 deploy -appName=twitter-counter -buildFile=test-apps/twitter-counter/build.gradle -cluster=s4-test-cluster
+# ./s4 deploy -appName=twitter-adapter -buildFile=test-apps/twitter-adapter/build.gradle -cluster=s4-adapter-cluster
+
+# newCluster:
+# # examples:
+#./s4 newCluster -c=s4-test-cluster -flp=11000 -nbTasks=2 ; ./s4 newCluster -c=s4-adapter-cluster -flp=13000 -nbTasks=1
+
+# node:
+# ./s4 node -c=s4-test-cluster
+

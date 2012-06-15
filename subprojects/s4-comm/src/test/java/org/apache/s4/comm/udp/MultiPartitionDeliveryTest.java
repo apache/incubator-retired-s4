@@ -1,7 +1,9 @@
 package org.apache.s4.comm.udp;
 
-public class MultiPartitionDeliveryTest extends UDPBasedTest {
-    public MultiPartitionDeliveryTest() {
+import java.io.IOException;
+
+public class MultiPartitionDeliveryTest extends UDPCommTest {
+    public MultiPartitionDeliveryTest() throws IOException {
         super(2);
     }
 }

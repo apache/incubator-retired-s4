@@ -17,7 +17,7 @@ public class TestApp extends App {
     @Override
     protected void onInit() {
         try {
-            zkClient = new ZkClient("localhost:" + 21810);
+            zkClient = new ZkClient("localhost:" + 2181);
             if (!zkClient.exists("/s4-test")) {
                 zkClient.create("/s4-test", null, CreateMode.PERSISTENT);
             }

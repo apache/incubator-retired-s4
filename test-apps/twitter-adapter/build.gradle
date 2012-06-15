@@ -1,0 +1,209 @@
+/*
+* Copyright 2010 the original author or authors.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+/**
+* Apache S4 Application Build File
+*
+* Use this script to buils and package S4 apps.
+*
+* Run 'gradle install' on the s4 project to publish to your local maven repo.
+*
+* TODO: This should probably be distributed as an s4 plugin for Gradle.
+* TODO: There seem to be to be similarities with the war and jetty plugins. (war -> s4r, jetty -> s4Run).
+* We should make it easy to test the app from this script by a running a test task that starts and stops
+* an s4 server. See: http://www.gradle.org/releases/1.0-milestone-3/docs/userguide/userguide_single.html#war_plugin
+*
+* This is an interesting discussion:
+* http://gradle.1045684.n5.nabble.com/Exclude-properties-file-from-war-td3365147.html
+*
+*/
+
+/* Set the destination where we want to install the apps. */
+//s4AppInstallDir = "/tmp/s4Apps" // TODO: decide how to standarize dirs, use env var?
+
+project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
+
+project.ext["s4Version"] = '0.5.0-SNAPSHOT'
+description = 'Apache S4 App'
+//defaultTasks 'installS4R'
+project.ext["archivesBaseName"] = "$project.name"
+project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
+
+
+// Append the suffix 'SNAPSHOT' when the build is not for release.
+//version = new Version(major: 0, minor: 0, bugfix: 0, isRelease: false)
+group = 'org.apache.s4'
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin:'application'
+
+mainClassName = "org.apache.s4.core.Main"
+
+/* The app classname is set automatically from the source files. */
+def appClassname = ''
+
+/* Set Java version. */
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    mavenRepo name: "gson", url: "http://google-gson.googlecode.com/svn/mavenrepo"
+
+    /* Add lib dir as a repo. Some jar files that are not available
+     in a public repo are distributed in the lib dir. */
+    flatDir name: 'libDir', dirs: "$rootDir/lib"
+}
+
+/* All project libraries must be defined here. */
+project.ext["libraries"] = [
+           twitter4j_core:     'org.twitter4j:twitter4j-core:2.2.5',
+           twitter4j_stream:   'org.twitter4j:twitter4j-stream:2.2.5',
+           s4_base:            'org.apache.s4:s4-base:0.5.0-SNAPSHOT',
+           s4_comm:            'org.apache.s4:s4-comm:0.5.0-SNAPSHOT',
+           s4_core:            'org.apache.s4:s4-core:0.5.0-SNAPSHOT'
+       ]
+
+
+dependencies {
+
+   /* S4 Platform. We only need the API, not the transitive dependencies. */
+//    s4Libs.each {  module ->
+//        compile( module ) //{ transitive = false }
+//        s4API( module )
+//    }
+
+   compile (libraries.s4_base)
+   compile (libraries.s4_comm)
+   compile (libraries.s4_core)
+   compile (libraries.twitter4j_core)
+   compile (libraries.twitter4j_stream)
+
+
+}
+
+/* Set the manifest attributes for the S4 archive here.
+*  TODO: separate custom properties from std ones and set custom properties at the top of the build script.
+*/
+manifest.mainAttributes(
+       provider: 'gradle',
+       'Implementation-Url': 'http://incubator.apache.org/projects/s4.html',
+       'Implementation-Version': version,
+       'Implementation-Vendor': 'Apache S4',
+       'Implementation-Vendor-Id': 's4app',
+       'S4-App-Class': appClassname, // gets set by the s4r task.
+       'S4-Version': s4Version
+       )
+
+project.ext["appDependencies"] = ( configurations.compile )
+
+/* This task will extract all the class files and create a fat jar. We set the manifest and the extension to make it an S4 archive file. */
+// TODO: exclude schenma files as needed (not critical) see: http://forums.gradle.org/gradle/topics/using_gradle_to_fat_jar_a_spring_project
+task s4r(type: Jar) {
+   dependsOn jar
+   from { appDependencies.collect { it.isDirectory() ? it : zipTree(it) } }
+   from { configurations.archives.allArtifacts.files.collect { it.isDirectory() ? it : zipTree(it) } }
+   manifest = project.manifest
+   extension = 's4r'
+
+   /* Set class name in manifest. Parse source files until we find a class that extends App.
+    * Get fully qualified Java class name and set attribute in Manifest.
+    */
+   sourceSets.main.allSource.files.each {  File file ->
+       if (appClassname =="" || appClassname == "UNKNOWN") {
+           // only execute the closure for this file if we haven't already found the app class name
+           appClassname = getAppClassname(file)
+           if(appClassname != "") {
+               manifest.mainAttributes('S4-App-Class': appClassname)
+           }
+       }
+   }
+
+   if (appClassname == "UNKNOWN") {
+
+       println "Couldn't find App class in source files...aborting."
+       exit(1)
+   }
+}
+
+/* List the artifacts that will br added to the s4 archive (and explode if needed). */
+s4r << {
+   appDependencies.each { File file -> println 'Adding to s4 archive: ' + file.name }
+   configurations.archives.allArtifacts.files.each { println 'Adding to s4 archive: ' + it.name }
+
+   /* This is for debugging. */
+   //configurations.s4All.each { File file -> println 's4All: ' + file.name }
+   //deployableDependencies.each { File file -> println 'Deploy: ' + file.name }
+
+   // more debugging statements.
+   //sourceSets.main.compileClasspath.each { File file -> println 'compileClasspath: ' + file.name }
+
+}
+
+/* Install the S4 archive to the install directory. */
+task installS4R (type: Copy) {
+   dependsOn s4r
+   from s4r.archivePath
+   into s4AppInstallDir
+}
+
+/* Generates the gradlew scripts.
+http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
+task wrapper(type: Wrapper) { gradleVersion = '1.0-milestone-3' }
+
+task cp << {
+    description='dumps the classpath for running a class from this project, into a \'classpath.txt\' file in the current directory'
+    new File("classpath.txt").write(sourceSets.main.runtimeClasspath.asPath)
+}
+
+
+/* Parse source file to get the app classname so we can use it in the manifest.
+* TODO: Use a real Java parser. (This is not skippong comments for example.)
+*/
+def getAppClassname(file) {
+   def classname = "UNKNOWN"
+   def lines= file.readLines()
+   def packageName = ""
+   for(line in lines) {
+
+       def pn = line =~ /.*package\s+([\w\.]+)\s*;.*/
+       if(pn) {
+           packageName = pn[0][1] + "."
+       }
+
+       def an = line =~ /.*public\s+class\s+(\w+)\s+extends.+App.*\{/
+       if (an) {
+           classname = packageName + an[0][1]
+           println "Found app class name: " + classname
+           break
+       }
+
+   }
+   classname
+}
+
+class Version {
+   int major
+   int minor
+   int bugfix
+   boolean isRelease
+
+   String toString() {
+       "$major.$minor.$bugfix${isRelease ? '' : '-SNAPSHOT'}"
+   }
+}

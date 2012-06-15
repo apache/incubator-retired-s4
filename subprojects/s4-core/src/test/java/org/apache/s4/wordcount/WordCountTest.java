@@ -6,7 +6,8 @@ import java.util.concurrent.CountDownLatch;
 
 import junit.framework.Assert;
 
-import org.apache.s4.core.App;
+import org.apache.s4.comm.tools.TaskSetup;
+import org.apache.s4.core.Main;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -53,8 +54,13 @@ public class WordCountTest {
     @Test
     public void testSimple() throws Exception {
         final ZooKeeper zk = CommTestUtils.createZkClient();
+        TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
+        String clusterName = "clusterA";
+        taskSetup.clean("s4");
+        taskSetup.setup(clusterName, 1, 10000);
 
-        App.main(new String[] { WordCountModule.class.getName(), WordCountApp.class.getName() });
+        Main.main(new String[] { "-cluster=" + clusterName, "-appClass=" + WordCountApp.class.getName(),
+                "-extraModulesClasses=" + WordCountModule.class.getName() });
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed, zk);

@@ -17,16 +17,14 @@ import com.google.common.collect.MapMaker;
  * The source code for this class was derived from <a href=
  * "http://code.google.com/p/db4o-om/source/browse/trunk/objectmanager-api/src/com/db4o/objectmanager/configuration/MultiClassLoader.java"
  * >this project</a> which was derived from this <a href=
- * "http://www.javaworld.com/javaworld/jw-10-1996/jw-10-indepth.html?page=1"
- * >article by Chuck McManis</a>.
+ * "http://www.javaworld.com/javaworld/jw-10-1996/jw-10-indepth.html?page=1" >article by Chuck McManis</a>.
  * 
  * 
  * Thank you to the authors!
  */
 abstract public class MultiClassLoader extends ClassLoader {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(MultiClassLoader.class);
+    private static final Logger logger = LoggerFactory.getLogger(MultiClassLoader.class);
 
     private final Map<String, Class<?>> classes;
     private char classNameReplacementChar;
@@ -37,8 +35,8 @@ abstract public class MultiClassLoader extends ClassLoader {
 
     // ---------- Superclass Overrides ------------------------
     /**
-     * This is a simple version for external clients since they will always want
-     * the class resolved before it is returned to them.
+     * This is a simple version for external clients since they will always want the class resolved before it is
+     * returned to them.
      */
     @Override
     public Class<?> loadClass(String className) throws ClassNotFoundException {
@@ -46,28 +44,26 @@ abstract public class MultiClassLoader extends ClassLoader {
     }
 
     @Override
-    public synchronized Class<?> loadClass(String className, boolean resolveIt)
-            throws ClassNotFoundException {
+    public synchronized Class<?> loadClass(String className, boolean resolveIt) throws ClassNotFoundException {
 
         Class<?> result;
         byte[] classBytes;
-        logger.debug("MultiClassLoader loadClass - className: " + className
-                + ", resolveIt: " + resolveIt);
+        logger.trace("MultiClassLoader loadClass - className: " + className + ", resolveIt: " + resolveIt);
 
         /* Check our local cache of classes. */
         result = classes.get(className);
         if (result != null) {
-            logger.debug("Returning cached result for class [{}]", className);
+            logger.trace("Returning cached result for class [{}]", className);
             return result;
         }
 
         /* Check with the primordial class loader. */
         try {
             result = super.findSystemClass(className);
-            logger.debug("Returning system class (in CLASSPATH) [{}]", className);
+            logger.trace("Returning system class (in CLASSPATH) [{}]", className);
             return result;
         } catch (ClassNotFoundException e) {
-            logger.debug("Not a system class [{}]", className);
+            logger.trace("Not a system class [{}]", className);
         }
 
         classBytes = loadClassBytes(className);
@@ -94,15 +90,14 @@ abstract public class MultiClassLoader extends ClassLoader {
         if (result == null)
             return null;
         classes.put(className, result);
-        logger.debug("Returning newly loaded class [{}]", className);
+        logger.trace("Returning newly loaded class [{}]", className);
         return result;
     }
 
     /**
-     * This optional call allows a class name such as "COM.test.Hello" to be
-     * changed to "COM_test_Hello", which is useful for storing classes from
-     * different packages in the same retrieval directory. In the above example
-     * the char would be '_'.
+     * This optional call allows a class name such as "COM.test.Hello" to be changed to "COM_test_Hello", which is
+     * useful for storing classes from different packages in the same retrieval directory. In the above example the char
+     * would be '_'.
      */
     public void setClassNameReplacementChar(char replacement) {
         classNameReplacementChar = replacement;

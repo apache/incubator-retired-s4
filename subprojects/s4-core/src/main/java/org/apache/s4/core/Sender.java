@@ -2,11 +2,11 @@ package org.apache.s4.core;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Event;
+import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 
 /**
  * The {@link Sender} and its counterpart {@link Receiver} are the top level classes of the communication layer.
@@ -16,7 +16,6 @@ import com.google.inject.Singleton;
  * Details on how the cluster is partitioned and how events are serialized and transmitted to its destination are hidden
  * from the application developer.
  */
-@Singleton
 public class Sender {
     final private Emitter emitter;
     final private SerializerDeserializer serDeser;
@@ -61,14 +60,13 @@ public class Sender {
             /* Hey we are in the same JVM, don't use the network. */
             return true;
         }
-        send(partition, event);
+        send(partition,
+                new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), serDeser.serialize(event)));
         return false;
     }
 
-    private void send(int partition, Event event) {
-        // serialize and send
-        byte[] blob = serDeser.serialize(event);
-        emitter.send(partition, blob);
+    private void send(int partition, EventMessage event) {
+        emitter.send(partition, event);
     }
 
     /**
@@ -80,12 +78,14 @@ public class Sender {
      */
     public void sendToRemotePartitions(Event event) {
 
-        byte[] blob = serDeser.serialize(event);
         for (int i = 0; i < emitter.getPartitionCount(); i++) {
 
             /* Don't use the comm layer when we send to the same partition. */
             if (localPartitionId != i)
-                emitter.send(i, blob);
+                emitter.send(
+                        i,
+                        new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), serDeser
+                                .serialize(event)));
         }
     }
 

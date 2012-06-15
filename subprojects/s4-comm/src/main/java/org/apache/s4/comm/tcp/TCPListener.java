@@ -17,6 +17,7 @@ import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
@@ -31,6 +32,10 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
+/**
+ * Receives messages through TCP for the assigned subcluster.
+ * 
+ */
 public class TCPListener implements Listener {
     private static final Logger logger = LoggerFactory.getLogger(TCPListener.class);
     private BlockingQueue<byte[]> handoffQueue = new SynchronousQueue<byte[]>();
@@ -123,5 +128,12 @@ public class TCPListener implements Listener {
                 }
             });
         }
+
+        @Override
+        public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+            // TODO Auto-generated method stub
+            super.channelClosed(ctx, e);
+        }
+
     }
 }

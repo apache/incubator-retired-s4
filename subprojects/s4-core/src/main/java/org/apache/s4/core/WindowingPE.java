@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2011 The S4 Project, http://s4.io.
  * All rights reserved.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *          http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied. See the License for the specific
  * language governing permissions and limitations under the
- * License. See accompanying LICENSE file. 
+ * License. See accompanying LICENSE file.
  */
 package org.apache.s4.core;
 
@@ -23,7 +23,6 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.collections15.buffer.CircularFifoBuffer;
-import org.apache.s4.base.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,14 +85,6 @@ public abstract class WindowingPE<T> extends ProcessingElement {
         this(app, 0l, null, numSlots);
     }
 
-    abstract protected void onEvent(Event event);
-
-    abstract public void onTrigger(Event event);
-
-    abstract public void onCreate();
-
-    abstract public void onRemove();
-
     /**
      * This method is called at periodic intervals when a new slot must be put into the buffer. The concrete class must
      * implement the logic required to create a slot. For example, compute statistics from aggregations and get
@@ -118,10 +109,11 @@ public abstract class WindowingPE<T> extends ProcessingElement {
             logger.error("Calling method addSlot() in a periodic window is not allowed.");
             return;
         }
-        if (circularBuffer == null) {
-            circularBuffer = new CircularFifoBuffer<T>(numSlots);
-        }
         circularBuffer.add(slot);
+    }
+
+    protected void onCreate() {
+        circularBuffer = new CircularFifoBuffer<T>(numSlots);
     }
 
     /**
@@ -143,7 +135,6 @@ public abstract class WindowingPE<T> extends ProcessingElement {
      * @return the collection of slots
      */
     protected Collection<T> getSlots() {
-
         return circularBuffer;
     }
 

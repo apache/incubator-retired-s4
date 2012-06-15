@@ -13,6 +13,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -38,7 +39,8 @@ public class CommTestUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(CommTestUtils.class);
 
-    public static final int ZK_PORT = 21810;
+    public static final int ZK_PORT = 2181;
+    public static final String ZK_STRING = "localhost:" + ZK_PORT;
     public static final int INITIAL_BOOKIE_PORT = 5000;
     public static File DEFAULT_TEST_OUTPUT_DIR = new File(System.getProperty("java.io.tmpdir") + File.separator + "tmp");
     public static File DEFAULT_STORAGE_DIR = new File(DEFAULT_TEST_OUTPUT_DIR.getAbsolutePath() + File.separator
@@ -62,7 +64,7 @@ public class CommTestUtils {
             cmdList.add(arg);
         }
 
-        // System.out.println(Arrays.toString(cmdList.toArray(new String[] {})).replace(",", ""));
+        System.out.println(Arrays.toString(cmdList.toArray(new String[] {})).replace(",", ""));
         ProcessBuilder pb = new ProcessBuilder(cmdList);
 
         pb.directory(new File(System.getProperty("user.dir")));

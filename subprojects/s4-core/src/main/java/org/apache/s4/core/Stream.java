@@ -1,34 +1,17 @@
-/*
- * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *          http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the
- * License. See accompanying LICENSE file. 
- */
 package org.apache.s4.core;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.GenericKeyFinder;
-import org.apache.s4.base.Key;
 import org.apache.s4.base.KeyFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 /**
  * {@link Stream} and {@link ProcessingElement} objects represent the links and nodes in the application graph. A stream
@@ -38,21 +21,21 @@ import com.google.common.collect.Sets;
  * <p>
  * To build an application create stream objects using use the {@link StreamFactory} class.
  */
-public class Stream<T extends Event> extends Streamable<T> implements Runnable {
+public class Stream<T extends Event> implements Runnable, Streamable {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
 
     final static private String DEFAULT_SEPARATOR = "^";
     final static private int CAPACITY = 1000;
     private static int idCounter = 0;
-    private String name = "";
-    private Key<T> key = null;
-    private ProcessingElement[] targetPEs = null;
-    final private BlockingQueue<T> queue = new ArrayBlockingQueue<T>(CAPACITY);
+    private String name;
+    protected Key<T> key;
+    private ProcessingElement[] targetPEs;
+    protected final BlockingQueue<EventMessage> queue = new ArrayBlockingQueue<EventMessage>(CAPACITY);
     private Thread thread;
     final private Sender sender;
     final private Receiver receiver;
-    final private int id;
+    // final private int id;
     final private App app;
     private Class<T> eventType = null;
 
@@ -62,35 +45,24 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * 
      * @param app
      *            we always register streams with the parent application.
-     * @param name
-     *            give this stream a meaningful name in the context of your application.
-     * @param finder
-     *            the finder object to find the value of the key in an event.
-     * @param processingElements
-     *            the target PE prototypes for this stream.
      */
     public Stream(App app) {
-        synchronized (Stream.class) {
-            id = idCounter++;
-        }
+        // synchronized (Stream.class) {
+        // id = idCounter++;
+        // }
         this.app = app;
-        app.addStream(this, null);
-
+        app.addStream(this);
         this.sender = app.getSender();
         this.receiver = app.getReceiver();
     }
 
-    void start() {
-
-        /* Get target PE prototypes for this stream. Remove null key. */
-        Set<? extends ProcessingElement> pes = Sets.newHashSet(app.getTargetPEs(this));
-        pes.remove(null);
-        targetPEs = new ProcessingElement[pes.size()];
-        pes.toArray(targetPEs);
+    public void start() {
 
         if (logger.isTraceEnabled()) {
-            for (ProcessingElement pe : pes) {
-                logger.trace("Starting stream [{}] with target PE [{}].", this.getName(), pe.getName());
+            if (targetPEs != null) {
+                for (ProcessingElement pe : targetPEs) {
+                    logger.trace("Starting stream [{}] with target PE [{}].", this.getName(), pe.getName());
+                }
             }
         }
 
@@ -98,13 +70,6 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
         thread = new Thread(this, name);
         thread.start();
         this.receiver.addStream(this);
-    }
-
-    /**
-     * Stop and close this stream.
-     */
-    void close() {
-        thread.interrupt();
     }
 
     /**
@@ -129,6 +94,10 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
     public Stream<T> setKey(KeyFinder<T> keyFinder) {
         this.key = new Key<T>(keyFinder, DEFAULT_SEPARATOR);
         return this;
+    }
+
+    void setEventType(Class<T> type) {
+        this.eventType = type;
     }
 
     /**
@@ -157,7 +126,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * @return the stream object
      */
     public Stream<T> setPE(ProcessingElement pe) {
-        app.addStream(this, pe);
+        app.addStream(this);
         return this;
     }
 
@@ -170,8 +139,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * @return the stream object
      */
     public Stream<T> setPEs(ProcessingElement[] pes) {
-        for (int i = 0; i < pes.length; i++)
-            app.addStream(this, pes[i]);
+        this.targetPEs = pes;
         return this;
     }
 
@@ -180,9 +148,10 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * 
      * @param event
      */
-    public void put(T event) {
+    @SuppressWarnings("unchecked")
+    public void put(Event event) {
         try {
-            event.setStreamId(getId());
+            event.setStreamId(getName());
             event.setAppId(app.getId());
 
             /*
@@ -194,13 +163,14 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
                  * We send to a specific PE instance using the key but we don't know if the target partition is remote
                  * or local. We need to ask the sender.
                  */
-                if (sender.sendAndCheckIfLocal(key.get(event), event)) {
+                if (sender.sendAndCheckIfLocal(key.get((T) event), event)) {
 
                     /*
                      * Sender checked and decided that the target is local so we simply put the event in the queue and
                      * we save the trip over the network.
                      */
-                    queue.put(event);
+                    queue.put(new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), app
+                            .getSerDeser().serialize(event)));
                 }
 
             } else {
@@ -211,14 +181,13 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
                  * the queue.
                  */
                 sender.sendToRemotePartitions(event);
-                queue.put(event);
+                queue.put(new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), app.getSerDeser()
+                        .serialize(event)));
             }
         } catch (InterruptedException e) {
-            if (logger.isTraceEnabled()) {
-                e.printStackTrace();
-            }
-            logger.debug("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            // System.exit(-1);
+            e.printStackTrace();
+            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
+            System.exit(-1);
         }
     }
 
@@ -226,14 +195,13 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
      * Implements the {@link ReceiverListener} interface. The low level {@link Receiver} object call this method when a
      * new {@link Event} is available.
      */
-    @SuppressWarnings("unchecked")
-    // Need casting because we don't know the concrete event type.
-    public void receiveEvent(Event event) {
+    public void receiveEvent(EventMessage event) {
         try {
-            queue.put((T) event);
+            queue.put(event);
         } catch (InterruptedException e) {
-            logger.debug("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            // System.exit(-1);
+            e.printStackTrace();
+            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
+            System.exit(-1);
         }
     }
 
@@ -254,9 +222,9 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
     /**
      * @return the stream id
      */
-    int getId() {
-        return id;
-    }
+    // int getId() {
+    // return id;
+    // }
 
     /**
      * @return the app
@@ -273,6 +241,13 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
     }
 
     /**
+     * Stop and close this stream.
+     */
+    public void close() {
+        thread.interrupt();
+    }
+
+    /**
      * @return the sender object
      */
     public Sender getSender() {
@@ -286,16 +261,15 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
         return receiver;
     }
 
-    void setEventType(Class<T> type) {
-        this.eventType = type;
-    }
-
     @Override
     public void run() {
         while (true) {
             try {
                 /* Get oldest event in queue. */
-                T event = queue.take();
+                EventMessage eventMessage = queue.take();
+
+                @SuppressWarnings("unchecked")
+                T event = (T) app.getSerDeser().deserialize(eventMessage.getSerializedEvent());
 
                 /* Send event to each target PE. */
                 for (int i = 0; i < targetPEs.length; i++) {
@@ -319,8 +293,7 @@ public class Stream<T extends Event> extends Streamable<T> implements Runnable {
                         /* We have a key, send to target PE. */
 
                         /* STEP 1: find the PE instance for key. */
-                        ProcessingElement pe;
-                        pe = targetPEs[i].getInstanceForKey(key.get(event));
+                        ProcessingElement pe = targetPEs[i].getInstanceForKey(key.get(event));
 
                         /* STEP 2: pass event to PE instance. */
                         pe.handleInputEvent(event);

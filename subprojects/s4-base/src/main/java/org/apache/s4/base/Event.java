@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *          http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied. See the License for the specific
  * language governing permissions and limitations under the
- * License. See accompanying LICENSE file. 
+ * License. See accompanying LICENSE file.
  */
 package org.apache.s4.base;
 
@@ -27,7 +27,6 @@ import com.google.common.collect.Maps;
  * for inter-application communication. For greater efficiency and type safety, extend this class to create custom event
  * types.
  * 
- * @author leo
  * 
  */
 public class Event {
@@ -35,7 +34,7 @@ public class Event {
     private static final Logger logger = LoggerFactory.getLogger(Event.class);
 
     final private long time;
-    private int streamId;
+    private String streamName;
     private int appId;
     private Map<String, Data<?>> map;
 
@@ -64,8 +63,8 @@ public class Event {
      * 
      * @return the target stream id
      */
-    public int getStreamId() {
-        return streamId;
+    public String getStreamName() {
+        return streamName;
     }
 
     /**
@@ -74,8 +73,8 @@ public class Event {
      * 
      * @param targetStreamId
      */
-    public void setStreamId(int streamId) {
-        this.streamId = streamId;
+    public void setStreamId(String streamName) {
+        this.streamName = streamName;
     }
 
     /**
@@ -175,7 +174,10 @@ public class Event {
     }
 
     /* Helper data object. */
-    private class Data<T> {
+    private static class Data<T> {
+
+        Data() {
+        }
 
         private T value;
         private Class<T> type;

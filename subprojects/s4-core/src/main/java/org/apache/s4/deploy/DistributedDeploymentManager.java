@@ -80,7 +80,7 @@ public class DistributedDeploymentManager implements DeploymentManager {
         zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
         zkClient.setZkSerializer(new ZNRecordSerializer());
         IZkChildListener appListener = new AppsChangeListener();
-        appsPath = "/" + clusterName + "/apps";
+        appsPath = "/s4/clusters/" + clusterName + "/apps";
         if (!zkClient.exists(appsPath)) {
             zkClient.create(appsPath, null, CreateMode.PERSISTENT);
         }
@@ -119,10 +119,10 @@ public class DistributedDeploymentManager implements DeploymentManager {
             App loaded = server.loadApp(s4rFile);
             if (loaded != null) {
                 logger.info("Successfully installed application {}", newApp);
-                server.startApp(loaded);
+                server.startApp(loaded, newApp, clusterName);
             } else {
                 throw new DeploymentFailedException("Cannot deploy application [" + newApp + "] from URI ["
-                        + uri.toString() + "] : cannot load application");
+                        + uri.toString() + "] : cannot start application");
             }
             // TODO sync with other nodes? (e.g. wait for other apps deployed before starting?
 

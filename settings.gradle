@@ -18,8 +18,13 @@ include 's4-core'
 include 's4-comm'
 include 's4-edsl'
 include 's4-example'
+include 's4-tools'
+//include 's4-example'
+//include ':test-apps:simple-adapter-1'
 include ':test-apps:simple-deployable-app-1'
 include ':test-apps:simple-deployable-app-2'
+include ':test-apps:s4-showtime'
+include ':test-apps:s4-counter'
 
 rootProject.name = 's4'
 rootProject.children.each {project ->

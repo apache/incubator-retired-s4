@@ -15,7 +15,7 @@
  */
 
 description = 'Implementation-specific components of the communication layer.'
- 
+
 dependencies {
     compile project(":s4-base")
     compile libraries.json
@@ -27,7 +27,7 @@ dependencies {
 
 task testJar(type: Jar) {
     baseName = "test-${project.archivesBaseName}"
-    from sourceSets.test.classes
+    from sourceSets.test.output
 }
 
 configurations {

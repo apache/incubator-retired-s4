@@ -21,8 +21,8 @@
 
 description = 'Apache S4'
 defaultTasks 'assemble'
-archivesBaseName = 's4'
-distRootFolder = "$archivesBaseName-${-> version}"
+project.ext["archivesBaseName"] = 's4'
+project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
 allprojects {
 
@@ -32,11 +32,9 @@ allprojects {
 
     /* Search these repos to find artifacts. Gradle will download and cache. */
     repositories {
+        mavenLocal()
         mavenCentral()
-
-        maven {
-           url "http://google-gson.googlecode.com/svn/mavenrepo"
-        }
+        mavenRepo name: "gson", url: "http://google-gson.googlecode.com/svn/mavenrepo"
 
         /* Add lib dir as a repo. Some jar files that are not available
          in a public repo are distributed in the lib dir. */
@@ -45,7 +43,7 @@ allprojects {
 }
 
 /* All project libraries must be defined here. */
-libraries = [
+project.ext["libraries"] = [
     json:               'org.json:json:20090211',
     guava:              'com.google.guava:guava:10.0.1',
     gson:               'com.google.code.gson:gson:1.6',
@@ -56,7 +54,7 @@ libraries = [
     bcel:               'org.apache.bcel:bcel:5.2',
     jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
     kryo:               'com.googlecode:kryo:1.04',
-    netty:              'io.netty:netty:3.3.1.Final',
+    netty:              'org.jboss.netty:netty:3.2.5.Final',
     reflectasm:         'com.esotericsoftware:reflectasm:0.8',
     minlog:             'com.esotericsoftware:minlog:1.2',
     asm:                'asm:asm:3.2',
@@ -73,27 +71,31 @@ libraries = [
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
-    diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4'
+    diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
+    jcommander:         'com.beust:jcommander:1.25',
+    commons_io:         'commons-io:commons-io:2.1',
+    gradle_base_services: 'gradle-base-services:gradle-base-services:1.0-rc-3',
+    gradle_core: 'gradle-core:gradle-core:1.0-rc-3',
+    gradle_tooling_api: 'gradle-tooling-api:gradle-tooling-api:1.0-rc-3',
+    gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0-rc-3'
 ]
 
 subprojects {
     apply plugin: 'java'
     apply plugin: 'eclipse'
     apply plugin: 'maven'
-    apply plugin: 'code-quality'
+//    apply plugin: 'checkstyle'
 
     /* Set Java version. */
     sourceCompatibility = 1.6
     targetCompatibility = 1.6
 
-    checkstyleConfigFileName = "$rootDir/config/checkstyle/s4-checkstyle.xml"
+    project.ext["checkstyleConfigFileName"] = "$rootDir/config/checkstyle/s4-checkstyle.xml"
 
-    // The jmx points to a repo that is no longer available. We exclude these dependencies.
-    configurations {
-        all*.exclude group: 'com.sun.jmx'
-        all*.exclude group: 'com.sun.jdmk'
-        all*.exclude group: 'javax.jms'
-        all*.exclude group: 'javax.mail'
+    configurations.all {
+        exclude group: 'com.sun.jdmk', module: 'jmxtools'
+        exclude group: 'com.sun.jmx', module: 'jmxri'
+        exclude group: 'javax.jms', module: 'jms'
     }
 
     dependencies {
@@ -101,6 +103,7 @@ subprojects {
         /* Google. */
         compile( libraries.guava )
         compile( libraries.guice )
+        compile (libraries.guice_assist)
 
         /* Logging. */
         compile( libraries.slf4j )
@@ -129,10 +132,9 @@ subprojects {
     )
 }
 
+evaluationDependsOnChildren()
 
-dependsOnChildren()
-
-platformProjects = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-edsl')]
+project.ext["platformProjects"] = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-tools')]
 
 configurations {
     platformLibs
@@ -142,26 +144,12 @@ dependencies {
     platformLibs platformProjects
 }
 
-//task xxx {
-//    platformProjects.collect {proj ->
-//        // Iterate over the source sets
-//        println '\n' + proj.name + ' ' + proj.sourceSets.main.name
-//        println proj.sourceSets.main.classesDir
-//        println proj.sourceSets.main.runtimeClasspath.getFiles()
-//        println proj.sourceSets.main.resources.getFiles()
-//        println proj.sourceSets.main.allJava.getFiles()
-//        println proj.configurations.runtime.getFiles()
-//        println ' '
-//        println proj.configurations.archives.allArtifactFiles.getFiles()
-//    }
-//}
-
-binDistImage = copySpec {
+project.ext["binDistImage"] = copySpec {
     platformProjects.collect {proj ->
         into ("platform/lib") {
             from proj.sourceSets.main.resources
             from proj.configurations.runtime.getFiles()
-            from proj.configurations.archives.getAllArtifacts().getFiles()
+            from proj.configurations.archives.allArtifacts.files
         }
     }
 }
@@ -185,7 +173,8 @@ task listJars << {
 /* Generates the gradlew scripts.
  http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.0-milestone-7'
+    gradleVersion = '1.0-rc-3'
+    jarFile='lib/gradle-wrapper-1.0-rc-3.jar'
 }
 
 class Version {

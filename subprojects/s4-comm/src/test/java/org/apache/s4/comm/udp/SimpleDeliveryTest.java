@@ -1,7 +1,9 @@
 package org.apache.s4.comm.udp;
 
-public class SimpleDeliveryTest extends UDPBasedTest {
-    public SimpleDeliveryTest() {
+import java.io.IOException;
+
+public class SimpleDeliveryTest extends UDPCommTest {
+    public SimpleDeliveryTest() throws IOException {
         super();
     }
 }

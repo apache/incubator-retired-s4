@@ -1,43 +1,26 @@
 package org.apache.s4.comm.topology;
 
-import java.io.File;
+import java.io.IOException;
 
-import org.I0Itec.zkclient.IDefaultNameSpace;
-import org.I0Itec.zkclient.ZkClient;
-import org.I0Itec.zkclient.ZkServer;
+import org.apache.s4.fixtures.CommTestUtils;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.junit.After;
 import org.junit.Before;
 
 public class ZKBaseTest {
-    protected ZkServer zkServer = null;
-    protected ZkClient zkClient;
-    protected String zookeeperAddress;
+
+    private Factory zkFactory;
 
     @Before
-    public void setUp() {
-        String dataDir = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "zookeeper"
-                + File.separator + "data";
-        String logDir = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "zookeeper"
-                + File.separator + "logs";
-        IDefaultNameSpace defaultNameSpace = new IDefaultNameSpace() {
-
-            @Override
-            public void createDefaultNameSpace(ZkClient zkClient) {
-
-            }
-        };
-        int port = 3029;
-        zkServer = new ZkServer(dataDir, logDir, defaultNameSpace, port);
-        zkServer.start();
-        zkClient = zkServer.getZkClient();
-        zookeeperAddress = "localhost:" + port;
+    public void setUp() throws IOException, InterruptedException, KeeperException {
+        CommTestUtils.cleanupTmpDirs();
+        zkFactory = CommTestUtils.startZookeeperServer();
 
     }
 
     @After
     public void tearDown() throws Exception {
-        if (zkServer != null) {
-            zkServer.shutdown();
-        }
+        CommTestUtils.stopZookeeperServer(zkFactory);
     }
 }

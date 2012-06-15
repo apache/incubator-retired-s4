@@ -1,0 +1,29 @@
+package hello;
+
+import org.apache.s4.base.Event;
+import org.apache.s4.core.ProcessingElement;
+
+public class HelloPE extends ProcessingElement {
+
+    // you should define downstream streams here and inject them in the app definition
+
+    boolean seen = false;
+
+    /**
+     * This method is called upon a new Event on an incoming stream
+     */
+    public void onEvent(Event event) {
+        // in this example, we use the default generic Event type, by you can also define your own type
+        System.out.println("Hello " + (seen ? "again " : "") + event.get("name") + "!");
+        seen = true;
+    }
+
+    @Override
+    protected void onCreate() {
+    }
+
+    @Override
+    protected void onRemove() {
+    }
+
+}

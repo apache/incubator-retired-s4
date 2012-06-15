@@ -11,9 +11,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.s4.base.Emitter;
+import org.apache.s4.base.EventMessage;
+import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.topology.Cluster;
+import org.apache.s4.comm.topology.ClusterChangeListener;
 import org.apache.s4.comm.topology.ClusterNode;
-import org.apache.s4.comm.topology.Topology;
-import org.apache.s4.comm.topology.TopologyChangeListener;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -65,7 +67,7 @@ import com.google.inject.name.Named;
  * </p>
  */
 
-public class TCPEmitter implements Emitter, TopologyChangeListener {
+public class TCPEmitter implements Emitter, ClusterChangeListener {
     private static final Logger logger = LoggerFactory.getLogger(TCPEmitter.class);
 
     private final int numRetries;
@@ -73,7 +75,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
     private final int nettyTimeout;
     private final int bufferCapacity;
 
-    private Topology topology;
+    private Cluster topology;
     private final ClientBootstrap bootstrap;
 
     /*
@@ -107,7 +109,10 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
     private final ExecutorService sendService;
 
     @Inject
-    public TCPEmitter(Topology topology, @Named("tcp.partition.queue_size") int bufferSize,
+    SerializerDeserializer serDeser;
+
+    @Inject
+    public TCPEmitter(Cluster topology, @Named("tcp.partition.queue_size") int bufferSize,
             @Named("comm.retries") int retries, @Named("comm.retry_delay") int retryDelay,
             @Named("comm.timeout") int timeout) throws InterruptedException {
         this.numRetries = retries;
@@ -118,7 +123,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         this.topology.addListener(this);
 
         // Initialize data structures
-        int clusterSize = this.topology.getTopology().getNodes().size();
+        int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
         partitionChannelMap = HashBiMap.create(clusterSize);
         partitionNodeMap = HashBiMap.create(clusterSize);
         sendQueues = new Hashtable<Integer, SendQueue>(clusterSize);
@@ -158,6 +163,8 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         private final SendQueue sendQ;
         private final byte[] message;
         private boolean sendSuccess = false;
+        @Inject
+        SerializerDeserializer serDeser;
 
         Message(SendQueue sendQ, byte[] message) {
             this.sendQ = sendQ;
@@ -331,6 +338,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         ClusterNode clusterNode = partitionNodeMap.get(partitionId);
 
         if (clusterNode == null) {
+
             logger.error("No ClusterNode exists for partitionId " + partitionId);
             onChange();
             return false;
@@ -392,16 +400,17 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
         if (!messageSent) {
             m.messageSendFailure();
         }
+
     }
 
     @Override
-    public boolean send(int partitionId, byte[] message) {
+    public boolean send(int partitionId, EventMessage message) {
         if (!sendQueues.containsKey(partitionId)) {
             SendQueue sendQueue = new SendQueue(this, partitionId, this.bufferCapacity);
             sendQueues.put(partitionId, sendQueue);
         }
 
-        return sendQueues.get(partitionId).offer(message);
+        return sendQueues.get(partitionId).offer(serDeser.serialize(message));
     }
 
     protected void removeChannel(int partition) {
@@ -446,7 +455,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
 
     @Override
     public void onChange() {
-        for (ClusterNode clusterNode : topology.getTopology().getNodes()) {
+        for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
             Integer partition = clusterNode.getPartition();
             if (partition == null) {
                 logger.error("onChange(): Illegal partition for clusterNode - " + clusterNode);
@@ -463,7 +472,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
 
     @Override
     public int getPartitionCount() {
-        return topology.getTopology().getPartitionCount();
+        return topology.getPhysicalCluster().getPartitionCount();
     }
 
     class NotifyChannelInterestChange extends SimpleChannelHandler {
@@ -482,6 +491,7 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                     sendQ.notify();
                 }
             }
+
             ctx.sendUpstream(e);
         }
 
@@ -495,6 +505,24 @@ public class TCPEmitter implements Emitter, TopologyChangeListener {
                 return;
             } catch (Throwable e) {
                 e.printStackTrace();
+                // Integer partitionId = partitionChannelMap.inverse().get(context.getChannel());
+                // String target;
+                // if (partitionId == null) {
+                // target = "unknown channel";
+                // } else {
+                // target = "channel for partition [" + partitionId + "], target node host ["
+                // + partitionNodeMap.get(partitionId).getMachineName() + "], target node port ["
+                // + partitionNodeMap.get(partitionId).getPort() + "]";
+                // }
+                // logger.error(
+                // "Error on [{}]. This can be due to a disconnection of the receiver node. Channel will be closed.",
+                // target);
+                //
+                // if (context.getChannel().isOpen()) {
+                // logger.info("Closing channel [{}] due to exception [{}]", target, event.getCause().getMessage());
+                // context.getChannel().close();
+                // }
+
             }
         }
     }

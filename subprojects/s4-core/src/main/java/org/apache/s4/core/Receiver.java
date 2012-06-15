@@ -3,6 +3,7 @@ package org.apache.s4.core;
 import java.util.Map;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
 import org.slf4j.Logger;
@@ -19,10 +20,12 @@ import com.google.inject.Singleton;
  * <p>
  * A Listener implementation receives data from the network and passes an event as a byte array to the {@link Receiver}.
  * The byte array is de-serialized and converted into an {@link Event}. Finally the event is passed to the matching
- * streams. There is a single {@link Receiver} instance per node.
+ * streams.
+ * </p>
+ * There is a single {@link Receiver} instance per node.
  * 
  * Details on how the cluster is partitioned and how events are serialized and transmitted to its destination are hidden
- * from the application developer.
+ * from the application developer. </p>
  */
 @Singleton
 public class Receiver implements Runnable {
@@ -31,7 +34,7 @@ public class Receiver implements Runnable {
 
     final private Listener listener;
     final private SerializerDeserializer serDeser;
-    private Map<Integer, Map<Integer, Stream<? extends Event>>> streams;
+    private Map<Integer, Map<String, Stream<? extends Event>>> streams;
     private Thread thread;
 
     @Inject
@@ -40,6 +43,7 @@ public class Receiver implements Runnable {
         this.serDeser = serDeser;
 
         thread = new Thread(this, "Receiver");
+        // TODO avoid starting the thread here
         thread.start();
 
         streams = new MapMaker().makeMap();
@@ -52,23 +56,23 @@ public class Receiver implements Runnable {
     /** Save stream keyed by app id and stream id. */
     void addStream(Stream<? extends Event> stream) {
         int appId = stream.getApp().getId();
-        Map<Integer, Stream<? extends Event>> appMap = streams.get(appId);
+        Map<String, Stream<? extends Event>> appMap = streams.get(appId);
         if (appMap == null) {
             appMap = new MapMaker().makeMap();
             streams.put(appId, appMap);
         }
-        appMap.put(stream.getId(), stream);
+        appMap.put(stream.getName(), stream);
     }
 
     /** Remove stream when it is no longer needed. */
     void removeStream(Stream<? extends Event> stream) {
         int appId = stream.getApp().getId();
-        Map<Integer, Stream<? extends Event>> appMap = streams.get(appId);
+        Map<String, Stream<? extends Event>> appMap = streams.get(appId);
         if (appMap == null) {
             logger.error("Tried to remove a stream that is not registered in the receiver.");
             return;
         }
-        appMap.remove(stream.getId());
+        appMap.remove(stream.getName());
     }
 
     public void run() {
@@ -76,10 +80,10 @@ public class Receiver implements Runnable {
         // here?
         while (!Thread.interrupted()) {
             byte[] message = listener.recv();
-            Event event = (Event) serDeser.deserialize(message);
+            EventMessage event = (EventMessage) serDeser.deserialize(message);
 
-            int appId = event.getAppId();
-            int streamId = event.getStreamId();
+            int appId = Integer.valueOf(event.getAppName());
+            String streamId = event.getStreamName();
 
             /*
              * Match appId and streamId in event to the target stream and pass the event to the target stream. TODO:

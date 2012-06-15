@@ -57,8 +57,8 @@ import com.google.common.collect.Sets;
  * Grammar:
  * 
  * <pre>
- *  (pe , type , prop* , (fireOn , afterInterval? , afterNumEvents?)? , (timer, withPeriod)? , 
- *  (cache, size , expires? )? , asSingleton? , (emit, onField?, 
+ *  (pe , type , prop* , (fireOn , afterInterval? , afterNumEvents?)? , (timer, withPeriod)? ,
+ *  (cache, size , expires? )? , asSingleton? , (emit, onField?,
  *  (withKey|withKeyFinder)?, to )*  )+ , build
  * </pre>
  * 

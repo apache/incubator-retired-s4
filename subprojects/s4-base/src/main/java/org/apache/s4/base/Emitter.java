@@ -9,7 +9,7 @@ public interface Emitter {
      * 
      * @return - true - if message is sent across successfully - false - if send fails
      */
-    boolean send(int partitionId, byte[] message);
+    boolean send(int partitionId, EventMessage message);
 
     int getPartitionCount();
 

@@ -1,6 +1,5 @@
 package org.apache.s4.wordcount;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map.Entry;
@@ -18,25 +17,25 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
-
 public class WordClassifierPE extends ProcessingElement implements Watcher {
 
     TreeMap<String, Integer> counts = new TreeMap<String, Integer>();
     private int counter;
     transient private ZooKeeper zk;
 
-    private WordClassifierPE () {}
+    private WordClassifierPE() {
+    }
 
     public WordClassifierPE(App app) {
         super(app);
     }
-    
+
     public void onEvent(WordCountEvent event) {
         try {
             WordCountEvent wcEvent = event;
             if (zk == null) {
                 try {
-                    zk = new ZooKeeper("localhost:21810", 4000, this);
+                    zk = new ZooKeeper("localhost:2181", 4000, this);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -73,8 +72,8 @@ public class WordClassifierPE extends ProcessingElement implements Watcher {
                 // zookeeper
                 zk.create("/classifierIteration_" + counter, new byte[counter], Ids.OPEN_ACL_UNSAFE,
                         CreateMode.PERSISTENT);
-                Logger.getLogger("s4-ft").debug("wrote classifier iteration ["+counter+"]");
-                System.out.println("wrote classifier iteration ["+counter+"]");
+                Logger.getLogger("s4-ft").debug("wrote classifier iteration [" + counter + "]");
+                System.out.println("wrote classifier iteration [" + counter + "]");
                 // check if we are allowed to continue
                 if (null == zk.exists("/continue_" + counter, null)) {
                     CountDownLatch latch = new CountDownLatch(1);
@@ -96,19 +95,19 @@ public class WordClassifierPE extends ProcessingElement implements Watcher {
     @Override
     public void process(WatchedEvent event) {
         // TODO Auto-generated method stub
- 
+
     }
 
     @Override
     protected void onCreate() {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     protected void onRemove() {
         // TODO Auto-generated method stub
-        
+
     }
 
 }

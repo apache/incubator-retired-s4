@@ -12,7 +12,6 @@ import com.google.inject.Injector;
 
 public abstract class ProtocolTestUtil extends ZkBasedTest {
     protected int[] expectedMessages;
-    protected Injector injector;
     protected PartitionInfo[] partitions;
 
     protected ProtocolTestUtil() {
@@ -24,14 +23,16 @@ public abstract class ProtocolTestUtil extends ZkBasedTest {
     }
 
     @Before
-    public void setup() throws IOException, InterruptedException, KeeperException {
+    public void preparePartitions() throws IOException, InterruptedException, KeeperException {
         expectedMessages = new int[super.numTasks];
         partitions = new PartitionInfo[super.numTasks];
         for (int i = 0; i < this.numTasks; i++) {
-            partitions[i] = injector.getInstance(PartitionInfo.class);
+            partitions[i] = getInjector().getInstance(PartitionInfo.class);
             partitions[i].setProtocolTestUtil(this);
         }
     }
+
+    protected abstract Injector getInjector() throws IOException;
 
     protected void decreaseExpectedMessages(int partition, long amount) {
         synchronized (expectedMessages) {

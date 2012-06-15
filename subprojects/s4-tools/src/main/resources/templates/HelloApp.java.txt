@@ -1,0 +1,34 @@
+package hello;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.s4.base.Event;
+import org.apache.s4.base.KeyFinder;
+import org.apache.s4.core.App;
+
+public class HelloApp extends App {
+
+    @Override
+    protected void onStart() {
+    }
+
+    @Override
+    protected void onInit() {
+        // create a prototype
+        HelloPE helloPE = createPE(HelloPE.class);
+        // Create a stream that listens to the "names" stream and passes events to the helloPE instance.
+        createInputStream("names", new KeyFinder<Event>() {
+
+            @Override
+            public List<String> get(Event event) {
+                return Arrays.asList(new String[] { event.get("name") });
+            }
+        }, helloPE);
+    }
+
+    @Override
+    protected void onClose() {
+    }
+
+}

@@ -1,16 +1,21 @@
 package org.apache.s4.comm.tcp;
 
+import java.io.IOException;
+
 import org.apache.s4.comm.util.PartitionInfo;
 import org.junit.Assert;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NetworkGlitchTest extends TCPBasedTest {
-    public NetworkGlitchTest() {
+public class NetworkGlitchTest extends TCPCommTest {
+
+    private static Logger logger = LoggerFactory.getLogger(NetworkGlitchTest.class);
+
+    public NetworkGlitchTest() throws IOException {
         super(2);
         logger = LoggerFactory.getLogger(NetworkGlitchTest.class);
     }
 
-    @Override
     public void testDelivery() throws InterruptedException {
         PartitionInfo util = partitions[0];
 

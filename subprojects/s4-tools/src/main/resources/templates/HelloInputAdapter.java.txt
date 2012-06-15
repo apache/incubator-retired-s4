@@ -1,0 +1,60 @@
+package hello;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+import org.apache.s4.base.Event;
+import org.apache.s4.core.adapter.AdapterApp;
+
+public class HelloInputAdapter extends AdapterApp {
+
+    @Override
+    protected void onStart() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                ServerSocket serverSocket = null;
+                Socket connectedSocket;
+                BufferedReader in = null;
+                try {
+                    serverSocket = new ServerSocket(15000);
+                    while (true) {
+                        connectedSocket = serverSocket.accept();
+                        in = new BufferedReader(new InputStreamReader(connectedSocket.getInputStream()));
+
+                        String line = in.readLine();
+                        System.out.println("read: " + line);
+                        Event event = new Event();
+                        event.put("name", String.class, line);
+                        getRemoteStream().put(event);
+                        connectedSocket.close();
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    // System.exit(-1);
+                } finally {
+                    if (in != null) {
+                        try {
+                            in.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    if (serverSocket != null) {
+                        try {
+                            serverSocket.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+        }).start();
+
+    }
+}

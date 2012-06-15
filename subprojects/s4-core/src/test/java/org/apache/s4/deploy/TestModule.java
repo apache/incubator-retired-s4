@@ -17,8 +17,7 @@ import org.apache.s4.comm.tcp.TCPListener;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.Cluster;
-import org.apache.s4.comm.topology.Topology;
-import org.apache.s4.comm.topology.TopologyFromZK;
+import org.apache.s4.comm.topology.ClusterFromZK;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
@@ -54,7 +53,7 @@ public class TestModule extends AbstractModule {
         bind(Hasher.class).to(DefaultHasher.class);
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
         bind(Assignment.class).to(AssignmentFromZK.class);
-        bind(Topology.class).to(TopologyFromZK.class);
+        bind(Cluster.class).to(ClusterFromZK.class);
         bind(Emitter.class).to(TCPEmitter.class);
         bind(Listener.class).to(TCPListener.class);
 

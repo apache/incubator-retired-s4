@@ -7,27 +7,27 @@ import org.apache.s4.base.Event;
  * 
  * @param <T>
  */
-abstract class Streamable<T extends Event> {
+public interface Streamable<T extends Event> {
+
+    /**
+     * Starting the stream starts the associated dequeuing thread.
+     */
+    void start();
 
     /**
      * Put an event into the streams.
      * 
      * @param event
      */
-    abstract void put(T event);
+    public void put(Event event);
 
     /**
      * Stop and close all the streams.
      */
-    abstract void close();
+    public void close();
 
     /**
      * @return the name of this streamable object.
      */
-    abstract String getName();
-
-    /**
-     * Start all streams;
-     */
-    abstract void start();
+    public String getName();
 }

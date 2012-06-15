@@ -1,6 +1,5 @@
 package org.apache.s4.fixtures;
 
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -11,14 +10,13 @@ import org.apache.s4.core.Stream;
 import org.apache.s4.wordcount.KeyValueEvent;
 import org.apache.s4.wordcount.StringEvent;
 
-
 public class SocketAdapter<T extends StringEvent> {
 
     static ServerSocket serverSocket;
 
     /**
-     * Listens to incoming sentence and forwards them to a sentence Stream.
-     * Each sentence is sent through a new socket connection
+     * Listens to incoming sentence and forwards them to a sentence Stream. Each sentence is sent through a new socket
+     * connection
      * 
      * @param stream
      * @throws IOException
@@ -39,13 +37,13 @@ public class SocketAdapter<T extends StringEvent> {
 
                         String line = in.readLine();
                         System.out.println("read: " + line);
-                        stream.put(stringEventFactory.create(line)) ;
+                        stream.put(stringEventFactory.create(line));
                         connectedSocket.close();
                     }
 
                 } catch (IOException e) {
                     e.printStackTrace();
-                    System.exit(-1);
+                    // System.exit(-1);
                 } finally {
                     if (in != null) {
                         try {
@@ -67,9 +65,9 @@ public class SocketAdapter<T extends StringEvent> {
         t.start();
 
     }
-    
-    public void close()  {
-        if(serverSocket !=null) {
+
+    public void close() {
+        if (serverSocket != null) {
             try {
                 serverSocket.close();
             } catch (Exception e) {
@@ -77,28 +75,27 @@ public class SocketAdapter<T extends StringEvent> {
             }
         }
     }
-    
+
     interface StringEventFactory<T> {
         T create(String string);
     }
-    
+
     public static class SentenceEventFactory implements StringEventFactory<StringEvent> {
 
         @Override
         public StringEvent create(String string) {
             return new StringEvent(string);
         }
-        
+
     }
-    
+
     public static class KeyValueEventFactory implements StringEventFactory<KeyValueEvent> {
 
         @Override
         public KeyValueEvent create(String string) {
             return new KeyValueEvent(string);
         }
-        
+
     }
 
-    
 }

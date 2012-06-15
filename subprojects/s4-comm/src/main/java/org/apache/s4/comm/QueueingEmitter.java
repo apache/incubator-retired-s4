@@ -4,6 +4,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.s4.base.Emitter;
+import org.apache.s4.base.EventMessage;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -41,7 +42,7 @@ public class QueueingEmitter implements Emitter, Runnable {
     }
 
     @Override
-    public boolean send(int partitionId, byte[] message) {
+    public boolean send(int partitionId, EventMessage message) {
         MessageHolder mh = new MessageHolder(partitionId, message);
         if (!queue.offer(mh)) {
             dropCount++;
@@ -69,7 +70,7 @@ public class QueueingEmitter implements Emitter, Runnable {
 
     class MessageHolder {
         private int partitionId;
-        private byte[] message;
+        private EventMessage message;
 
         public int getPartitionId() {
             return partitionId;
@@ -79,15 +80,15 @@ public class QueueingEmitter implements Emitter, Runnable {
             this.partitionId = partitionId;
         }
 
-        public byte[] getMessage() {
+        public EventMessage getMessage() {
             return message;
         }
 
-        public void setMessage(byte[] message) {
+        public void setMessage(EventMessage message) {
             this.message = message;
         }
 
-        public MessageHolder(int partitionId, byte[] message) {
+        public MessageHolder(int partitionId, EventMessage message) {
             super();
             this.partitionId = partitionId;
             this.message = message;
@@ -99,5 +100,4 @@ public class QueueingEmitter implements Emitter, Runnable {
         // TODO Auto-generated method stub
 
     }
-
 }

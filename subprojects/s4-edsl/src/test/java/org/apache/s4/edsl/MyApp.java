@@ -21,17 +21,4 @@ public class MyApp extends BuilderS4DSL {
                 build();
     }
 
-    // Make hooks public for testing. Normally this is handled by the container.
-    public void init() {
-        super.init();
-    }
-
-    public void start() {
-        super.start();
-    }
-
-    public void close() {
-        super.close();
-    }
-
 }
