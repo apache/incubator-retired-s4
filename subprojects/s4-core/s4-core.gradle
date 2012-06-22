@@ -26,6 +26,7 @@ dependencies {
     testCompile libraries.gradle_core
     testCompile libraries.gradle_tooling_api
     testCompile libraries.gradle_wrapper
+    testCompile libraries.mockito_core
 }
 
 test {
