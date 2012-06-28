@@ -636,7 +636,7 @@ public abstract class ProcessingElement implements Cloneable {
                     if (isThreadSafe) {
                         peInstance.onTime();
                     } else {
-                        synchronized (this) {
+                        synchronized (peInstance) {
                             peInstance.onTime();
                         }
                     }

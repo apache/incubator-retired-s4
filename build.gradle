@@ -57,6 +57,7 @@ project.ext["libraries"] = [
     netty:              'org.jboss.netty:netty:3.2.5.Final',
     reflectasm:         'com.esotericsoftware:reflectasm:0.8',
     minlog:             'com.esotericsoftware:minlog:1.2',
+    mockito_core:       'org.mockito:mockito-core:1.9.0',
     asm:                'asm:asm:3.2',
     commons_io:         'commons-io:commons-io:2.0.1',
     commons_config:     'commons-configuration:commons-configuration:1.6',
