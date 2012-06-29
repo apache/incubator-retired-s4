@@ -15,7 +15,7 @@
  */
 
 description = 'Examples of S4 applications.'
- 
+
 dependencies {
     compile project( ":s4-base" )
     compile project( ":s4-core" )
@@ -23,4 +23,6 @@ dependencies {
     compile project( ":s4-edsl" )
 	compile libraries.ejml
     compile libraries.junit
+    // TODO remove this dependency only used for initializing a zookeeper server
+    compile project(':s4-core').sourceSets.test.output
 }

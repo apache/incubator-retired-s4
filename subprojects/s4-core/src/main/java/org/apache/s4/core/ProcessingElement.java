@@ -616,10 +616,10 @@ public abstract class ProcessingElement implements Cloneable {
      * Helper method to be used by PE implementation classes. Sends an event to all the target streams.
      * 
      */
-    protected <T extends Event> void emit(T event, Stream<T>[] streamArray) {
+    protected <T extends Event> void emit(T event, Stream<T>... streams) {
 
-        for (int i = 0; i < streamArray.length; i++) {
-            streamArray[i].put(event);
+        for (int i = 0; i < streams.length; i++) {
+            streams[i].put(event);
         }
     }
 

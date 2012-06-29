@@ -126,6 +126,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
      * @return the stream object
      */
     public Stream<T> setPE(ProcessingElement pe) {
+        this.targetPEs = new ProcessingElement[] { pe };
         app.addStream(this);
         return this;
     }

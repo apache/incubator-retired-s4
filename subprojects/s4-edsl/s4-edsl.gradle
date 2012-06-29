@@ -7,7 +7,7 @@ def diezelSrcDir = "${projectDir}/src/main/diezel";
 
 dependencies {
     compile project(":s4-core")
-    //testCompile project(path: ':s4-core', configuration: 'tests')
+    testCompile project(':s4-core').sourceSets.test.output
 }
 
 

@@ -53,14 +53,17 @@ public class WordCountTest {
      */
     @Test
     public void testSimple() throws Exception {
+        testWordCountApp(WordCountApp.class);
+    }
+
+    protected void testWordCountApp(Class<?> appClass) throws IOException, KeeperException, InterruptedException {
         final ZooKeeper zk = CommTestUtils.createZkClient();
         TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
         String clusterName = "clusterA";
         taskSetup.clean("s4");
         taskSetup.setup(clusterName, 1, 10000);
 
-        Main.main(new String[] { "-cluster=" + clusterName, "-appClass=" + WordCountApp.class.getName(),
-                "-extraModulesClasses=" + WordCountModule.class.getName() });
+        Main.main(new String[] { "-cluster=" + clusterName, "-appClass=" + appClass.getName() });
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed, zk);
@@ -76,7 +79,6 @@ public class WordCountTest {
         File results = new File(CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "wordcount");
         String s = CommTestUtils.readFile(results);
         Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", s);
-
     }
 
     @After

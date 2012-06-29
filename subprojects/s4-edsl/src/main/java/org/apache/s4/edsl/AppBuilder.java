@@ -1,6 +1,5 @@
 package org.apache.s4.edsl;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Iterator;
@@ -16,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
@@ -221,7 +221,7 @@ public class AppBuilder extends App {
         for (Field field : fields) {
             logger.trace("Field [{}] is of generic type [{}].", field.getName(), field.getGenericType());
 
-            if (field.getType() == Stream[].class) {
+            if (field.getType() == Stream.class) {
                 logger.debug("Found stream field: {}", field.getGenericType());
 
                 /* Track what fields have streams with the same event type. */
@@ -231,12 +231,12 @@ public class AppBuilder extends App {
         }
 
         /* Assign streams to stream fields. */
-        Multimap<Field, Stream<? extends Event>> assignment = LinkedListMultimap.create();
+        Map<Field, Stream<? extends Event>> assignment = Maps.newHashMap();
         for (StreamBuilder<? extends Event> sm : streams) {
 
             Stream<? extends Event> stream = sm.stream;
             Class<? extends Event> eventType = sm.type;
-            String key = Stream.class.getCanonicalName() + "<" + eventType.getCanonicalName() + ">[]";
+            String key = Stream.class.getCanonicalName() + "<" + eventType.getCanonicalName() + ">";
             if (typeMap.containsKey(key)) {
                 String fieldName;
                 Field field;
@@ -297,22 +297,17 @@ public class AppBuilder extends App {
         }
         /* Now we construct the array and do the final assignment. */
 
-        Map<Field, Collection<Stream<? extends Event>>> assignmentMap = assignment.asMap();
-        for (Map.Entry<Field, Collection<Stream<? extends Event>>> entry : assignmentMap.entrySet()) {
+        // Map<Field, Stream<? extends Event>> assignmentMap = assignment.asMap();
+        for (Map.Entry<Field, Stream<? extends Event>> entry : assignment.entrySet()) {
             Field f = entry.getKey();
 
-            int arraySize = entry.getValue().size();
-            @SuppressWarnings("unchecked")
-            Stream<? extends Event> streamArray[] = (Stream<? extends Event>[]) Array.newInstance(Stream.class,
-                    arraySize);
-            int i = 0;
-            for (Stream<? extends Event> s : entry.getValue()) {
-                streamArray[i++] = s;
+            // int arraySize = entry.getValue().size();
+            // Stream<? extends Event> streamArray[] = (Stream<? extends Event>[]) Array.newInstance(Stream.class,
+            // arraySize);
+            f.setAccessible(true);
+            f.set(pe, entry.getValue());
 
-                f.setAccessible(true);
-                f.set(pe, streamArray);
-                logger.debug("Assigned [{}] streams to field [{}].", streamArray.length, f.getName());
-            }
+            logger.debug("Assigned stream [{}] to field [{}].", entry.getValue().getName(), f.getName());
         }
     }
 
