@@ -75,10 +75,10 @@ project.ext["libraries"] = [
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
     jcommander:         'com.beust:jcommander:1.25',
     commons_io:         'commons-io:commons-io:2.1',
-    gradle_base_services: 'gradle-base-services:gradle-base-services:1.0-rc-3',
-    gradle_core: 'gradle-core:gradle-core:1.0-rc-3',
-    gradle_tooling_api: 'gradle-tooling-api:gradle-tooling-api:1.0-rc-3',
-    gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0-rc-3'
+    gradle_base_services: 'gradle-base-services:gradle-base-services:1.0',
+    gradle_core: 'gradle-core:gradle-core:1.0',
+    gradle_tooling_api: 'gradle-tooling-api:gradle-tooling-api:1.0',
+    gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0'
 ]
 
 subprojects {
@@ -174,8 +174,8 @@ task listJars << {
 /* Generates the gradlew scripts.
  http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.0-rc-3'
-    jarFile='lib/gradle-wrapper-1.0-rc-3.jar'
+    gradleVersion = '1.0'
+    jarFile='lib/gradle-wrapper-1.0.jar'
 }
 
 class Version {
