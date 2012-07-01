@@ -10,11 +10,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.KeyFinder;
-import org.apache.s4.comm.BareCommModule;
 import org.apache.s4.core.App;
-import org.apache.s4.core.BareCoreModule;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
+import org.apache.s4.fixtures.MockCommModule;
+import org.apache.s4.fixtures.MockCoreModule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ public class MultithreadingTest {
      */
     @Test
     public void testSynchronization() throws IOException, InterruptedException {
-        Injector injector = Guice.createInjector(new BareCommModule(), new BareCoreModule());
+        Injector injector = Guice.createInjector(new MockCommModule(), new MockCoreModule());
         TestApp app = injector.getInstance(TestApp.class);
         app.count = 2; // One for the event, another for the timer
         app.init();

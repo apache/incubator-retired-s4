@@ -1,7 +1,9 @@
-package org.apache.s4.comm;
+package org.apache.s4.fixtures;
 
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.DefaultHasher;
+import org.apache.s4.comm.RemoteEmitterFactory;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.tcp.RemoteEmitters;
 import org.apache.s4.comm.topology.Clusters;
@@ -14,12 +16,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
 /**
- * Default configuration module for the communication layer. Parameterizable through a configuration file.
- * 
+ * Mock module for the comm layer. Mocks comm layer basic functionalities, and uses some default when required.
+ *
  */
-public class BareCommModule extends AbstractModule {
+public class MockCommModule extends AbstractModule {
 
-    public BareCommModule() {
+    public MockCommModule() {
         super();
     }
 
