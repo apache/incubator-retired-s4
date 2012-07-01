@@ -26,7 +26,7 @@ import org.apache.s4.base.KeyFinder;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.topology.RemoteStreams;
-import org.apache.s4.core.App.ClockType;
+import org.apache.s4.core.window.WindowingPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

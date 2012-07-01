@@ -109,7 +109,7 @@ public abstract class ProcessingElement implements Cloneable {
     Map<Class<? extends Event>, Trigger> triggers;
 
     /* PE instance id. */
-    String id = "";
+    protected String id = "";
 
     /* Private fields. */
     private ProcessingElement pePrototype;
@@ -211,7 +211,7 @@ public abstract class ProcessingElement implements Cloneable {
         return peInstances.size();
     }
 
-    Map<String, ProcessingElement> getPEInstances() {
+    protected Map<String, ProcessingElement> getPEInstances() {
         return peInstances.asMap();
     }
 
@@ -490,7 +490,7 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     /* This method is called by App just before the application starts. */
-    void initPEPrototypeInternal() {
+    protected void initPEPrototypeInternal() {
 
         /* Eagerly create singleton PE. */
         if (isSingleton) {

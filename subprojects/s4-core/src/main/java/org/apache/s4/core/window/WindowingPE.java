@@ -14,7 +14,7 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file.
  */
-package org.apache.s4.core;
+package org.apache.s4.core.window;
 
 import java.util.Collection;
 import java.util.Map;
@@ -23,6 +23,8 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.collections15.buffer.CircularFifoBuffer;
+import org.apache.s4.core.App;
+import org.apache.s4.core.ProcessingElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * Abstract ProcessingElement that can store historical values using a sliding window. Each set of values is called a
  * slot. The concrete class must implement a class (the slot class) where values are stored. Each slot represents a
  * segment of time or a fixed number of events. Slots are consecutive in time or events. The slot object cannot be null.
- * 
+ *
  * WHen using time-based slots, use this implementation only if you expect most slots to have values, it is not
  * efficient for sparse event streams.
  */
@@ -40,12 +42,14 @@ public abstract class WindowingPE<T> extends ProcessingElement {
 
     final private int numSlots;
     private CircularFifoBuffer<T> circularBuffer;
-    final private Timer timer;
+    final private Timer windowingTimer;
     final private long slotDurationInMilliseconds;
+
+    protected T currentSlot;
 
     /**
      * Constructor for time-based slots. The abstract method {@link #addPeriodicSlot()} is called periodically.
-     * 
+     *
      * @param app
      *            the application
      * @param slotDuration
@@ -61,21 +65,33 @@ public abstract class WindowingPE<T> extends ProcessingElement {
 
         if (slotDuration > 0l) {
             slotDurationInMilliseconds = TimeUnit.MILLISECONDS.convert(slotDuration, timeUnit);
-            timer = new Timer();
-            timer.schedule(new SlotTask(), slotDurationInMilliseconds, slotDurationInMilliseconds);
-            logger.trace("TIMER: " + slotDurationInMilliseconds);
+            windowingTimer = new Timer();
 
         } else {
             slotDurationInMilliseconds = 0;
-            timer = null;
+            windowingTimer = null;
         }
     }
 
+    @Override
+    protected void onRemove() {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    protected void initPEPrototypeInternal() {
+        super.initPEPrototypeInternal();
+        windowingTimer.schedule(new SlotTask(), slotDurationInMilliseconds, slotDurationInMilliseconds);
+        logger.trace("TIMER: " + slotDurationInMilliseconds);
+
+    }
+
     /**
-     * 
+     *
      * Constructor for the event-based slot. The abstract method {@link #addPeriodicSlot()} must be called by the
      * concrete class.
-     * 
+     *
      * @param app
      *            the application
      * @param numSlots
@@ -89,10 +105,10 @@ public abstract class WindowingPE<T> extends ProcessingElement {
      * This method is called at periodic intervals when a new slot must be put into the buffer. The concrete class must
      * implement the logic required to create a slot. For example, compute statistics from aggregations and get
      * variables ready for the new slot.
-     * 
+     *
      * If the implementation class doesn't use periodic slots, this method will never be called. Use
      * {@link #addSlot(Object)} instead.
-     * 
+     *
      * @return the slot object
      */
     abstract protected T addPeriodicSlot();
@@ -100,12 +116,12 @@ public abstract class WindowingPE<T> extends ProcessingElement {
     /**
      * Add an object to the sliding window. Use it when the window is not periodic. For periodic slots use
      * {@link #addPeriodicSlot()} instead.
-     * 
+     *
      * @param slot
      */
     protected void addSlot(T slot) {
 
-        if (timer != null) {
+        if (windowingTimer != null) {
             logger.error("Calling method addSlot() in a periodic window is not allowed.");
             return;
         }
@@ -114,10 +130,14 @@ public abstract class WindowingPE<T> extends ProcessingElement {
 
     protected void onCreate() {
         circularBuffer = new CircularFifoBuffer<T>(numSlots);
+        if (slotDurationInMilliseconds > 0) {
+            currentSlot = addPeriodicSlot();
+            circularBuffer.add(currentSlot);
+        }
     }
 
     /**
-     * 
+     *
      * @return the least recently inserted slot
      */
     protected T getOldestSlot() {
@@ -127,11 +147,11 @@ public abstract class WindowingPE<T> extends ProcessingElement {
 
     /** Stops the the sliding window. */
     protected void stop() {
-        timer.cancel();
+        windowingTimer.cancel();
     }
 
     /**
-     * 
+     *
      * @return the collection of slots
      */
     protected Collection<T> getSlots() {
@@ -143,11 +163,11 @@ public abstract class WindowingPE<T> extends ProcessingElement {
         @Override
         public void run() {
 
-            logger.trace("START TIMER TASK");
+            logger.trace("Starting slot task");
 
             /* Iterate over all instances and put a new slot in the buffer. */
             for (Map.Entry<String, ProcessingElement> entry : getPEInstances().entrySet()) {
-                logger.trace("pe id: " + entry.getValue().id);
+                logger.trace("pe id: " + entry.getValue().getId());
                 @SuppressWarnings("unchecked")
                 WindowingPE<T> peInstance = (WindowingPE<T>) entry.getValue();
 
@@ -155,7 +175,8 @@ public abstract class WindowingPE<T> extends ProcessingElement {
                     peInstance.circularBuffer = new CircularFifoBuffer<T>(numSlots);
                 }
                 synchronized (peInstance) {
-                    peInstance.circularBuffer.add(peInstance.addPeriodicSlot());
+                    peInstance.currentSlot = peInstance.addPeriodicSlot();
+                    peInstance.circularBuffer.add(peInstance.currentSlot);
                 }
             }
         }
