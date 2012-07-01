@@ -97,7 +97,7 @@ public class Tools {
             }
             jc.parse(cliArgs);
         } catch (Exception e) {
-            JCommander.getConsole().println("Cannot parse arguments: " + e.getMessage());
+            JCommander.getConsole().println("Cannot parse arguments: " + e.getClass() + " -> " + e.getMessage());
             jc.usage();
             System.exit(1);
         }
