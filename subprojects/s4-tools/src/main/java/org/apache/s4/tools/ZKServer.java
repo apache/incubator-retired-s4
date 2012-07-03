@@ -2,6 +2,7 @@ package org.apache.s4.tools;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,14 +53,18 @@ public class ZKServer {
 
             // now upload cluster configs if specified or if using test mode
             List<ClusterConfig> clusterConfigs = zkArgs.clusterConfigs;
-            if (zkArgs.testMode && (clusterConfigs == null)) {
-                logger.info("Initializing test mode with default clusters configurations");
-                clusterConfigs = new ArrayList<ZKServer.ClusterConfig>() {
-                    {
-                        add(new ClusterConfig(TEST_MODE_CLUSTER_CONF_1));
-                        add(new ClusterConfig(TEST_MODE_CLUSTER_CONF_2));
-                    }
-                };
+            if (clusterConfigs == null) {
+                if (zkArgs.testMode) {
+                    logger.info("Initializing test mode with default clusters configurations");
+                    clusterConfigs = new ArrayList<ZKServer.ClusterConfig>() {
+                        {
+                            add(new ClusterConfig(TEST_MODE_CLUSTER_CONF_1));
+                            add(new ClusterConfig(TEST_MODE_CLUSTER_CONF_2));
+                        }
+                    };
+                } else {
+                    clusterConfigs = Collections.emptyList();
+                }
             }
             for (ClusterConfig config : clusterConfigs) {
                 TaskSetup taskSetup = new TaskSetup("localhost:" + zkArgs.zkPort);
