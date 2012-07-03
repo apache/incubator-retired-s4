@@ -11,7 +11,7 @@ public abstract class S4ArgsBase {
     @Parameter(names = "-help", description = "usage")
     boolean help = false;
 
-    @Parameter(names = "-s4ScriptPath", description = "path of the S4 script", hidden = true, required = true)
+    @Parameter(names = "-s4ScriptPath", description = "path of the S4 script", hidden = true, required = false)
     String s4ScriptPath;
 
     @Parameter(names = "-gradleOpts", variableArity = true, description = "gradle system properties (as in GRADLE_OPTS environment properties) passed to gradle scripts", required = false, converter = GradleOptsConverter.class)
