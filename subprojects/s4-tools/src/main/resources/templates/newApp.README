@@ -16,12 +16,12 @@
  To build the project:
  - "./gradlew" (from the root of the project, this calls the gradle script from the s4 installation)
 
- A s4 script has been created at the root of the project's directory. It calls the s4 script from your S4 installation.
+ An "s4" script has been created at the root of the project's directory. It calls the s4 script from your S4 installation.
 
 
  To execute the application in a new S4 cluster:
  1. start a ZooKeeper instance "./s4 zkServer"
- 2. define a logical cluster for your application "./s4 newCluster -cluster=<nameOfTheCluster> -nbTasks=<number of partitions> -firstListeningPort=<a port number for the first node, other nodes use an increment on this initial port>"
+ 2. define a logical cluster for your application "./s4 newCluster -cluster=<nameOfTheCluster> -nbTasks=<number of partitions> -flp=<a port number for the first node, other nodes use an increment on this initial port>"
  3. start a node and attach it to the cluster "./s4 node -cluster=<nameOfTheCluster>"
  4. deploy the application "./s4 deploy -cluster=<nameOfTheCluster>"
 
@@ -31,7 +31,5 @@
 
  If you want to use a simple adapter process, listening to an external source, converting incoming data into S4 events, and sending that to S4 apps, you can define
  your own app that extends the AdapterApp class. Then to start it (for instance):
- - ./s4 adapter -cluster=c1 -appClass=org.apache.s4.example.twitter.TwitterInputAdapter -namedStringParameters=adapter.output.stream:stream1
-
-
+ - ./s4 adapter -cluster=c1 -appClass=org.apache.s4.example.twitter.TwitterInputAdapter -p={adapter.output.stream=stream1}
 
