@@ -68,6 +68,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
 
         /* Start streaming. */
         thread = new Thread(this, name);
+        thread.setContextClassLoader(getApp().getClass().getClassLoader());
         thread.start();
         this.receiver.addStream(this);
     }
