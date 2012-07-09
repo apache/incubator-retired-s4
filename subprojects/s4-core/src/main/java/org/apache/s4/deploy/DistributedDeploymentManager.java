@@ -5,13 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
-import org.I0Itec.zkclient.IZkChildListener;
+import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
@@ -21,8 +16,6 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
@@ -31,7 +24,7 @@ import com.google.inject.name.Named;
 /**
  * 
  * <p>
- * Monitors applications on a given s4 cluster and starts them.
+ * Monitors application availability on a given s4 cluster. Starts the application when available.
  * </p>
  * 
  * <p>
@@ -62,11 +55,10 @@ public class DistributedDeploymentManager implements DeploymentManager {
 
     private final String clusterName;
 
-    final Set<String> apps = Sets.newHashSet();
     private final ZkClient zkClient;
-    private final String appsPath;
+    private final String appPath;
     private final Server server;
-    CountDownLatch signalInitialAppsLoaded = new CountDownLatch(1);
+    boolean deployed = false;
 
     @Inject
     public DistributedDeploymentManager(@Named("cluster.name") String clusterName,
@@ -79,58 +71,58 @@ public class DistributedDeploymentManager implements DeploymentManager {
 
         zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
         zkClient.setZkSerializer(new ZNRecordSerializer());
-        IZkChildListener appListener = new AppsChangeListener();
-        appsPath = "/s4/clusters/" + clusterName + "/apps";
-        if (!zkClient.exists(appsPath)) {
-            zkClient.create(appsPath, null, CreateMode.PERSISTENT);
+        String appDir = "/s4/clusters/" + clusterName + "/app";
+        if (!zkClient.exists(appDir)) {
+            zkClient.create(appDir, null, CreateMode.PERSISTENT);
         }
-        zkClient.subscribeChildChanges(appsPath, appListener);
+        appPath = appDir + "/s4App";
+        zkClient.subscribeDataChanges(appPath, new AppChangeListener());
     }
 
-    public void deployApplication(String newApp) throws DeploymentFailedException {
-        ZNRecord appData = zkClient.readData(appsPath + "/" + newApp);
+    public void deployApplication() throws DeploymentFailedException {
+        ZNRecord appData = zkClient.readData(appPath);
         String uriString = appData.getSimpleField(S4R_URI);
+        String appName = appData.getSimpleField("name");
         try {
             URI uri = new URI(uriString);
 
             // fetch application
-            final File s4rFile = new File(server.getS4RDir() + File.separator + clusterName + File.separator + newApp
-                    + ".s4r");
-            if (s4rFile.exists()) {
-                s4rFile.delete();
-            }
+            File localS4RFileCopy;
             try {
-                Files.createParentDirs(s4rFile);
-                s4rFile.createNewFile();
+                localS4RFileCopy = File.createTempFile("tmp", "s4r");
             } catch (IOException e1) {
-                throw new DeploymentFailedException("Cannot deploy application [" + newApp + "] from URI ["
-                        + uri.toString() + "] ", e1);
+                logger.error(
+                        "Cannot deploy app [{}] because a local copy of the S4R file could not be initialized due to [{}]",
+                        appName, e1.getClass().getName() + "->" + e1.getMessage());
+                throw new DeploymentFailedException("Cannot deploy application [" + appName + "]", e1);
             }
+            localS4RFileCopy.deleteOnExit();
             try {
-                if (ByteStreams.copy(fetchS4App(uri), Files.newOutputStreamSupplier(s4rFile)) == 0) {
+                if (ByteStreams.copy(fetchS4App(uri), Files.newOutputStreamSupplier(localS4RFileCopy)) == 0) {
                     throw new DeploymentFailedException("Cannot copy archive from [" + uri.toString() + "] to ["
-                            + s4rFile.getAbsolutePath() + "] (nothing was copied)");
+                            + localS4RFileCopy.getAbsolutePath() + "] (nothing was copied)");
                 }
             } catch (IOException e) {
-                throw new DeploymentFailedException("Cannot deploy application [" + newApp + "] from URI ["
+                throw new DeploymentFailedException("Cannot deploy application [" + appName + "] from URI ["
                         + uri.toString() + "] ", e);
             }
             // install locally
-            App loaded = server.loadApp(s4rFile);
+            App loaded = server.loadApp(localS4RFileCopy, appName);
             if (loaded != null) {
-                logger.info("Successfully installed application {}", newApp);
-                server.startApp(loaded, newApp, clusterName);
+                logger.info("Successfully installed application {}", appName);
+                server.startApp(loaded, appName, clusterName);
             } else {
-                throw new DeploymentFailedException("Cannot deploy application [" + newApp + "] from URI ["
+                throw new DeploymentFailedException("Cannot deploy application [" + appName + "] from URI ["
                         + uri.toString() + "] : cannot start application");
             }
             // TODO sync with other nodes? (e.g. wait for other apps deployed before starting?
 
         } catch (URISyntaxException e) {
-            logger.error("Cannot deploy app {} : invalid uri for fetching s4r archive {} : {} ", new String[] { newApp,
-                    uriString, e.getMessage() });
-            throw new DeploymentFailedException("Cannot deploy application [" + newApp + "]", e);
+            logger.error("Cannot deploy app {} : invalid uri for fetching s4r archive {} : {} ", new String[] {
+                    appName, uriString, e.getMessage() });
+            throw new DeploymentFailedException("Cannot deploy application [" + appName + "]", e);
         }
+        deployed = true;
     }
 
     // NOTE: in theory, we could support any protocol by implementing a chained visitor scheme,
@@ -146,36 +138,19 @@ public class DistributedDeploymentManager implements DeploymentManager {
         throw new DeploymentFailedException("Unsupported protocol " + scheme);
     }
 
-    // synchronizes with startup apps loading
-    private void deployNewApps(Set<String> newApps) {
-        try {
-            signalInitialAppsLoaded.await();
-        } catch (InterruptedException e1) {
-            logger.error("Interrupted while waiting for initialization of initial application. Cancelling deployment of new applications.");
-            Thread.currentThread().interrupt();
-            return;
-        }
-        deployApps(newApps);
-    }
-
-    private void deployApps(Set<String> newApps) {
-        for (String newApp : newApps) {
-            try {
-                deployApplication(newApp);
-                apps.add(newApp);
-            } catch (DeploymentFailedException e) {
-                logger.error("Application deployment failed for {}", newApp);
-            }
-        }
-    }
-
-    private final class AppsChangeListener implements IZkChildListener {
+    private final class AppChangeListener implements IZkDataListener {
         @Override
-        public void handleChildChange(String parentPath, List<String> currentChildren) throws Exception {
-            SetView<String> newApps = Sets.difference(Sets.newHashSet(currentChildren), apps);
-            logger.info("Detected new application(s) to deploy {}" + Arrays.toString(newApps.toArray(new String[] {})));
+        public void handleDataDeleted(String dataPath) throws Exception {
+            logger.error("Application undeployment is not supported yet");
+        }
 
-            deployNewApps(newApps);
+        @Override
+        public void handleDataChange(String dataPath, Object data) throws Exception {
+            if (!deployed) {
+                deployApplication();
+            } else {
+                logger.error("There is already an application deployed on this S4 node");
+            }
 
         }
 
@@ -183,9 +158,12 @@ public class DistributedDeploymentManager implements DeploymentManager {
 
     @Override
     public void start() {
-        List<String> initialApps = zkClient.getChildren(appsPath);
-        deployApps(new HashSet<String>(initialApps));
-        signalInitialAppsLoaded.countDown();
+        if (zkClient.exists(appPath)) {
+            try {
+                deployApplication();
+            } catch (DeploymentFailedException e) {
+                logger.error("Cannot deploy application", e);
+            }
+        }
     }
-
 }

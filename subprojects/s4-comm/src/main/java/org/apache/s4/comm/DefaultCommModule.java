@@ -71,9 +71,12 @@ public class DefaultCommModule extends AbstractModule {
         /* Use Kryo to serialize events. */
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
 
+        // a node holds a single partition assignment
+        // ==> Assignment and Cluster are singletons so they can be shared between comm layer and app.
         bind(Assignment.class).to(AssignmentFromZK.class);
-        bind(Clusters.class).to(ClustersFromZK.class);
         bind(Cluster.class).to(ClusterFromZK.class);
+
+        bind(Clusters.class).to(ClustersFromZK.class);
 
         try {
             Class<? extends Emitter> emitterClass = (Class<? extends Emitter>) Class.forName(config

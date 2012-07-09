@@ -69,6 +69,7 @@ public class ClustersFromZKTest extends ZKBaseTest {
                     try {
                         for (String clusterName : clusterNames) {
                             assignmentFromZK = new AssignmentFromZK(clusterName, CommTestUtils.ZK_STRING, 30000, 30000);
+                            assignmentFromZK.init();
                             ClusterNode assignClusterNode = assignmentFromZK.assignClusterNode();
                             latch.countDown();
                         }

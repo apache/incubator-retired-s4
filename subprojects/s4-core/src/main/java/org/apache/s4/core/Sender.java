@@ -29,7 +29,7 @@ public class Sender {
     /**
      * 
      * @param emitter
-     *            the emitter implements the low level commiunication layer.
+     *            the emitter implements the low level communication layer.
      * @param serDeser
      *            a serialization mechanism.
      * @param hasher

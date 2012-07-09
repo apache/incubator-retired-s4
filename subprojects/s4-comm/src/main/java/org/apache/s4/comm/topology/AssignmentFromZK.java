@@ -21,8 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
+@Singleton
 public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateListener, IZkDataListener {
     private static final Logger logger = LoggerFactory.getLogger(AssignmentFromZK.class);
     /**
@@ -89,6 +91,10 @@ public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateL
         zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
         ZkSerializer serializer = new ZNRecordSerializer();
         zkClient.setZkSerializer(serializer);
+    }
+
+    @Inject
+    void init() throws Exception {
         zkClient.subscribeStateChanges(this);
         if (!zkClient.waitUntilConnected(connectionTimeout, TimeUnit.MILLISECONDS)) {
             throw new Exception("cannot connect to zookeeper");

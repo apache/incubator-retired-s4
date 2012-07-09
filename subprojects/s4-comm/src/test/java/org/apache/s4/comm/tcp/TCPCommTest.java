@@ -20,22 +20,23 @@ public abstract class TCPCommTest extends ProtocolTestUtil {
     private static Logger logger = LoggerFactory.getLogger(TCPCommTest.class);
     DeliveryTestUtil util;
     public final static String CLUSTER_NAME = "cluster1";
-    Injector injector;
 
     public TCPCommTest() throws IOException {
         super();
-        injector = Guice.createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                .openStream(), CLUSTER_NAME), new TCPCommTestModule());
     }
 
     public TCPCommTest(int numTasks) throws IOException {
         super(numTasks);
-        injector = Guice.createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                .openStream(), CLUSTER_NAME), new TCPCommTestModule());
     }
 
-    public Injector getInjector() {
-        return injector;
+    public Injector newInjector() {
+        try {
+            return Guice.createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
+                    .openStream(), CLUSTER_NAME), new TCPCommTestModule());
+        } catch (IOException e) {
+            Assert.fail();
+            return null;
+        }
     }
 
     class TCPCommTestModule extends AbstractModule {

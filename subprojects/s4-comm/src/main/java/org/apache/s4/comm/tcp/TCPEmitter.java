@@ -157,6 +157,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         bootstrap.setOption("keepAlive", true);
         bootstrap.setOption("reuseAddress", true);
         bootstrap.setOption("connectTimeoutMillis", this.nettyTimeout);
+
+        refreshCluster();
     }
 
     private class Message implements ChannelFutureListener {
@@ -455,6 +457,10 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     @Override
     public void onChange() {
+        refreshCluster();
+    }
+
+    private void refreshCluster() {
         for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
             Integer partition = clusterNode.getPartition();
             if (partition == null) {

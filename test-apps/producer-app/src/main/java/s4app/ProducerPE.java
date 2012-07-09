@@ -7,14 +7,14 @@ import org.apache.s4.core.Streamable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClockPE extends ProcessingElement {
+public class ProducerPE extends ProcessingElement {
 
-    private static final Logger logger = LoggerFactory.getLogger(ClockPE.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProducerPE.class);
 
     private Streamable[] targetStreams;
     private long tick = 0;
 
-    public ClockPE(App app) {
+    public ProducerPE(App app) {
         super(app);
     }
 
@@ -27,12 +27,14 @@ public class ClockPE extends ProcessingElement {
     }
 
     public void onTime() {
-        Event event = new Event();
-        event.put("tick", Long.class, tick++);
+        if (tick < 1000) {
+            Event event = new Event();
+            event.put("tick", Long.class, tick++);
 
-        logger.info("Sending event with tick {} and time {}.", event.get("tick", Long.class), event.getTime());
-        for (int i = 0; i < targetStreams.length; i++) {
-            targetStreams[i].put(event);
+            logger.info("Sending event with tick {} and time {}.", event.get("tick", Long.class), event.getTime());
+            for (int i = 0; i < targetStreams.length; i++) {
+                targetStreams[i].put(event);
+            }
         }
     }
 

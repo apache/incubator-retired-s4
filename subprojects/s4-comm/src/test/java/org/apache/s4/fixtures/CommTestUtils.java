@@ -2,9 +2,6 @@ package org.apache.s4.fixtures;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -12,6 +9,7 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +26,8 @@ import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.io.Files;
 
 /**
  * Contains static methods that can be used in tests for things such as: - files utilities: strings <-> files
@@ -50,14 +50,17 @@ public class CommTestUtils {
         logger.info("Storage dir: " + DEFAULT_STORAGE_DIR);
     }
 
-    protected static Process forkProcess(String mainClass, String... args) throws IOException, InterruptedException {
+    protected static Process forkProcess(String mainClass, int debugPort, String... args) throws IOException,
+            InterruptedException {
         List<String> cmdList = new ArrayList<String>();
         cmdList.add("java");
         cmdList.add("-cp");
         cmdList.add(System.getProperty("java.class.path"));
-        // cmdList.add("-Xdebug");
-        // cmdList.add("-Xnoagent");
-        // cmdList.add("-Xrunjdwp:transport=dt_socket,address=8788,server=y,suspend=n");
+        if (debugPort != -1) {
+            cmdList.add("-Xdebug");
+            cmdList.add("-Xnoagent");
+            cmdList.add("-Xrunjdwp:transport=dt_socket,address=" + debugPort + ",server=y,suspend=n");
+        }
 
         cmdList.add(mainClass);
         for (String arg : args) {
@@ -106,56 +109,11 @@ public class CommTestUtils {
     }
 
     public static void writeStringToFile(String s, File f) throws IOException {
-        if (f.exists()) {
-            if (!f.delete()) {
-                throw new RuntimeException("Cannot delete file " + f.getAbsolutePath());
-            }
-        }
-
-        FileWriter fw = null;
-        try {
-            if (!f.createNewFile()) {
-                throw new RuntimeException("Cannot create new file : " + f.getAbsolutePath());
-            }
-            fw = new FileWriter(f);
-
-            fw.write(s);
-        } catch (IOException e) {
-            throw (e);
-        } finally {
-            if (fw != null) {
-                try {
-                    fw.close();
-                } catch (IOException e) {
-                    throw (e);
-                }
-            }
-        }
+        Files.write(s, f, Charset.defaultCharset());
     }
 
     public static String readFile(File f) throws IOException {
-        BufferedReader br = null;
-        try {
-            br = new BufferedReader(new FileReader(f));
-            StringBuilder sb = new StringBuilder();
-            String line = br.readLine();
-            while (line != null) {
-                sb.append(line);
-                line = br.readLine();
-                if (line != null) {
-                    sb.append("\n");
-                }
-            }
-            return sb.toString();
-        } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException e) {
-                    throw (e);
-                }
-            }
-        }
+        return Files.toString(f, Charset.defaultCharset());
 
     }
 
@@ -198,59 +156,12 @@ public class CommTestUtils {
     }
 
     public static String readFileAsString(File f) throws IOException {
-        FileReader fr = new FileReader(f);
-        StringBuilder sb = new StringBuilder("");
-        BufferedReader br = new BufferedReader(fr);
-        String line = br.readLine();
-        while (line != null) {
-            sb.append(line);
-            line = br.readLine();
-            if (line != null) {
-                sb.append("\n");
-            }
-        }
-        return sb.toString();
+        return Files.toString(f, Charset.defaultCharset());
 
     }
 
-    // TODO factor this code (see BasicFSStateStorage) - or use commons io or
-    // guava
     public static byte[] readFileAsByteArray(File file) throws Exception {
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream(file);
-
-            long length = file.length();
-
-            /*
-             * Arrays can only be created using int types, so ensure that the file size is not too big before we
-             * downcast to create the array.
-             */
-            if (length > Integer.MAX_VALUE) {
-                throw new IOException("Error file is too large: " + file.getName() + " " + length + " bytes");
-            }
-
-            byte[] buffer = new byte[(int) length];
-            int offSet = 0;
-            int numRead = 0;
-
-            while (offSet < buffer.length && (numRead = in.read(buffer, offSet, buffer.length - offSet)) >= 0) {
-                offSet += numRead;
-            }
-
-            if (offSet < buffer.length) {
-                throw new IOException("Error, could not read entire file: " + file.getName() + " " + offSet + "/"
-                        + buffer.length + " bytes read");
-            }
-
-            in.close();
-            return buffer;
-
-        } finally {
-            if (in != null) {
-                in.close();
-            }
-        }
+        return Files.toByteArray(file);
     }
 
     public static ZooKeeper createZkClient() throws IOException {

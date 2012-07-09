@@ -49,9 +49,6 @@ public abstract class App {
     /* All the internal streams in this app. */
     final private List<Streamable<Event>> streams = new ArrayList<Streamable<Event>>();
 
-    /* All the the event sources exported by this app. */
-    final private List<EventSource> eventSources = new ArrayList<EventSource>();
-
     /* Pes indexed by name. */
     Map<String, ProcessingElement> peByName = Maps.newHashMap();
 
@@ -125,11 +122,6 @@ public abstract class App {
         streams.add(stream);
     }
 
-    /* Should only be used within the core package. */
-    void addEventSource(EventSource es) {
-        eventSources.add(es);
-    }
-
     /* Returns list of PE prototypes. Should only be used within the core package. */
     List<ProcessingElement> getPePrototypes() {
         return pePrototypes;
@@ -145,12 +137,6 @@ public abstract class App {
     // TODO visibility
     public List<Streamable<Event>> getStreams() {
         return streams;
-    }
-
-    /* Returns list of the event sources to be exported. Should only be used within the core package. */
-    // TODO visibility
-    public List<EventSource> getEventSources() {
-        return eventSources;
     }
 
     protected abstract void onStart();
