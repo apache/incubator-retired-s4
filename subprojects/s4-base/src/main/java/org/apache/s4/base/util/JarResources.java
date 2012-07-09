@@ -5,8 +5,8 @@ import java.util.*;
 import java.util.zip.*;
 
 /**
- * JarResources: JarResources maps all resources included in a Zip or Jar file.
- * Additionaly, it provides a method to extract one as a blob.
+ * JarResources: JarResources maps all resources included in a Zip or Jar file. Additionaly, it provides a method to
+ * extract one as a blob.
  * 
  * <p>
  * CREDITS
@@ -30,8 +30,7 @@ public final class JarResources {
     private String jarFileName;
 
     /**
-     * creates a JarResources. It extracts all resources from a Jar into an
-     * internal hashtable, keyed by resource names.
+     * creates a JarResources. It extracts all resources from a Jar into an internal hashtable, keyed by resource names.
      * 
      * @param jarFileName
      *            a jar or zip file
@@ -79,8 +78,7 @@ public final class JarResources {
                 }
 
                 if (debugOn) {
-                    System.out.println("ze.getName()=" + ze.getName() + ","
-                            + "getSize()=" + ze.getSize());
+                    System.out.println("ze.getName()=" + ze.getName() + "," + "getSize()=" + ze.getSize());
                 }
 
                 int size = (int) ze.getSize();
@@ -104,10 +102,11 @@ public final class JarResources {
                 htJarContents.put(ze.getName(), b);
 
                 if (debugOn) {
-                    System.out.println(ze.getName() + "  rb=" + rb + ",size="
-                            + size + ",csize=" + ze.getCompressedSize());
+                    System.out.println(ze.getName() + "  rb=" + rb + ",size=" + size + ",csize="
+                            + ze.getCompressedSize());
                 }
             }
+            zis.close();
         } catch (NullPointerException e) {
             System.out.println("done.");
         } catch (FileNotFoundException e) {
@@ -148,12 +147,11 @@ public final class JarResources {
     }
 
     /**
-     * Is a test driver. Given a jar file and a resource name, it trys to
-     * extract the resource and then tells us whether it could or not.
+     * Is a test driver. Given a jar file and a resource name, it trys to extract the resource and then tells us whether
+     * it could or not.
      * 
-     * <strong>Example</strong> Let's say you have a JAR file which jarred up a
-     * bunch of gif image files. Now, by using JarResources, you could extract,
-     * create, and display those images on-the-fly.
+     * <strong>Example</strong> Let's say you have a JAR file which jarred up a bunch of gif image files. Now, by using
+     * JarResources, you could extract, create, and display those images on-the-fly.
      * 
      * <pre>
      *     ...
@@ -167,8 +165,7 @@ public final class JarResources {
      */
     public static void main(String[] args) throws IOException {
         if (args.length != 2) {
-            System.err
-                    .println("usage: java JarResources <jar file name> <resource name>");
+            System.err.println("usage: java JarResources <jar file name> <resource name>");
             System.exit(1);
         }
 
@@ -177,8 +174,7 @@ public final class JarResources {
         if (buff == null) {
             System.out.println("Could not find " + args[1] + ".");
         } else {
-            System.out.println("Found " + args[1] + " (length=" + buff.length
-                    + ").");
+            System.out.println("Found " + args[1] + " (length=" + buff.length + ").");
         }
     }
 
