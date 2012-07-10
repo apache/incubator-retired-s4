@@ -26,15 +26,19 @@ import com.google.common.io.PatternFilenameFilter;
 public class CoreTestUtils extends CommTestUtils {
 
     public static Process forkS4App(Class<?> moduleClass, Class<?> appClass) throws IOException, InterruptedException {
-        return forkProcess(App.class.getName(), moduleClass.getName(), appClass.getName());
+        return forkProcess(App.class.getName(), -1, moduleClass.getName(), appClass.getName());
     }
 
     public static Process forkS4Node() throws IOException, InterruptedException {
-        return forkProcess(Main.class.getName(), new String[] {});
+        return forkS4Node(new String[] {});
     }
 
     public static Process forkS4Node(String[] args) throws IOException, InterruptedException {
-        return forkProcess(Main.class.getName(), args);
+        return forkS4Node(-1, args);
+    }
+
+    public static Process forkS4Node(int debugPort, String[] args) throws IOException, InterruptedException {
+        return forkProcess(Main.class.getName(), debugPort, args);
     }
 
     public static File findGradlewInRootDir() {

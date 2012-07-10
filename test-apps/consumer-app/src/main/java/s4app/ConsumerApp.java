@@ -2,24 +2,24 @@ package s4app;
 
 import org.apache.s4.core.App;
 
-public class ShowTimeApp extends App {
+public class ConsumerApp extends App {
 
-    private ShowPE showPE;
+    private ConsumerPE consumerPE;
 
     @Override
     protected void onStart() {
         System.out.println("Starting ShowTimeApp...");
-        showPE.getInstanceForKey("single");
     }
 
     @Override
     protected void onInit() {
         System.out.println("Initing ShowTimeApp...");
 
-        showPE = new ShowPE(this);
+        ConsumerPE consumerPE = createPE(ConsumerPE.class, "consumer");
+        consumerPE.setSingleton(true);
 
         /* This stream will receive events from another app. */
-        createStream("clockStream", showPE);
+        createInputStream("tickStream", consumerPE);
     }
 
     @Override

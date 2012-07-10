@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.s4.fixtures.CommTestUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Splitter;
@@ -17,7 +16,6 @@ import com.google.common.collect.Sets;
 public class AssignmentsFromZKTest extends ZKBaseTest {
 
     @Test
-    @Ignore
     public void testAssignmentFor1Cluster() throws Exception {
         TaskSetup taskSetup = new TaskSetup(CommTestUtils.ZK_STRING);
         final String topologyNames = "cluster1";
@@ -51,6 +49,7 @@ public class AssignmentsFromZKTest extends ZKBaseTest {
 
                         for (String topologyName : names) {
                             assignmentFromZK = new AssignmentFromZK(topologyName, CommTestUtils.ZK_STRING, 30000, 30000);
+                            assignmentFromZK.init();
                             ClusterNode assignClusterNode = assignmentFromZK.assignClusterNode();
                             latch.countDown();
                         }

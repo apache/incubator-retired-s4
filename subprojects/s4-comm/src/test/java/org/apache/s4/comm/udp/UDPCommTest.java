@@ -15,23 +15,19 @@ import com.google.inject.name.Names;
 
 public abstract class UDPCommTest extends ProtocolTestUtil {
     DeliveryTestUtil util;
-    private Injector injector;
 
     public UDPCommTest() throws IOException {
         super();
-        injector = Guice.createInjector(new DefaultCommModule(Resources.getResource("udp.s4.comm.properties")
-                .openStream(), "cluster1"), new UDPCommTestModule());
     }
 
     public UDPCommTest(int numTasks) throws IOException {
         super(numTasks);
-        injector = Guice.createInjector(new DefaultCommModule(Resources.getResource("udp.s4.comm.properties")
-                .openStream(), "cluster1"), new UDPCommTestModule());
     }
 
     @Override
-    protected Injector getInjector() throws IOException {
-        return injector;
+    protected Injector newInjector() throws IOException {
+        return Guice.createInjector(new DefaultCommModule(Resources.getResource("udp.s4.comm.properties").openStream(),
+                "cluster1"), new UDPCommTestModule());
     }
 
     class UDPCommTestModule extends AbstractModule {

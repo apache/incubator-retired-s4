@@ -23,8 +23,8 @@ include 's4-tools'
 //include ':test-apps:simple-adapter-1'
 include ':test-apps:simple-deployable-app-1'
 include ':test-apps:simple-deployable-app-2'
-include ':test-apps:s4-showtime'
-include ':test-apps:s4-counter'
+include ':test-apps:producer-app'
+include ':test-apps:consumer-app'
 
 rootProject.name = 's4'
 rootProject.children.each {project ->

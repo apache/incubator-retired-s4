@@ -28,7 +28,6 @@ import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.io.ByteStreams;
@@ -65,29 +64,6 @@ public class TestAutomaticDeployment {
                 + "/test-apps/simple-deployable-app-1/build.gradle"), "installS4R", new String[] { "appsDir="
                 + tmpAppsDir.getAbsolutePath() });
 
-        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
-                + "/test-apps/simple-deployable-app-2/build.gradle"), "installS4R", new String[] { "appsDir="
-                + tmpAppsDir.getAbsolutePath() });
-    }
-
-    // ignore this test since now we only deploy from artifacts published through zookeeper
-    @Test
-    @Ignore
-    public void testInitialDeploymentFromFileSystem() throws Exception {
-
-        // File s4rToDeploy = new File(loadConfig().getString("appsDir") + File.separator + "testapp"
-        // + System.currentTimeMillis() + ".s4r");
-        //
-        // Assert.assertTrue(ByteStreams.copy(
-        // Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-        // + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
-        //
-        // initializeS4Node();
-        //
-        // final String uri = s4rToDeploy.toURI().toString();
-        //
-        // assertDeployment(uri, true);
-
     }
 
     @Test
@@ -105,12 +81,11 @@ public class TestAutomaticDeployment {
 
         final String uri = s4rToDeploy.toURI().toString();
 
-        assertDeployment(uri, false);
+        assertDeployment(uri);
 
     }
 
-    private void assertDeployment(final String uri, boolean initial) throws KeeperException, InterruptedException,
-            IOException {
+    private void assertDeployment(final String uri) throws KeeperException, InterruptedException, IOException {
         CountDownLatch signalAppInitialized = new CountDownLatch(1);
         CountDownLatch signalAppStarted = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation(AppConstants.INITIALIZED_ZNODE_1, signalAppInitialized,
@@ -118,11 +93,9 @@ public class TestAutomaticDeployment {
         CommTestUtils.watchAndSignalCreation(AppConstants.INITIALIZED_ZNODE_1, signalAppStarted,
                 CommTestUtils.createZkClient());
 
-        if (!initial) {
-            ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-            record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-            zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/apps/testApp", record, CreateMode.PERSISTENT);
-        }
+        ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
+        record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
+        zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/app/s4App", record, CreateMode.PERSISTENT);
 
         Assert.assertTrue(signalAppInitialized.await(20, TimeUnit.SECONDS));
         Assert.assertTrue(signalAppStarted.await(20, TimeUnit.SECONDS));
@@ -137,40 +110,6 @@ public class TestAutomaticDeployment {
 
         // check event processed
         Assert.assertTrue(signalEvent1Processed.await(5, TimeUnit.SECONDS));
-    }
-
-    private void assertMultipleAppsDeployment(String uri1, String uri2) throws KeeperException, InterruptedException,
-            IOException {
-        CountDownLatch signalApp1Initialized = new CountDownLatch(1);
-        CountDownLatch signalApp1Started = new CountDownLatch(1);
-
-        CountDownLatch signalApp2Initialized = new CountDownLatch(1);
-        CountDownLatch signalApp2Started = new CountDownLatch(1);
-
-        CommTestUtils.watchAndSignalCreation(AppConstants.INITIALIZED_ZNODE_1, signalApp1Initialized,
-                CommTestUtils.createZkClient());
-        CommTestUtils.watchAndSignalCreation(AppConstants.INITIALIZED_ZNODE_2, signalApp1Started,
-                CommTestUtils.createZkClient());
-
-        CommTestUtils.watchAndSignalCreation(AppConstants.INITIALIZED_ZNODE_2, signalApp2Initialized,
-                CommTestUtils.createZkClient());
-        CommTestUtils.watchAndSignalCreation(AppConstants.STARTED_ZNODE_2, signalApp2Started,
-                CommTestUtils.createZkClient());
-
-        ZNRecord record1 = new ZNRecord(String.valueOf(System.currentTimeMillis()) + "-app1");
-        record1.putSimpleField(DistributedDeploymentManager.S4R_URI, uri1);
-        zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/apps/testApp1", record1, CreateMode.PERSISTENT);
-
-        ZNRecord record2 = new ZNRecord(String.valueOf(System.currentTimeMillis()) + "-app2");
-        record2.putSimpleField(DistributedDeploymentManager.S4R_URI, uri2);
-        zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/apps/testApp2", record2, CreateMode.PERSISTENT);
-
-        Assert.assertTrue(signalApp1Initialized.await(20, TimeUnit.SECONDS));
-        Assert.assertTrue(signalApp1Started.await(10, TimeUnit.SECONDS));
-
-        Assert.assertTrue(signalApp2Initialized.await(20, TimeUnit.SECONDS));
-        Assert.assertTrue(signalApp2Started.await(10, TimeUnit.SECONDS));
-
     }
 
     @Test
@@ -195,62 +134,7 @@ public class TestAutomaticDeployment {
         httpServer.setExecutor(Executors.newCachedThreadPool());
         httpServer.start();
 
-        assertDeployment("http://localhost:8080/s4/" + s4rToDeploy.getName(), false);
-
-    }
-
-    /**
-     * * * Tests that classes with same signature are loaded in different class loaders (through the S4RLoader), even
-     * when referenced through reflection, and even when referencing classes present in the classpath of the S4 nod * *
-     * Works in the following manne * * - we have app1 and app2, very simple a * * - app1 and app2 have 3 classes with
-     * same name: A, AppConstants and Tes * * - app1 in addition has a PE and a socket adapter so that it can react to
-     * injected e * * - upon initialization of the application, TestApp writes a znode in Zookeeper, corresponding to
-     * the application index (1 or 2), using the corresponding constant from the AppConstant class (which is part of the
-     * S4 node classpath, and therefore loaded by the standard classloader, not from an s4 app classl *
-     * 
-     * - upon startup of the application, TestApp creates A by reflection, and A writes a znode specific to the current
-     * p
-     * 
-     * - app1 and app2 are generated through gradle scripts, called by executing the "gradlew" executable at the root of
-     * the project, and using the build.gradle file available for these appl * ns
-     * 
-     * - app1 and app2 s4r archives are copied to a web server and published to * per
-     * 
-     * - they automatically get deployed, and we verify that 2 apps are correctly started, therefore that classes
-     * TestApp and A were independently loaded for independent ap * ions
-     * 
-     */
-
-    @Test
-    public void testZkTriggeredDeploymentFromHttpForMultipleApps() throws Exception {
-        initializeS4Node();
-        Assert.assertFalse(zkClient.exists(AppConstants.INITIALIZED_ZNODE_1));
-        Assert.assertFalse(zkClient.exists(AppConstants.INITIALIZED_ZNODE_2));
-
-        File tmpDir = Files.createTempDir();
-
-        File s4rToDeployForApp1 = new File(tmpDir, String.valueOf(System.currentTimeMillis()) + "-app1");
-        File s4rToDeployForApp2 = new File(tmpDir, String.valueOf(System.currentTimeMillis()) + "-app2");
-
-        Assert.assertTrue(ByteStreams.copy(
-                Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-                        + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")),
-                Files.newOutputStreamSupplier(s4rToDeployForApp1)) > 0);
-        Assert.assertTrue(ByteStreams.copy(
-                Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-                        + "/simple-deployable-app-2-0.0.0-SNAPSHOT.s4r")),
-                Files.newOutputStreamSupplier(s4rToDeployForApp2)) > 0);
-
-        // we start a
-        InetSocketAddress addr = new InetSocketAddress(8080);
-        httpServer = HttpServer.create(addr, 0);
-
-        httpServer.createContext("/s4", new MyHandler(tmpDir));
-        httpServer.setExecutor(Executors.newCachedThreadPool());
-        httpServer.start();
-
-        assertMultipleAppsDeployment("http://localhost:8080/s4/" + s4rToDeployForApp1.getName(),
-                "http://localhost:8080/s4/" + s4rToDeployForApp2.getName());
+        assertDeployment("http://localhost:8080/s4/" + s4rToDeploy.getName());
 
     }
 

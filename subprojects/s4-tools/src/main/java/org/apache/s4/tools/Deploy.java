@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import junit.framework.Assert;
-
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
@@ -21,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.FileConverter;
+import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
@@ -44,15 +43,23 @@ public class Deploy extends S4ArgsBase {
 
             tmpAppsDir = Files.createTempDir();
 
-            File s4rToDeploy = File.createTempFile("testapp" + System.currentTimeMillis(), "s4r");
+            if (!Strings.isNullOrEmpty(deployArgs.s4rPath) && !Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
+                logger.error("-s4r and -generatedS4R options are mutually exclusive");
+                System.exit(1);
+            }
 
-            String s4rPath = null;
+            File s4rToDeploy;
 
             if (deployArgs.s4rPath != null) {
-                s4rPath = deployArgs.s4rPath;
-                logger.info(
-                        "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
-                        s4rPath);
+                s4rToDeploy = new File(deployArgs.s4rPath);
+                if (!s4rToDeploy.exists()) {
+                    logger.error("Specified S4R file does not exist in {}", s4rToDeploy.getAbsolutePath());
+                    System.exit(1);
+                } else {
+                    logger.info(
+                            "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
+                            s4rToDeploy.getAbsolutePath());
+                }
             } else {
                 List<String> params = new ArrayList<String>();
                 // prepare gradle -P parameters, including passed gradle opts
@@ -61,19 +68,39 @@ public class Deploy extends S4ArgsBase {
                 params.add("appsDir=" + tmpAppsDir.getAbsolutePath());
                 params.add("appName=" + deployArgs.appName);
                 ExecGradle.exec(deployArgs.gradleBuildFile, "installS4R", params.toArray(new String[] {}));
-                s4rPath = tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r";
+                File tmpS4R = new File(tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r");
+                if (!Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
+                    logger.info("Copying generated S4R to [{}]", deployArgs.generatedS4R);
+                    s4rToDeploy = new File(deployArgs.generatedS4R);
+                    if (!(ByteStreams.copy(Files.newInputStreamSupplier(tmpS4R),
+                            Files.newOutputStreamSupplier(s4rToDeploy)) > 0)) {
+                        logger.error("Cannot copy generated s4r from {} to {}", tmpS4R.getAbsolutePath(),
+                                s4rToDeploy.getAbsolutePath());
+                        System.exit(1);
+                    }
+                } else {
+                    s4rToDeploy = tmpS4R;
+                }
             }
-            Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(s4rPath)),
-                    Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
 
             final String uri = s4rToDeploy.toURI().toString();
             ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
             record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-            zkClient.create("/s4/clusters/" + deployArgs.clusterName + "/apps/" + deployArgs.appName, record,
-                    CreateMode.PERSISTENT);
-            logger.info("uploaded application [{}] to cluster [{}], using zookeeper znode [{}]", new String[] {
-                    deployArgs.appName, deployArgs.clusterName,
-                    "/s4/clusters/" + deployArgs.clusterName + "/apps/" + deployArgs.appName });
+            record.putSimpleField("name", deployArgs.appName);
+            String deployedAppPath = "/s4/clusters/" + deployArgs.clusterName + "/app/s4App";
+            if (zkClient.exists(deployedAppPath)) {
+                ZNRecord readData = zkClient.readData(deployedAppPath);
+                logger.error("Cannot deploy app [{}], because app [{}] is already deployed", deployArgs.appName,
+                        readData.getSimpleField("name"));
+                System.exit(1);
+            }
+
+            zkClient.create("/s4/clusters/" + deployArgs.clusterName + "/app/s4App", record, CreateMode.PERSISTENT);
+            logger.info(
+                    "uploaded application [{}] to cluster [{}], using zookeeper znode [{}], and s4r file [{}]",
+                    new String[] { deployArgs.appName, deployArgs.clusterName,
+                            "/s4/clusters/" + deployArgs.clusterName + "/app/" + deployArgs.appName,
+                            s4rToDeploy.getAbsolutePath() });
 
         } catch (Exception e) {
             LoggerFactory.getLogger(Deploy.class).error("Cannot deploy app", e);
@@ -87,13 +114,16 @@ public class Deploy extends S4ArgsBase {
         @Parameter(names = { "-b", "-buildFile" }, description = "Full path to gradle build file for the S4 application", required = false, converter = FileConverter.class, validateWith = FileExistsValidator.class)
         File gradleBuildFile;
 
-        @Parameter(names = "-s4r", description = "Path to s4r file", required = false)
+        @Parameter(names = "-s4r", description = "Path to existing s4r file", required = false)
         String s4rPath;
+
+        @Parameter(names = { "-generatedS4R", "-g" }, description = "Location of generated s4r (incompatible with -s4r option). By default, s4r is generated in a temporary directory on the local file system. In a distributed environment, you probably want to specify a location accessible through a distributed file system like NFS. That's the purpose of this option.", required = false)
+        String generatedS4R;
 
         @Parameter(names = { "-a", "-appClass" }, description = "Full class name of the application class (extending App or AdapterApp)", required = false)
         String appClass = "";
 
-        @Parameter(names = "-appName", description = "Name of S4 application. This will be the name of the s4r file as well", required = true)
+        @Parameter(names = "-appName", description = "Name of S4 application.", required = true)
         String appName;
 
         @Parameter(names = { "-c", "-cluster" }, description = "Logical name of the S4 cluster", required = true)

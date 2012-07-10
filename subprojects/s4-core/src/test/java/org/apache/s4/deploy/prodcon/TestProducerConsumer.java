@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
@@ -18,6 +19,7 @@ import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.junit.After;
@@ -33,9 +35,11 @@ import com.sun.net.httpserver.HttpServer;
 public class TestProducerConsumer {
 
     private Factory zookeeperServerConnectionFactory;
-    private Process forkedNode;
+    private Process forkedProducerNode;
+    private Process forkedConsumerNode;
     private ZkClient zkClient;
-    private final static String CLUSTER_NAME = "prodconcluster";
+    private final static String PRODUCER_CLUSTER = "producerCluster";
+    private final static String CONSUMER_CLUSTER = "consumerCluster";
     private HttpServer httpServer;
     private static File tmpAppsDir;
 
@@ -47,11 +51,11 @@ public class TestProducerConsumer {
         File gradlewFile = CoreTestUtils.findGradlewInRootDir();
 
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
-                + "/test-apps/s4-showtime/build.gradle"), "installS4R",
+                + "/test-apps/producer-app/build.gradle"), "installS4R",
                 new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
 
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
-                + "/test-apps/s4-counter/build.gradle"), "installS4R",
+                + "/test-apps/consumer-app/build.gradle"), "installS4R",
                 new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
     }
 
@@ -85,7 +89,8 @@ public class TestProducerConsumer {
     @After
     public void cleanup() throws Exception {
         CommTestUtils.stopZookeeperServer(zookeeperServerConnectionFactory);
-        CommTestUtils.killS4App(forkedNode);
+        CommTestUtils.killS4App(forkedProducerNode);
+        CommTestUtils.killS4App(forkedConsumerNode);
     }
 
     private PropertiesConfiguration loadConfig() throws org.apache.commons.configuration.ConfigurationException,
@@ -98,36 +103,38 @@ public class TestProducerConsumer {
     @Test
     public void testInitialDeploymentFromFileSystem() throws Exception {
 
-        File showtimeS4R = new File(loadConfig().getString("appsDir") + File.separator + "showtime"
+        File producerS4R = new File(loadConfig().getString("appsDir") + File.separator + "producer"
                 + System.currentTimeMillis() + ".s4r");
         System.out.println(tmpAppsDir.getAbsolutePath());
         Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-                + "/s4-showtime-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(showtimeS4R)) > 0);
-        String uriShowtime = showtimeS4R.toURI().toString();
+                + "/producer-app-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(producerS4R)) > 0);
+        String uriProducer = producerS4R.toURI().toString();
 
-        File counterS4R = new File(loadConfig().getString("appsDir") + File.separator + "counter"
+        File consumerS4R = new File(loadConfig().getString("appsDir") + File.separator + "consumer"
                 + System.currentTimeMillis() + ".s4r");
-        Assert.assertTrue(ByteStreams.copy(
-                Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath() + "/s4-counter-0.0.0-SNAPSHOT.s4r")),
-                Files.newOutputStreamSupplier(counterS4R)) > 0);
+        Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
+                + "/consumer-app-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(consumerS4R)) > 0);
 
-        String uriCounter = counterS4R.toURI().toString();
+        String uriConsumer = consumerS4R.toURI().toString();
 
         initializeS4Node();
 
         ZNRecord record1 = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-        record1.putSimpleField(DistributedDeploymentManager.S4R_URI, uriShowtime);
-        zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/apps/showtime", record1, CreateMode.PERSISTENT);
+        record1.putSimpleField(DistributedDeploymentManager.S4R_URI, uriProducer);
+        zkClient.create("/s4/clusters/" + PRODUCER_CLUSTER + "/app/s4App", record1, CreateMode.PERSISTENT);
 
         ZNRecord record2 = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-        record2.putSimpleField(DistributedDeploymentManager.S4R_URI, uriCounter);
-        zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/apps/counter", record2, CreateMode.PERSISTENT);
+        record2.putSimpleField(DistributedDeploymentManager.S4R_URI, uriConsumer);
+        zkClient.create("/s4/clusters/" + CONSUMER_CLUSTER + "/app/s4App", record2, CreateMode.PERSISTENT);
 
-        // TODO validate test through some Zookeeper notifications
-        Thread.sleep(10000);
+        CountDownLatch signalConsumptionComplete = new CountDownLatch(1);
+        CommTestUtils.watchAndSignalCreation("/1000TicksReceived", signalConsumptionComplete,
+                CommTestUtils.createZkClient());
+        Assert.assertTrue(signalConsumptionComplete.await(20, TimeUnit.SECONDS));
+
     }
 
-    private void initializeS4Node() throws ConfigurationException, IOException, InterruptedException {
+    private void initializeS4Node() throws ConfigurationException, IOException, InterruptedException, KeeperException {
         // 0. package s4 app
         // TODO this is currently done offline, and the app contains the TestApp class copied from the one in the
         // current package .
@@ -135,31 +142,45 @@ public class TestProducerConsumer {
         // 1. start s4 nodes. Check that no app is deployed.
         TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
         taskSetup.clean("s4");
-        taskSetup.setup(CLUSTER_NAME, 1, 1300);
+        taskSetup.setup(PRODUCER_CLUSTER, 1, 1300);
+
+        TaskSetup taskSetup2 = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
+        taskSetup2.setup(CONSUMER_CLUSTER, 1, 1400);
 
         zkClient = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
         zkClient.setZkSerializer(new ZNRecordSerializer());
-        List<String> processes = zkClient.getChildren("/s4/clusters/" + CLUSTER_NAME + "/process");
+        List<String> processes = zkClient.getChildren("/s4/clusters/" + PRODUCER_CLUSTER + "/process");
         Assert.assertTrue(processes.size() == 0);
         final CountDownLatch signalProcessesReady = new CountDownLatch(1);
 
-        zkClient.subscribeChildChanges("/s4/clusters/" + CLUSTER_NAME + "/process", new IZkChildListener() {
+        zkClient.subscribeChildChanges("/s4/clusters/" + PRODUCER_CLUSTER + "/process", new IZkChildListener() {
 
             @Override
             public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
-                if (currentChilds.size() == 2) {
+                if (currentChilds.size() == 1) {
                     signalProcessesReady.countDown();
                 }
 
             }
         });
 
-        forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + CLUSTER_NAME });
+        zkClient.subscribeChildChanges("/s4/clusters/" + CONSUMER_CLUSTER + "/process", new IZkChildListener() {
+
+            @Override
+            public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
+                if (currentChilds.size() == 1) {
+                    signalProcessesReady.countDown();
+                }
+
+            }
+        });
+
+        forkedProducerNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + PRODUCER_CLUSTER });
+        forkedConsumerNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + CONSUMER_CLUSTER });
 
         // TODO synchro with ready state from zk
-        Thread.sleep(10000);
-        // Assert.assertTrue(signalProcessesReady.await(10, TimeUnit.SECONDS));
+        // Thread.sleep(10000);
+        Assert.assertTrue(signalProcessesReady.await(20, TimeUnit.SECONDS));
 
     }
-
 }

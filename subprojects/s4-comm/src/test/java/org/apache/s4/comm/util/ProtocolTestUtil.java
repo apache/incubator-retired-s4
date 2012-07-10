@@ -27,12 +27,12 @@ public abstract class ProtocolTestUtil extends ZkBasedTest {
         expectedMessages = new int[super.numTasks];
         partitions = new PartitionInfo[super.numTasks];
         for (int i = 0; i < this.numTasks; i++) {
-            partitions[i] = getInjector().getInstance(PartitionInfo.class);
+            partitions[i] = newInjector().getInstance(PartitionInfo.class);
             partitions[i].setProtocolTestUtil(this);
         }
     }
 
-    protected abstract Injector getInjector() throws IOException;
+    protected abstract Injector newInjector() throws IOException;
 
     protected void decreaseExpectedMessages(int partition, long amount) {
         synchronized (expectedMessages) {

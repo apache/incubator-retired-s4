@@ -36,7 +36,7 @@ public class TaskSetup {
 
         zkclient.createPersistent("/s4/clusters/" + cluster + "/tasks", true);
         zkclient.createPersistent("/s4/clusters/" + cluster + "/process", true);
-        zkclient.createPersistent("/s4/clusters/" + cluster + "/apps", true);
+        zkclient.createPersistent("/s4/clusters/" + cluster + "/app", true);
         for (int i = 0; i < tasks; i++) {
             String taskId = "Task-" + i;
             ZNRecord record = new ZNRecord(taskId);
