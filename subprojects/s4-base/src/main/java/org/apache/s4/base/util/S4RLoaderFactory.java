@@ -35,8 +35,11 @@ public class S4RLoaderFactory {
     File tmpDir;
 
     /**
-     * Explodes the s4r archive in a user specified directory through "s4.tmpdir" parameter, and prepares a classloader
-     * that will load classes and resources from, first, the application classes, then the dependencies.
+     * Explodes the s4r archive in a subdirectory of a user specified directory through "s4.tmp.dir" parameter, and
+     * prepares a classloader that will load classes and resources from, first, the application classes, then the
+     * dependencies.
+     * 
+     * Uses a temporary directory if s4.tmp.dir is not provided.
      * 
      * Inspired from Hadoop's application classloading implementation (RunJar class).
      * 
@@ -45,13 +48,23 @@ public class S4RLoaderFactory {
      * @return classloader that loads resources from the s4r in a predefined order
      */
     public S4RLoader createS4RLoader(String s4rPath) {
+        File s4rDir = null;
         if (tmpDir == null) {
-            tmpDir = Files.createTempDir();
-            tmpDir.deleteOnExit();
+            s4rDir = Files.createTempDir();
+            s4rDir.deleteOnExit();
             logger.warn(
-                    "s4.tmp.dir not specified, using temporary directory [{}] for unpacking S4R. You should rather specify a non-temporary directory.",
-                    tmpDir.getAbsolutePath());
+                    "s4.tmp.dir not specified, using temporary directory [{}] for unpacking S4R. You may want to specify a parent non-temporary directory.",
+                    s4rDir.getAbsolutePath());
+        } else {
+            s4rDir = new File(tmpDir, s4rPath.substring(s4rPath.lastIndexOf(File.separator)) + "-"
+                    + System.currentTimeMillis());
+            if (!s4rDir.mkdir()) {
+                throw new RuntimeException("Cannot create directory for unzipping S4R file in ["
+                        + s4rDir.getAbsolutePath() + "]. Aborting deployment.");
+            }
         }
+        logger.info("Unzipping S4R archive in [{}]", s4rDir.getAbsolutePath());
+
         JarFile jar = null;
         try {
             jar = new JarFile(s4rPath);
@@ -59,7 +72,7 @@ public class S4RLoaderFactory {
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
                 if (!entry.isDirectory()) {
-                    File to = new File(tmpDir, entry.getName());
+                    File to = new File(s4rDir, entry.getName());
                     Files.createParentDirs(to);
                     InputStream is = jar.getInputStream(entry);
                     OutputStream os = new FileOutputStream(to);
@@ -73,9 +86,8 @@ public class S4RLoaderFactory {
             }
 
             List<URL> classpath = new ArrayList<URL>();
-            addDirLibsToClassPath(classpath, "/app");
-            addDirLibsToClassPath(classpath, "/lib");
-            classpath.add(new File(tmpDir.getAbsolutePath() + "/").toURI().toURL());
+            addDirLibsToClassPath(classpath, s4rDir, "/app");
+            addDirLibsToClassPath(classpath, s4rDir, "/lib");
 
             S4RLoader s4rLoader = new S4RLoader(classpath.toArray(new URL[] {}));
             return s4rLoader;
@@ -86,8 +98,8 @@ public class S4RLoaderFactory {
         }
     }
 
-    private void addDirLibsToClassPath(List<URL> classpath, String dir) throws MalformedURLException {
-        File[] libs = new File(tmpDir, dir).listFiles();
+    private void addDirLibsToClassPath(List<URL> classpath, File s4rDir, String dir) throws MalformedURLException {
+        File[] libs = new File(s4rDir, dir).listFiles();
         if (libs != null) {
             for (int i = 0; i < libs.length; i++) {
                 if (!libs[i].isDirectory()) {
