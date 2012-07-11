@@ -136,6 +136,10 @@ public class TestAutomaticDeployment {
 
         assertDeployment("http://localhost:8080/s4/" + s4rToDeploy.getName());
 
+        // check resource loading (we use a zkclient without custom serializer)
+        ZkClient client2 = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
+        Assert.assertEquals("Salut!", client2.readData("/resourceData"));
+
     }
 
     private void initializeS4Node() throws ConfigurationException, IOException, InterruptedException {

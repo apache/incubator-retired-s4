@@ -31,7 +31,7 @@ public class ProducerPE extends ProcessingElement {
             Event event = new Event();
             event.put("tick", Long.class, tick++);
 
-            logger.info("Sending event with tick {} and time {}.", event.get("tick", Long.class), event.getTime());
+            logger.trace("Sending event with tick {} and time {}.", event.get("tick", Long.class), event.getTime());
             for (int i = 0; i < targetStreams.length; i++) {
                 targetStreams[i].put(event);
             }

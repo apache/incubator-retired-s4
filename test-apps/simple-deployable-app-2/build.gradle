@@ -133,12 +133,30 @@ manifest.mainAttributes(
 
 project.ext["appDependencies"] = ( configurations.compile )
 
+
+
+
+
+
+task copyDependenciesToLib(type: Copy) {
+    into project.libsDir.path+"/lib"
+    from configurations.runtime
+}
+
+task buildProjectJar() {
+	dependsOn jar {
+		destinationDir file(project.libsDir.path + "/app")
+		from sourceSets.main.output
+	}
+}
+
+
+
 /* This task will extract all the class files and create a fat jar. We set the manifest and the extension to make it an S4 archive file. */
 // TODO: exclude schenma files as needed (not critical) see: http://forums.gradle.org/gradle/topics/using_gradle_to_fat_jar_a_spring_project
 task s4r(type: Jar) {
-   dependsOn jar
-   from { appDependencies.collect { it.isDirectory() ? it : zipTree(it) } }
-   from { configurations.archives.allArtifacts.files.collect { it.isDirectory() ? it : zipTree(it) } }
+   dependsOn cleanCopyDependenciesToLib, copyDependenciesToLib, cleanBuildProjectJar, buildProjectJar
+   from { project.libsDir }
    manifest = project.manifest
    extension = 's4r'
 

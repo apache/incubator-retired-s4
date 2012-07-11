@@ -2,19 +2,19 @@ package org.apache.s4.deploy;
 
 import java.io.IOException;
 
+import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs.Ids;
-import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SimplePE extends ProcessingElement implements Watcher {
+import com.google.common.io.ByteStreams;
 
-    private ZooKeeper zk;
+public class SimplePE extends ProcessingElement {
+
+    private static Logger logger = LoggerFactory.getLogger(SimplePE.class);
+    private ZkClient zk;
 
     public SimplePE() {
     }
@@ -26,12 +26,14 @@ public class SimplePE extends ProcessingElement implements Watcher {
     public void onEvent(org.apache.s4.base.Event event) {
         try {
             LoggerFactory.getLogger(getClass()).debug("processing envent {}", event.get("line"));
-            zk.create("/onEvent@" + event.get("line"), new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            // test s4r resource access
+            zk.create("/resourceData",
+                    new String(ByteStreams.toByteArray(getClass().getResourceAsStream("/resource.txt"))),
+                    CreateMode.PERSISTENT);
+            // test event processing
+            zk.create("/onEvent@" + event.get("line"), new byte[0], CreateMode.PERSISTENT);
             zk.close();
-        } catch (KeeperException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -40,24 +42,13 @@ public class SimplePE extends ProcessingElement implements Watcher {
     @Override
     protected void onCreate() {
         if (zk == null) {
-            try {
-                zk = new ZooKeeper("localhost:" + 2181, 4000, this);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            zk = new ZkClient("localhost:" + 2181);
         }
 
     }
 
     @Override
     protected void onRemove() {
-        // TODO Auto-generated method stub
-
     }
 
-    @Override
-    public void process(WatchedEvent event) {
-        // TODO Auto-generated method stub
-
-    }
 }
