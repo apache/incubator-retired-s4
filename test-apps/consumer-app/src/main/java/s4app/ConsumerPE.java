@@ -19,7 +19,7 @@ public class ConsumerPE extends ProcessingElement {
 
     public void onEvent(Event event) {
         eventCount++;
-        logger.info(
+        logger.trace(
                 "Received event with tick {} and time {} for event # {}",
                 new String[] { String.valueOf(event.get("tick", Long.class)), String.valueOf(event.getTime()),
                         String.valueOf(eventCount) });

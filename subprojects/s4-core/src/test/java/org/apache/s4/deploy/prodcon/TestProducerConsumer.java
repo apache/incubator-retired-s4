@@ -130,7 +130,7 @@ public class TestProducerConsumer {
         CountDownLatch signalConsumptionComplete = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/1000TicksReceived", signalConsumptionComplete,
                 CommTestUtils.createZkClient());
-        Assert.assertTrue(signalConsumptionComplete.await(20, TimeUnit.SECONDS));
+        Assert.assertTrue(signalConsumptionComplete.await(40, TimeUnit.SECONDS));
 
     }
 

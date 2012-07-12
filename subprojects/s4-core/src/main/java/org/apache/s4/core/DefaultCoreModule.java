@@ -8,6 +8,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.base.util.S4RLoaderFactory;
 import org.apache.s4.comm.DefaultHasher;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.deploy.DeploymentManager;
@@ -56,6 +57,8 @@ public class DefaultCoreModule extends AbstractModule {
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
 
         bind(DeploymentManager.class).to(DistributedDeploymentManager.class);
+
+        bind(S4RLoaderFactory.class);
     }
 
     private void loadProperties(Binder binder) {
@@ -73,4 +76,5 @@ public class DefaultCoreModule extends AbstractModule {
             e.printStackTrace();
         }
     }
+
 }

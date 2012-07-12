@@ -110,12 +110,12 @@ public class DistributedDeploymentManager implements DeploymentManager {
             App loaded = server.loadApp(localS4RFileCopy, appName);
             if (loaded != null) {
                 logger.info("Successfully installed application {}", appName);
+                // TODO sync with other nodes? (e.g. wait for other apps deployed before starting?
                 server.startApp(loaded, appName, clusterName);
             } else {
                 throw new DeploymentFailedException("Cannot deploy application [" + appName + "] from URI ["
                         + uri.toString() + "] : cannot start application");
             }
-            // TODO sync with other nodes? (e.g. wait for other apps deployed before starting?
 
         } catch (URISyntaxException e) {
             logger.error("Cannot deploy app {} : invalid uri for fetching s4r archive {} : {} ", new String[] {

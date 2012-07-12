@@ -8,6 +8,7 @@ import java.util.jar.JarFile;
 
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.base.util.S4RLoader;
+import org.apache.s4.base.util.S4RLoaderFactory;
 import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.deploy.DeploymentManager;
@@ -78,7 +79,8 @@ public class Server {
         // TODO handle application upgrade
         logger.info("Loading application [{}] from file [{}]", appName, s4r.getAbsolutePath());
 
-        S4RLoader cl = new S4RLoader(s4r.getAbsolutePath());
+        S4RLoaderFactory loaderFactory = injector.getInstance(S4RLoaderFactory.class);
+        S4RLoader cl = loaderFactory.createS4RLoader(s4r.getAbsolutePath());
         try {
             JarFile s4rFile = new JarFile(s4r);
             if (s4rFile.getManifest() == null) {
