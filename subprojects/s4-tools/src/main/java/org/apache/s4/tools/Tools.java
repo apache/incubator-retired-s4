@@ -74,7 +74,6 @@ public class Tools {
             taskArgs.addAll(Arrays.asList(Arrays.copyOfRange(args, 2, args.length)));
         }
         task.dispatch(taskArgs.toArray(new String[] {}));
-
     }
 
     private static List<String> getTaskNames() {
