@@ -102,6 +102,8 @@ public class Deploy extends S4ArgsBase {
                             "/s4/clusters/" + deployArgs.clusterName + "/app/" + deployArgs.appName,
                             s4rToDeploy.getAbsolutePath() });
 
+            // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
+            System.exit(0);
         } catch (Exception e) {
             LoggerFactory.getLogger(Deploy.class).error("Cannot deploy app", e);
         }

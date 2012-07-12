@@ -74,9 +74,6 @@ public class Tools {
             taskArgs.addAll(Arrays.asList(Arrays.copyOfRange(args, 2, args.length)));
         }
         task.dispatch(taskArgs.toArray(new String[] {}));
-
-        // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
-        System.exit(0);
     }
 
     private static List<String> getTaskNames() {
