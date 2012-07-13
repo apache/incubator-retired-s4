@@ -26,6 +26,7 @@ import org.apache.s4.base.KeyFinder;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.topology.RemoteStreams;
+import org.apache.s4.core.App.ClockType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -283,7 +284,7 @@ public abstract class App {
             ProcessingElement... processingElements) {
 
         return new Stream<T>(this).setName(name).setKey(finder).setPEs(processingElements).setEventType(eventType)
-                .register(this);
+                .register();
     }
 
     /**

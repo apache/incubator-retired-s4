@@ -310,7 +310,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
         }
     }
 
-    public Stream<T> register(App app) {
+    public Stream<T> register() {
         app.addStream(this);
         return this;
     }
