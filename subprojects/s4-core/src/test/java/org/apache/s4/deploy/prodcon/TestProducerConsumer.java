@@ -121,7 +121,7 @@ public class TestProducerConsumer {
         initializeS4Node();
 
         CountDownLatch signalConsumptionComplete = new CountDownLatch(1);
-        CommTestUtils.watchAndSignalCreation("/1000TicksReceived", signalConsumptionComplete,
+        CommTestUtils.watchAndSignalCreation("/AllTicksReceived", signalConsumptionComplete,
                 CommTestUtils.createZkClient());
 
         boolean consumerStreamReady = true;
@@ -155,7 +155,7 @@ public class TestProducerConsumer {
         zkClient.create("/s4/clusters/" + PRODUCER_CLUSTER + "/app/s4App", record1, CreateMode.PERSISTENT);
 
         // that may be a bit long to complete...
-        Assert.assertTrue(signalConsumptionComplete.await(100, TimeUnit.SECONDS));
+        Assert.assertTrue(signalConsumptionComplete.await(30, TimeUnit.SECONDS));
 
     }
 
