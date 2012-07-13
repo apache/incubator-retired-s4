@@ -10,6 +10,7 @@ import junit.framework.Assert;
 
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.exception.ZkNoNodeException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.comm.tools.TaskSetup;
@@ -119,18 +120,42 @@ public class TestProducerConsumer {
 
         initializeS4Node();
 
-        ZNRecord record1 = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-        record1.putSimpleField(DistributedDeploymentManager.S4R_URI, uriProducer);
-        zkClient.create("/s4/clusters/" + PRODUCER_CLUSTER + "/app/s4App", record1, CreateMode.PERSISTENT);
+        CountDownLatch signalConsumptionComplete = new CountDownLatch(1);
+        CommTestUtils.watchAndSignalCreation("/1000TicksReceived", signalConsumptionComplete,
+                CommTestUtils.createZkClient());
+
+        boolean consumerStreamReady = true;
+        try {
+            zkClient.getChildren("/s4/streams/tickStream/consumers");
+        } catch (ZkNoNodeException e) {
+            consumerStreamReady = false;
+        }
+        Assert.assertFalse(consumerStreamReady);
+        final CountDownLatch signalConsumerReady = new CountDownLatch(1);
+
+        zkClient.subscribeChildChanges("/s4/streams/tickStream/consumers", new IZkChildListener() {
+
+            @Override
+            public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
+                if (currentChilds.size() == 1) {
+                    signalConsumerReady.countDown();
+                }
+
+            }
+        });
 
         ZNRecord record2 = new ZNRecord(String.valueOf(System.currentTimeMillis()));
         record2.putSimpleField(DistributedDeploymentManager.S4R_URI, uriConsumer);
         zkClient.create("/s4/clusters/" + CONSUMER_CLUSTER + "/app/s4App", record2, CreateMode.PERSISTENT);
+        // TODO check that consumer app is ready with a better way than checking stream consumers
+        Assert.assertTrue(signalConsumerReady.await(20, TimeUnit.SECONDS));
 
-        CountDownLatch signalConsumptionComplete = new CountDownLatch(1);
-        CommTestUtils.watchAndSignalCreation("/1000TicksReceived", signalConsumptionComplete,
-                CommTestUtils.createZkClient());
-        Assert.assertTrue(signalConsumptionComplete.await(40, TimeUnit.SECONDS));
+        ZNRecord record1 = new ZNRecord(String.valueOf(System.currentTimeMillis()));
+        record1.putSimpleField(DistributedDeploymentManager.S4R_URI, uriProducer);
+        zkClient.create("/s4/clusters/" + PRODUCER_CLUSTER + "/app/s4App", record1, CreateMode.PERSISTENT);
+
+        // that may be a bit long to complete...
+        Assert.assertTrue(signalConsumptionComplete.await(100, TimeUnit.SECONDS));
 
     }
 

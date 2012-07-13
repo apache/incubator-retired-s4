@@ -45,6 +45,10 @@ public class UDPListener implements Listener, Runnable {
         }
         bs = new byte[BUFFER_LENGTH];
         datagram = new DatagramPacket(bs, bs.length);
+    }
+
+    @Inject
+    private void init() {
         (new Thread(this)).start();
     }
 

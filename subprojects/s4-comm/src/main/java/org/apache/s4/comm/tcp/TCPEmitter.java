@@ -120,7 +120,6 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         this.nettyTimeout = timeout;
         this.bufferCapacity = bufferSize;
         this.topology = topology;
-        this.topology.addListener(this);
 
         // Initialize data structures
         int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
@@ -158,6 +157,11 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         bootstrap.setOption("reuseAddress", true);
         bootstrap.setOption("connectTimeoutMillis", this.nettyTimeout);
 
+    }
+
+    @Inject
+    private void init() {
+        this.topology.addListener(this);
         refreshCluster();
     }
 
