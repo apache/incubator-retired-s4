@@ -86,7 +86,7 @@ public class Controller {
 
             MyApp app = new MyApp(numClasses, numTrainVectors, model, outputInterval, TimeUnit.SECONDS);
 
-            app.setCommLayer(sender, receiver);
+            // app.setCommLayer(sender, receiver);
 
             logger.info("Init app.");
             app.initApp();

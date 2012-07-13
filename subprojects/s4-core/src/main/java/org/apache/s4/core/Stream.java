@@ -47,11 +47,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
      *            we always register streams with the parent application.
      */
     public Stream(App app) {
-        // synchronized (Stream.class) {
-        // id = idCounter++;
-        // }
         this.app = app;
-        app.addStream(this);
         this.sender = app.getSender();
         this.receiver = app.getReceiver();
     }
@@ -93,12 +89,17 @@ public class Stream<T extends Event> implements Runnable, Streamable {
      * @return the stream object
      */
     public Stream<T> setKey(KeyFinder<T> keyFinder) {
-        this.key = new Key<T>(keyFinder, DEFAULT_SEPARATOR);
+        if (keyFinder == null) {
+            this.key = null;
+        } else {
+            this.key = new Key<T>(keyFinder, DEFAULT_SEPARATOR);
+        }
         return this;
     }
 
-    void setEventType(Class<T> type) {
+    Stream<T> setEventType(Class<T> type) {
         this.eventType = type;
+        return this;
     }
 
     /**
@@ -307,5 +308,10 @@ public class Stream<T extends Event> implements Runnable, Streamable {
                 return;
             }
         }
+    }
+
+    public Stream<T> register() {
+        app.addStream(this);
+        return this;
     }
 }

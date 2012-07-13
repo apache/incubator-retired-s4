@@ -36,7 +36,6 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
     @Inject
     public UDPEmitter(Cluster topology) {
         this.topology = topology;
-        topology.addListener(this);
         nodes = HashBiMap.create(topology.getPhysicalCluster().getNodes().size());
         for (ClusterNode node : topology.getPhysicalCluster().getNodes()) {
             nodes.forcePut(node.getPartition(), node);
@@ -47,6 +46,12 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
         } catch (SocketException se) {
             throw new RuntimeException(se);
         }
+    }
+
+    @Inject
+    private void init() {
+        topology.addListener(this);
+        refreshCluster();
     }
 
     @Override
@@ -83,6 +88,10 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
 
     @Override
     public void onChange() {
+        refreshCluster();
+    }
+
+    private void refreshCluster() {
         // topology changes when processes pick tasks
         synchronized (nodes) {
             for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
@@ -90,6 +99,7 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
                 nodes.forcePut(partition, clusterNode);
             }
         }
+
     }
 
     @Override

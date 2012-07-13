@@ -86,13 +86,6 @@ public abstract class App {
     };
 
     /**
-     * @return true if the application is running in cluster mode.
-     */
-    // public boolean isCluster() {
-    // return isCluster.booleanValue();
-    // }
-
-    /**
      * @return the unique app id
      */
     public int getId() {
@@ -126,12 +119,6 @@ public abstract class App {
     List<ProcessingElement> getPePrototypes() {
         return pePrototypes;
     }
-
-    // void addStream(Streamable<? extends Event> stream, ProcessingElement pePrototype) {
-    // logger.info("Add Stream [{}] with PE prototype [{}].", toString(stream), toString(pePrototype));
-    // stream2pe.put(stream, pePrototype);
-    //
-    // }
 
     /* Returns list of internal streams. Should only be used within the core package. */
     // TODO visibility
@@ -276,18 +263,6 @@ public abstract class App {
     }
 
     /**
-     * @param sender
-     *            - sends events to the communication layer.
-     * @param receiver
-     *            - receives events from the communication layer.
-     */
-    public void setCommLayer(Sender sender, Receiver receiver) {
-        // this.sender = sender;
-        // this.receiver = receiver;
-        // sender.setPartition(receiver.getPartition());
-    }
-
-    /**
      * Creates a stream with a specific key finder. The event is delivered to the PE instances in the target PE
      * prototypes by key.
      * 
@@ -299,64 +274,73 @@ public abstract class App {
      *            the name of the stream
      * @param finder
      *            the key finder object
+     * @param eventType
+     *            expected event type
      * @param processingElements
      *            the target processing elements
      * @return the stream
+     */
+    protected <T extends Event> Stream<T> createStream(String name, KeyFinder<T> finder, Class<T> eventType,
+            ProcessingElement... processingElements) {
+
+        return new Stream<T>(this).setName(name).setKey(finder).setPEs(processingElements).setEventType(eventType)
+                .register();
+    }
+
+    /**
+     * @see App#createStream(String, KeyFinder, Class, ProcessingElement...)
      */
     protected <T extends Event> Stream<T> createStream(String name, KeyFinder<T> finder,
             ProcessingElement... processingElements) {
-
-        return new Stream<T>(this).setName(name).setKey(finder).setPEs(processingElements);
+        return createStream(name, finder, null, processingElements);
     }
 
     /**
-     * Creates a broadcast stream that sends the events to all the PE instances in each of the target prototypes.
-     * 
-     * <p>
-     * Keep in mind that if you had a million PE instances, the event would be delivered to all them.
-     * 
-     * @param name
-     *            the name of the stream
-     * @param processingElements
-     *            the target processing elements
-     * @return the stream
+     * @see App#createStream(String, KeyFinder, Class, ProcessingElement...)
      */
     protected <T extends Event> Stream<T> createStream(String name, ProcessingElement... processingElements) {
-
-        return new Stream<T>(this).setName(name).setPEs(processingElements);
+        return createStream(name, null, processingElements);
     }
 
     /**
-     * Creates stream with default values. Use the builder methods to configure the stream. Example:
-     * <p>
-     * 
-     * <pre>
-     *  s1 = <SampleEvent> createStream().withName("My first stream.").withKey(new AKeyFinder()).to(somePE);
-     * </pre>
-     * 
-     * <p>
-     * 
-     * @param name
-     *            the name of the stream
-     * @param processingElements
-     *            the target processing elements
-     * @return the stream
+     * @see App#createStream(String, KeyFinder, Class, ProcessingElement...)
      */
     public <T extends Event> Stream<T> createStream(Class<T> type) {
-
-        Stream<T> stream = new Stream<T>(this);
-        stream.setEventType(type);
-        return stream;
+        return createStream(null, null, type);
     }
 
-    protected <T extends Event> RemoteStream createOutputStream(String name) {
-        return createOutputStream(name, null);
-    }
-
+    /**
+     * Creates a "remote" stream, i.e. a stream that forwards events to remote clusters
+     * 
+     * @param name
+     *            stream name, shared across communicating clusters
+     * @param finder
+     *            key finder
+     * @return a reference to the created remote stream
+     */
     protected <T extends Event> RemoteStream createOutputStream(String name, KeyFinder<Event> finder) {
         return new RemoteStream(this, name, finder, remoteSenders, hasher, remoteStreams, clusterName);
     }
 
+    /**
+     * @see App#createOutputStream(String, KeyFinder)
+     */
+    protected <T extends Event> RemoteStream createOutputStream(String name) {
+        return createOutputStream(name, null);
+    }
+
+    /**
+     * Creaters an "input" stream, i.e. a stream that listens to events from remote clusters, and that registers its
+     * interest in the stream with the specified name.
+     * 
+     * @param streamName
+     *            name of the remote stream
+     * @param finder
+     *            key finder
+     * @param processingElements
+     *            target processing elements
+     * @return a reference to the created input stream
+     */
     protected <T extends Event> Stream<T> createInputStream(String streamName, KeyFinder<T> finder,
             ProcessingElement... processingElements) {
         remoteStreams.addInputStream(getId(), clusterName, streamName);
@@ -364,9 +348,11 @@ public abstract class App {
 
     }
 
+    /**
+     * @see App#createInputStream(String, KeyFinder, ProcessingElement...)
+     */
     protected <T extends Event> Stream<T> createInputStream(String streamName, ProcessingElement... processingElements) {
-        remoteStreams.addInputStream(getId(), clusterName, streamName);
-        return createStream(streamName, processingElements);
+        return createInputStream(streamName, null, processingElements);
 
     }
 
