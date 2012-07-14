@@ -40,32 +40,8 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
 /**
- * <p>
- * TCPEmitter - Uses TCP to send messages across partitions. It
- * <ul>
- * <li>guarantees message delivery</li>
- * <li>preserves pair-wise message ordering; might end up sending duplicates to
- * ensure the order</li>
- * <li>tolerates topology changes, partition re-mapping and network glitches</li>
- * </ul>
- * </p>
+ * TCPEmitter - Uses TCP to send messages across partitions.
  * 
- * <p>
- * TCPEmitter is designed as follows:
- * <ul>
- * <li>maintains per-partition queue of {@code Message}s</li>
- * <li> <code>send(p, m)</code> queues the message 'm' to partition 'p'</li>
- * <li>a thread-pool is used to send the messages asynchronously to the
- * appropriate partitions; send operations between a pair of partitions are
- * serialized</li>
- * <li>Each {@code Message} implements the {@link ChannelFutureListener} and
- * listens on the {@link ChannelFuture} corresponding to the send operation</li>
- * <li>On success, the message marks itself as sent; messages marked sent at the
- * head of the queue are removed</li>
- * <li>On failure of a message m, 'm' and all the messages queued after 'm' are
- * resent to preserve message ordering</li>
- * </ul>
- * </p>
  */
 
 public class TCPEmitter implements Emitter, ClusterChangeListener {
@@ -130,8 +106,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     @Inject
     private void init() {
-        this.topology.addListener(this);
         refreshCluster();
+        this.topology.addListener(this);
     }
 
     private boolean connectTo(Integer partitionId) {
@@ -175,7 +151,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         if (c == null)
             return;
 
-        c.write(buffer);
+        c.write(buffer).addListener(new MessageSendingListener(partitionId));
     }
 
     @Override
@@ -186,16 +162,16 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     protected void removeChannel(int partition) {
         Channel c = partitionChannelMap.remove(partition);
-        if (c == null)
+        if (c == null) {
             return;
-
+        }
         c.close().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess())
                     channels.remove(future.getChannel());
                 else
-                    logger.error("FAILED to close channel");
+                    logger.error("Failed to close channel");
             }
         });
     }
@@ -221,7 +197,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
             for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
                 Integer partition = clusterNode.getPartition();
                 if (partition == null) {
-                    logger.error("onChange(): Illegal partition for clusterNode - " + clusterNode);
+                    logger.error("Illegal partition for clusterNode - " + clusterNode);
                     return;
                 }
 
@@ -254,6 +230,30 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
             } else {
                 logger.error("Unexpected exception", t);
             }
+        }
+    }
+
+    class MessageSendingListener implements ChannelFutureListener {
+
+        int partitionId = -1;
+
+        public MessageSendingListener(int partitionId) {
+            super();
+            this.partitionId = partitionId;
+        }
+
+        @Override
+        public void operationComplete(ChannelFuture future) throws Exception {
+            if (!future.isSuccess()) {
+                try {
+                    // TODO handle possible cluster reconfiguration between send and failure callback
+                    logger.warn("Failed to send message to node {} (according to current cluster information)",
+                            topology.getPhysicalCluster().getNodes().get(partitionId));
+                } catch (IndexOutOfBoundsException ignored) {
+                    // cluster was changed
+                }
+            }
+
         }
     }
 }
