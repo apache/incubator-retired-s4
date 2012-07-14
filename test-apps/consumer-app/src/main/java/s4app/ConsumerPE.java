@@ -23,10 +23,10 @@ public class ConsumerPE extends ProcessingElement {
                 "Received event with tick {} and time {} for event # {}",
                 new String[] { String.valueOf(event.get("tick", Long.class)), String.valueOf(event.getTime()),
                         String.valueOf(eventCount) });
-        if (eventCount == 1000) {
-            logger.info("Just reached 1000 events");
+        if (eventCount == 100000) {
+            logger.info("Just reached 100000 events");
             ZkClient zkClient = new ZkClient("localhost:2181");
-            zkClient.create("/1000TicksReceived", new byte[0], CreateMode.PERSISTENT);
+            zkClient.create("/AllTicksReceived", new byte[0], CreateMode.PERSISTENT);
         }
 
     }

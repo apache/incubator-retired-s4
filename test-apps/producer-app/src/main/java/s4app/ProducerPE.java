@@ -12,7 +12,6 @@ public class ProducerPE extends ProcessingElement {
     private static final Logger logger = LoggerFactory.getLogger(ProducerPE.class);
 
     private Streamable[] targetStreams;
-    private long tick = 0;
 
     public ProducerPE(App app) {
         super(app);
@@ -26,10 +25,10 @@ public class ProducerPE extends ProcessingElement {
         this.targetStreams = targetStreams;
     }
 
-    public void onTime() {
-        if (tick < 1000) {
+    public void sendMessages() {
+        for (long tick = 1; tick <= 100000; tick++) {
             Event event = new Event();
-            event.put("tick", Long.class, tick++);
+            event.put("tick", Long.class, tick);
 
             logger.trace("Sending event with tick {} and time {}.", event.get("tick", Long.class), event.getTime());
             for (int i = 0; i < targetStreams.length; i++) {

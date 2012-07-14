@@ -1,7 +1,5 @@
 package s4app;
 
-import java.util.concurrent.TimeUnit;
-
 import org.apache.s4.core.App;
 
 public class ProducerApp extends App {
@@ -11,7 +9,7 @@ public class ProducerApp extends App {
     @Override
     protected void onStart() {
         System.out.println("Starting CounterApp...");
-        producerPE.getInstanceForKey("single");
+        ((ProducerPE) producerPE.getInstanceForKey("single")).sendMessages();
     }
 
     // generic array due to varargs generates a warning.
@@ -21,7 +19,6 @@ public class ProducerApp extends App {
 
         producerPE = createPE(ProducerPE.class, "producer");
         producerPE.setStreams(createOutputStream("tickStream"));
-        producerPE.setTimerInterval(10, TimeUnit.MILLISECONDS);
 
     }
 
