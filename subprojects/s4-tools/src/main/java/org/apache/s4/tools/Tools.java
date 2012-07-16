@@ -22,7 +22,7 @@ public class Tools {
 
     enum Task {
         deploy(Deploy.class), node(Main.class), zkServer(ZKServer.class), newCluster(DefineCluster.class), adapter(null), newApp(
-                CreateApp.class), s4r(Package.class);
+                CreateApp.class), s4r(Package.class), status(Status.class);
 
         Class<?> target;
 
