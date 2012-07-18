@@ -1,24 +1,20 @@
 package org.apache.s4.example.twitter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
 import org.apache.s4.core.Stream;
+import org.apache.s4.core.ft.CheckpointingConfig;
+import org.apache.s4.core.ft.CheckpointingConfig.CheckpointingMode;
+
+import com.google.common.collect.ImmutableList;
 
 public class TwitterCounterApp extends App {
 
-    private ZkClient zkClient;
-
-    private Thread t;
-
     @Override
     protected void onClose() {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -27,31 +23,29 @@ public class TwitterCounterApp extends App {
 
             TopNTopicPE topNTopicPE = createPE(TopNTopicPE.class);
             topNTopicPE.setTimerInterval(10, TimeUnit.SECONDS);
+            // we checkpoint this PE every 20s
+            topNTopicPE.setCheckpointingConfig(new CheckpointingConfig.Builder(CheckpointingMode.TIME).frequency(20)
+                    .timeUnit(TimeUnit.SECONDS).build());
             @SuppressWarnings("unchecked")
             Stream<TopicEvent> aggregatedTopicStream = createStream("AggregatedTopicSeen", new KeyFinder<TopicEvent>() {
 
                 @Override
                 public List<String> get(final TopicEvent arg0) {
-                    return new ArrayList<String>() {
-                        {
-                            add("aggregationKey");
-                        }
-                    };
+                    return ImmutableList.of("aggregationKey");
                 }
             }, topNTopicPE);
 
             TopicCountAndReportPE topicCountAndReportPE = createPE(TopicCountAndReportPE.class);
             topicCountAndReportPE.setDownstream(aggregatedTopicStream);
             topicCountAndReportPE.setTimerInterval(10, TimeUnit.SECONDS);
+            // we checkpoint instances every 2 events
+            topicCountAndReportPE.setCheckpointingConfig(new CheckpointingConfig.Builder(CheckpointingMode.EVENT_COUNT)
+                    .frequency(2).build());
             Stream<TopicEvent> topicSeenStream = createStream("TopicSeen", new KeyFinder<TopicEvent>() {
 
                 @Override
                 public List<String> get(final TopicEvent arg0) {
-                    return new ArrayList<String>() {
-                        {
-                            add(arg0.getTopic());
-                        }
-                    };
+                    return ImmutableList.of(arg0.getTopic());
                 }
             }, topicCountAndReportPE);
 

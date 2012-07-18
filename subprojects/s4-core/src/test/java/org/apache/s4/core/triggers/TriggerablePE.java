@@ -31,8 +31,7 @@ public class TriggerablePE extends ProcessingElement implements Watcher {
             // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -55,8 +54,7 @@ public class TriggerablePE extends ProcessingElement implements Watcher {
             // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
 

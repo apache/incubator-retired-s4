@@ -187,9 +187,8 @@ public class Stream<T extends Event> implements Runnable, Streamable {
                         .serialize(event)));
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
             logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            System.exit(-1);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -201,9 +200,8 @@ public class Stream<T extends Event> implements Runnable, Streamable {
         try {
             queue.put(event);
         } catch (InterruptedException e) {
-            e.printStackTrace();
             logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            System.exit(-1);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -305,6 +303,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
             } catch (InterruptedException e) {
                 logger.info("Closing stream {}.", name);
                 receiver.removeStream(this);
+                Thread.currentThread().interrupt();
                 return;
             }
         }

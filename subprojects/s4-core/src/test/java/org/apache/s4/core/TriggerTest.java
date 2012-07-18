@@ -6,16 +6,17 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
-import org.apache.s4.comm.DefaultCommModule;
+import org.apache.s4.base.EventMessage;
+import org.apache.s4.comm.BareCommModule;
 import org.apache.s4.core.triggers.TriggeredApp;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.ZkBasedTest;
+import org.apache.s4.wordcount.StringEvent;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.junit.After;
 
-import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -45,9 +46,7 @@ public abstract class TriggerTest extends ZkBasedTest {
 
     protected CountDownLatch createTriggerAppAndSendEvent() throws IOException, KeeperException, InterruptedException {
         final ZooKeeper zk = CommTestUtils.createZkClient();
-        Injector injector = Guice.createInjector(
-                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
-                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream()));
+        Injector injector = Guice.createInjector(new BareCommModule(), new BareCoreModule());
         app = injector.getInstance(TriggeredApp.class);
         app.init();
         app.start();
@@ -61,7 +60,7 @@ public abstract class TriggerTest extends ZkBasedTest {
         CountDownLatch signalEvent1Triggered = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/onTrigger[StringEvent]@" + time1, signalEvent1Triggered, zk);
 
-        CommTestUtils.injectIntoStringSocketAdapter(time1);
+        app.stream.receiveEvent(new EventMessage("-1", "stream", app.getSerDeser().serialize(new StringEvent(time1))));
 
         // check event processed
         Assert.assertTrue(signalEvent1Processed.await(5, TimeUnit.SECONDS));
@@ -69,5 +68,4 @@ public abstract class TriggerTest extends ZkBasedTest {
         // return latch on trigger signal
         return signalEvent1Triggered;
     }
-
 }

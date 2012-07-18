@@ -1,20 +1,7 @@
-/*
- * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *          http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the
- * License. See accompanying LICENSE file.
- */
 package org.apache.s4.core;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Timer;
@@ -25,6 +12,10 @@ import java.util.concurrent.TimeUnit;
 import net.jcip.annotations.ThreadSafe;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.core.ft.CheckpointId;
+import org.apache.s4.core.ft.CheckpointingConfig;
+import org.apache.s4.core.ft.CheckpointingConfig.CheckpointingMode;
+import org.apache.s4.core.ft.CheckpointingTask;
 import org.apache.s4.core.gen.OverloadDispatcher;
 import org.apache.s4.core.gen.OverloadDispatcherGenerator;
 import org.slf4j.Logger;
@@ -34,6 +25,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
@@ -94,34 +86,41 @@ import com.google.common.collect.Maps;
  */
 public abstract class ProcessingElement implements Cloneable {
 
-    private static final Logger logger = LoggerFactory.getLogger(ProcessingElement.class);
-    private static final String SINGLETON = "singleton";
+    transient private static final Logger logger = LoggerFactory.getLogger(ProcessingElement.class);
+    transient private static final String SINGLETON = "singleton";
 
-    protected App app;
+    transient protected App app;
 
     /*
      * This maps holds all the instances. We make it package private to prevent concrete classes from updating the
      * collection.
      */
-    Cache<String, ProcessingElement> peInstances;
+    transient Cache<String, ProcessingElement> peInstances;
 
     /* This map is initialized in the prototype and cloned to instances. */
-    Map<Class<? extends Event>, Trigger> triggers;
+    transient Map<Class<? extends Event>, Trigger> triggers;
 
     /* PE instance id. */
     String id = "";
 
     /* Private fields. */
-    private ProcessingElement pePrototype;
-    private boolean haveTriggers = false;
-    private long timerIntervalInMilliseconds = 0;
-    private Timer timer;
-    private boolean isPrototype = true;
-    private boolean isThreadSafe = false;
-    private String name = null;
-    private boolean isSingleton = false;
+    transient private ProcessingElement pePrototype;
+    transient private boolean haveTriggers = false;
+    transient private long timerIntervalInMilliseconds = 0;
+    transient private Timer triggerTimer;
+    transient private Timer checkpointingTimer;
+    transient private boolean isPrototype = true;
+    transient private boolean isThreadSafe = false;
+    transient private String name = null;
+    transient private boolean isSingleton = false;
+    transient long eventCount = 0;
 
-    private transient OverloadDispatcher overloadDispatcher;
+    transient private OverloadDispatcher overloadDispatcher;
+    transient private boolean recoveryAttempted = false;
+    transient private boolean dirty = false;
+
+    transient private CheckpointingConfig checkpointingConfig = new CheckpointingConfig.Builder(CheckpointingMode.NONE)
+            .build();
 
     protected ProcessingElement() {
         OverloadDispatcherGenerator oldg = new OverloadDispatcherGenerator(this.getClass());
@@ -211,7 +210,7 @@ public abstract class ProcessingElement implements Cloneable {
         return peInstances.size();
     }
 
-    Map<String, ProcessingElement> getPEInstances() {
+    public Map<String, ProcessingElement> getPEInstances() {
         return peInstances.asMap();
     }
 
@@ -314,8 +313,9 @@ public abstract class ProcessingElement implements Cloneable {
         /* Skip trigger checking overhead if there are no triggers. */
         haveTriggers = true;
 
-        if (timeUnit != null && timeUnit != TimeUnit.MILLISECONDS)
+        if (timeUnit != null && timeUnit != TimeUnit.MILLISECONDS) {
             interval = timeUnit.convert(interval, TimeUnit.MILLISECONDS);
+        }
 
         Trigger config = new Trigger(numEvents, interval);
 
@@ -374,14 +374,14 @@ public abstract class ProcessingElement implements Cloneable {
 
         Preconditions.checkArgument(isPrototype, "This method can only be used on the PE prototype. Trigger not set.");
 
-        if (timer != null) {
-            timer.cancel();
+        if (triggerTimer != null) {
+            triggerTimer.cancel();
         }
 
         if (interval == 0)
             return this;
 
-        timer = new Timer();
+        triggerTimer = new Timer();
         return this;
     }
 
@@ -406,8 +406,11 @@ public abstract class ProcessingElement implements Cloneable {
         } else {
             object = this;
         }
-
         synchronized (object) {
+            if (!recoveryAttempted) {
+                recover();
+                recoveryAttempted = true;
+            }
 
             /* Dispatch onEvent() method. */
             overloadDispatcher.dispatchEvent(this, event);
@@ -416,7 +419,26 @@ public abstract class ProcessingElement implements Cloneable {
             if (haveTriggers && isTrigger(event)) {
                 overloadDispatcher.dispatchTrigger(this, event);
             }
+
+            eventCount++;
+
+            setDirty(true);
+
+            if (isCheckpointable()) {
+                checkpoint();
+            }
         }
+    }
+
+    protected boolean isCheckpointable() {
+        return getApp().checkpointingFramework.isCheckpointable(this);
+    }
+
+    public void checkpoint() {
+
+        getApp().getCheckpointingFramework().saveState(this);
+        // remove dirty flag
+        dirty = false;
     }
 
     private boolean isTrigger(Event event) {
@@ -466,8 +488,8 @@ public abstract class ProcessingElement implements Cloneable {
     protected void removeAll() {
 
         /* Close resources in prototype. */
-        if (timer != null) {
-            timer.cancel();
+        if (triggerTimer != null) {
+            triggerTimer.cancel();
             logger.info("Timer stopped.");
         }
 
@@ -503,10 +525,20 @@ public abstract class ProcessingElement implements Cloneable {
         }
 
         /* Start timer. */
-        if (timer != null) {
-            timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);
-            logger.debug("Started timer for PE prototype [{}], ID [{}] with interval [{}].", new String[] {
+        if (triggerTimer != null) {
+            triggerTimer
+                    .scheduleAtFixedRate(new OnTimeTask(), timerIntervalInMilliseconds, timerIntervalInMilliseconds);
+            logger.debug("Started trigger timer for PE prototype [{}], ID [{}] with interval [{}].", new String[] {
                     this.getClass().getName(), id, String.valueOf(timerIntervalInMilliseconds) });
+        }
+
+        if (checkpointingConfig.mode == CheckpointingMode.TIME) {
+            checkpointingTimer = new Timer();
+            checkpointingTimer.scheduleAtFixedRate(new CheckpointingTask(this),
+                    checkpointingConfig.timeUnit.toMillis(checkpointingConfig.frequency),
+                    checkpointingConfig.timeUnit.toMillis(checkpointingConfig.frequency));
+            logger.debug("Started checkpointing timer for PE prototype [{}], ID [{}] with interval [{}].",
+                    new String[] { this.getClass().getName(), id, String.valueOf(checkpointingConfig.frequency) });
         }
 
         /* Check if this PE is annotated as thread safe. */
@@ -535,7 +567,7 @@ public abstract class ProcessingElement implements Cloneable {
             }
             return peInstances.get(id);
         } catch (ExecutionException e) {
-            logger.error("Problem when trying to create a PE instance.", e);
+            logger.error("Problem when trying to create a PE instance for id {}", id, e);
         }
         return null;
     }
@@ -544,8 +576,16 @@ public abstract class ProcessingElement implements Cloneable {
      * Get all the local instances. See notes in {@link #getInstanceForKey(String) getLocalInstanceForKey}
      */
     public Collection<ProcessingElement> getInstances() {
-
-        return peInstances.asMap().values();
+        try {
+            if (isSingleton) {
+                return ImmutableList.of(peInstances.get(SINGLETON));
+            } else {
+                return peInstances.asMap().values();
+            }
+        } catch (ExecutionException e) {
+            logger.error("Problem when trying to create a PE instance for id {}", id, e);
+            return null;
+        }
     }
 
     /**
@@ -672,6 +712,64 @@ public abstract class ProcessingElement implements Cloneable {
         app.peByName.put(name, this);
     }
 
+    public byte[] serializeState() {
+        return getApp().getSerDeser().serialize(this);
+    }
+
+    public ProcessingElement deserializeState(byte[] loadedState) {
+        return (ProcessingElement) getApp().getSerDeser().deserialize(loadedState);
+    }
+
+    public void restoreState(ProcessingElement oldState) {
+        restoreFieldsForClass(oldState.getClass(), oldState);
+    }
+
+    protected void recover() {
+        byte[] serializedState = null;
+        try {
+            serializedState = getApp().getCheckpointingFramework().fetchSerializedState(new CheckpointId(this));
+        } catch (RuntimeException e) {
+            logger.error("Cannot fetch serialized stated for [{}/{}]: {}", new String[] {
+                    getPrototype().getClass().getName(), getId(), e.getMessage() });
+        }
+        if (serializedState == null) {
+            return;
+        }
+        try {
+            ProcessingElement peInOldState = deserializeState(serializedState);
+            restoreState(peInOldState);
+        } catch (RuntimeException e) {
+            logger.error("Cannot restore state for key [" + new CheckpointId(this) + "]: " + e.getMessage(), e);
+        }
+    }
+
+    private void restoreFieldsForClass(Class<?> currentInOldStateClassHierarchy, ProcessingElement oldState) {
+        if (!ProcessingElement.class.isAssignableFrom(currentInOldStateClassHierarchy)) {
+            return;
+        } else {
+            Field[] fields = oldState.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (!Modifier.isTransient(field.getModifiers()) && !Modifier.isStatic(field.getModifiers())) {
+                    if (!Modifier.isPublic(field.getModifiers())) {
+                        field.setAccessible(true);
+                    }
+                    try {
+                        // TODO use reflectasm
+                        field.set(this, field.get(oldState));
+                    } catch (IllegalArgumentException e) {
+                        logger.error("Cannot recover old state for this PE [{}]", e);
+                        return;
+                    } catch (IllegalAccessException e) {
+                        logger.error("Cannot recover old state for this PE [{}]", e);
+                        return;
+                    }
+
+                }
+            }
+            restoreFieldsForClass(currentInOldStateClassHierarchy.getSuperclass(), oldState);
+        }
+    }
+
     class Trigger {
         final long intervalInMilliseconds;
         final int intervalInEvents;
@@ -708,5 +806,42 @@ public abstract class ProcessingElement implements Cloneable {
         boolean isActive() {
             return active;
         }
+    }
+
+    public long getEventCount() {
+        return eventCount;
+    }
+
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(getClass().getName() + "/" + getId() + " ;");
+        if (isSingleton) {
+            sb.append("singleton ;");
+        }
+        sb.append(isThreadSafe ? "IS thread-safe ;" : "Not thread-safe ;");
+        sb.append("timerInterval=" + timerIntervalInMilliseconds + " ;");
+        return sb.toString();
+
+    }
+
+    public CheckpointingConfig getCheckpointingConfig() {
+        return checkpointingConfig;
+    }
+
+    public void setCheckpointingConfig(CheckpointingConfig checkpointingConfig) {
+        this.checkpointingConfig = checkpointingConfig;
+    }
+
+    /**
+     * By default, the state of the PE instance is considered dirty whenever it processed an event. Some event may
+     * actually leave the state of the PE unchanged. The dirty() method can therefore be overriden to accommodate user
+     * specific behaviors.
+     */
+    public void setDirty(boolean dirty) {
+        this.dirty = dirty;
     }
 }

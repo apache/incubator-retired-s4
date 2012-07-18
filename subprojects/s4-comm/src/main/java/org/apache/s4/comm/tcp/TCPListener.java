@@ -80,6 +80,7 @@ public class TCPListener implements Listener {
             byte[] msg = handoffQueue.take();
             return msg;
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             return null;
         }
     }
@@ -93,7 +94,7 @@ public class TCPListener implements Listener {
         try {
             channels.close().await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
         bootstrap.releaseExternalResources();
     }

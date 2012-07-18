@@ -9,12 +9,16 @@ import org.slf4j.LoggerFactory;
 // keyed by topic name
 public class TopicCountAndReportPE extends ProcessingElement {
 
-    Stream<TopicEvent> downStream;
-    int threshold = 10;
+    transient Stream<TopicEvent> downStream;
+    transient int threshold = 10;
     int count;
     boolean firstEvent = true;
 
     static Logger logger = LoggerFactory.getLogger(TopicCountAndReportPE.class);
+
+    public TopicCountAndReportPE() {
+        // required for checkpointing in S4 0.5. Requirement to be removed in 0.6
+    }
 
     public TopicCountAndReportPE(App app) {
         super(app);

@@ -74,6 +74,7 @@ public class UDPListener implements Listener, Runnable {
         try {
             return handoffQueue.take();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             return null;
         }
     }

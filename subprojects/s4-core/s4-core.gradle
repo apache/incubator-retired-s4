@@ -20,6 +20,7 @@ dependencies {
     compile project(":s4-base")
     compile project(":s4-comm")
     compile project(path: ':s4-comm', configuration: 'tests')
+    compile libraries.commons_codec
     compile libraries.jcommander
     testCompile project(path: ':s4-comm', configuration: 'tests')
     testCompile libraries.gradle_base_services
