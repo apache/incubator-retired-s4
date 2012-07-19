@@ -10,8 +10,9 @@ import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
 import org.apache.s4.core.Stream;
-import org.apache.s4.core.window.Slot;
-import org.apache.s4.core.window.WindowingPE;
+import org.apache.s4.core.window.AbstractSlidingWindowPE;
+import org.apache.s4.core.window.DefaultAggregatingSlot;
+import org.apache.s4.core.window.DefaultAggregatingSlot.DefaultAggregatingSlotFactory;
 import org.apache.s4.fixtures.MockCommModule;
 import org.apache.s4.fixtures.MockCoreModule;
 import org.junit.Assert;
@@ -73,8 +74,9 @@ public class WindowingPETest {
 
         @Override
         protected void onInit() {
-            WindowingPE<Slot<Integer, List<Integer>>> wPE1 = createWindowingPE(WindowingPE1.class, 10L,
-                    TimeUnit.MILLISECONDS, 100000);
+            AbstractSlidingWindowPE<DefaultAggregatingSlot<Integer>, Integer, List<Integer>> wPE1 = createSlidingWindowPE(
+                    WindowingPE1.class, 10L, TimeUnit.MILLISECONDS, 100000,
+                    new DefaultAggregatingSlotFactory<Integer>());
             wPE1.setTimerInterval(10, TimeUnit.MILLISECONDS);
             stream1 = createStream(STREAM_NAME, new KeyFinder<Event>() {
 

@@ -1,23 +1,23 @@
 package org.apache.s4.core.window;
 
 /**
- * A convenience window slot, that aggregates elements of type <T> into elements of type <U>.
- *
+ * A convenience window slot, that aggregates elements of type <T>.
+ * 
+ * Users must add suitable getter methods to retrieve aggregated data.
+ * 
  * @param <T>
  *            elements to aggregate
- * @param <U>
- *            aggregated elements (can be a list, or can be a result of some processing on the elements)
  */
-public interface Slot<T, U> {
+public interface Slot<T> {
 
     /**
      * Add a single data element
      */
-    void addData(T data);
+    void update(T data);
 
     /**
-     * Retrieve all stored elements s
+     * Compute aggregated data on available gathered slot data, place slot and slot data in immutable state.
      */
-    U getAggregatedData();
+    void close();
 
 }

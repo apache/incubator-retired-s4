@@ -15,11 +15,14 @@
  */
 package org.apache.s4.core;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import net.jcip.annotations.ThreadSafe;
@@ -37,6 +40,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * <p>
@@ -115,7 +119,7 @@ public abstract class ProcessingElement implements Cloneable {
     private ProcessingElement pePrototype;
     private boolean haveTriggers = false;
     private long timerIntervalInMilliseconds = 0;
-    private Timer timer;
+    private ScheduledExecutorService timer;
     private boolean isPrototype = true;
     private boolean isThreadSafe = false;
     private String name = null;
@@ -375,13 +379,21 @@ public abstract class ProcessingElement implements Cloneable {
         Preconditions.checkArgument(isPrototype, "This method can only be used on the PE prototype. Trigger not set.");
 
         if (timer != null) {
-            timer.cancel();
+            timer.shutdownNow();
         }
 
         if (interval == 0)
             return this;
 
-        timer = new Timer();
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                .setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        logger.error("Expection from timer thread", e);
+                    }
+                }).setNameFormat("Timer-" + getClass().getSimpleName()).build();
+        timer = Executors.newSingleThreadScheduledExecutor(threadFactory);
         return this;
     }
 
@@ -416,6 +428,7 @@ public abstract class ProcessingElement implements Cloneable {
             if (haveTriggers && isTrigger(event)) {
                 overloadDispatcher.dispatchTrigger(this, event);
             }
+
         }
     }
 
@@ -467,7 +480,7 @@ public abstract class ProcessingElement implements Cloneable {
 
         /* Close resources in prototype. */
         if (timer != null) {
-            timer.cancel();
+            timer.shutdownNow();
             logger.info("Timer stopped.");
         }
 
@@ -504,7 +517,7 @@ public abstract class ProcessingElement implements Cloneable {
 
         /* Start timer. */
         if (timer != null) {
-            timer.schedule(new OnTimeTask(), 0, timerIntervalInMilliseconds);
+            timer.scheduleAtFixedRate(new OnTimeTask(), 0, timerIntervalInMilliseconds, TimeUnit.MILLISECONDS);
             logger.debug("Started timer for PE prototype [{}], ID [{}] with interval [{}].", new String[] {
                     this.getClass().getName(), id, String.valueOf(timerIntervalInMilliseconds) });
         }
