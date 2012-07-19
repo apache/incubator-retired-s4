@@ -165,7 +165,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
                  * We send to a specific PE instance using the key but we don't know if the target partition is remote
                  * or local. We need to ask the sender.
                  */
-                if (sender.sendAndCheckIfLocal(key.get((T) event), event)) {
+                if (!sender.checkAndSendIfNotLocal(key.get((T) event), event)) {
 
                     /*
                      * Sender checked and decided that the target is local so we simply put the event in the queue and

@@ -2,7 +2,6 @@ package org.apache.s4.core;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Listener;
-import org.apache.s4.core.Receiver;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.NoOpDeploymentManager;
 import org.mockito.Mockito;
