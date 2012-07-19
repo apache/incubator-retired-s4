@@ -5,6 +5,10 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.topology.Assignment;
+import org.apache.s4.comm.topology.ClusterNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
@@ -17,13 +21,14 @@ import com.google.inject.Inject;
  * from the application developer.
  */
 public class Sender {
+
+    private static Logger logger = LoggerFactory.getLogger(Sender.class);
+
     final private Emitter emitter;
     final private SerializerDeserializer serDeser;
     final private Hasher hasher;
 
-    /*
-     * If the local partition id is not initialized, always use the comm layer to send events.
-     */
+    Assignment assignment;
     private int localPartitionId = -1;
 
     /**
@@ -36,33 +41,42 @@ public class Sender {
      *            a hashing function to map keys to partition IDs.
      */
     @Inject
-    public Sender(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher) {
+    public Sender(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment) {
         this.emitter = emitter;
         this.serDeser = serDeser;
         this.hasher = hasher;
+        this.assignment = assignment;
+    }
+
+    @Inject
+    private void resolveLocalPartitionId() {
+        ClusterNode node = assignment.assignClusterNode();
+        if (node != null) {
+            localPartitionId = node.getPartition();
+        }
     }
 
     /**
      * This method attempts to send an event to a remote partition. If the destination is local, the method does not
-     * send the event and returns true. The caller is expected to put the event in a local queue instead.
+     * send the event and returns false. <b>The caller is then expected to put the event in a local queue instead.</b>
      * 
      * @param hashKey
      *            the string used to map the value of a key to a specific partition.
      * @param event
      *            the event to be delivered to a {@link ProcessingElement} instance.
-     * @return true if the event is not sent because the destination is local.
+     * @return true if the event was sent because the destination is <b>not</b> local.
      * 
      */
-    public boolean sendAndCheckIfLocal(String hashKey, Event event) {
+    public boolean checkAndSendIfNotLocal(String hashKey, Event event) {
         int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
 
         if (partition == localPartitionId) {
             /* Hey we are in the same JVM, don't use the network. */
-            return true;
+            return false;
         }
         send(partition,
                 new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), serDeser.serialize(event)));
-        return false;
+        return true;
     }
 
     private void send(int partition, EventMessage event) {
@@ -89,7 +103,4 @@ public class Sender {
         }
     }
 
-    void setPartition(int partitionId) {
-        localPartitionId = partitionId;
-    }
 }

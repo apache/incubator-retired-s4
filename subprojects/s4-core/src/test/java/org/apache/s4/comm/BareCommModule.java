@@ -4,6 +4,8 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.tcp.RemoteEmitters;
+import org.apache.s4.comm.topology.Assignment;
+import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.Clusters;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.core.RemoteSenders;
@@ -34,6 +36,9 @@ public class BareCommModule extends AbstractModule {
         bind(RemoteEmitters.class).toInstance(Mockito.mock(RemoteEmitters.class));
         bind(RemoteEmitterFactory.class).toInstance(Mockito.mock(RemoteEmitterFactory.class));
         bind(Clusters.class).toInstance(Mockito.mock(Clusters.class));
+        Assignment mockedAssignment = Mockito.mock(Assignment.class);
+        Mockito.when(mockedAssignment.assignClusterNode()).thenReturn(new ClusterNode(0, 0, "machine", "Task-0"));
+        bind(Assignment.class).toInstance(mockedAssignment);
         Names.bindProperties(binder(), ImmutableMap.of("cluster.name", "testCluster"));
     }
 
