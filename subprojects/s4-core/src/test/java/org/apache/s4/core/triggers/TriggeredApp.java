@@ -1,21 +1,18 @@
 package org.apache.s4.core.triggers;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.core.App;
 import org.apache.s4.core.Stream;
 import org.apache.s4.core.TriggerTest;
-import org.apache.s4.fixtures.SocketAdapter;
 import org.apache.s4.wordcount.SentenceKeyFinder;
-import org.apache.s4.wordcount.StringEvent;
 
 import com.google.inject.Inject;
 
 public class TriggeredApp extends App {
 
-    SocketAdapter<StringEvent> socketAdapter;
+    public Stream<Event> stream;
 
     @Inject
     public TriggeredApp() {
@@ -32,7 +29,7 @@ public class TriggeredApp extends App {
     protected void onInit() {
 
         TriggerablePE prototype = createPE(TriggerablePE.class);
-        Stream<StringEvent> stream = createStream("stream", new SentenceKeyFinder(), prototype);
+        stream = createStream("stream", new SentenceKeyFinder(), prototype);
         switch (TriggerTest.triggerType) {
             case COUNT_BASED:
                 prototype.setTrigger(Event.class, 1, 0, TimeUnit.SECONDS);
@@ -43,11 +40,6 @@ public class TriggeredApp extends App {
                 break;
         }
 
-        try {
-            socketAdapter = new SocketAdapter<StringEvent>(stream, new SocketAdapter.SentenceEventFactory());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override

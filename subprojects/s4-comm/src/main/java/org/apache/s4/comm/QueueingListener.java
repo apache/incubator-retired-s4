@@ -46,6 +46,7 @@ public class QueueingListener implements Listener, Runnable {
             // System.out.println("QueueingListener: About to take message from queue");
             return queue.take();
         } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
             return null;
         }
     }

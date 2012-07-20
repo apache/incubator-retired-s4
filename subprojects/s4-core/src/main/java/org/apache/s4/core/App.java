@@ -26,7 +26,7 @@ import org.apache.s4.base.KeyFinder;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.topology.RemoteStreams;
-import org.apache.s4.core.App.ClockType;
+import org.apache.s4.core.ft.CheckpointingFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +34,10 @@ import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
-/*
- * Container base class to hold all processing elements. We will implement administrative methods here.
+/**
+ * Container base class to hold all processing elements.
+ *
+ * It is also where one defines the application graph: PE prototypes, internal streams, input and output streams.
  */
 public abstract class App {
 
@@ -72,6 +74,10 @@ public abstract class App {
     @Inject
     @Named("cluster.name")
     String clusterName;
+
+    // default is NoOpCheckpointingFramework
+    @Inject
+    CheckpointingFramework checkpointingFramework;
 
     // serialization uses the application class loader
     private SerializerDeserializer serDeser = new KryoSerDeser(getClass().getClassLoader());
@@ -111,7 +117,7 @@ public abstract class App {
     }
 
     /* Should only be used within the core package. */
-    public void addStream(Streamable stream) {
+    public void addStream(Streamable<Event> stream) {
         streams.add(stream);
     }
 
@@ -260,6 +266,10 @@ public abstract class App {
 
     public SerializerDeserializer getSerDeser() {
         return serDeser;
+    }
+
+    public CheckpointingFramework getCheckpointingFramework() {
+        return checkpointingFramework;
     }
 
     /**

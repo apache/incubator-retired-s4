@@ -18,7 +18,12 @@ public class S4RLoader extends URLClassLoader {
     }
 
     public Class<?> loadGeneratedClass(String name, byte[] bytes) {
-        return defineClass(name, bytes, 0, bytes.length);
+        Class<?> clazz = findLoadedClass(name);
+        if (clazz == null) {
+            return defineClass(name, bytes, 0, bytes.length);
+        } else {
+            return clazz;
+        }
     }
 
 }

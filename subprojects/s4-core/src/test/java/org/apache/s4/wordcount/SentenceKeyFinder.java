@@ -1,19 +1,19 @@
 package org.apache.s4.wordcount;
 
-
-import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.s4.base.Event;
 import org.apache.s4.base.KeyFinder;
 
-public class SentenceKeyFinder implements KeyFinder<StringEvent> {
+import com.google.common.collect.ImmutableList;
+
+public class SentenceKeyFinder implements KeyFinder<Event> {
 
     private static final String SENTENCE_KEY = "sentence";
 
-    @SuppressWarnings("serial")
     @Override
-    public List<String> get(StringEvent event) {
-        return new ArrayList<String>(){{add(SENTENCE_KEY);}};
+    public List<String> get(Event event) {
+        return ImmutableList.of(SENTENCE_KEY);
     }
 
 }

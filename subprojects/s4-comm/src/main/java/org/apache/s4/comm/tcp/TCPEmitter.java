@@ -132,6 +132,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         } catch (InterruptedException ie) {
             logger.error(String.format("Interrupted while connecting to %s:%d", clusterNode.getMachineName(),
                     clusterNode.getPort()));
+            Thread.currentThread().interrupt();
         }
         return false;
     }
@@ -182,7 +183,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
             bootstrap.releaseExternalResources();
         } catch (InterruptedException ie) {
             logger.error("Interrupted while closing");
-            ie.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
 

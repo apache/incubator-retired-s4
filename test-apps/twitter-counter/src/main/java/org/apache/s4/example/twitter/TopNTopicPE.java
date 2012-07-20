@@ -23,6 +23,10 @@ public class TopNTopicPE extends ProcessingElement {
     static Logger logger = LoggerFactory.getLogger(TopNTopicPE.class);
     Map<String, Integer> countedTopics = Maps.newHashMap();
 
+    public TopNTopicPE() {
+        // required for checkpointing. Requirement to be lifted in 0.6
+    }
+
     public TopNTopicPE(App app) {
         super(app);
         logger.info("key: [{}]", getId());

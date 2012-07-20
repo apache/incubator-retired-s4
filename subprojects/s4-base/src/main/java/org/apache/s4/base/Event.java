@@ -188,4 +188,16 @@ public class Event {
         }
 
     }
+
+    @Override
+    public String toString() {
+        Map<String, String> attributesAsMap = getAttributesAsMap();
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (Map.Entry<String, String> entry : attributesAsMap.entrySet()) {
+            sb.append("{" + entry.getKey() + ";" + entry.getValue() + "},");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
 }

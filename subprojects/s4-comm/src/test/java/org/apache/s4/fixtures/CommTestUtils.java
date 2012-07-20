@@ -5,9 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -41,11 +39,9 @@ public class CommTestUtils {
 
     public static final int ZK_PORT = 2181;
     public static final String ZK_STRING = "localhost:" + ZK_PORT;
-    public static final int INITIAL_BOOKIE_PORT = 5000;
     public static File DEFAULT_TEST_OUTPUT_DIR = new File(System.getProperty("java.io.tmpdir") + File.separator + "tmp");
     public static File DEFAULT_STORAGE_DIR = new File(DEFAULT_TEST_OUTPUT_DIR.getAbsolutePath() + File.separator
             + "storage");
-    public static ServerSocket serverSocket;
     static {
         logger.info("Storage dir: " + DEFAULT_STORAGE_DIR);
     }
@@ -233,6 +229,7 @@ public class CommTestUtils {
             try {
                 Thread.sleep(250);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // ignore
             }
         }
@@ -281,6 +278,7 @@ public class CommTestUtils {
             try {
                 Thread.sleep(250);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // ignore
             }
         }
@@ -293,12 +291,6 @@ public class CommTestUtils {
         }
         CommTestUtils.DEFAULT_STORAGE_DIR.mkdirs();
 
-    }
-
-    public static void stopSocketAdapter() throws IOException {
-        if (serverSocket != null) {
-            serverSocket.close();
-        }
     }
 
     /**
@@ -328,23 +320,6 @@ public class CommTestUtils {
             throw new RuntimeException("Cannot find path for compiled test classes");
         }
 
-    }
-
-    public static void injectIntoStringSocketAdapter(String string) throws IOException {
-        Socket socket = null;
-        PrintWriter writer = null;
-        try {
-            socket = new Socket("localhost", 12000);
-            writer = new PrintWriter(socket.getOutputStream(), true);
-            writer.println(string);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(-1);
-        } finally {
-            if (socket != null) {
-                socket.close();
-            }
-        }
     }
 
 }

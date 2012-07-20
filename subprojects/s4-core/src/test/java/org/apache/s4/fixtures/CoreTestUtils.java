@@ -7,7 +7,6 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-import org.apache.s4.core.App;
 import org.apache.s4.core.Main;
 import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnector;
@@ -24,10 +23,6 @@ import com.google.common.io.PatternFilenameFilter;
  * 
  */
 public class CoreTestUtils extends CommTestUtils {
-
-    public static Process forkS4App(Class<?> moduleClass, Class<?> appClass) throws IOException, InterruptedException {
-        return forkProcess(App.class.getName(), -1, moduleClass.getName(), appClass.getName());
-    }
 
     public static Process forkS4Node() throws IOException, InterruptedException {
         return forkS4Node(new String[] {});

@@ -160,7 +160,7 @@ public class Main {
         @Parameter(names = "-appClass", description = "App class to load. This will disable dynamic downloading but allows to start apps directly. These app classes must have been loaded first, usually through a custom module.", required = false, hidden = true)
         String appClass = null;
 
-        @Parameter(names = "-extraModulesClasses", description = "additional configuration modules (they will be instantiated through their constructor without arguments).", variableArity = true, required = false, hidden = true)
+        @Parameter(names = { "-extraModulesClasses", "-emc" }, description = "Additional configuration modules (they will be instantiated through their constructor without arguments).", variableArity = true, required = false, hidden = true)
         List<String> extraModulesClasses = new ArrayList<String>();
 
         @Parameter(names = { "-namedStringParameters", "-p" }, description = "Inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-namedStringParameters={name1=value1},{name2=value2} '", hidden = false, converter = InlineConfigParameterConverter.class)

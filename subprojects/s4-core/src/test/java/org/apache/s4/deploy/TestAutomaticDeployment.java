@@ -15,23 +15,30 @@ import junit.framework.Assert;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.s4.comm.tools.TaskSetup;
+import org.apache.s4.base.Event;
+import org.apache.s4.base.EventMessage;
+import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.DefaultCommModule;
+import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
+import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
+import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -45,12 +52,11 @@ import com.sun.net.httpserver.HttpServer;
  * - ... or from a web server
  * 
  */
-public class TestAutomaticDeployment {
+public class TestAutomaticDeployment extends ZkBasedTest {
 
     private Factory zookeeperServerConnectionFactory;
     private Process forkedNode;
     private ZkClient zkClient;
-    private static final String CLUSTER_NAME = "clusterZ";
     private HttpServer httpServer;
     private static File tmpAppsDir;
 
@@ -95,7 +101,7 @@ public class TestAutomaticDeployment {
 
         ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
         record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-        zkClient.create("/s4/clusters/" + CLUSTER_NAME + "/app/s4App", record, CreateMode.PERSISTENT);
+        zkClient.create("/s4/clusters/cluster1/app/s4App", record, CreateMode.PERSISTENT);
 
         Assert.assertTrue(signalAppInitialized.await(20, TimeUnit.SECONDS));
         Assert.assertTrue(signalAppStarted.await(20, TimeUnit.SECONDS));
@@ -106,7 +112,16 @@ public class TestAutomaticDeployment {
         CommTestUtils
                 .watchAndSignalCreation("/onEvent@" + time1, signalEvent1Processed, CommTestUtils.createZkClient());
 
-        CoreTestUtils.injectIntoStringSocketAdapter(time1);
+        Injector injector = Guice.createInjector(
+                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
+                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream()));
+
+        TCPEmitter emitter = injector.getInstance(TCPEmitter.class);
+
+        Event event = new Event();
+        event.put("line", String.class, time1);
+        emitter.send(0, new EventMessage("-1", "inputStream", injector.getInstance(SerializerDeserializer.class)
+                .serialize(event)));
 
         // check event processed
         Assert.assertTrue(signalEvent1Processed.await(5, TimeUnit.SECONDS));
@@ -148,17 +163,13 @@ public class TestAutomaticDeployment {
         // current package .
 
         // 1. start s4 nodes. Check that no app is deployed.
-        TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
-        taskSetup.clean(CLUSTER_NAME);
-        taskSetup.setup(CLUSTER_NAME, 1, 1300);
-
         zkClient = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
         zkClient.setZkSerializer(new ZNRecordSerializer());
-        List<String> processes = zkClient.getChildren("/s4/clusters/" + CLUSTER_NAME + "/process");
+        List<String> processes = zkClient.getChildren("/s4/clusters/cluster1/process");
         Assert.assertTrue(processes.size() == 0);
         final CountDownLatch signalProcessesReady = new CountDownLatch(1);
 
-        zkClient.subscribeChildChanges("/s4/clusters/" + CLUSTER_NAME + "/process", new IZkChildListener() {
+        zkClient.subscribeChildChanges("/s4/clusters/cluster1/process", new IZkChildListener() {
 
             @Override
             public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
@@ -169,7 +180,7 @@ public class TestAutomaticDeployment {
             }
         });
 
-        forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + CLUSTER_NAME });
+        forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=cluster1" });
 
         // TODO synchro with ready state from zk
         Thread.sleep(10000);
@@ -177,22 +188,19 @@ public class TestAutomaticDeployment {
 
     }
 
-    @Before
-    public void prepare() throws Exception {
-        CommTestUtils.cleanupTmpDirs();
-        zookeeperServerConnectionFactory = CommTestUtils.startZookeeperServer();
-        final ZooKeeper zk = CommTestUtils.createZkClient();
-        try {
-            zk.delete("/simpleAppCreated", -1);
-        } catch (Exception ignored) {
-        }
-
-        zk.close();
-    }
+    // @Before
+    // public void clean() throws Exception {
+    // final ZooKeeper zk = CommTestUtils.createZkClient();
+    // try {
+    // zk.delete("/simpleAppCreated", -1);
+    // } catch (Exception ignored) {
+    // }
+    //
+    // zk.close();
+    // }
 
     @After
     public void cleanup() throws Exception {
-        CommTestUtils.stopZookeeperServer(zookeeperServerConnectionFactory);
         CommTestUtils.killS4App(forkedNode);
         if (httpServer != null) {
             httpServer.stop(0);
