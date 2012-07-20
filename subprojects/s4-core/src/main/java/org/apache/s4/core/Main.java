@@ -136,6 +136,7 @@ public class Main {
             }
         } catch (Exception e) {
             logger.error("Cannot start S4 node", e);
+            System.exit(1);
         }
     }
 
@@ -160,10 +161,10 @@ public class Main {
         @Parameter(names = "-appClass", description = "App class to load. This will disable dynamic downloading but allows to start apps directly. These app classes must have been loaded first, usually through a custom module.", required = false, hidden = true)
         String appClass = null;
 
-        @Parameter(names = "-extraModulesClasses", description = "additional configuration modules (they will be instantiated through their constructor without arguments).", variableArity = true, required = false, hidden = true)
+        @Parameter(names = { "-extraModulesClasses", "-emc" }, description = "Comma-separated list of additional configuration modules (they will be instantiated through their constructor without arguments).", required = false, hidden = false)
         List<String> extraModulesClasses = new ArrayList<String>();
 
-        @Parameter(names = { "-namedStringParameters", "-p" }, description = "Inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-namedStringParameters={name1=value1},{name2=value2} '", hidden = false, converter = InlineConfigParameterConverter.class)
+        @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = InlineConfigParameterConverter.class)
         List<String> extraNamedParameters = new ArrayList<String>();
 
         @Parameter(names = "-zk", description = "Zookeeper connection string", required = false)
@@ -175,7 +176,7 @@ public class Main {
 
         @Override
         public String convert(String arg) {
-            Pattern parameterPattern = Pattern.compile("\\{(\\S+=\\S+)\\}");
+            Pattern parameterPattern = Pattern.compile("(\\S+=\\S+)");
             logger.info("processing inline configuration parameter {}", arg);
             Matcher parameterMatcher = parameterPattern.matcher(arg);
             if (!parameterMatcher.find()) {
