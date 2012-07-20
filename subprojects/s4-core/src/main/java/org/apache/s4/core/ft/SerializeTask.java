@@ -24,7 +24,7 @@ import org.apache.s4.core.ProcessingElement;
 /**
  * Encaspulate a PE serialization operation. This operation locks the PE instance in order to avoid any inconsistent
  * serialized state. If serialization is successful, the PE is marked as "not dirty".
- *
+ * 
  */
 public class SerializeTask implements Callable<byte[]> {
 
@@ -39,7 +39,7 @@ public class SerializeTask implements Callable<byte[]> {
     public byte[] call() throws Exception {
         synchronized (pe) {
             byte[] state = pe.serializeState();
-            pe.setDirty(false);
+            pe.clearDirty();
             return state;
         }
     }

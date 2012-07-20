@@ -26,9 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * 
  * Encapsulates a checkpoint request. It is scheduled by the checkpointing framework.
- *
+ * 
  */
 public class SaveStateTask implements Runnable {
 
@@ -61,6 +61,7 @@ public class SaveStateTask implements Runnable {
     public void run() {
         if (futureSerializedState != null) {
             try {
+                // TODO parameterizable timeout
                 stateStorage.saveState(safeKeeperId, futureSerializedState.get(1000, TimeUnit.MILLISECONDS),
                         storageCallback);
             } catch (InterruptedException e) {

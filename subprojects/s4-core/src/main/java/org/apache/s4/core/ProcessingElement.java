@@ -422,7 +422,7 @@ public abstract class ProcessingElement implements Cloneable {
 
             eventCount++;
 
-            setDirty(true);
+            dirty = true;
 
             if (isCheckpointable()) {
                 checkpoint();
@@ -435,10 +435,8 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     public void checkpoint() {
-
         getApp().getCheckpointingFramework().saveState(this);
-        // remove dirty flag
-        dirty = false;
+        clearDirty();
     }
 
     private boolean isTrigger(Event event) {
@@ -712,6 +710,37 @@ public abstract class ProcessingElement implements Cloneable {
         app.peByName.put(name, this);
     }
 
+    public CheckpointingConfig getCheckpointingConfig() {
+        return checkpointingConfig;
+    }
+
+    public void setCheckpointingConfig(CheckpointingConfig checkpointingConfig) {
+        this.checkpointingConfig = checkpointingConfig;
+    }
+
+    /**
+     * By default, the state of a PE instance is considered dirty whenever it processed an event. Some event may
+     * actually leave the state of the PE unchanged. PE implementations can therefore override this method to
+     * accommodate specific behaviors, by managing a custom "dirty" flag.
+     * 
+     * <b>If this method is overriden, {@link #clearDirty()} method must also be overriden in order to correctly reflect
+     * the "dirty" state of the PE.</b>
+     */
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    /**
+     * Dirty state is cleared after the PE has been serialized. PE implementations that maintain their "dirty" flag must
+     * override this method by clearing their internally managed "dirty" flag.
+     * 
+     * <b>If this method is overriden, {@link #isDirty()} must also be overriden in order to correctly reflect the
+     * "dirty" state of the PE.</b>
+     */
+    public void clearDirty() {
+        this.dirty = false;
+    }
+
     public byte[] serializeState() {
         return getApp().getSerDeser().serialize(this);
     }
@@ -812,10 +841,6 @@ public abstract class ProcessingElement implements Cloneable {
         return eventCount;
     }
 
-    public boolean isDirty() {
-        return dirty;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(getClass().getName() + "/" + getId() + " ;");
@@ -828,20 +853,4 @@ public abstract class ProcessingElement implements Cloneable {
 
     }
 
-    public CheckpointingConfig getCheckpointingConfig() {
-        return checkpointingConfig;
-    }
-
-    public void setCheckpointingConfig(CheckpointingConfig checkpointingConfig) {
-        this.checkpointingConfig = checkpointingConfig;
-    }
-
-    /**
-     * By default, the state of the PE instance is considered dirty whenever it processed an event. Some event may
-     * actually leave the state of the PE unchanged. The dirty() method can therefore be overriden to accommodate user
-     * specific behaviors.
-     */
-    public void setDirty(boolean dirty) {
-        this.dirty = dirty;
-    }
 }
