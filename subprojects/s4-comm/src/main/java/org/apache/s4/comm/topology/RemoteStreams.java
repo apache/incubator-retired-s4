@@ -114,6 +114,11 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener {
     @Override
     public void handleStateChanged(KeeperState state) throws Exception {
         this.state = state;
+        if (state.equals(KeeperState.Expired)) {
+            logger.error("Zookeeper session expired, possibly due to a network partition. This node is considered as dead by Zookeeper. Proceeding to stop this node.");
+            System.exit(1);
+        }
+
     }
 
     @Override

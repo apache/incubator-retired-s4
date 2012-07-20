@@ -13,7 +13,12 @@ import org.junit.Test;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
 
-public class AssignmentsFromZKTest extends ZKBaseTest {
+/**
+ * Separated from AssignmentsFromZKTest2 so that VM exit upon Zookeeper connection expiration does not affect the test
+ * in that other class.
+ * 
+ */
+public class AssignmentsFromZKTest1 extends ZKBaseTest {
 
     @Test
     public void testAssignmentFor1Cluster() throws Exception {
@@ -22,15 +27,7 @@ public class AssignmentsFromZKTest extends ZKBaseTest {
         testAssignment(taskSetup, topologyNames);
     }
 
-    @Test
-    public void testAssignmentFor2Clusters() throws Exception {
-        Thread.sleep(2000);
-        TaskSetup taskSetup = new TaskSetup(CommTestUtils.ZK_STRING);
-        final String topologyNames = "cluster2, cluster3";
-        testAssignment(taskSetup, topologyNames);
-    }
-
-    private void testAssignment(TaskSetup taskSetup, final String topologyNames) throws InterruptedException {
+    public static void testAssignment(TaskSetup taskSetup, final String topologyNames) throws InterruptedException {
         final Set<String> names = Sets.newHashSet(Splitter.onPattern("\\s*,\\s*").split(topologyNames));
         taskSetup.clean("s4");
         for (String topologyName : names) {
