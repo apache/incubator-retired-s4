@@ -1,6 +1,5 @@
 package org.apache.s4.wordcount;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +79,7 @@ public class WordCountTest extends ZkBasedTest {
                 "-extraModulesClasses=" + WordCountModule.class.getName() });
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
-        CommTestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed, zk);
+        CommTestUtils.watchAndSignalCreation("/results", signalTextProcessed, zk);
 
         // add authorizations for processing
         for (int i = 1; i <= SENTENCE_1_TOTAL_WORDS + SENTENCE_2_TOTAL_WORDS + 1; i++) {
@@ -90,10 +89,8 @@ public class WordCountTest extends ZkBasedTest {
         injectSentence(SENTENCE_2);
         injectSentence(SENTENCE_3);
         Assert.assertTrue(signalTextProcessed.await(10, TimeUnit.SECONDS));
-        File results = new File(CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "wordcount");
-        String s = CommTestUtils.readFile(results);
-        Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", s);
-
+        String results = new String(zk.getData("/results", false, null));
+        Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", results);
     }
 
     public void injectSentence(String sentence) throws IOException {

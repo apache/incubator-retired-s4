@@ -11,10 +11,8 @@ import org.I0Itec.zkclient.IZkChildListener;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.comm.topology.ZkClient;
-import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.zookeeper.KeeperException;
@@ -22,8 +20,6 @@ import org.apache.zookeeper.ZooKeeper;
 import org.junit.After;
 import org.junit.Test;
 
-import com.google.common.io.Resources;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 public class RecoveryTest extends ZkBasedTest {
@@ -96,9 +92,7 @@ public class RecoveryTest extends ZkBasedTest {
         final CountDownLatch signalCheckpointed = new CountDownLatch(1);
         CoreTestUtils.watchAndSignalCreation("/checkpointed", signalCheckpointed, zk);
 
-        Injector injector = Guice.createInjector(
-                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
-                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream()));
+        Injector injector = CoreTestUtils.createInjectorWithNonFailFastZKClients();
 
         TCPEmitter emitter = injector.getInstance(TCPEmitter.class);
 

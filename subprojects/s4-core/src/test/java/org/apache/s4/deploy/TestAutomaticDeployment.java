@@ -18,11 +18,9 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
-import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.s4.fixtures.ZkBasedTest;
@@ -36,8 +34,6 @@ import org.junit.Test;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
-import com.google.common.io.Resources;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -112,9 +108,7 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         CommTestUtils
                 .watchAndSignalCreation("/onEvent@" + time1, signalEvent1Processed, CommTestUtils.createZkClient());
 
-        Injector injector = Guice.createInjector(
-                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
-                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream()));
+        Injector injector = CoreTestUtils.createInjectorWithNonFailFastZKClients();
 
         TCPEmitter emitter = injector.getInstance(TCPEmitter.class);
 

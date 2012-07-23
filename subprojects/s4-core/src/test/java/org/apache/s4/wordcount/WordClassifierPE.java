@@ -12,6 +12,7 @@ import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs.Ids;
@@ -62,9 +63,14 @@ public class WordClassifierPE extends ProcessingElement implements Watcher {
                 for (Entry<String, Integer> entry : entrySet) {
                     sb.append(entry.getKey() + "=" + entry.getValue() + ";");
                 }
-                CommTestUtils.writeStringToFile(sb.toString(), results);
 
-                zk.create("/textProcessed", new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                try {
+                    zk.delete("/results", -1);
+                } catch (NoNodeException ignored) {
+                }
+
+                zk.create("/results", sb.toString().getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+
             } else {
                 // NOTE: this will fail if we did not recover the latest
                 // counter,

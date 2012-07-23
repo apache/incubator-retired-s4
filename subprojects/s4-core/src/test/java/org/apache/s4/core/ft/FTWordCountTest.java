@@ -1,6 +1,5 @@
 package org.apache.s4.core.ft;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -10,9 +9,7 @@ import junit.framework.Assert;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.tcp.TCPEmitter;
-import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.s4.fixtures.ZkBasedTest;
@@ -23,8 +20,6 @@ import org.apache.zookeeper.ZooKeeper;
 import org.junit.After;
 import org.junit.Test;
 
-import com.google.common.io.Resources;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 public class FTWordCountTest extends ZkBasedTest {
@@ -39,9 +34,7 @@ public class FTWordCountTest extends ZkBasedTest {
     @Test
     public void testCheckpointAndRecovery() throws Exception {
 
-        Injector injector = Guice.createInjector(
-                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
-                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream()));
+        Injector injector = CoreTestUtils.createInjectorWithNonFailFastZKClients();
 
         TCPEmitter emitter = injector.getInstance(TCPEmitter.class);
 
@@ -50,7 +43,7 @@ public class FTWordCountTest extends ZkBasedTest {
         restartNode();
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
-        CommTestUtils.watchAndSignalCreation("/textProcessed", signalTextProcessed, zk);
+        CommTestUtils.watchAndSignalCreation("/results", signalTextProcessed, zk);
 
         // add authorizations for processing
         for (int i = 1; i <= WordCountTest.SENTENCE_1_TOTAL_WORDS; i++) {
@@ -97,15 +90,9 @@ public class FTWordCountTest extends ZkBasedTest {
             zk.create("/continue_" + i, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
         }
         injectSentence(injector, emitter, WordCountTest.SENTENCE_3);
-        signalTextProcessed.await(10, TimeUnit.SECONDS);
-        File results = new File(CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "wordcount");
-        if (!results.exists()) {
-            // in case the results file isn't ready yet
-            Thread.sleep(1000);
-            results = new File(CommTestUtils.DEFAULT_TEST_OUTPUT_DIR + File.separator + "wordcount");
-        }
-        String s = CoreTestUtils.readFile(results);
-        Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", s);
+        Assert.assertTrue(signalTextProcessed.await(10, TimeUnit.SECONDS));
+        String results = new String(zk.getData("/results", false, null));
+        Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", results);
 
     }
 

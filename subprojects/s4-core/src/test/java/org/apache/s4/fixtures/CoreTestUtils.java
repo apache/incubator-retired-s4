@@ -7,6 +7,8 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.s4.comm.DefaultCommModule;
+import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.core.Main;
 import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnector;
@@ -15,6 +17,10 @@ import org.gradle.tooling.ProjectConnection;
 import sun.net.ProgressListener;
 
 import com.google.common.io.PatternFilenameFilter;
+import com.google.common.io.Resources;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.util.Modules;
 
 /**
  * Contains static methods that can be used in tests for things such as: - files utilities: strings <-> files
@@ -87,5 +93,12 @@ public class CoreTestUtils extends CommTestUtils {
             e.printStackTrace();
         }
 
+    }
+
+    public static Injector createInjectorWithNonFailFastZKClients() throws IOException {
+        return Guice.createInjector(Modules.override(
+                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
+                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream())).with(
+                new NonFailFastZookeeperClientsModule()));
     }
 }
