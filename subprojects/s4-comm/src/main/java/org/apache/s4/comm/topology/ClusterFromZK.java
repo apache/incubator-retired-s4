@@ -186,7 +186,12 @@ public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener
 
     @Override
     public void handleStateChanged(KeeperState state) throws Exception {
-        // TODO we should reconnect only if we hold the zookeeper connection (i.e. this is the local cluster)
+        if (state.equals(KeeperState.Expired)) {
+            logger.error(
+                    "Zookeeper session expired, possibly due to a network partition for cluster [{}]. This node is considered as dead by Zookeeper. Proceeding to stop this node.",
+                    clusterRef.get().toString());
+            System.exit(1);
+        }
     }
 
     @Override

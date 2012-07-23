@@ -78,10 +78,11 @@ public class ClustersFromZK implements Clusters, IZkStateListener {
     @Override
     public void handleStateChanged(KeeperState state) throws Exception {
         this.state = state;
-        if (!state.equals(KeeperState.SyncConnected)) {
-            logger.warn("Session not connected for cluster [{}]: [{}]. Trying to reconnect", clusterName, state.name());
-            zkClient.connect(connectionTimeout, null);
-            handleNewSession();
+        if (state.equals(KeeperState.Expired)) {
+            logger.error(
+                    "Zookeeper session expired, possibly due to a network partition for cluster [{}]. This node is considered as dead by Zookeeper. Proceeding to stop this node.",
+                    clusterName);
+            System.exit(1);
         }
     }
 
