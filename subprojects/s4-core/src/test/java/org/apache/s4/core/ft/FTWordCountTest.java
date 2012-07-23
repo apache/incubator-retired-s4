@@ -123,7 +123,7 @@ public class FTWordCountTest extends ZkBasedTest {
         // recovering and making sure checkpointing still works
         forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1", "-appClass",
                 FTWordCountApp.class.getName(), "-p",
-                "{s4.checkpointing.filesystem.storageRootPath=" + CommTestUtils.DEFAULT_STORAGE_DIR + "}",
+                "s4.checkpointing.filesystem.storageRootPath=" + CommTestUtils.DEFAULT_STORAGE_DIR,
                 "-extraModulesClasses", FileSystemBackendCheckpointingModule.class.getName() });
         Assert.assertTrue(signalConsumerReady.await(20, TimeUnit.SECONDS));
     }

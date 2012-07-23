@@ -96,11 +96,11 @@ public class ZKServer {
         String logDir = new File(System.getProperty("java.io.tmpdir") + File.separator + "tmp" + File.separator
                 + "zookeeper" + File.separator + "log").getAbsolutePath();
 
-        @Parameter(names = { "-t", "-testMode" }, description = "Launch Zookeeper instance and load a default cluster configuration for easy testing (2 clusters with following configs: {"
-                + TEST_MODE_CLUSTER_CONF_1 + "} and {" + TEST_MODE_CLUSTER_CONF_2 + "}")
+        @Parameter(names = { "-t", "-testMode" }, description = "Launch Zookeeper instance and load a default cluster configuration for easy testing (2 clusters with following configs: "
+                + TEST_MODE_CLUSTER_CONF_1 + " and " + TEST_MODE_CLUSTER_CONF_2 + "")
         boolean testMode = false;
 
-        @Parameter(names = "-clusters", description = "Inline clusters configuration, comma-separated list of curly-braces enclosed cluster definitions with format: {c=<cluster name>:flp=<first listening port for this cluster>:nbTasks=<number of tasks>} (Overrides default configuration for test mode)", converter = ClusterConfigsConverter.class)
+        @Parameter(names = "-clusters", description = "Inline clusters configuration, comma-separated list of cluster definitions with format: c=<cluster name>:flp=<first listening port for this cluster>:nbTasks=<number of tasks> (Overrides default configuration for test mode)", converter = ClusterConfigsConverter.class)
         List<ClusterConfig> clusterConfigs;
 
     }
@@ -109,7 +109,7 @@ public class ZKServer {
 
         @Override
         public ClusterConfig convert(String arg) {
-            Pattern clusterConfigPattern = Pattern.compile("\\{(c=\\w+[:]flp=\\d+[:]nbTasks=\\d+)\\}");
+            Pattern clusterConfigPattern = Pattern.compile("(c=\\w+[:]flp=\\d+[:]nbTasks=\\d+)");
             logger.info("processing cluster configuration {}", arg);
             Matcher configMatcher = clusterConfigPattern.matcher(arg);
             if (!configMatcher.find()) {
