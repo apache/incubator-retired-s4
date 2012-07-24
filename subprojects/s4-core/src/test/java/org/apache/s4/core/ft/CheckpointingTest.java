@@ -13,13 +13,13 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.KeyFinder;
-import org.apache.s4.comm.BareCommModule;
 import org.apache.s4.core.App;
-import org.apache.s4.core.BareCoreModule;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
 import org.apache.s4.core.ft.FileSystemBasedBackendWithZKStorageCallbackCheckpointingModule.DummyZKStorageCallbackFactory;
 import org.apache.s4.fixtures.CoreTestUtils;
+import org.apache.s4.fixtures.MockCommModule;
+import org.apache.s4.fixtures.MockCoreModule;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.junit.After;
@@ -63,7 +63,7 @@ public class CheckpointingTest {
         final CountDownLatch signalCheckpointed = new CountDownLatch(1);
         CoreTestUtils.watchAndSignalCreation("/checkpointed", signalCheckpointed, zk);
 
-        Injector injector = Guice.createInjector(new BareCommModule(),
+        Injector injector = Guice.createInjector(new MockCommModule(),
                 new MockCoreModuleWithFileBaseCheckpointingBackend());
         TestApp app = injector.getInstance(TestApp.class);
         app.init();
@@ -139,7 +139,7 @@ public class CheckpointingTest {
 
     }
 
-    private static class MockCoreModuleWithFileBaseCheckpointingBackend extends BareCoreModule {
+    private static class MockCoreModuleWithFileBaseCheckpointingBackend extends MockCoreModule {
 
         protected void configure() {
             super.configure();

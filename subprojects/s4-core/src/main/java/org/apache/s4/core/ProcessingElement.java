@@ -1,12 +1,15 @@
 package org.apache.s4.core;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import net.jcip.annotations.ThreadSafe;
@@ -29,6 +32,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * <p>
@@ -101,14 +105,14 @@ public abstract class ProcessingElement implements Cloneable {
     transient Map<Class<? extends Event>, Trigger> triggers;
 
     /* PE instance id. */
-    String id = "";
+    protected String id = "";
 
     /* Private fields. */
     transient private ProcessingElement pePrototype;
     transient private boolean haveTriggers = false;
     transient private long timerIntervalInMilliseconds = 0;
-    transient private Timer triggerTimer;
-    transient private Timer checkpointingTimer;
+    transient private ScheduledExecutorService triggerTimer;
+    transient private ScheduledExecutorService checkpointingTimer;
     transient private boolean isPrototype = true;
     transient private boolean isThreadSafe = false;
     transient private String name = null;
@@ -375,13 +379,22 @@ public abstract class ProcessingElement implements Cloneable {
         Preconditions.checkArgument(isPrototype, "This method can only be used on the PE prototype. Trigger not set.");
 
         if (triggerTimer != null) {
-            triggerTimer.cancel();
+            triggerTimer.shutdownNow();
         }
 
-        if (interval == 0)
+        if (interval == 0) {
             return this;
+        }
 
-        triggerTimer = new Timer();
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                .setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        logger.error("Expection from timer thread", e);
+                    }
+                }).setNameFormat("Timer-" + getClass().getSimpleName()).build();
+        triggerTimer = Executors.newSingleThreadScheduledExecutor(threadFactory);
         return this;
     }
 
@@ -487,8 +500,8 @@ public abstract class ProcessingElement implements Cloneable {
 
         /* Close resources in prototype. */
         if (triggerTimer != null) {
-            triggerTimer.cancel();
-            logger.info("Timer stopped.");
+            triggerTimer.shutdownNow();
+            logger.info("Trigger timer stopped.");
         }
 
         /* Remove all the instances. */
@@ -510,7 +523,7 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     /* This method is called by App just before the application starts. */
-    void initPEPrototypeInternal() {
+    protected void initPEPrototypeInternal() {
 
         /* Eagerly create singleton PE. */
         if (isSingleton) {
@@ -524,19 +537,27 @@ public abstract class ProcessingElement implements Cloneable {
 
         /* Start timer. */
         if (triggerTimer != null) {
-            triggerTimer
-                    .scheduleAtFixedRate(new OnTimeTask(), timerIntervalInMilliseconds, timerIntervalInMilliseconds);
-            logger.debug("Started trigger timer for PE prototype [{}], ID [{}] with interval [{}].", new String[] {
+            triggerTimer.scheduleAtFixedRate(new OnTimeTask(), 0, timerIntervalInMilliseconds, TimeUnit.MILLISECONDS);
+            logger.debug("Started timer for PE prototype [{}], ID [{}] with interval [{}].", new String[] {
                     this.getClass().getName(), id, String.valueOf(timerIntervalInMilliseconds) });
         }
 
         if (checkpointingConfig.mode == CheckpointingMode.TIME) {
-            checkpointingTimer = new Timer();
-            checkpointingTimer.scheduleAtFixedRate(new CheckpointingTask(this),
-                    checkpointingConfig.timeUnit.toMillis(checkpointingConfig.frequency),
-                    checkpointingConfig.timeUnit.toMillis(checkpointingConfig.frequency));
-            logger.debug("Started checkpointing timer for PE prototype [{}], ID [{}] with interval [{}].",
-                    new String[] { this.getClass().getName(), id, String.valueOf(checkpointingConfig.frequency) });
+            ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                    .setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
+                        @Override
+                        public void uncaughtException(Thread t, Throwable e) {
+                            logger.error("Expection from checkpointing thread", e);
+                        }
+                    }).setNameFormat("Checkpointing-trigger-" + getClass().getSimpleName()).build();
+            checkpointingTimer = Executors.newSingleThreadScheduledExecutor(threadFactory);
+            checkpointingTimer.scheduleAtFixedRate(new CheckpointingTask(this), checkpointingConfig.frequency,
+                    checkpointingConfig.frequency, checkpointingConfig.timeUnit);
+            logger.debug(
+                    "Started checkpointing timer for PE prototype [{}], ID [{}] with interval [{}] [{}].",
+                    new String[] { this.getClass().getName(), id, String.valueOf(checkpointingConfig.frequency),
+                            String.valueOf(checkpointingConfig.timeUnit.toString()) });
         }
 
         /* Check if this PE is annotated as thread safe. */

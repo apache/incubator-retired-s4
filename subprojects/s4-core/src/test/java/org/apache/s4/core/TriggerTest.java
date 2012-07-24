@@ -7,9 +7,10 @@ import java.util.concurrent.TimeUnit;
 import junit.framework.Assert;
 
 import org.apache.s4.base.EventMessage;
-import org.apache.s4.comm.BareCommModule;
 import org.apache.s4.core.triggers.TriggeredApp;
 import org.apache.s4.fixtures.CommTestUtils;
+import org.apache.s4.fixtures.MockCommModule;
+import org.apache.s4.fixtures.MockCoreModule;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.s4.wordcount.StringEvent;
 import org.apache.zookeeper.KeeperException;
@@ -46,7 +47,7 @@ public abstract class TriggerTest extends ZkBasedTest {
 
     protected CountDownLatch createTriggerAppAndSendEvent() throws IOException, KeeperException, InterruptedException {
         final ZooKeeper zk = CommTestUtils.createZkClient();
-        Injector injector = Guice.createInjector(new BareCommModule(), new BareCoreModule());
+        Injector injector = Guice.createInjector(new MockCommModule(), new MockCoreModule());
         app = injector.getInstance(TriggeredApp.class);
         app.init();
         app.start();

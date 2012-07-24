@@ -1,7 +1,8 @@
-package org.apache.s4.core;
+package org.apache.s4.fixtures;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Listener;
+import org.apache.s4.core.Receiver;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.NoOpDeploymentManager;
 import org.mockito.Mockito;
@@ -11,16 +12,15 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.AbstractModule;
 
 /**
- * Temporary module allowing assignment from ZK, communication through Netty, and distributed deployment management,
- * until we have a better way to customize node configuration
+ * Core module mocking basic platform functionalities.
  * 
  */
-public class BareCoreModule extends AbstractModule {
+public class MockCoreModule extends AbstractModule {
 
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(BareCoreModule.class);
+    private static Logger logger = LoggerFactory.getLogger(MockCoreModule.class);
 
-    public BareCoreModule() {
+    public MockCoreModule() {
     }
 
     @Override

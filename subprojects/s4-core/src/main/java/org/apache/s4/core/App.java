@@ -27,6 +27,8 @@ import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.core.ft.CheckpointingFramework;
+import org.apache.s4.core.window.AbstractSlidingWindowPE;
+import org.apache.s4.core.window.SlotFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +38,7 @@ import com.google.inject.name.Named;
 
 /**
  * Container base class to hold all processing elements.
- *
+ * 
  * It is also where one defines the application graph: PE prototypes, internal streams, input and output streams.
  */
 public abstract class App {
@@ -410,12 +412,12 @@ public abstract class App {
 
     }
 
-    public <T extends WindowingPE<?>> T createWindowingPE(Class<T> type, long slotDuration, TimeUnit timeUnit,
-            int numSlots) {
+    public <T extends AbstractSlidingWindowPE> T createSlidingWindowPE(Class<T> type, long slotDuration,
+            TimeUnit timeUnit, int numSlots, SlotFactory slotFactory) {
         try {
-            Class<?>[] types = new Class<?>[] { App.class, long.class, TimeUnit.class, int.class };
+            Class<?>[] types = new Class<?>[] { App.class, long.class, TimeUnit.class, int.class, SlotFactory.class };
             T pe = type.getDeclaredConstructor(types).newInstance(
-                    new Object[] { this, slotDuration, timeUnit, numSlots });
+                    new Object[] { this, slotDuration, timeUnit, numSlots, slotFactory });
             return pe;
         } catch (Exception e) {
             logger.error("Cannot instantiate pe for class [{}]", type.getName(), e);
