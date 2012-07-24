@@ -1,19 +1,21 @@
 /**
-* Apache S4 Application Build File
-*
-* Use this script to build and package S4 apps.
-*
-* Run 'gradle install' on the s4 project to publish to your local maven repo.
-*
-* TODO: This should probably be distributed as an s4 plugin for Gradle.
-* TODO: There seem to be to be similarities with the war and jetty plugins. (war -> s4r, jetty -> s4Run).
-* We should make it easy to test the app from this script by a running a test task that starts and stops
-* an s4 server. See: http://www.gradle.org/releases/1.0-milestone-3/docs/userguide/userguide_single.html#war_plugin
-*
-* This is an interesting discussion:
-* http://gradle.1045684.n5.nabble.com/Exclude-properties-file-from-war-td3365147.html
-*
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 
 project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
 
