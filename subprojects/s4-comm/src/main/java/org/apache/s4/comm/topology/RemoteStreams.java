@@ -89,9 +89,9 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener {
     }
 
     @Inject
-    public RemoteStreams(@Named("cluster.zk_address") String zookeeperAddress,
-            @Named("cluster.zk_session_timeout") int sessionTimeout,
-            @Named("cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+    public RemoteStreams(@Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
 
         lock = new ReentrantLock();
         zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);

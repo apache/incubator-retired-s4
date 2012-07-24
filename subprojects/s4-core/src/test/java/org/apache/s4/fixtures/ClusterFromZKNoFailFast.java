@@ -27,10 +27,10 @@ import com.google.inject.name.Named;
 public class ClusterFromZKNoFailFast extends ClusterFromZK {
 
     @Inject
-    public ClusterFromZKNoFailFast(@Named("cluster.name") String clusterName,
-            @Named("cluster.zk_address") String zookeeperAddress,
-            @Named("cluster.zk_session_timeout") int sessionTimeout,
-            @Named("cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+    public ClusterFromZKNoFailFast(@Named("s4.cluster.name") String clusterName,
+            @Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
         super(clusterName, zookeeperAddress, sessionTimeout, connectionTimeout);
     }
 

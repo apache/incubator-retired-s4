@@ -33,7 +33,7 @@ import com.google.inject.name.Named;
 public abstract class AdapterApp extends App {
 
     @Inject
-    @Named(value = "adapter.output.stream")
+    @Named(value = "s4.adapter.output.stream")
     String outputStreamName;
 
     private RemoteStream remoteStream;

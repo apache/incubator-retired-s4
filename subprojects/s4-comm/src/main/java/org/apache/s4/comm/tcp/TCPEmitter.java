@@ -92,7 +92,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     SerializerDeserializer serDeser;
 
     @Inject
-    public TCPEmitter(Cluster topology, @Named("comm.timeout") int timeout) throws InterruptedException {
+    public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout) throws InterruptedException {
         this.nettyTimeout = timeout;
         this.topology = topology;
         this.lock = new ReentrantLock();

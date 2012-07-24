@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 
 /**
  * Test util for communication protocols.
@@ -51,9 +50,9 @@ public class PartitionInfo {
     public SendThread sendThread;
     public ReceiveThread receiveThread;
 
-    private final int numRetries;
-    private final int retryDelayMs;
-    private int numMessages;
+    private final int numRetries = 10;
+    private final int retryDelayMs = 10;
+    private int numMessages = 100;
     private int partitionId;
     private ProtocolTestUtil ptu;
 
@@ -61,17 +60,13 @@ public class PartitionInfo {
     SerializerDeserializer serDeser;
 
     @Inject
-    public PartitionInfo(Emitter emitter, Listener listener, @Named("comm.retries") int retries,
-            @Named("comm.retry_delay") int retryDelay, @Named("emitter.send.numMessages") int numMessages) {
+    public PartitionInfo(Emitter emitter, Listener listener) {
         this.emitter = emitter;
         this.listener = listener;
         this.partitionId = this.listener.getPartitionId();
         logger.debug("# Partitions = {}; Current partition = {}", this.emitter.getPartitionCount(),
                 this.listener.getPartitionId());
 
-        this.numRetries = retries;
-        this.retryDelayMs = retryDelay;
-        this.numMessages = numMessages;
         // this.messagesExpected = numMessages * this.emitter.getPartitionCount();
 
         this.sendThread = new SendThread();

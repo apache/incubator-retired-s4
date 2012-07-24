@@ -90,10 +90,10 @@ public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateL
 
     // TODO we currently have a single assignment per node (i.e. a node can only belong to 1 topology)
     @Inject
-    public AssignmentFromZK(@Named("cluster.name") String clusterName,
-            @Named("cluster.zk_address") String zookeeperAddress,
-            @Named("cluster.zk_session_timeout") int sessionTimeout,
-            @Named("cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+    public AssignmentFromZK(@Named("s4.cluster.name") String clusterName,
+            @Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
         this.clusterName = clusterName;
         this.connectionTimeout = connectionTimeout;
         taskPath = "/s4/clusters/" + clusterName + "/tasks";

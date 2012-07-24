@@ -46,7 +46,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.sun.net.httpserver.HttpServer;
@@ -79,20 +78,6 @@ public class TestProducerConsumer {
     }
 
     @Before
-    public void cleanLocalAppsDir() throws ConfigurationException, IOException {
-        PropertiesConfiguration config = loadConfig();
-
-        if (!new File(config.getString("appsDir")).exists()) {
-            Assert.assertTrue(new File(config.getString("appsDir")).mkdirs());
-        } else {
-            if (!config.getString("appsDir").startsWith("/tmp")) {
-                Assert.fail("apps dir should a subdir of /tmp for safety");
-            }
-            CommTestUtils.deleteDirectoryContents(new File(config.getString("appsDir")));
-        }
-    }
-
-    @Before
     public void prepare() throws Exception {
         CommTestUtils.cleanupTmpDirs();
         zookeeperServerConnectionFactory = CommTestUtils.startZookeeperServer();
@@ -122,18 +107,10 @@ public class TestProducerConsumer {
     @Test
     public void testInitialDeploymentFromFileSystem() throws Exception {
 
-        File producerS4R = new File(loadConfig().getString("appsDir") + File.separator + "producer"
-                + System.currentTimeMillis() + ".s4r");
-        System.out.println(tmpAppsDir.getAbsolutePath());
-        Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-                + "/producer-app-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(producerS4R)) > 0);
+        File producerS4R = new File(tmpAppsDir, "producer-app-0.0.0-SNAPSHOT.s4r");
         String uriProducer = producerS4R.toURI().toString();
 
-        File consumerS4R = new File(loadConfig().getString("appsDir") + File.separator + "consumer"
-                + System.currentTimeMillis() + ".s4r");
-        Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-                + "/consumer-app-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(consumerS4R)) > 0);
-
+        File consumerS4R = new File(tmpAppsDir, "consumer-app-0.0.0-SNAPSHOT.s4r");
         String uriConsumer = consumerS4R.toURI().toString();
 
         initializeS4Node();
@@ -178,10 +155,6 @@ public class TestProducerConsumer {
     }
 
     private void initializeS4Node() throws ConfigurationException, IOException, InterruptedException, KeeperException {
-        // 0. package s4 app
-        // TODO this is currently done offline, and the app contains the TestApp class copied from the one in the
-        // current package .
-
         // 1. start s4 nodes. Check that no app is deployed.
         TaskSetup taskSetup = new TaskSetup("localhost:" + CommTestUtils.ZK_PORT);
         taskSetup.clean("s4");

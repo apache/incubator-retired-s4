@@ -59,7 +59,7 @@ public class MockCommModule extends AbstractModule {
         Assignment mockedAssignment = Mockito.mock(Assignment.class);
         Mockito.when(mockedAssignment.assignClusterNode()).thenReturn(new ClusterNode(0, 0, "machine", "Task-0"));
         bind(Assignment.class).toInstance(mockedAssignment);
-        Names.bindProperties(binder(), ImmutableMap.of("cluster.name", "testCluster"));
+        Names.bindProperties(binder(), ImmutableMap.of("s4.cluster.name", "testCluster"));
     }
 
 }

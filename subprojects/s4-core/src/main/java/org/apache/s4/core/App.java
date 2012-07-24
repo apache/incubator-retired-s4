@@ -77,7 +77,7 @@ public abstract class App {
     RemoteStreams remoteStreams;
 
     @Inject
-    @Named("cluster.name")
+    @Named("s4.cluster.name")
     String clusterName;
 
     // default is NoOpCheckpointingFramework

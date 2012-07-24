@@ -49,8 +49,8 @@ public class DeliveryTestUtil {
     private final int messagesExpected;
 
     @Inject
-    public DeliveryTestUtil(Emitter emitter, Listener listener, @Named("emitter.send.interval") int interval,
-            @Named("emitter.send.numMessages") int numMessages, @Named("listener.recv.sleepCount") int sleepCount) {
+    public DeliveryTestUtil(Emitter emitter, Listener listener, @Named("s4.emitter.send.interval") int interval,
+            @Named("s4.emitter.send.numMessages") int numMessages, @Named("s4.listener.recv.sleepCount") int sleepCount) {
         this.emitter = emitter;
         this.listener = listener;
         this.interval = interval;

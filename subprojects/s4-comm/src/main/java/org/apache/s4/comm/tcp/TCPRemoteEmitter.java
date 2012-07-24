@@ -32,12 +32,11 @@ import com.google.inject.name.Named;
 public class TCPRemoteEmitter extends TCPEmitter implements RemoteEmitter {
 
     /**
-     * Sends to remote subclusters. This is dynamically created, through an
-     * injected factory, when new subclusters are discovered (as remote streams
-     * outputs)
+     * Sends to remote subclusters. This is dynamically created, through an injected factory, when new subclusters are
+     * discovered (as remote streams outputs)
      */
     @Inject
-    public TCPRemoteEmitter(@Assisted Cluster topology, @Named("comm.timeout") int timeout)
+    public TCPRemoteEmitter(@Assisted Cluster topology, @Named("s4.comm.timeout") int timeout)
             throws InterruptedException {
         super(topology, timeout);
     }

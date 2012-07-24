@@ -66,9 +66,9 @@ public class Server {
      */
     @Inject
     public Server(String commModuleName, @Named("s4.logger_level") String logLevel,
-            @Named("cluster.name") String clusterName, @Named("cluster.zk_address") String zookeeperAddress,
-            @Named("cluster.zk_session_timeout") int sessionTimeout,
-            @Named("cluster.zk_connection_timeout") int connectionTimeout) {
+            @Named("s4.cluster.name") String clusterName, @Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) {
         this.logLevel = logLevel;
 
         zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);

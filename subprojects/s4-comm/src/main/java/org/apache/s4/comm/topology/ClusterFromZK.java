@@ -59,10 +59,10 @@ public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener
      * only the local topology
      */
     @Inject
-    public ClusterFromZK(@Named("cluster.name") String clusterName,
-            @Named("cluster.zk_address") String zookeeperAddress,
-            @Named("cluster.zk_session_timeout") int sessionTimeout,
-            @Named("cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+    public ClusterFromZK(@Named("s4.cluster.name") String clusterName,
+            @Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
         this.clusterName = clusterName;
         this.taskPath = "/s4/clusters/" + clusterName + "/tasks";
         this.processPath = "/s4/clusters/" + clusterName + "/process";

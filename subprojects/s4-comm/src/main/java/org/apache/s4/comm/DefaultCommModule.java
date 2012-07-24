@@ -98,17 +98,18 @@ public class DefaultCommModule extends AbstractModule {
 
         try {
             Class<? extends Emitter> emitterClass = (Class<? extends Emitter>) Class.forName(config
-                    .getString("comm.emitter.class"));
+                    .getString("s4.comm.emitter.class"));
             bind(Emitter.class).to(emitterClass);
 
             // RemoteEmitter instances are created through a factory, depending on the topology. We inject the factory
             Class<? extends RemoteEmitter> remoteEmitterClass = (Class<? extends RemoteEmitter>) Class.forName(config
-                    .getString("comm.emitter.remote.class"));
+                    .getString("s4.comm.emitter.remote.class"));
             install(new FactoryModuleBuilder().implement(RemoteEmitter.class, remoteEmitterClass).build(
                     RemoteEmitterFactory.class));
             bind(RemoteEmitters.class);
 
-            bind(Listener.class).to((Class<? extends Listener>) Class.forName(config.getString("comm.listener.class")));
+            bind(Listener.class).to(
+                    (Class<? extends Listener>) Class.forName(config.getString("s4.comm.listener.class")));
 
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find class implementation ", e);
@@ -128,14 +129,14 @@ public class DefaultCommModule extends AbstractModule {
             Names.bindProperties(binder, ConfigurationConverter.getProperties(config));
 
             if (clusterName != null) {
-                if (config.containsKey("cluster.name")) {
+                if (config.containsKey("s4.cluster.name")) {
                     logger.warn(
                             "cluster [{}] passed as a parameter will not be used because an existing cluster.name parameter of value [{}] was found in the configuration file and will be used",
-                            clusterName, config.getProperty("cluster.name"));
+                            clusterName, config.getProperty("s4.cluster.name"));
                 } else {
                     Names.bindProperties(binder, new HashMap<String, String>() {
                         {
-                            put("cluster.name", clusterName);
+                            put("s4.cluster.name", clusterName);
                         }
                     });
                 }

@@ -51,10 +51,10 @@ public class ClustersFromZK implements Clusters, IZkStateListener {
     private String clusterName;
 
     @Inject
-    public ClustersFromZK(@Named("cluster.name") String clusterName,
-            @Named("cluster.zk_address") String zookeeperAddress,
-            @Named("cluster.zk_session_timeout") int sessionTimeout,
-            @Named("cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+    public ClustersFromZK(@Named("s4.cluster.name") String clusterName,
+            @Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
         this.clusterName = clusterName;
         this.connectionTimeout = connectionTimeout;
         lock = new ReentrantLock();

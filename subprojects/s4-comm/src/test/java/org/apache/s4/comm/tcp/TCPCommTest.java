@@ -28,10 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.io.Resources;
-import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.name.Names;
 
 public abstract class TCPCommTest extends ProtocolTestUtil {
 
@@ -50,23 +48,10 @@ public abstract class TCPCommTest extends ProtocolTestUtil {
     public Injector newInjector() {
         try {
             return Guice.createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                    .openStream(), CLUSTER_NAME), new TCPCommTestModule());
+                    .openStream(), CLUSTER_NAME));
         } catch (IOException e) {
             Assert.fail();
             return null;
-        }
-    }
-
-    class TCPCommTestModule extends AbstractModule {
-        TCPCommTestModule() {
-
-        }
-
-        @Override
-        protected void configure() {
-            bind(Integer.class).annotatedWith(Names.named("emitter.send.interval")).toInstance(100);
-            bind(Integer.class).annotatedWith(Names.named("emitter.send.numMessages")).toInstance(200);
-            bind(Integer.class).annotatedWith(Names.named("listener.recv.sleepCount")).toInstance(10);
         }
     }
 

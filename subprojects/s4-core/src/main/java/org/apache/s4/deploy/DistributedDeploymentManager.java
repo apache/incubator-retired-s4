@@ -79,10 +79,10 @@ public class DistributedDeploymentManager implements DeploymentManager {
     boolean deployed = false;
 
     @Inject
-    public DistributedDeploymentManager(@Named("cluster.name") String clusterName,
-            @Named("cluster.zk_address") String zookeeperAddress,
-            @Named("cluster.zk_session_timeout") int sessionTimeout,
-            @Named("cluster.zk_connection_timeout") int connectionTimeout, Server server) {
+    public DistributedDeploymentManager(@Named("s4.cluster.name") String clusterName,
+            @Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, Server server) {
 
         this.clusterName = clusterName;
         this.server = server;
