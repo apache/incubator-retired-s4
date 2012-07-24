@@ -18,7 +18,6 @@
 
 package org.apache.s4.example.model;
 
-
 import java.io.InputStream;
 
 import org.apache.commons.configuration.ConfigurationConverter;
@@ -34,10 +33,7 @@ import com.google.inject.name.Names;
 /**
  * Configures the controller.
  * 
- * Reads a properties file, provides a {@link Communicator} singleton, and
- * configures Guice bindings.
  * 
- * @author Leo Neumeyer
  */
 public class Module extends AbstractModule {
 
@@ -46,8 +42,7 @@ public class Module extends AbstractModule {
     private void loadProperties(Binder binder) {
 
         try {
-            InputStream is = this.getClass().getResourceAsStream(
-                    "/model.properties");
+            InputStream is = this.getClass().getResourceAsStream("/model.properties");
             config = new PropertiesConfiguration();
             config.load(is);
 
@@ -55,8 +50,7 @@ public class Module extends AbstractModule {
             // TODO - validate properties.
 
             /* Make all properties injectable. Do we need this? */
-            Names.bindProperties(binder,
-                    ConfigurationConverter.getProperties(config));
+            Names.bindProperties(binder, ConfigurationConverter.getProperties(config));
         } catch (ConfigurationException e) {
             binder.addError(e);
             e.printStackTrace();
@@ -72,8 +66,7 @@ public class Module extends AbstractModule {
         int numGaussians = config.getInt("model.num_gaussians");
 
         /*
-         * Here we bind a specific Model implementation. This one is the
-         * GaussianMixtureModel
+         * Here we bind a specific Model implementation. This one is the GaussianMixtureModel
          */
         bind(Model.class).toInstance(
                 new org.apache.s4.model.GaussianMixtureModel(vectorSize, numGaussians,

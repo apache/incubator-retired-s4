@@ -1,4 +1,4 @@
-S4 Counter Example
+S4 Counter Example (NOT updated for 0.5.0)
 ==================
 
 In this example we do the following:

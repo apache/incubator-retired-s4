@@ -158,6 +158,10 @@ public class Main {
         }
     }
 
+    /**
+     * Defines command parameters.
+     *
+     */
     @Parameters(separators = "=")
     public static class MainArgs {
 
@@ -190,6 +194,10 @@ public class Main {
 
     }
 
+    /**
+     * Parameters parsing utility.
+     *
+     */
     public static class InlineConfigParameterConverter implements IStringConverter<String> {
 
         @Override

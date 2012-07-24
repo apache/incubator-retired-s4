@@ -59,11 +59,12 @@ import com.google.common.io.ByteStreams;
  * Fetches S4R archive through HTTP.
  * </p>
  * <p>
- * The underlying implementation uses Netty, and borrows code from the Netty snoop example:</br>
+ * The underlying implementation uses Netty, and borrows code from the Netty snoop example.</br>
  * 
- * {@link http://docs.jboss.org/netty/3.2/xref/org/jboss/netty/example/http/snoop/package-summary.html}
+ * @see <a href="http://docs.jboss.org/netty/3.2/xref/org/jboss/netty/example/http/snoop/package-summary.html">Netty
+ *      snoop example</a>
  * 
- * </p>
+ *      </p>
  */
 public class HttpS4RFetcher implements S4RFetcher {
 

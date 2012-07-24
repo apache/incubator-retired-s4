@@ -18,6 +18,10 @@
 
 package org.apache.s4.base;
 
+/**
+ * Defines serialization and deserialization methods used within the S4 platform, typically for events and PEs.
+ *
+ */
 public interface SerializerDeserializer {
     public byte[] serialize(Object message);
 

@@ -22,7 +22,6 @@ package org.apache.s4.model;
  * 
  * Base class for statistical models.
  * 
- * @author Leo Neumeyer
  * 
  */
 abstract public class Model {
@@ -82,10 +81,6 @@ abstract public class Model {
         return isTrain;
     }
 
-    /**
-     * @param train
-     *            set train.
-     */
     public void setTrain(boolean isTrain) {
         this.isTrain = isTrain;
     }

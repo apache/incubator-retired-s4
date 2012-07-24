@@ -37,7 +37,7 @@ public class ProducerPE extends ProcessingElement {
 
     /**
      * @param targetStreams
-     *            the {@link UserEvent} streams.
+     *            the {@link Streamable} streams.
      */
     public void setStreams(Streamable... targetStreams) {
         this.targetStreams = targetStreams;

@@ -20,7 +20,7 @@ package org.apache.s4.comm.topology;
 
 /**
  * A subscriber to a published stream. Identified through its cluster name (for dispatching to the remote cluster) and
- * application ID (for dispatching within a node).
+ * application ID (for dispatching within a node (NOTE: this parameter is ignored)).
  * 
  */
 public class StreamConsumer {

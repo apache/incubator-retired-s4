@@ -71,10 +71,10 @@ public class Event {
     }
 
     /**
-     * The stream id is used to identify streams uniquely in a cluster configuration. It is not required to operate in
-     * local mode.
      * 
-     * @param targetStreamId
+     * @param streamName
+     *            used to identify streams uniquely in a cluster configuration. It is not required to operate in local
+     *            mode.
      */
     public void setStreamId(String streamName) {
         this.streamName = streamName;

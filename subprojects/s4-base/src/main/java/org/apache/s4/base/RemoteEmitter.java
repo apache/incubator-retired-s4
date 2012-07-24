@@ -18,6 +18,10 @@
 
 package org.apache.s4.base;
 
+/**
+ * Marker interface for identifying emitters to remote S4 clusters.
+ *
+ */
 public interface RemoteEmitter extends Emitter {
 
 }

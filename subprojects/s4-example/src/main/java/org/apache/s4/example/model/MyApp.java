@@ -132,8 +132,6 @@ public class MyApp extends App {
     /**
      * Check if a test is complete.
      * 
-     * @param number
-     *            of test vectors.
      * @return true when testing is complete.
      */
     public boolean isTested(long numTestVectors) {

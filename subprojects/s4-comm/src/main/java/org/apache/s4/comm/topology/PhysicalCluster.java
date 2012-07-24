@@ -91,9 +91,8 @@ public class PhysicalCluster {
     }
 
     /**
-     * Number of partitions in the cluster.
      * 
-     * @return
+     * @return Number of partitions in the cluster.
      */
     public int getPartitionCount() {
         return numPartitions;

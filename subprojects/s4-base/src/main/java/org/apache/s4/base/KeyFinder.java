@@ -20,13 +20,11 @@ package org.apache.s4.base;
 
 import java.util.List;
 
-
-/*  
- * The KeyFinder returns a list with one or more String values 
- * (One value for single keys, and more than one value for 
- * composite keys.) 
+/**
+ * The KeyFinder returns a list with one or more String values (One value for single keys, and more than one value for
+ * composite keys.)
  * */
-abstract public interface KeyFinder<T extends Event> {
+public interface KeyFinder<T extends Event> {
 
     public List<String> get(T event);
 }

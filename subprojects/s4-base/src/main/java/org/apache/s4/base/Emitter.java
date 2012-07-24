@@ -18,12 +18,18 @@
 
 package org.apache.s4.base;
 
+/**
+ * Defines an event emitter, responsible for sending an event to a given partition of the cluster.
+ *
+ */
 public interface Emitter {
 
-    /*
-     * @param partitionId - destination partition
+    /**
+     * @param partitionId
+     *            - destination partition
      * 
-     * @param message - message payload that needs to be sent
+     * @param message
+     *            - message payload that needs to be sent
      * 
      * @return - true - if message is sent across successfully - false - if send fails
      */

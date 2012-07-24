@@ -83,7 +83,6 @@ import com.google.common.collect.Sets;
  * <p>
  * See the <a href="http://code.google.com/p/diezel">Diezel</a> project for details.
  * 
- * @author Leo Neumeyer (@leoneu)
  */
 public class AppBuilder extends App {
 

@@ -25,6 +25,10 @@ import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.comm.topology.ZkClient;
 
+/**
+ * Used for defining and dimensioning logical clusters in Zookeeper.
+ *
+ */
 public class TaskSetup {
 
     private ZkClient zkclient;

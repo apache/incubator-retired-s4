@@ -37,7 +37,7 @@ import com.google.common.base.Preconditions;
  * <p>
  * Once a stream is instantiated, it is immutable.
  * <p>
- * To build an application create stream objects using use the {@link StreamFactory} class.
+ * To build an application, create stream objects using relevant methods in the {@link App} class.
  */
 public class Stream<T extends Event> implements Runnable, Streamable {
 
@@ -58,7 +58,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     private Class<T> eventType = null;
 
     /**
-     * Send events using a {@link KeyFinder<T>}. The key finder extracts the value of the key which is used to determine
+     * Send events using a {@link KeyFinder}. The key finder extracts the value of the key which is used to determine
      * the target {@link org.apache.s4.comm.topology.ClusterNode} for an event.
      * 
      * @param app
@@ -123,7 +123,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     /**
      * Define the key finder for this stream using a descriptor.
      * 
-     * @param keyFinderString
+     * @param keyName
      *            a descriptor to lookup up the value of the key.
      * @return the stream object
      */
@@ -153,7 +153,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     /**
      * Send events from this stream to various PEs.
      * 
-     * @param pe
+     * @param pes
      *            a target PE array.
      * 
      * @return the stream object
@@ -211,8 +211,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     }
 
     /**
-     * Implements the {@link ReceiverListener} interface. The low level {@link Receiver} object call this method when a
-     * new {@link Event} is available.
+     * The low level {@link Receiver} object call this method when a new {@link Event} is available.
      */
     public void receiveEvent(EventMessage event) {
         try {
@@ -236,13 +235,6 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     public Key<T> getKey() {
         return key;
     }
-
-    /**
-     * @return the stream id
-     */
-    // int getId() {
-    // return id;
-    // }
 
     /**
      * @return the app

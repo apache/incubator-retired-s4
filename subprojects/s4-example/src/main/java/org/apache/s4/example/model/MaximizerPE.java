@@ -25,11 +25,9 @@ import org.apache.s4.core.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 final public class MaximizerPE extends ProcessingElement {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(MaximizerPE.class);
+    private static final Logger logger = LoggerFactory.getLogger(MaximizerPE.class);
 
     private int numClasses;
     private Stream<ObsEvent> assignmentStream;
@@ -41,10 +39,6 @@ final public class MaximizerPE extends ProcessingElement {
         super(app);
     }
 
-    /**
-     * @param countStream
-     *            the countStream to set
-     */
     public void setAssignmentStream(Stream<ObsEvent> stream) {
         assignmentStream = stream;
     }
@@ -77,8 +71,7 @@ final public class MaximizerPE extends ProcessingElement {
         if (++numEventsReceived == numClasses) {
 
             /* Got all the distances. Send class id with minimum distance. */
-            ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs,
-                    maxLogProb, inEvent.getClassId(), hypID, false);
+            ObsEvent outEvent = new ObsEvent(inEvent.getIndex(), obs, maxLogProb, inEvent.getClassId(), hypID, false);
 
             logger.trace("IN: " + inEvent.toString());
             logger.trace("OUT: " + outEvent.toString());

@@ -180,9 +180,9 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     /**
-     * This method is called by the PE timer. By default it is synchronized with the {@link #onEvent()} and
-     * {@link #onTrigger()} methods. To execute concurrently with other methods, the {@link ProcessingElelment} subclass
-     * must be annotated with {@link @ThreadSafe}.
+     * This method is called by the PE timer. By default it is synchronized with the onEvent() and onTrigger() methods.
+     * To execute concurrently with other methods, the {@link ProcessingElement} subclass must be annotated with
+     * {@link ThreadSafe}.
      * 
      * Override this method to implement a periodic process.
      */

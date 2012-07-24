@@ -32,9 +32,7 @@ import com.google.inject.name.Names;
 /**
  * Configures the controller.
  * 
- * Reads a properties file, provides a {@link Communicator} singleton, and configures Guice bindings.
  * 
- * @author Leo Neumeyer
  */
 public class Module extends AbstractModule {
 

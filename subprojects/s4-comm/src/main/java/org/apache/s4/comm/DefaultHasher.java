@@ -20,6 +20,10 @@ package org.apache.s4.comm;
 
 import org.apache.s4.base.Hasher;
 
+/**
+ * Simple hasher implementation.
+ *
+ */
 public class DefaultHasher implements Hasher {
 
     @Override

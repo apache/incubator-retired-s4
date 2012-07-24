@@ -42,8 +42,8 @@ import com.google.inject.name.Named;
  * file system such as NFS when running on a cluster.
  * </p>
  * <p>
- * Checkpoints are stored in individual files (1 file = 1 safeKeeperId) in directories according to the following
- * structure: <code>(storageRootpath)/prototypeId/safeKeeperId</code>
+ * Checkpoints are stored in individual files (1 file = 1 checkpointId) in directories according to the following
+ * structure: <code>(storageRootpath)/prototypeId/checkpointId</code>
  * </p>
  *
  */
@@ -69,7 +69,7 @@ public class DefaultFileSystemStateStorage implements StateStorage {
 
     @Override
     public byte[] fetchState(CheckpointId key) {
-        File file = safeKeeperID2File(key, storageRootPath);
+        File file = checkpointID2File(key, storageRootPath);
         if (file != null && file.exists()) {
             logger.debug("Fetching " + file.getAbsolutePath() + "for : " + key);
 
@@ -103,20 +103,20 @@ public class DefaultFileSystemStateStorage implements StateStorage {
                 }
             });
             for (File file : files) {
-                keys.add(file2SafeKeeperID(file));
+                keys.add(file2CheckpointID(file));
             }
         }
         return keys;
     }
 
     // files kept as : root/<prototypeId>/encodedKeyWithFullInfo
-    private static File safeKeeperID2File(CheckpointId key, String storageRootPath) {
+    private static File checkpointID2File(CheckpointId key, String storageRootPath) {
 
         return new File(storageRootPath + File.separator + key.getPrototypeId() + File.separator
                 + Base64.encodeBase64URLSafeString(key.getStringRepresentation().getBytes()));
     }
 
-    private static CheckpointId file2SafeKeeperID(File file) {
+    private static CheckpointId file2CheckpointID(File file) {
         CheckpointId id = null;
         id = new CheckpointId(new String(Base64.decodeBase64(file.getName())));
         return id;
@@ -140,7 +140,7 @@ public class DefaultFileSystemStateStorage implements StateStorage {
 
     @Override
     public void saveState(CheckpointId key, byte[] state, StorageCallback callback) {
-        File f = safeKeeperID2File(key, storageRootPath);
+        File f = checkpointID2File(key, storageRootPath);
         if (logger.isDebugEnabled()) {
             logger.debug("Checkpointing [" + key + "] into file: [" + f.getAbsolutePath() + "]");
         }

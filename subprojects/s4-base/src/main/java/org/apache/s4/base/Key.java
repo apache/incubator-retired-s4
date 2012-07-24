@@ -22,14 +22,13 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 
-/*
- * The Key class is used to get the value of the key on a specific type of
- * event. This is done to abstract all the complexity required to get the 
- * value. The method for getting the value is implemented in a method of 
- * an object of type KeyFinder<T>.
+/**
+ * The Key class is used to get the value of the key on a specific type of event. This is done to abstract all the
+ * complexity required to get the value. The method for getting the value is implemented in a method of an object of
+ * type KeyFinder<T>.
  * 
- * The application programmer provides the events and the corresponding 
- * finders. The framework will use it to key on events.
+ * The application programmer provides the events and the corresponding finders. The framework will use it to key on
+ * events.
  */
 public class Key<T extends Event> {
 

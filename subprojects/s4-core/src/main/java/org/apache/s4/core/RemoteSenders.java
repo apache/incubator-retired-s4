@@ -35,6 +35,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
+/**
+ * Sends events to remote clusters. Target clusters are selected dynamically based on the stream name information from
+ * the event.
+ *
+ */
 public class RemoteSenders {
 
     Logger logger = LoggerFactory.getLogger(RemoteSenders.class);

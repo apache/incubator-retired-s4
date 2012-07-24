@@ -42,6 +42,10 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
+/**
+ * Handles partition assignment through Zookeeper.
+ *
+ */
 @Singleton
 public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateListener, IZkDataListener {
     private static final Logger logger = LoggerFactory.getLogger(AssignmentFromZK.class);

@@ -29,7 +29,7 @@ public interface StorageCallback {
      * Notifies the result of a storage operation
      *
      * @param resultCode
-     *            code for the result : {@link SafeKeeper.StorageResultCode SafeKeeper.StorageResultCode}
+     *            code for the result : {@link SafeKeeper.StorageResultCode}
      * @param message
      *            whatever message object is suitable
      */

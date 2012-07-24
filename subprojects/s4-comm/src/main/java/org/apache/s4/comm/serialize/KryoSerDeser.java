@@ -27,6 +27,10 @@ import com.esotericsoftware.kryo.ObjectBuffer;
 import com.esotericsoftware.kryo.serialize.ClassSerializer;
 import com.esotericsoftware.kryo.serialize.SimpleSerializer;
 
+/**
+ * Serializazer/deserializer based on <a href="http://code.google.com/p/kryo/">kryo</a>
+ *
+ */
 public class KryoSerDeser implements SerializerDeserializer {
 
     private Kryo kryo = new Kryo();

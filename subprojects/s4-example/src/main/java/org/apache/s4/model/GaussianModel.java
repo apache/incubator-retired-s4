@@ -28,7 +28,6 @@ import org.ejml.ops.CommonOps;
  * A multivariate Gaussian model with parameters mean (mu) and variance (sigma
  * squared). Only diagonal covariance matrices are supported.
  * 
- * @author Leo Neumeyer
  * 
  */
 public class GaussianModel extends Model {

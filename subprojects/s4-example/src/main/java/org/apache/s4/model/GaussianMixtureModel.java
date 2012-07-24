@@ -29,7 +29,6 @@ import org.ejml.ops.CommonOps;
  * A multivariate Gaussian mixture model. Only diagonal covariance matrices are
  * supported.
  * 
- * @author Leo Neumeyer
  * 
  */
 public class GaussianMixtureModel extends Model {

@@ -26,7 +26,6 @@ import org.ejml.data.DenseMatrix64F;
 /**
  * Extensions to the EJML library.
  * 
- * @author Leo Neumeyer
  */
 public class MatrixOps {
 

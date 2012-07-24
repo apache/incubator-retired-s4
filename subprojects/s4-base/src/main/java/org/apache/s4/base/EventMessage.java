@@ -19,15 +19,17 @@
 package org.apache.s4.base;
 
 /**
- * 
+ * <p>
  * Encapsulates application-level events of type {@link Event}.
- * 
+ * </p>
+ * <p>
  * Indeed, events that are defined at the application level can only be handled by the classloader of the corresponding
  * application.
- * 
+ * </p>
+ * <p>
  * Includes routing information (application name, stream name), so that this message can be dispatched at the
  * communication level.
- * 
+ * </p>
  * 
  */
 public class EventMessage {

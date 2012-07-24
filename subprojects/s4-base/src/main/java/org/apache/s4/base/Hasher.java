@@ -18,6 +18,10 @@
 
 package org.apache.s4.base;
 
+/**
+ * Defines a transformation between a key and a hashcode.
+ *
+ */
 public interface Hasher {
     long hash(String hashKey);
 }

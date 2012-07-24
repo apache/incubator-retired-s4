@@ -41,7 +41,7 @@ import com.google.inject.name.Named;
 
 /**
  * Container base class to hold all processing elements.
- * 
+ *
  * It is also where one defines the application graph: PE prototypes, internal streams, input and output streams.
  */
 public abstract class App {
@@ -236,8 +236,8 @@ public abstract class App {
      * Set the {@link ClockType}.
      * 
      * @param clockType
-     *            the clockTyoe for this app must be {@link ClockType.WALL_CLOCK} (default) or
-     *            {@link ClockType.EVENT_CLOCK}
+     *            the clockTyoe for this app must be {@link ClockType#WALL_CLOCK} (default) or
+     *            {@link ClockType#EVENT_CLOCK}
      */
     public void setClockType(ClockType clockType) {
         this.clockType = clockType;
