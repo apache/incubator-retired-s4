@@ -22,7 +22,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -121,6 +120,10 @@ public final class SafeKeeper implements CheckpointingFramework {
     @Named("s4.checkpointing.fetchingDisabledDurationMs")
     long fetchingDisabledDurationMs = 600000;
 
+    @Inject(optional = true)
+    @Named("s4.checkpointing.fetchingQueueSize")
+    int fetchingQueueSize = 100;
+
     long fetchingDisabledInitTime = -1;
     AtomicInteger fetchingCurrentConsecutiveFailures = new AtomicInteger();
 
@@ -156,8 +159,8 @@ public final class SafeKeeper implements CheckpointingFramework {
 
         ThreadFactory fetchingThreadFactory = new ThreadFactoryBuilder().setNameFormat("Checkpointing-fetching-%d")
                 .setUncaughtExceptionHandler(new UncaughtExceptionLogger("fetching")).build();
-        fetchingThreadPool = new ThreadPoolExecutor(1, fetchingMaxThreads, fetchingThreadKeepAliveSeconds,
-                TimeUnit.SECONDS, new SynchronousQueue<Runnable>(true), fetchingThreadFactory);
+        fetchingThreadPool = new ThreadPoolExecutor(0, fetchingMaxThreads, fetchingThreadKeepAliveSeconds,
+                TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(fetchingQueueSize), fetchingThreadFactory);
         fetchingThreadPool.allowCoreThreadTimeOut(true);
 
     }
