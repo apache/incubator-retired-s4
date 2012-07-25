@@ -17,7 +17,7 @@
  */
 
 
-description = 'The S4 core platform.'
+description = 'The S4 tools platform.'
 
 apply plugin: 'java'
 
@@ -49,19 +49,6 @@ task copyTemplates << {
     }
 }
 
-applicationDistribution.from(configurations.compile) {
-    // this is supposed to be done by default but is not anymore in 1.0-rc-3
-    include "*.jar"
-    into("lib")
-}
-
-startScripts {
-    classpath = files('$APP_HOME/lib/*')
-}
-
-
-
-
 run {
     // run doesn't yet directly accept command line parameters...
     if ( project.hasProperty('args') ) {
@@ -69,6 +56,13 @@ run {
         print args
     }
  }
+ 
+distZip {
+    // what we build here is really a binary release of S4 with required subprojects and dependencies (hence refs to rootProject)
+    classifier='bin'
+    version = rootProject.version
+    baseName=rootProject.ext.archivesBaseName
+}
 
 test {
     forkEvery=1

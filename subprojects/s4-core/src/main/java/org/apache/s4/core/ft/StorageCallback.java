@@ -18,18 +18,20 @@
 
 package org.apache.s4.core.ft;
 
+import org.apache.s4.core.ft.CheckpointingFramework.StorageResultCode;
+
 /**
- *
+ * 
  * Callback for reporting the result of an asynchronous storage operation
- *
+ * 
  */
 public interface StorageCallback {
 
     /**
      * Notifies the result of a storage operation
-     *
+     * 
      * @param resultCode
-     *            code for the result : {@link SafeKeeper.StorageResultCode}
+     *            code for the result : {@link StorageResultCode}
      * @param message
      *            whatever message object is suitable
      */

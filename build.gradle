@@ -24,13 +24,13 @@
 
 description = 'Apache S4'
 defaultTasks 'assemble'
-project.ext["archivesBaseName"] = 's4'
+project.ext["archivesBaseName"] = 'apache-s4'
 project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
 allprojects {
 
     // Append the suffix 'SNAPSHOT' when the build is not for release.
-    version = new Version(major: 0, minor: 5, bugfix: 0, isRelease: false)
+    version = new Version(major: 0, minor: 5, bugfix: 0, isRelease: true)
     group = 'org.apache.s4'
 
     /* Search these repos to find artifacts. Gradle will download and cache. */
@@ -56,7 +56,6 @@ project.ext["libraries"] = [
     mockito_core:       'org.mockito:mockito-core:1.9.0',
     commons_config:     'commons-configuration:commons-configuration:1.6',
     commons_codec:      'commons-codec:commons-codec:1.4',
-    commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
     commons_coll:       'net.sourceforge.collections:collections-generic:4.01', // Use this lib until the commons collection with Generics is released.
     slf4j:              'org.slf4j:slf4j-api:1.6.1',
     logback_core:       'ch.qos.logback:logback-core:0.9.29',
@@ -115,13 +114,22 @@ subprojects {
         /* Testing. */
         testCompile( libraries.junit )
     }
+    
+    jar {
+        from (rootDir) {
+            include "NOTICE.txt"
+            include "LICENSE"
+            into "META-INF"
+        }
+    }
 
     manifest.mainAttributes(
-    provider: 'gradle',
-    'Implementation-Url': 'http://incubator.apache.org/projects/s4.html',
-    'Implementation-Version': version,
-    'Implementation-Vendor': 'Apache S4',
-    'Implementation-Vendor-Id': 'io.s4'
+        provider: 'gradle',
+        'Implementation-Url': 'http://incubator.apache.org/s4/',
+        'Implementation-Version': version,
+        'Implementation-Vendor': 'Apache Software Foundation',
+        'Implementation-Vendor-Id': 'org.apache',
+        'Implementation-Title': 'org.apache.s4.'+project.name.substring(3) // s4-comm becomes org.apache.s4.comm for instance
     )
 }
 
@@ -137,34 +145,106 @@ dependencies {
     platformLibs platformProjects
 }
 
-project.ext["binDistImage"] = copySpec {
-    platformProjects.collect {proj ->
-        into ("platform/lib") {
-            from proj.sourceSets.main.resources
-            from proj.configurations.runtime.getFiles()
-            from proj.configurations.archives.allArtifacts.files
+
+task javadoc (type: Javadoc) {
+    destinationDir = new File(project.rootDir, 'doc/javadoc')
+    destinationDir.deleteDir()
+
+    title = "Apache S4 " + version
+    source platformProjects.collect { project ->
+        project.sourceSets.main.allJava
+    }
+    // Might need a classpath
+    classpath = files(subprojects.collect { project ->
+        project.sourceSets.main.compileClasspath
+    })
+}
+
+// TODO parameterize
+task javadocBinRelease (type: Javadoc) {
+    destinationDir = new File(project.rootDir,'subprojects/s4-tools/src/dist/doc/javadoc')
+    destinationDir.deleteDir()
+    title = "Apache S4 " + version
+    source platformProjects.collect { project ->
+        project.sourceSets.main.allJava
+    }
+    // Might need a classpath
+    classpath = files(subprojects.collect { project ->
+        project.sourceSets.main.compileClasspath
+    })
+}
+
+task copyRequiredFilesToS4ToolsDistDir (type: Copy) {
+    copy {
+        from (rootDir) {
+            include "NOTICE.txt"
+            include "README.md"
+            include "DISCLAIMER"
+            include "RELEASE_NOTES.txt"
+            include "gradlew"
+            include "gradle.bat"
+            include "s4"
+        }
+        into new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/')
+    }
+    
+    File s4DistFile = new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/s4')
+    ant.replace(file: s4DistFile, token: "\n# NOTE: \"./gradlew s4-tools:installApp\" will prepare/update the tools subproject and related startup scripts", value: "")
+
+    ant.replace(file: s4DistFile, token: "subprojects/s4-tools/build/install/s4-tools/", value: "")
+    
+    ant.chmod(file: s4DistFile, perm: "700")
+    
+    copy {
+        from new File(rootDir, 'gradle') 
+        into new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/gradle')
+    }
+    
+    copy {
+        from (new File(rootDir, 'lib')) {
+            include '*.properties'
+        }
+        into new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/lib')
+    }
+}
+
+
+
+task binDist(dependsOn: ["clean", "s4-tools:clean", "javadocBinRelease", "copyRequiredFilesToS4ToolsDistDir", "s4-tools:cleanDistZip", "s4-tools:distZip"]) {
+    doLast { 
+        copy {
+            from (project.rootDir.path+"/subprojects/s4-tools/build/distributions/")
+            into (project.buildDir)
+            exclude('tmp')
         }
     }
 }
 
-task binImage(type: Copy) {
-    description = "Create binary image"
-    destinationDir = file("$buildDir/s4-image")
-    with binDistImage
+task srcDist(dependsOn: ["clean", "javadoc"], type: Zip) {
+    doFirst {
+        platformProjects.collect { project ->
+            project.tasks.clean.execute()
+        }
+    }
+    classifier='src'
+    appendix='zip'
+    version = project.version
+    baseName=project.ext.archivesBaseName
+    destinationDir = project.buildDir
+    from (project.rootDir)
+    exclude ('build')
+    exclude ('.project')
+    exclude ('.classpath')
+    exclude ('tmp')
+    exclude ('.rat-excludes')
 }
 
 task clean << {
     delete buildDir
 }
 
-// This task lists all the jars. We can use this pattern to create file descriptors.
-task listJars << {
-    description = 'List all the jars in the S4 framework.'
-    configurations.platformLibs.each { File file -> println file.name }
-}
-
 /* Generates the gradlew scripts.
- http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
+ http://www.gradle.org/docs/1.0/userguide/gradle_wrapper.html */
 task wrapper(type: Wrapper) {
     gradleVersion = '1.0'
     jarFile='lib/gradle-wrapper-1.0.jar'
@@ -177,6 +257,6 @@ class Version {
     boolean isRelease
 
     String toString() {
-        "$major.$minor.$bugfix${isRelease ? '' : '-SNAPSHOT'}"
+        "$major.$minor.$bugfix${isRelease ? '' : '-SNAPSHOT'}-incubating"
     }
 }

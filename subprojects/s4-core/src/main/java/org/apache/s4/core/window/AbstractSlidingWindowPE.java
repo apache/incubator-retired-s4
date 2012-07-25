@@ -70,8 +70,8 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
 
     /**
      * 
-     * Constructor for the event-based slot. The abstract method {@link #addPeriodicSlot()} must be called by the
-     * concrete class.
+     * Constructor for the event-based slot. The abstract method {@link #addSlot()} must be called by the concrete
+     * class.
      * 
      * @param app
      *            the application
@@ -83,7 +83,7 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
     }
 
     /**
-     * Constructor for time-based slots. The abstract method {@link #addPeriodicSlot()} is called periodically.
+     * Constructor for time-based slots. The abstract method {@link #addSlot()} is called periodically.
      * 
      * @param app
      *            the application
@@ -148,15 +148,12 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
      * User provided function that evaluates the whole content of the window. It must iterate across all slots. Current
      * slots are passed as a parameter and the PE instance is expected to be locked so that iteration over the slots is
      * safe.
-     * 
-     * @return
      */
     abstract protected V evaluateWindow(Collection<T> slots);
 
     /**
-     * Add an object to the sliding window. Use it when the window is not periodic.
-     * 
-     * @param slot
+     * Add a slot to the sliding window. Called automatically for periodic slots. Use it when the window is not
+     * periodic.
      */
     protected final void addSlot() {
 
