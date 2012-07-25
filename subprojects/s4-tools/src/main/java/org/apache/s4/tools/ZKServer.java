@@ -108,9 +108,9 @@ public class ZKServer {
                     }
                 }
             }
-        }
-        if (!path.delete()) {
-            logger.error("Could not delete directory {}", path.getAbsolutePath());
+            if (!path.delete()) {
+                logger.error("Could not delete directory {}", path.getAbsolutePath());
+            }
         }
     }
 

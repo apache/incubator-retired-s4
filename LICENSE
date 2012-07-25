@@ -458,6 +458,8 @@ any resulting litigation.
 
 ----------------------------------------------------------------------------
 
+This product uses slf4j, which uses the following license (MIT):
+ 
 Copyright (c) 2004-2011 QOS.ch
  All rights reserved.
 

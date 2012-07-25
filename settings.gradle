@@ -25,7 +25,6 @@ include 's4-tools'
 //include 's4-example'
 //include ':test-apps:simple-adapter-1'
 include ':test-apps:simple-deployable-app-1'
-include ':test-apps:simple-deployable-app-2'
 include ':test-apps:producer-app'
 include ':test-apps:consumer-app'
 
