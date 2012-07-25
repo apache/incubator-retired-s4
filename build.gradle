@@ -60,7 +60,6 @@ project.ext["libraries"] = [
     slf4j:              'org.slf4j:slf4j-api:1.6.1',
     logback_core:       'ch.qos.logback:logback-core:0.9.29',
     logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
-    ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
     zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
@@ -210,7 +209,7 @@ task copyRequiredFilesToS4ToolsDistDir (type: Copy) {
 
 
 
-task binDist(dependsOn: ["clean", "s4-tools:clean", "javadocBinRelease", "copyRequiredFilesToS4ToolsDistDir", "s4-tools:cleanDistZip", "s4-tools:distZip"]) {
+task binDist(dependsOn: ["s4-tools:clean", "javadocBinRelease", "copyRequiredFilesToS4ToolsDistDir", "s4-tools:cleanDistZip", "s4-tools:distZip"]) {
     doLast { 
         copy {
             from (project.rootDir.path+"/subprojects/s4-tools/build/distributions/")
@@ -220,14 +219,13 @@ task binDist(dependsOn: ["clean", "s4-tools:clean", "javadocBinRelease", "copyRe
     }
 }
 
-task srcDist(dependsOn: ["clean", "javadoc"], type: Zip) {
+task srcDist(dependsOn: ["javadoc"], type: Zip) {
     doFirst {
         platformProjects.collect { project ->
             project.tasks.clean.execute()
         }
     }
     classifier='src'
-    appendix='zip'
     version = project.version
     baseName=project.ext.archivesBaseName
     destinationDir = project.buildDir

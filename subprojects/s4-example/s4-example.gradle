@@ -17,13 +17,22 @@
  */
 
 
+
 description = 'Examples of S4 applications.'
+
  
+
 dependencies {
+
     compile project( ":s4-base" )
+
     compile project( ":s4-core" )
+
     compile project( ":s4-comm" )
+
     compile project( ":s4-edsl" )
-	compile libraries.ejml
+
     compile libraries.junit
+
 }
+

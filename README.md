@@ -38,12 +38,16 @@ Currently the wiki contains the most relevant and up-to-date documentation.
 Source code is available here: https://git-wip-us.apache.org/repos/asf?p=incubator-s4.git
 
 
+Requirements
+------------
+* JDK 6 or higher
+* *nix or macosx (you may build the project and develop S4 applications with microsoft windows though, the only limitation is that the "s4" script has not been ported to windows yet)
+
 
 How to build
 ------------
 This only applies if you checkout from the source repository or if you download a released source package.
 
-You need a 6+ JDK.
 
 We use gradle http://gradle.org as the build system.
 
