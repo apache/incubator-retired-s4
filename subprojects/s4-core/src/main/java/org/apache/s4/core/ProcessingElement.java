@@ -43,9 +43,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
@@ -117,7 +117,7 @@ public abstract class ProcessingElement implements Cloneable {
      * This maps holds all the instances. We make it package private to prevent concrete classes from updating the
      * collection.
      */
-    transient Cache<String, ProcessingElement> peInstances;
+    transient LoadingCache<String, ProcessingElement> peInstances;
 
     /* This map is initialized in the prototype and cloned to instances. */
     transient Map<Class<? extends Event>, Trigger> triggers;

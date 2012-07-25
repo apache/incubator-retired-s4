@@ -32,7 +32,6 @@ dependencies {
     compile project(":s4-core")
     compile libraries.jcommander
     compile libraries.zkclient
-    compile libraries.commons_io
     compile libraries.gradle_base_services
     compile libraries.gradle_core
     compile libraries.gradle_tooling_api
