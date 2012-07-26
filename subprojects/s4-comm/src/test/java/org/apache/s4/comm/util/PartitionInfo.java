@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.s4.comm.util;
 
 import java.util.ArrayList;
@@ -12,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 
 /**
  * Test util for communication protocols.
@@ -33,9 +50,9 @@ public class PartitionInfo {
     public SendThread sendThread;
     public ReceiveThread receiveThread;
 
-    private final int numRetries;
-    private final int retryDelayMs;
-    private int numMessages;
+    private final int numRetries = 10;
+    private final int retryDelayMs = 10;
+    private int numMessages = 100;
     private int partitionId;
     private ProtocolTestUtil ptu;
 
@@ -43,17 +60,13 @@ public class PartitionInfo {
     SerializerDeserializer serDeser;
 
     @Inject
-    public PartitionInfo(Emitter emitter, Listener listener, @Named("comm.retries") int retries,
-            @Named("comm.retry_delay") int retryDelay, @Named("emitter.send.numMessages") int numMessages) {
+    public PartitionInfo(Emitter emitter, Listener listener) {
         this.emitter = emitter;
         this.listener = listener;
         this.partitionId = this.listener.getPartitionId();
         logger.debug("# Partitions = {}; Current partition = {}", this.emitter.getPartitionCount(),
                 this.listener.getPartitionId());
 
-        this.numRetries = retries;
-        this.retryDelayMs = retryDelay;
-        this.numMessages = numMessages;
         // this.messagesExpected = numMessages * this.emitter.getPartitionCount();
 
         this.sendThread = new SendThread();

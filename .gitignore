@@ -25,3 +25,6 @@ pepe/
 
 # Java
 *.class
+
+# apache RAT
+.rat-excludes

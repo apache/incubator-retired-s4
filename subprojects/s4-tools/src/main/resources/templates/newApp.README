@@ -20,7 +20,7 @@
 
 
  To execute the application in a new S4 cluster:
- 1. start a ZooKeeper instance "./s4 zkServer"
+ 1. start a ZooKeeper instance "./s4 zkServer" (./s4 zkServer -help provides a list of options)
  2. define a logical cluster for your application "./s4 newCluster -cluster=<nameOfTheCluster> -nbTasks=<number of partitions> -flp=<a port number for the first node, other nodes use an increment on this initial port>"
  3. start a node and attach it to the cluster "./s4 node -cluster=<nameOfTheCluster>"
  4. deploy the application "./s4 deploy -cluster=<nameOfTheCluster>"
@@ -31,5 +31,5 @@
 
  If you want to use a simple adapter process, listening to an external source, converting incoming data into S4 events, and sending that to S4 apps, you can define
  your own app that extends the AdapterApp class. Then to start it (for instance):
- - ./s4 adapter -cluster=c1 -appClass=org.apache.s4.example.twitter.TwitterInputAdapter -p={adapter.output.stream=stream1}
+ - ./s4 adapter -cluster=c1 -appClass=org.apache.s4.example.twitter.TwitterInputAdapter -p=s4.adapter.output.stream=stream1
 

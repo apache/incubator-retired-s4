@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.s4.core;
 
 import java.util.Collection;
@@ -19,7 +37,7 @@ import com.google.common.base.Preconditions;
  * <p>
  * Once a stream is instantiated, it is immutable.
  * <p>
- * To build an application create stream objects using use the {@link StreamFactory} class.
+ * To build an application, create stream objects using relevant methods in the {@link App} class.
  */
 public class Stream<T extends Event> implements Runnable, Streamable {
 
@@ -40,7 +58,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     private Class<T> eventType = null;
 
     /**
-     * Send events using a {@link KeyFinder<T>}. The key finder extracts the value of the key which is used to determine
+     * Send events using a {@link KeyFinder}. The key finder extracts the value of the key which is used to determine
      * the target {@link org.apache.s4.comm.topology.ClusterNode} for an event.
      * 
      * @param app
@@ -105,7 +123,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     /**
      * Define the key finder for this stream using a descriptor.
      * 
-     * @param keyFinderString
+     * @param keyName
      *            a descriptor to lookup up the value of the key.
      * @return the stream object
      */
@@ -135,7 +153,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     /**
      * Send events from this stream to various PEs.
      * 
-     * @param pe
+     * @param pes
      *            a target PE array.
      * 
      * @return the stream object
@@ -193,8 +211,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     }
 
     /**
-     * Implements the {@link ReceiverListener} interface. The low level {@link Receiver} object call this method when a
-     * new {@link Event} is available.
+     * The low level {@link Receiver} object call this method when a new {@link Event} is available.
      */
     public void receiveEvent(EventMessage event) {
         try {
@@ -218,13 +235,6 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     public Key<T> getKey() {
         return key;
     }
-
-    /**
-     * @return the stream id
-     */
-    // int getId() {
-    // return id;
-    // }
 
     /**
      * @return the app

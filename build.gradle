@@ -1,11 +1,13 @@
-/*
- * Copyright 2010 the original author or authors.
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +16,7 @@
  * limitations under the License.
  */
 
+
 /**
  * The Apache Incubator S4 Project Build File
  *
@@ -21,13 +24,13 @@
 
 description = 'Apache S4'
 defaultTasks 'assemble'
-project.ext["archivesBaseName"] = 's4'
+project.ext["archivesBaseName"] = 'apache-s4'
 project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
 allprojects {
 
     // Append the suffix 'SNAPSHOT' when the build is not for release.
-    version = new Version(major: 0, minor: 5, bugfix: 0, isRelease: false)
+    version = new Version(major: 0, minor: 5, bugfix: 0, isRelease: true)
     group = 'org.apache.s4'
 
     /* Search these repos to find artifacts. Gradle will download and cache. */
@@ -44,37 +47,25 @@ allprojects {
 
 /* All project libraries must be defined here. */
 project.ext["libraries"] = [
-    json:               'org.json:json:20090211',
-    guava:              'com.google.guava:guava:10.0.1',
+    guava:              'com.google.guava:guava:12.0.1',
     gson:               'com.google.code.gson:gson:1.6',
     guice:              'com.google.inject:guice:3.0',
     guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
-    guice_grapher:      'com.google.inject:guice-grapher:3.0',
-    flexjson:           'net.sf.flexjson:flexjson:2.1',
-    bcel:               'org.apache.bcel:bcel:5.2',
-    jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
     kryo:               'com.googlecode:kryo:1.04',
     netty:              'org.jboss.netty:netty:3.2.5.Final',
-    reflectasm:         'com.esotericsoftware:reflectasm:0.8',
-    minlog:             'com.esotericsoftware:minlog:1.2',
     mockito_core:       'org.mockito:mockito-core:1.9.0',
-    asm:                'asm:asm:3.2',
-    commons_io:         'commons-io:commons-io:2.0.1',
     commons_config:     'commons-configuration:commons-configuration:1.6',
     commons_codec:      'commons-codec:commons-codec:1.4',
-    commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
     commons_coll:       'net.sourceforge.collections:collections-generic:4.01', // Use this lib until the commons collection with Generics is released.
     slf4j:              'org.slf4j:slf4j-api:1.6.1',
     logback_core:       'ch.qos.logback:logback-core:0.9.29',
     logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
-    ejml:               'com.googlecode.efficient-java-matrix-library:ejml:0.17',
     zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
     jcommander:         'com.beust:jcommander:1.25',
-    commons_io:         'commons-io:commons-io:2.1',
     gradle_base_services: 'gradle-base-services:gradle-base-services:1.0',
     gradle_core: 'gradle-core:gradle-core:1.0',
     gradle_tooling_api: 'gradle-tooling-api:gradle-tooling-api:1.0',
@@ -112,7 +103,6 @@ subprojects {
         compile( libraries.logback_classic )
 
         /* Commons. */
-        compile( libraries.commons_io )
         compile( libraries.commons_config )
         compile( libraries.commons_coll )
 
@@ -123,13 +113,22 @@ subprojects {
         /* Testing. */
         testCompile( libraries.junit )
     }
+    
+    jar {
+        from (rootDir) {
+            include "NOTICE.txt"
+            include "LICENSE"
+            into "META-INF"
+        }
+    }
 
     manifest.mainAttributes(
-    provider: 'gradle',
-    'Implementation-Url': 'http://incubator.apache.org/projects/s4.html',
-    'Implementation-Version': version,
-    'Implementation-Vendor': 'Apache S4',
-    'Implementation-Vendor-Id': 'io.s4'
+        provider: 'gradle',
+        'Implementation-Url': 'http://incubator.apache.org/s4/',
+        'Implementation-Version': version,
+        'Implementation-Vendor': 'Apache Software Foundation',
+        'Implementation-Vendor-Id': 'org.apache',
+        'Implementation-Title': 'org.apache.s4.'+project.name.substring(3) // s4-comm becomes org.apache.s4.comm for instance
     )
 }
 
@@ -145,34 +144,105 @@ dependencies {
     platformLibs platformProjects
 }
 
-project.ext["binDistImage"] = copySpec {
-    platformProjects.collect {proj ->
-        into ("platform/lib") {
-            from proj.sourceSets.main.resources
-            from proj.configurations.runtime.getFiles()
-            from proj.configurations.archives.allArtifacts.files
+
+task javadoc (type: Javadoc) {
+    destinationDir = new File(project.rootDir, 'doc/javadoc')
+    destinationDir.deleteDir()
+
+    title = "Apache S4 " + version
+    source platformProjects.collect { project ->
+        project.sourceSets.main.allJava
+    }
+    // Might need a classpath
+    classpath = files(subprojects.collect { project ->
+        project.sourceSets.main.compileClasspath
+    })
+}
+
+// TODO parameterize
+task javadocBinRelease (type: Javadoc) {
+    destinationDir = new File(project.rootDir,'subprojects/s4-tools/src/dist/doc/javadoc')
+    destinationDir.deleteDir()
+    title = "Apache S4 " + version
+    source platformProjects.collect { project ->
+        project.sourceSets.main.allJava
+    }
+    // Might need a classpath
+    classpath = files(subprojects.collect { project ->
+        project.sourceSets.main.compileClasspath
+    })
+}
+
+task copyRequiredFilesToS4ToolsDistDir (type: Copy) {
+    copy {
+        from (rootDir) {
+            include "NOTICE.txt"
+            include "README.md"
+            include "DISCLAIMER"
+            include "RELEASE_NOTES.txt"
+            include "gradlew"
+            include "gradle.bat"
+            include "s4"
+        }
+        into new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/')
+    }
+    
+    File s4DistFile = new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/s4')
+    ant.replace(file: s4DistFile, token: "\n# NOTE: \"./gradlew s4-tools:installApp\" will prepare/update the tools subproject and related startup scripts", value: "")
+
+    ant.replace(file: s4DistFile, token: "subprojects/s4-tools/build/install/s4-tools/", value: "")
+    
+    ant.chmod(file: s4DistFile, perm: "700")
+    
+    copy {
+        from new File(rootDir, 'gradle') 
+        into new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/gradle')
+    }
+    
+    copy {
+        from (new File(rootDir, 'lib')) {
+            include '*.properties'
+        }
+        into new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/lib')
+    }
+}
+
+
+
+task binDist(dependsOn: ["s4-tools:clean", "javadocBinRelease", "copyRequiredFilesToS4ToolsDistDir", "s4-tools:cleanDistZip", "s4-tools:distZip"]) {
+    doLast { 
+        copy {
+            from (project.rootDir.path+"/subprojects/s4-tools/build/distributions/")
+            into (project.buildDir)
+            exclude('tmp')
         }
     }
 }
 
-task binImage(type: Copy) {
-    description = "Create binary image"
-    destinationDir = file("$buildDir/s4-image")
-    with binDistImage
+task srcDist(dependsOn: ["javadoc"], type: Zip) {
+    doFirst {
+        platformProjects.collect { project ->
+            project.tasks.clean.execute()
+        }
+    }
+    classifier='src'
+    version = project.version
+    baseName=project.ext.archivesBaseName
+    destinationDir = project.buildDir
+    from (project.rootDir)
+    exclude ('build')
+    exclude ('.project')
+    exclude ('.classpath')
+    exclude ('tmp')
+    exclude ('.rat-excludes')
 }
 
 task clean << {
     delete buildDir
 }
 
-// This task lists all the jars. We can use this pattern to create file descriptors.
-task listJars << {
-    description = 'List all the jars in the S4 framework.'
-    configurations.platformLibs.each { File file -> println file.name }
-}
-
 /* Generates the gradlew scripts.
- http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
+ http://www.gradle.org/docs/1.0/userguide/gradle_wrapper.html */
 task wrapper(type: Wrapper) {
     gradleVersion = '1.0'
     jarFile='lib/gradle-wrapper-1.0.jar'
@@ -185,6 +255,6 @@ class Version {
     boolean isRelease
 
     String toString() {
-        "$major.$minor.$bugfix${isRelease ? '' : '-SNAPSHOT'}"
+        "$major.$minor.$bugfix${isRelease ? '' : '-SNAPSHOT'}-incubating"
     }
 }

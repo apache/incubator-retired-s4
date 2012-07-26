@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.s4.core.window;
 
 import java.util.Collection;
@@ -52,8 +70,8 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
 
     /**
      * 
-     * Constructor for the event-based slot. The abstract method {@link #addPeriodicSlot()} must be called by the
-     * concrete class.
+     * Constructor for the event-based slot. The abstract method {@link #addSlot()} must be called by the concrete
+     * class.
      * 
      * @param app
      *            the application
@@ -65,7 +83,7 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
     }
 
     /**
-     * Constructor for time-based slots. The abstract method {@link #addPeriodicSlot()} is called periodically.
+     * Constructor for time-based slots. The abstract method {@link #addSlot()} is called periodically.
      * 
      * @param app
      *            the application
@@ -130,15 +148,12 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
      * User provided function that evaluates the whole content of the window. It must iterate across all slots. Current
      * slots are passed as a parameter and the PE instance is expected to be locked so that iteration over the slots is
      * safe.
-     * 
-     * @return
      */
     abstract protected V evaluateWindow(Collection<T> slots);
 
     /**
-     * Add an object to the sliding window. Use it when the window is not periodic.
-     * 
-     * @param slot
+     * Add a slot to the sliding window. Called automatically for periodic slots. Use it when the window is not
+     * periodic.
      */
     protected final void addSlot() {
 

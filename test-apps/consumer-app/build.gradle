@@ -1,18 +1,21 @@
-/*
-* Copyright 2010 the original author or authors.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 
 /**
 * Apache S4 Application Build File
@@ -61,31 +64,29 @@ targetCompatibility = 1.6
 
 /* All project libraries must be defined here. */
 project.ext["libraries"] = [
-           json:               'org.json:json:20090211',
-           guava:              'com.google.guava:guava:10.0.1',
-           gson:               'com.google.code.gson:gson:1.6',
-           guice:              'com.google.inject:guice:3.0',
-           guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
-           guice_grapher:      'com.google.inject:guice-grapher:3.0',
-           flexjson:           'net.sf.flexjson:flexjson:2.1',
-           bcel:               'org.apache.bcel:bcel:5.2',
-           jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
-           kryo:               'com.googlecode:kryo:1.04',
-           netty:              'org.jboss.netty:netty:3.2.5.Final',
-           reflectasm:         'com.esotericsoftware:reflectasm:0.8',
-           minlog:             'com.esotericsoftware:minlog:1.2',
-           asm:                'asm:asm:3.2',
-           commons_io:         'commons-io:commons-io:2.0.1',
-           commons_config:     'commons-configuration:commons-configuration:1.6',
-           commons_codec:      'commons-codec:commons-codec:1.4',
-           commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
-           commons_coll:       'net.sourceforge.collections:collections-generic:4.01', // Use this lib until the commons collection with Generics is released.
-           slf4j:              'org.slf4j:slf4j-api:1.6.1',
-           logback_core:       'ch.qos.logback:logback-core:0.9.29',
-           logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
-           zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
-           jcip:               'net.jcip:jcip-annotations:1.0',
-           junit:              'junit:junit:4.10',
+    guava:              'com.google.guava:guava:12.0.1',
+    gson:               'com.google.code.gson:gson:1.6',
+    guice:              'com.google.inject:guice:3.0',
+    guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
+    kryo:               'com.googlecode:kryo:1.04',
+    netty:              'org.jboss.netty:netty:3.2.5.Final',
+    mockito_core:       'org.mockito:mockito-core:1.9.0',
+    commons_config:     'commons-configuration:commons-configuration:1.6',
+    commons_codec:      'commons-codec:commons-codec:1.4',
+    commons_coll:       'net.sourceforge.collections:collections-generic:4.01', // Use this lib until the commons collection with Generics is released.
+    slf4j:              'org.slf4j:slf4j-api:1.6.1',
+    logback_core:       'ch.qos.logback:logback-core:0.9.29',
+    logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
+    zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
+    jcip:               'net.jcip:jcip-annotations:1.0',
+    junit:              'junit:junit:4.10',
+    zkclient:           'com.github.sgroschupf:zkclient:0.1',
+    diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
+    jcommander:         'com.beust:jcommander:1.25',
+    gradle_base_services: 'gradle-base-services:gradle-base-services:1.0',
+    gradle_core: 'gradle-core:gradle-core:1.0',
+    gradle_tooling_api: 'gradle-tooling-api:gradle-tooling-api:1.0',
+    gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0'
        ]
 
 
@@ -107,7 +108,6 @@ dependencies {
    compile( libraries.logback_classic )
 
    /* Commons. */
-   compile( libraries.commons_io )
    compile( libraries.commons_config )
    compile( libraries.commons_coll )
 

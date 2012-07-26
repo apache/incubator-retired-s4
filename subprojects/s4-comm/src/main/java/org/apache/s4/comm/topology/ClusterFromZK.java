@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.s4.comm.topology;
 
 import java.net.InetAddress;
@@ -5,7 +23,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -21,32 +38,31 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
+/**
+ * Represents a logical cluster definition fetched from Zookeeper. Notifies listeners of runtime changes in the
+ * configuration.
+ *
+ */
 public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener, IZkStateListener {
 
     private static Logger logger = LoggerFactory.getLogger(ClusterFromZK.class);
 
     private final AtomicReference<PhysicalCluster> clusterRef;
     private final List<ClusterChangeListener> listeners;
-    private KeeperState state;
     private final ZkClient zkClient;
     private final String taskPath;
     private final String processPath;
     private final Lock lock;
-    private AtomicBoolean currentlyOwningTask;
-    private String machineId;
     private String clusterName;
-
-    private int connectionTimeout;
 
     /**
      * only the local topology
      */
     @Inject
-    public ClusterFromZK(@Named("cluster.name") String clusterName,
-            @Named("cluster.zk_address") String zookeeperAddress,
-            @Named("cluster.zk_session_timeout") int sessionTimeout,
-            @Named("cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
-        this.connectionTimeout = connectionTimeout;
+    public ClusterFromZK(@Named("s4.cluster.name") String clusterName,
+            @Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
         this.clusterName = clusterName;
         this.taskPath = "/s4/clusters/" + clusterName + "/tasks";
         this.processPath = "/s4/clusters/" + clusterName + "/process";
@@ -59,10 +75,9 @@ public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener
             throw new Exception("cannot connect to zookeeper");
         }
         try {
-            machineId = InetAddress.getLocalHost().getCanonicalHostName();
+            InetAddress.getLocalHost().getCanonicalHostName();
         } catch (UnknownHostException e) {
             logger.warn("Unable to get hostname", e);
-            machineId = "UNKNOWN";
         }
         this.clusterRef = new AtomicReference<PhysicalCluster>();
         this.listeners = new ArrayList<ClusterChangeListener>();
@@ -85,7 +100,6 @@ public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener
         this.processPath = "/s4/clusters/" + clusterName + "/process";
         this.clusterName = clusterName;
         this.lock = new ReentrantLock();
-        this.machineId = machineId;
         this.listeners = new ArrayList<ClusterChangeListener>();
         this.clusterRef = new AtomicReference<PhysicalCluster>();
         zkClient.subscribeChildChanges(taskPath, this);
