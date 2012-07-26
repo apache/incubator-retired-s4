@@ -158,7 +158,7 @@ s4r << {
 
 task cp << {
     description='Dumps the classpath for running a class from this project, into a \'classpath.txt\' file in the current directory'
-    new File("classpath.txt").write(sourceSets.main.runtimeClasspath.asPath)
+    new File("classpath.txt").write(sourceSets.main.output.classesDir.path + File.pathSeparator + <s4_install_dir> + '/lib/*' + File.pathSeparator + <s4_install_dir> + '/subprojects/s4-tools/build/install/s4-tools/lib/*')
 }
 
 /* Install the S4 archive to the install directory. */
