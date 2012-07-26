@@ -63,8 +63,10 @@ public class CreateApp extends S4ArgsBase {
             new File(appArgs.getAppDir() + "/gradlew").setExecutable(true);
 
             // copy build file contents
-            Files.copy(Resources.newInputStreamSupplier(Resources.getResource("templates/build.gradle")), new File(
-                    appArgs.getAppDir() + "/build.gradle"));
+            String buildFileContents = Resources.toString(Resources.getResource("templates/build.gradle"),Charsets.UTF_8);
+            buildFileContents = buildFileContents.replace("<s4_install_dir>", "'"+new File(appArgs.s4ScriptPath).getParent()+"'");
+            Files.write(buildFileContents, new File(
+                    appArgs.getAppDir() + "/build.gradle"), Charsets.UTF_8);
 
             // update app settings
             String settingsFileContents = Resources.toString(Resources.getResource("templates/settings.gradle"),
