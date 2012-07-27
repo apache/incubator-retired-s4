@@ -19,11 +19,13 @@
  An "s4" script has been created at the root of the project's directory. It calls the s4 script from your S4 installation.
 
 
- To execute the application in a new S4 cluster:
+ To execute the application in a new S4 cluster (see the S4 wiki https://cwiki.apache.org/confluence/display/S4/ for more information):
  1. start a ZooKeeper instance "./s4 zkServer" (./s4 zkServer -help provides a list of options)
  2. define a logical cluster for your application "./s4 newCluster -cluster=<nameOfTheCluster> -nbTasks=<number of partitions> -flp=<a port number for the first node, other nodes use an increment on this initial port>"
  3. start a node and attach it to the cluster "./s4 node -cluster=<nameOfTheCluster>"
- 4. deploy the application "./s4 deploy -cluster=<nameOfTheCluster>"
+ 4. package the application "./s4 s4r -a=<app class> -b=`pwd`/build.gradle <app name>
+ 5. deploy the application "./s4 -s4r=`pwd`/build/libs/<app name>.s4r -cluster=<nameOfTheCluster>"
+ 6. check the status of the S4 cluster "s4 status"
 
  If you want to inject events from application 2 into application 1 on cluster 1:
  - application 1 must define an input stream with a name (say: stream1)
