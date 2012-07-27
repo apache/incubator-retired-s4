@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,10 +64,15 @@ public class CreateApp extends S4ArgsBase {
             new File(appArgs.getAppDir() + "/gradlew").setExecutable(true);
 
             // copy build file contents
-            String buildFileContents = Resources.toString(Resources.getResource("templates/build.gradle"),Charsets.UTF_8);
-            buildFileContents = buildFileContents.replace("<s4_install_dir>", "'"+new File(appArgs.s4ScriptPath).getParent()+"'");
-            Files.write(buildFileContents, new File(
-                    appArgs.getAppDir() + "/build.gradle"), Charsets.UTF_8);
+            String buildFileContents = Resources.toString(Resources.getResource("templates/build.gradle"),
+                    Charsets.UTF_8);
+            buildFileContents = buildFileContents.replace("<s4_install_dir>",
+                    "'" + new File(appArgs.s4ScriptPath).getParent() + "'");
+            Files.write(buildFileContents, new File(appArgs.getAppDir() + "/build.gradle"), Charsets.UTF_8);
+
+            // copy lib
+            FileUtils.copyDirectory(new File(new File(appArgs.s4ScriptPath).getParentFile(), "lib"),
+                    new File(appArgs.getAppDir() + "/lib"));
 
             // update app settings
             String settingsFileContents = Resources.toString(Resources.getResource("templates/settings.gradle"),

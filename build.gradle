@@ -57,6 +57,7 @@ project.ext["libraries"] = [
     commons_config:     'commons-configuration:commons-configuration:1.6',
     commons_codec:      'commons-codec:commons-codec:1.4',
     commons_coll:       'net.sourceforge.collections:collections-generic:4.01', // Use this lib until the commons collection with Generics is released.
+    commons_io:         'commons-io:commons-io:2.4',
     slf4j:              'org.slf4j:slf4j-api:1.6.1',
     logback_core:       'ch.qos.logback:logback-core:0.9.29',
     logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
@@ -105,6 +106,7 @@ subprojects {
         /* Commons. */
         compile( libraries.commons_config )
         compile( libraries.commons_coll )
+        compile( libraries.commons_io )
 
         /* Misc. */
         compile( libraries.jcip )
@@ -219,6 +221,7 @@ task binDist(dependsOn: ["s4-tools:clean", "javadocBinRelease", "copyRequiredFil
     }
 }
 
+
 task srcDist(dependsOn: ["javadoc"], type: Zip) {
     doFirst {
         platformProjects.collect { project ->
@@ -230,12 +233,17 @@ task srcDist(dependsOn: ["javadoc"], type: Zip) {
     baseName=project.ext.archivesBaseName
     destinationDir = project.buildDir
     from (project.rootDir)
-    exclude ('build')
-    exclude ('.project')
-    exclude ('.classpath')
-    exclude ('tmp')
+    exclude ('**/.project')
+    exclude ('**/.classpath')
     exclude ('.rat-excludes')
+    exclude ('**/.gradle/**')
+    exclude ('**/.settings/**')
+    exclude ('**/build/**')
+    exclude ('**/tmp/**')
+    exclude ('**/bin/**')
+    into (baseName+'-'+version+'-'+classifier)
 }
+
 
 task clean << {
     delete buildDir

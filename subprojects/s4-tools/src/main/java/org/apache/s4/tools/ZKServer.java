@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 import org.I0Itec.zkclient.IDefaultNameSpace;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkServer;
+import org.apache.commons.io.FileUtils;
 import org.apache.s4.comm.tools.TaskSetup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +53,8 @@ public class ZKServer {
 
             if (zkArgs.clean) {
                 logger.info("cleaning existing data in [{}] and [{}]", zkArgs.dataDir, zkArgs.logDir);
-                deleteDirectory(new File(zkArgs.dataDir));
-                deleteDirectory(new File(zkArgs.logDir));
+                FileUtils.deleteDirectory(new File(zkArgs.dataDir));
+                FileUtils.deleteDirectory(new File(zkArgs.logDir));
             }
             IDefaultNameSpace defaultNameSpace = new IDefaultNameSpace() {
 
@@ -93,24 +94,6 @@ public class ZKServer {
 
         } catch (Exception e) {
             logger.error("Cannot initialize zookeeper with specified configuration", e);
-        }
-    }
-
-    static private void deleteDirectory(File path) {
-        if (path.exists()) {
-            File[] files = path.listFiles();
-            for (int i = 0; i < files.length; i++) {
-                if (files[i].isDirectory()) {
-                    deleteDirectory(files[i]);
-                } else {
-                    if (!(files[i].delete())) {
-                        logger.error("Could not delete file {}", files[i].getAbsolutePath());
-                    }
-                }
-            }
-            if (!path.delete()) {
-                logger.error("Could not delete directory {}", path.getAbsolutePath());
-            }
         }
     }
 
