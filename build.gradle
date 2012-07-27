@@ -182,6 +182,7 @@ task copyRequiredFilesToS4ToolsDistDir (type: Copy) {
             include "README.md"
             include "DISCLAIMER"
             include "RELEASE_NOTES.txt"
+            include "LICENSE"
             include "gradlew"
             include "gradle.bat"
             include "s4"
