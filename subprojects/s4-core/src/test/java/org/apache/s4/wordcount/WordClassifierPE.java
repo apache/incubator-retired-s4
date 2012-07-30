@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.log4j.Logger;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.fixtures.CommTestUtils;
@@ -35,12 +34,16 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WordClassifierPE extends ProcessingElement implements Watcher {
 
     TreeMap<String, Integer> counts = new TreeMap<String, Integer>();
     private int counter;
     transient private ZooKeeper zk;
+
+    private static Logger logger = LoggerFactory.getLogger(WordClassifierPE.class);
 
     private WordClassifierPE() {
     }
@@ -96,7 +99,7 @@ public class WordClassifierPE extends ProcessingElement implements Watcher {
                 // zookeeper
                 zk.create("/classifierIteration_" + counter, new byte[counter], Ids.OPEN_ACL_UNSAFE,
                         CreateMode.PERSISTENT);
-                Logger.getLogger("s4-ft").debug("wrote classifier iteration [" + counter + "]");
+                logger.debug("wrote classifier iteration [" + counter + "]");
                 System.out.println("wrote classifier iteration [" + counter + "]");
                 // check if we are allowed to continue
                 if (null == zk.exists("/continue_" + counter, null)) {

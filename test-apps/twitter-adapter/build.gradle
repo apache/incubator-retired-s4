@@ -39,7 +39,7 @@
 
 project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
 
-project.ext["s4Version"] = '0.5.0-SNAPSHOT'
+project.ext["s4Version"] = '0.5.0-incubating'
 description = 'Apache S4 App'
 //defaultTasks 'installS4R'
 project.ext["archivesBaseName"] = "$project.name"
@@ -52,6 +52,7 @@ group = 'org.apache.s4'
 
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'idea'
 apply plugin:'application'
 
 mainClassName = "org.apache.s4.core.Main"
@@ -77,9 +78,9 @@ repositories {
 project.ext["libraries"] = [
            twitter4j_core:     'org.twitter4j:twitter4j-core:2.2.5',
            twitter4j_stream:   'org.twitter4j:twitter4j-stream:2.2.5',
-           s4_base:            'org.apache.s4:s4-base:0.5.0-SNAPSHOT',
-           s4_comm:            'org.apache.s4:s4-comm:0.5.0-SNAPSHOT',
-           s4_core:            'org.apache.s4:s4-core:0.5.0-SNAPSHOT'
+           s4_base:            'org.apache.s4:s4-base:0.5.0-incubating',
+           s4_comm:            'org.apache.s4:s4-comm:0.5.0-incubating',
+           s4_core:            'org.apache.s4:s4-core:0.5.0-incubating'
        ]
 
 
@@ -184,7 +185,7 @@ task installS4R (type: Copy) {
 
 /* Generates the gradlew scripts.
 http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */
-task wrapper(type: Wrapper) { gradleVersion = '1.0-milestone-3' }
+task wrapper(type: Wrapper) { gradleVersion = '1.0' }
 
 task cp << {
     description='dumps the classpath for running a class from this project, into a \'classpath.txt\' file in the current directory'

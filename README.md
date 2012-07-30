@@ -62,7 +62,7 @@ We use gradle http://gradle.org as the build system.
 
 ./gradlew install
 
-This will build the packages and install the artefacts in the local maven repository.
+This will build the packages and install the artifacts in the local maven repository.
 
 * Then, build the tools:
 

@@ -21,8 +21,13 @@ def generatedSourceDir = "${buildDir}/generated-src/java"
 def diezelSrcDir = "${projectDir}/src/main/diezel";
 
 dependencies {
+    compile project(":s4-base")
+    compile project(":s4-comm")
     compile project(":s4-core")
-    //testCompile project(path: ':s4-core', configuration: 'tests')
+    testCompile project(path: ':s4-comm', configuration: 'tests')
+    testRuntime libraries.zkclient
+    testRuntime libraries.netty
+    testRuntime libraries.asm
 }
 
 

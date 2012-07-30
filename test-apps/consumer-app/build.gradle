@@ -52,6 +52,7 @@ group = 'org.apache.s4'
 
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'idea'
 
 /* The app classname is set automatically from the source files. */
 def appClassname = ''
@@ -83,20 +84,14 @@ project.ext["libraries"] = [
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
     jcommander:         'com.beust:jcommander:1.25',
-    gradle_base_services: 'gradle-base-services:gradle-base-services:1.0',
-    gradle_core: 'gradle-core:gradle-core:1.0',
-    gradle_tooling_api: 'gradle-tooling-api:gradle-tooling-api:1.0',
-    gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0'
+    gradle_base_services: 'org.gradle:gradle-base-services:1.0',
+    gradle_core: 'org.gradle:gradle-core:1.0',
+    gradle_tooling_api: 'org.gradle:gradle-tooling-api:1.0',
+    gradle_wrapper: 'org.gradle:gradle-wrapper:1.0'
        ]
 
 
 dependencies {
-
-   /* S4 Platform. We only need the API, not the transitive dependencies. */
-//    s4Libs.each {  module ->
-//        compile( module ) //{ transitive = false }
-//        s4API( module )
-//    }
 
    compile project(":s4-base")
    compile project(":s4-comm")
@@ -113,6 +108,7 @@ dependencies {
 
    /* Misc. */
    compile( libraries.jcip )
+   compile ( libraries.zkclient)
 
    /* Testing. */
    testCompile( libraries.junit )

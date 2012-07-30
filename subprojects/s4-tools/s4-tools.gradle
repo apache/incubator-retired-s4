@@ -21,6 +21,7 @@ description = 'The S4 tools platform.'
 
 apply plugin: 'java'
 
+
 task "create-dirs" << {
    sourceSets.all*.java.srcDirs*.each { it.mkdirs() }
    sourceSets.all*.resources.srcDirs*.each { it.mkdirs() }
@@ -36,6 +37,7 @@ dependencies {
     compile libraries.gradle_core
     compile libraries.gradle_tooling_api
     compile libraries.gradle_wrapper
+    compile libraries.log4j
 
 }
 

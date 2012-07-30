@@ -37,11 +37,17 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
-        mavenRepo name: "gson", url: "http://google-gson.googlecode.com/svn/mavenrepo"
+        maven { url 'http://google-gson.googlecode.com/svn/mavenrepo' }
+        maven { url 'https://repo.springsource.org/libs-release' }
+        maven { url 'http://repo.gradle.org/gradle/libs-releases-local' }
 
         /* Add lib dir as a repo. Some jar files that are not available
          in a public repo are distributed in the lib dir. */
         flatDir name: 'libDir', dirs: "$rootDir/lib"
+    }
+    
+    configurations.all {
+        transitive = false
     }
 }
 
@@ -50,15 +56,23 @@ project.ext["libraries"] = [
     guava:              'com.google.guava:guava:12.0.1',
     gson:               'com.google.code.gson:gson:1.6',
     guice:              'com.google.inject:guice:3.0',
+    aop_alliance:       'aopalliance:aopalliance:1.0',
     guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
     kryo:               'com.googlecode:kryo:1.04',
+    minlog:             'com.googlecode:minlog:1.2',
+    reflectasm:         'com.googlecode:reflectasm:1.01',
     netty:              'org.jboss.netty:netty:3.2.5.Final',
     mockito_core:       'org.mockito:mockito-core:1.9.0',
     commons_config:     'commons-configuration:commons-configuration:1.6',
     commons_codec:      'commons-codec:commons-codec:1.4',
     commons_coll:       'net.sourceforge.collections:collections-generic:4.01', // Use this lib until the commons collection with Generics is released.
     commons_io:         'commons-io:commons-io:2.4',
+    commons_lang:       'commons-lang:commons-lang:2.6',
+    commons_logging:    'commons-logging:commons-logging:1.1.1',
+    commons_collections:'commons-collections:commons-collections:3.2.1',
+    objenesis:          'org.objenesis:objenesis:1.2',
     slf4j:              'org.slf4j:slf4j-api:1.6.1',
+    log4j:              'log4j:log4j:1.2.15',
     logback_core:       'ch.qos.logback:logback-core:0.9.29',
     logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
     zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
@@ -67,15 +81,18 @@ project.ext["libraries"] = [
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
     jcommander:         'com.beust:jcommander:1.25',
-    gradle_base_services: 'gradle-base-services:gradle-base-services:1.0',
-    gradle_core: 'gradle-core:gradle-core:1.0',
-    gradle_tooling_api: 'gradle-tooling-api:gradle-tooling-api:1.0',
+    asm:                'asm:asm:3.2',
+    javax_inject:       'javax.inject:javax.inject:1',
+    gradle_base_services: 'org.gradle:gradle-base-services:1.0',
+    gradle_core: 'org.gradle:gradle-core:1.0',
+    gradle_tooling_api: 'org.gradle:gradle-tooling-api:1.0',
     gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0'
 ]
 
 subprojects {
     apply plugin: 'java'
     apply plugin: 'eclipse'
+    apply plugin: 'idea'
     apply plugin: 'maven'
 //    apply plugin: 'checkstyle'
 
@@ -94,19 +111,22 @@ subprojects {
     dependencies {
 
         /* Google. */
-        compile( libraries.guava )
-        compile( libraries.guice )
-        compile (libraries.guice_assist)
+        compile ( libraries.guava )
+        compile ( libraries.guice )
+        compile ( libraries.guice_assist)
 
         /* Logging. */
         compile( libraries.slf4j )
         compile( libraries.logback_core )
         compile( libraries.logback_classic )
+        runtime( libraries.commons_logging)
 
         /* Commons. */
         compile( libraries.commons_config )
         compile( libraries.commons_coll )
         compile( libraries.commons_io )
+        compile ( libraries.commons_lang )
+        runtime(libraries.commons_collections)
 
         /* Misc. */
         compile( libraries.jcip )
@@ -114,6 +134,18 @@ subprojects {
 
         /* Testing. */
         testCompile( libraries.junit )
+        
+        // transitive
+        runtime( libraries.log4j) // required by Zookeeper
+        runtime(libraries.aop_alliance)
+        runtime(libraries.minlog)
+        runtime(libraries.gson)
+        runtime(libraries.objenesis)
+        runtime(libraries.kryo)
+        runtime(libraries.netty)
+        runtime(libraries.asm)
+        runtime(libraries.javax_inject)
+        runtime(libraries.commons_codec)
     }
     
     jar {
@@ -175,20 +207,26 @@ task javadocBinRelease (type: Javadoc) {
     })
 }
 
-task copyRequiredFilesToS4ToolsDistDir (type: Copy) {
+task copyRequiredFilesForBinaryRelease (type: Copy) {
     copy {
         from (rootDir) {
-            include "NOTICE.txt"
             include "README.md"
             include "DISCLAIMER"
             include "RELEASE_NOTES.txt"
-            include "LICENSE"
             include "gradlew"
             include "gradle.bat"
             include "s4"
         }
         into new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/')
     }
+    
+    copy {
+        // binary release specifics
+        from (rootDir.path + "/config/binrelease/")
+        into new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/')
+        include "*"
+    }
+    
     
     File s4DistFile = new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/s4')
     ant.replace(file: s4DistFile, token: "\n# NOTE: \"./gradlew s4-tools:installApp\" will prepare/update the tools subproject and related startup scripts", value: "")
@@ -212,7 +250,10 @@ task copyRequiredFilesToS4ToolsDistDir (type: Copy) {
 
 
 
-task binDist(dependsOn: ["s4-tools:clean", "javadocBinRelease", "copyRequiredFilesToS4ToolsDistDir", "s4-tools:cleanDistZip", "s4-tools:distZip"]) {
+task binDist(dependsOn: ["s4-tools:clean", "javadocBinRelease", "copyRequiredFilesForBinaryRelease", "s4-tools:cleanDistZip", "s4-tools:distZip"]) {
+    doFirst {
+        new File(project.rootDir.path+'/subprojects/s4-tools/src/dist').deleteDir()
+    }
     doLast { 
         copy {
             from (project.rootDir.path+"/subprojects/s4-tools/build/distributions/")
@@ -228,6 +269,7 @@ task srcDist(dependsOn: ["javadoc"], type: Zip) {
         platformProjects.collect { project ->
             project.tasks.clean.execute()
         }
+        new File(project.rootDir.path+'/subprojects/s4-tools/src/dist').deleteDir()
     }
     classifier='src'
     version = project.version

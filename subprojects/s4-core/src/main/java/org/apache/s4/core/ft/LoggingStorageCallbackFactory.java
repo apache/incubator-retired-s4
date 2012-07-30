@@ -18,12 +18,13 @@
 
 package org.apache.s4.core.ft;
 
-import org.apache.log4j.Logger;
 import org.apache.s4.core.ft.CheckpointingFramework.StorageResultCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A factory for creating storage callbacks that simply log callback results
- *
+ * 
  */
 public class LoggingStorageCallbackFactory implements StorageCallbackFactory {
 
@@ -34,11 +35,12 @@ public class LoggingStorageCallbackFactory implements StorageCallbackFactory {
 
     /**
      * A basic storage callback that simply logs results from storage operations
-     *
+     * 
      */
     static class StorageCallbackLogger implements StorageCallback {
 
-        private static Logger logger = Logger.getLogger("s4-ft");
+        private static Logger logger = LoggerFactory
+                .getLogger(LoggingStorageCallbackFactory.StorageCallbackLogger.class);
 
         @Override
         public void storageOperationResult(StorageResultCode code, Object message) {

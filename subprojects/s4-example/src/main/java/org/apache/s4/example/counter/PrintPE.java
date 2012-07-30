@@ -18,7 +18,7 @@
 
 package org.apache.s4.example.counter;
 
-import javax.annotation.concurrent.ThreadSafe;
+import net.jcip.annotations.ThreadSafe;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.core.App;
