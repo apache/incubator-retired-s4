@@ -212,7 +212,7 @@ task copyRequiredFilesForBinaryRelease (type: Copy) {
         from (rootDir) {
             include "README.md"
             include "DISCLAIMER"
-            include "RELEASE_NOTES.txt"
+            include "RELEASE_NOTES.html"
             include "gradlew"
             include "gradle.bat"
             include "s4"
