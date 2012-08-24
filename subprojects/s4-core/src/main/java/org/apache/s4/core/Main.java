@@ -21,6 +21,7 @@ package org.apache.s4.core;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -77,6 +78,14 @@ public class Main {
 
     private static void startNode(MainArgs mainArgs) {
         try {
+            Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
+                @Override
+                public void uncaughtException(Thread t, Throwable e) {
+                    logger.error("Uncaught exception in thread {}", t.getName(), e);
+
+                }
+            });
             Injector injector;
             InputStream commConfigFileInputStream;
             InputStream coreConfigFileInputStream;
