@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
+import org.apache.s4.base.Key;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.slf4j.Logger;
