@@ -39,6 +39,7 @@ import org.apache.s4.core.ft.CheckpointingConfig.CheckpointingMode;
 import org.apache.s4.core.ft.CheckpointingTask;
 import org.apache.s4.core.gen.OverloadDispatcher;
 import org.apache.s4.core.gen.OverloadDispatcherGenerator;
+import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +52,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Timer;
+import com.yammer.metrics.core.TimerContext;
 
 /**
  * <p>
@@ -141,6 +145,8 @@ public abstract class ProcessingElement implements Cloneable {
     transient private boolean recoveryAttempted = false;
     transient private boolean dirty = false;
 
+    transient private Timer processingTimer;
+
     transient private CheckpointingConfig checkpointingConfig = new CheckpointingConfig.Builder(CheckpointingMode.NONE)
             .build();
 
@@ -158,7 +164,6 @@ public abstract class ProcessingElement implements Cloneable {
                 return createPE(key);
             }
         });
-
         triggers = new MapMaker().makeMap();
 
         /*
@@ -166,6 +171,10 @@ public abstract class ProcessingElement implements Cloneable {
          * to the prototype.
          */
         this.pePrototype = this;
+
+        S4Metrics.createCacheGauges(peInstances);
+
+        processingTimer = Metrics.newTimer(getClass(), getClass().getName() + "-pe-processing-time");
     }
 
     /**
@@ -431,6 +440,7 @@ public abstract class ProcessingElement implements Cloneable {
 
     protected void handleInputEvent(Event event) {
 
+        TimerContext timerContext = processingTimer.time();
         Object object;
         if (isThreadSafe) {
             object = new Object(); // a dummy object TODO improve this.
@@ -459,6 +469,7 @@ public abstract class ProcessingElement implements Cloneable {
                 checkpoint();
             }
         }
+        timerContext.stop();
     }
 
     protected boolean isCheckpointable() {

@@ -1,0 +1,82 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+
+project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
+
+project.ext["s4Version"] = '0.5.0-incubating'
+description = 'Apache S4 App'
+//defaultTasks 'installS4R'
+project.ext["archivesBaseName"] = "$project.name"
+project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
+
+
+// Append the suffix 'SNAPSHOT' when the build is not for release.
+//version = new Version(major: 0, minor: 0, bugfix: 0, isRelease: false)
+group = 'org.apache.s4'
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin:'application'
+
+/* The app classname is set automatically from the source files. */
+def appClassname = ''
+
+/* Set Java version. */
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    mavenRepo name: "gson", url: "http://google-gson.googlecode.com/svn/mavenrepo"
+
+    /* Add lib dir as a repo. Some jar files that are not available
+     in a public repo are distributed in the lib dir. */
+}
+
+
+dependencies {
+
+   /* S4 Platform. We only need the API, not the transitive dependencies. */
+
+    compile project( ":s4-base" )
+    compile project( ":s4-core" )
+    compile project( ":s4-comm" )
+    compile (libraries.jcommander)
+    compile (libraries.zkclient)
+    compile (libraries.metrics)
+    
+   
+
+   // if you need to use the twitter4j lib defined above, you must reference it here as a dependency
+   // compile (libraries.twitter4j_core)
+
+
+}
+
+
+
+task cp << {
+    description='Dumps the classpath for running a class from this project, into a \'classpath.txt\' file in the current directory'
+    String rt = ""
+    configurations.runtime.files.each{File file -> rt+=(file.path+File.pathSeparator) }
+    new File("classpath.txt").write(sourceSets.main.output.classesDir.path + File.pathSeparator + rt + File.pathSeparator + '/Users/matthieu/apache-s4-0.5.0-incubating-bin' + '/subprojects/s4-tools/build/install/s4-tools/lib/*')
+}

@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.s4.core.ProcessingElement;
+import org.apache.s4.core.util.S4Metrics.CheckpointingMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,10 +179,7 @@ public final class SafeKeeper implements CheckpointingFramework {
         try {
             futureSerializedState = serializeState(pe);
         } catch (RejectedExecutionException e) {
-            // if (monitor != null) {
-            // monitor.increment(MetricsName.checkpointing_dropped_from_serialization_queue.toString(), 1,
-            // S4_CORE_METRICS.toString());
-            // }
+            CheckpointingMetrics.rejectedSerializationTask();
             storageCallback.storageOperationResult(StorageResultCode.FAILURE,
                     "Serialization task queue is full. An older serialization task was dumped in order to serialize PE ["
                             + pe.getId() + "]" + "	Remaining capacity for the serialization task queue is ["
@@ -197,23 +195,14 @@ public final class SafeKeeper implements CheckpointingFramework {
 
     private Future<byte[]> serializeState(ProcessingElement pe) {
         Future<byte[]> future = serializationThreadPool.submit(new SerializeTask(pe));
-        // if (monitor != null) {
-        // monitor.increment(MetricsName.checkpointing_added_to_serialization_queue.toString(), 1,
-        // S4_CORE_METRICS.toString());
-        // }
         return future;
     }
 
     private void submitSaveStateTask(SaveStateTask task, StorageCallback storageCallback) {
         try {
             storageThreadPool.execute(task);
-            // if (monitor != null) {
-            // monitor.increment(MetricsName.checkpointing_added_to_storage_queue.toString(), 1);
-            // }
         } catch (RejectedExecutionException e) {
-            // if (monitor != null) {
-            // monitor.increment(MetricsName.checkpointing_dropped_from_storage_queue.toString(), 1);
-            // }
+            CheckpointingMetrics.rejectedStorageTask();
             storageCallback.storageOperationResult(StorageResultCode.FAILURE,
                     "Storage checkpoint queue is full. Removed an old task to handle latest task. Remaining capacity for task queue is ["
                             + storageThreadPool.getQueue().remainingCapacity() + "] ; number of elements is ["
@@ -243,6 +232,7 @@ public final class SafeKeeper implements CheckpointingFramework {
         Future<byte[]> fetched = fetchingThreadPool.submit(new FetchTask(stateStorage, key));
         try {
             result = fetched.get(fetchingMaxWaitMs, TimeUnit.MILLISECONDS);
+            CheckpointingMetrics.fetchedCheckpoint();
             fetchingCurrentConsecutiveFailures.set(0);
             return result;
         } catch (TimeoutException te) {
@@ -257,6 +247,7 @@ public final class SafeKeeper implements CheckpointingFramework {
             logger.error("Cannot fetch checkpoint from backend for key [{}] due to {}", key.getStringRepresentation(),
                     e.getCause().getClass().getName() + "/" + e.getCause().getMessage());
         }
+        CheckpointingMetrics.checkpointFetchFailed();
         if (fetchingCurrentConsecutiveFailures.incrementAndGet() == fetchingMaxConsecutiveFailuresBeforeDisabling) {
             logger.trace(
                     "Due to {} successive checkpoint fetching failures, fetching is temporarily disabled for {} ms",

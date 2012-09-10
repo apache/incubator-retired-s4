@@ -25,6 +25,7 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.ClusterNode;
+import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,17 +88,18 @@ public class Sender {
      */
     public boolean checkAndSendIfNotLocal(String hashKey, Event event) {
         int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
-
         if (partition == localPartitionId) {
             /* Hey we are in the same JVM, don't use the network. */
             return false;
         }
         send(partition,
                 new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), serDeser.serialize(event)));
+        S4Metrics.sentEvent(partition);
         return true;
     }
 
     private void send(int partition, EventMessage event) {
+
         emitter.send(partition, event);
     }
 
@@ -113,11 +115,14 @@ public class Sender {
         for (int i = 0; i < emitter.getPartitionCount(); i++) {
 
             /* Don't use the comm layer when we send to the same partition. */
-            if (localPartitionId != i)
+            if (localPartitionId != i) {
                 emitter.send(
                         i,
                         new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), serDeser
                                 .serialize(event)));
+                S4Metrics.sentEvent(i);
+
+            }
         }
     }
 

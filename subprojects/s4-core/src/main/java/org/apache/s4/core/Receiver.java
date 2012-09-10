@@ -24,6 +24,7 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +68,7 @@ public class Receiver implements Runnable {
         streams = new MapMaker().makeMap();
     }
 
-    int getPartition() {
+    public int getPartition() {
         return listener.getPartitionId();
     }
 
@@ -98,6 +99,7 @@ public class Receiver implements Runnable {
         // here?
         while (!Thread.interrupted()) {
             byte[] message = listener.recv();
+            S4Metrics.receivedEvent(message.length);
             EventMessage event = (EventMessage) serDeser.deserialize(message);
 
             int appId = Integer.valueOf(event.getAppName());

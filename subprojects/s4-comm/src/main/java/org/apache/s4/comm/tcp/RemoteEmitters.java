@@ -18,8 +18,8 @@
 
 package org.apache.s4.comm.tcp;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.s4.base.RemoteEmitter;
 import org.apache.s4.comm.RemoteEmitterFactory;
@@ -35,7 +35,7 @@ import com.google.inject.Singleton;
 @Singleton
 public class RemoteEmitters {
 
-    Map<Cluster, RemoteEmitter> emitters = new HashMap<Cluster, RemoteEmitter>();
+    ConcurrentMap<Cluster, RemoteEmitter> emitters = new ConcurrentHashMap<Cluster, RemoteEmitter>();
 
     @Inject
     RemoteEmitterFactory emitterFactory;
@@ -43,10 +43,12 @@ public class RemoteEmitters {
     public RemoteEmitter getEmitter(Cluster topology) {
         RemoteEmitter emitter = emitters.get(topology);
         if (emitter == null) {
-            emitter = emitterFactory.createRemoteEmitter(topology);
-            emitters.put(topology, emitter);
+            RemoteEmitter newEmitter = emitterFactory.createRemoteEmitter(topology);
+            emitter = emitters.putIfAbsent(topology, newEmitter);
+            if (emitter == null) {
+                emitter = newEmitter;
+            }
         }
         return emitter;
     }
-
 }

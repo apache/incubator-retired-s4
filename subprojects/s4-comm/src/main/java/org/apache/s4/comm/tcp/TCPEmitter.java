@@ -31,6 +31,8 @@ import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterChangeListener;
 import org.apache.s4.comm.topology.ClusterNode;
+import org.apache.s4.comm.util.CommMetrics;
+import org.apache.s4.comm.util.CommMetrics.EmitterMetrics;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -91,6 +93,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     @Inject
     SerializerDeserializer serDeser;
 
+    CommMetrics.EmitterMetrics metrics;
+
     @Inject
     public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout) throws InterruptedException {
         this.nettyTimeout = timeout;
@@ -120,12 +124,14 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         bootstrap.setOption("keepAlive", true);
         bootstrap.setOption("reuseAddress", true);
         bootstrap.setOption("connectTimeoutMillis", this.nettyTimeout);
+
     }
 
     @Inject
     private void init() {
         refreshCluster();
         this.topology.addListener(this);
+        metrics = new EmitterMetrics(topology);
     }
 
     private boolean connectTo(Integer partitionId) {
@@ -161,14 +167,17 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
         if (!partitionChannelMap.containsKey(partitionId)) {
             if (!connectTo(partitionId)) {
+                logger.warn("Could not connect to partition {}, discarding message", partitionId);
                 // Couldn't connect, discard message
                 return;
             }
         }
 
         Channel c = partitionChannelMap.get(partitionId);
-        if (c == null)
+        if (c == null) {
+            logger.warn("Could not find channel for partition {}", partitionId);
             return;
+        }
 
         c.write(buffer).addListener(new MessageSendingListener(partitionId));
     }
@@ -269,8 +278,12 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
                     logger.warn("Failed to send message to node {} (according to current cluster information)",
                             topology.getPhysicalCluster().getNodes().get(partitionId));
                 } catch (IndexOutOfBoundsException ignored) {
+                    logger.error("Failed to send message to partition {}", partitionId);
                     // cluster was changed
                 }
+            } else {
+                metrics.sentMessage(partitionId);
+
             }
 
         }

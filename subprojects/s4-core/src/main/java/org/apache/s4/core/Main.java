@@ -62,6 +62,15 @@ public class Main {
      */
     public static void main(String[] args) {
 
+        Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                logger.error("Uncaught exception in thread {}", t.getName(), e);
+
+            }
+        });
+
         MainArgs mainArgs = new MainArgs();
         JCommander jc = new JCommander(mainArgs);
 

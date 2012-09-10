@@ -18,9 +18,9 @@
 
 package org.apache.s4.core;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
@@ -38,7 +38,7 @@ import com.google.inject.Inject;
 /**
  * Sends events to remote clusters. Target clusters are selected dynamically based on the stream name information from
  * the event.
- *
+ * 
  */
 public class RemoteSenders {
 
@@ -59,25 +59,29 @@ public class RemoteSenders {
     @Inject
     Hasher hasher;
 
-    Map<String, RemoteSender> sendersByTopology = new HashMap<String, RemoteSender>();
+    ConcurrentMap<String, RemoteSender> sendersByTopology = new ConcurrentHashMap<String, RemoteSender>();
 
     public void send(String hashKey, Event event) {
 
         Set<StreamConsumer> consumers = streams.getConsumers(event.getStreamName());
+        event.setAppId(-1);
+        EventMessage eventMessage = new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(),
+                serDeser.serialize(event));
         for (StreamConsumer consumer : consumers) {
             // NOTE: even though there might be several ephemeral znodes for the same app and topology, they are
             // represented by a single stream consumer
             RemoteSender sender = sendersByTopology.get(consumer.getClusterName());
             if (sender == null) {
-                sender = new RemoteSender(emitters.getEmitter(topologies.getCluster(consumer.getClusterName())), hasher);
+                RemoteSender newSender = new RemoteSender(emitters.getEmitter(topologies.getCluster(consumer
+                        .getClusterName())), hasher, consumer.getClusterName());
                 // TODO cleanup when remote topologies die
-                sendersByTopology.put(consumer.getClusterName(), sender);
+                sender = sendersByTopology.putIfAbsent(consumer.getClusterName(), newSender);
+                if (sender == null) {
+                    sender = newSender;
+                }
             }
             // we must set the app id of the consumer app for correct dispatch within the consumer node
             // NOTE: this implies multiple serializations, there might be an optimization
-            event.setAppId(consumer.getAppId());
-            EventMessage eventMessage = new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(),
-                    serDeser.serialize(event));
             sender.send(hashKey, eventMessage);
         }
 

@@ -27,6 +27,7 @@ import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.GenericKeyFinder;
 import org.apache.s4.base.Key;
 import org.apache.s4.base.KeyFinder;
+import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     }
 
     public void start() {
-
+        S4Metrics.createStreamMeters(name);
         if (logger.isTraceEnabled()) {
             if (targetPEs != null) {
                 for (ProcessingElement pe : targetPEs) {
@@ -202,8 +203,12 @@ public class Stream<T extends Event> implements Runnable, Streamable {
                  * the queue.
                  */
                 sender.sendToRemotePartitions(event);
+
                 queue.put(new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), app.getSerDeser()
                         .serialize(event)));
+                // TODO abstraction around queue and add dropped counter
+                // TODO add counter for local events
+
             }
         } catch (InterruptedException e) {
             logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
@@ -217,6 +222,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     public void receiveEvent(EventMessage event) {
         try {
             queue.put(event);
+            // TODO abstraction around queue and add dropped counter
         } catch (InterruptedException e) {
             logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
             Thread.currentThread().interrupt();
@@ -278,6 +284,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
             try {
                 /* Get oldest event in queue. */
                 EventMessage eventMessage = queue.take();
+                S4Metrics.dequeuedEvent(name);
 
                 @SuppressWarnings("unchecked")
                 T event = (T) app.getSerDeser().deserialize(eventMessage.getSerializedEvent());

@@ -28,8 +28,8 @@ import com.esotericsoftware.kryo.serialize.ClassSerializer;
 import com.esotericsoftware.kryo.serialize.SimpleSerializer;
 
 /**
- * Serializazer/deserializer based on <a href="http://code.google.com/p/kryo/">kryo</a>
- *
+ * Serializer/deserializer based on <a href="http://code.google.com/p/kryo/">kryo</a>
+ * 
  */
 public class KryoSerDeser implements SerializerDeserializer {
 
