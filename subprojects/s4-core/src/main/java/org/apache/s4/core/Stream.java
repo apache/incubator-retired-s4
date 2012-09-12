@@ -25,6 +25,7 @@ import java.util.concurrent.BlockingQueue;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.GenericKeyFinder;
+import org.apache.s4.base.Key;
 import org.apache.s4.base.KeyFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
