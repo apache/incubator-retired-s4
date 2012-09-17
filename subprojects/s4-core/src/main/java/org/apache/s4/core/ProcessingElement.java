@@ -172,7 +172,7 @@ public abstract class ProcessingElement implements Cloneable {
          */
         this.pePrototype = this;
 
-        S4Metrics.createCacheGauges(peInstances);
+        S4Metrics.createCacheGauges(this, peInstances);
 
         processingTimer = Metrics.newTimer(getClass(), getClass().getName() + "-pe-processing-time");
     }

@@ -31,6 +31,7 @@ import org.apache.s4.comm.DefaultHasher;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.ft.NoOpCheckpointingFramework;
+import org.apache.s4.core.util.S4Metrics;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.slf4j.Logger;
@@ -83,6 +84,8 @@ public class DefaultCoreModule extends AbstractModule {
         // For enabling checkpointing, one needs to use a custom module, such as
         // org.apache.s4.core.ft.FileSytemBasedCheckpointingModule
         bind(CheckpointingFramework.class).to(NoOpCheckpointingFramework.class);
+
+        bind(S4Metrics.class).asEagerSingleton();
     }
 
     private void loadProperties(Binder binder) {

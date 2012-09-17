@@ -11,16 +11,22 @@ import org.apache.s4.core.Receiver;
 import org.apache.s4.core.RemoteSender;
 import org.apache.s4.core.Sender;
 import org.apache.s4.core.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.beust.jcommander.internal.Lists;
 import com.beust.jcommander.internal.Maps;
 import com.google.common.cache.LoadingCache;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.core.Meter;
 
+@Singleton
 public class S4Metrics {
+
+    private static Logger logger = LoggerFactory.getLogger(S4Metrics.class);
 
     @Inject
     Emitter emitter;
@@ -52,22 +58,24 @@ public class S4Metrics {
         }
     }
 
-    public static void createCacheGauges(final LoadingCache<String, ProcessingElement> cache) {
-        Metrics.newGauge(ProcessingElement.class, "PE-cache-entries", new Gauge<Long>() {
+    public static void createCacheGauges(ProcessingElement prototype,
+            final LoadingCache<String, ProcessingElement> cache) {
+
+        Metrics.newGauge(prototype.getClass(), "PE-cache-entries", new Gauge<Long>() {
 
             @Override
             public Long value() {
                 return cache.size();
             }
         });
-        Metrics.newGauge(ProcessingElement.class, "PE-cache-evictions", new Gauge<Long>() {
+        Metrics.newGauge(prototype.getClass(), "PE-cache-evictions", new Gauge<Long>() {
 
             @Override
             public Long value() {
                 return cache.stats().evictionCount();
             }
         });
-        Metrics.newGauge(ProcessingElement.class, "PE-cache-misses", new Gauge<Long>() {
+        Metrics.newGauge(prototype.getClass(), "PE-cache-misses", new Gauge<Long>() {
 
             @Override
             public Long value() {
@@ -82,7 +90,13 @@ public class S4Metrics {
     }
 
     public static void sentEvent(int partition) {
-        senderMeters[partition].mark();
+        try {
+            senderMeters[partition].mark();
+        } catch (NullPointerException e) {
+            logger.warn("Sender meter not ready for partition {}", partition);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            logger.warn("Partition {} does not exist", partition);
+        }
     }
 
     public static void createStreamMeters(String name) {
