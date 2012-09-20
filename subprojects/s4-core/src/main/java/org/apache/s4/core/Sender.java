@@ -18,11 +18,13 @@
 
 package org.apache.s4.core;
 
+import java.nio.ByteBuffer;
+
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.core.util.S4Metrics;
@@ -60,9 +62,9 @@ public class Sender {
      *            a hashing function to map keys to partition IDs.
      */
     @Inject
-    public Sender(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment) {
+    public Sender(Emitter emitter, SerializerDeserializerFactory serDeserFactory, Hasher hasher, Assignment assignment) {
         this.emitter = emitter;
-        this.serDeser = serDeser;
+        this.serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
         this.hasher = hasher;
         this.assignment = assignment;
     }
@@ -92,15 +94,14 @@ public class Sender {
             /* Hey we are in the same JVM, don't use the network. */
             return false;
         }
-        send(partition,
-                new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), serDeser.serialize(event)));
+        send(partition, serDeser.serialize(event));
         S4Metrics.sentEvent(partition);
         return true;
     }
 
-    private void send(int partition, EventMessage event) {
+    private void send(int partition, ByteBuffer message) {
 
-        emitter.send(partition, event);
+        emitter.send(partition, message);
     }
 
     /**
@@ -116,10 +117,7 @@ public class Sender {
 
             /* Don't use the comm layer when we send to the same partition. */
             if (localPartitionId != i) {
-                emitter.send(
-                        i,
-                        new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), serDeser
-                                .serialize(event)));
+                emitter.send(i, serDeser.serialize(event));
                 S4Metrics.sentEvent(i);
 
             }

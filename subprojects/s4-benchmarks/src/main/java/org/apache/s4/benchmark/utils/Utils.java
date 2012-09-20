@@ -26,7 +26,7 @@ public class Utils {
             public void handleChildChange(String arg0, List<String> arg1) throws Exception {
 
                 if (parentPath.equals(arg0)) {
-                    if (arg1.size() == counts) {
+                    if (arg1.size() >= counts) {
                         logger.info("Latch reached for {} with {} children", arg0, counts);
                         signalReady.countDown();
                     }

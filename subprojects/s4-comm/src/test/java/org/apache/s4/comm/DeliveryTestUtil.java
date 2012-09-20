@@ -18,9 +18,11 @@
 
 package org.apache.s4.comm;
 
+import java.nio.ByteBuffer;
+
 import org.apache.s4.base.Emitter;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Listener;
+import org.jboss.netty.buffer.ChannelBuffers;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -68,8 +70,9 @@ public class DeliveryTestUtil {
             try {
                 for (int partition = 0; partition < emitter.getPartitionCount(); partition++) {
                     for (int i = 0; i < numMessages; i++) {
-                        byte[] message = (new String("message-" + i)).getBytes();
-                        emitter.send(partition, new EventMessage(null, null, message));
+                        ByteBuffer message = ChannelBuffers.wrappedBuffer((new String("message-" + i)).getBytes())
+                                .toByteBuffer();
+                        emitter.send(partition, message);
                         Thread.sleep(interval);
                     }
                 }
@@ -130,7 +133,7 @@ public class DeliveryTestUtil {
             TimerThread timer = new TimerThread(this);
             timer.start();
             while (messagesReceived < messagesExpected) {
-                byte[] message = listener.recv();
+                ByteBuffer message = listener.recv();
                 timer.resetSleepCounter();
                 if (message != null)
                     messagesReceived++;

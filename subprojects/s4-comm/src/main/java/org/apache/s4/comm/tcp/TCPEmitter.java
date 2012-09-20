@@ -20,14 +20,15 @@ package org.apache.s4.comm.tcp;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.s4.base.Emitter;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterChangeListener;
 import org.apache.s4.comm.topology.ClusterNode;
@@ -55,7 +56,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
@@ -91,6 +91,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     private final Lock lock;
 
     @Inject
+    SerializerDeserializerFactory serDeserFactory;
     SerializerDeserializer serDeser;
 
     CommMetrics.EmitterMetrics metrics;
@@ -103,7 +104,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
         // Initialize data structures
         int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
-        partitionChannelMap = Maps.synchronizedBiMap(HashBiMap.<Integer, Channel> create(clusterSize));
+        partitionChannelMap = HashBiMap.create(clusterSize);
         partitionNodeMap = HashBiMap.create(clusterSize);
 
         // Initialize netty related structures
@@ -131,6 +132,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     private void init() {
         refreshCluster();
         this.topology.addListener(this);
+        serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
+
         metrics = new EmitterMetrics(topology);
     }
 
@@ -161,9 +164,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         return false;
     }
 
-    private void sendMessage(int partitionId, byte[] message) {
-        ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
-        buffer.writeBytes(message);
+    private void sendMessage(int partitionId, ByteBuffer message) {
+        ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(message);
 
         if (!partitionChannelMap.containsKey(partitionId)) {
             if (!connectTo(partitionId)) {
@@ -183,8 +185,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     }
 
     @Override
-    public boolean send(int partitionId, EventMessage message) {
-        sendMessage(partitionId, serDeser.serialize(message));
+    public boolean send(int partitionId, ByteBuffer message) {
+        sendMessage(partitionId, message);
         return true;
     }
 

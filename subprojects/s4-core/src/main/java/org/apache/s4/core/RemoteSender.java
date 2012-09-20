@@ -18,10 +18,10 @@
 
 package org.apache.s4.core;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.s4.base.Emitter;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.core.util.S4Metrics;
 
@@ -46,7 +46,7 @@ public class RemoteSender {
 
     }
 
-    public void send(String hashKey, EventMessage eventMessage) {
+    public void send(String hashKey, ByteBuffer message) {
         int partition;
         if (hashKey == null) {
             // round robin by default
@@ -54,7 +54,7 @@ public class RemoteSender {
         } else {
             partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
         }
-        emitter.send(partition, eventMessage);
+        emitter.send(partition, message);
         S4Metrics.sentEventToRemoteCluster(remoteClusterName, partition);
 
     }

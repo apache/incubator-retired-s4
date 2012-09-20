@@ -18,11 +18,13 @@ public class SimplePE1 extends ProcessingElement {
     private static Logger logger = LoggerFactory.getLogger(SimplePE1.class);
 
     private long warmupIterations = -1;
-    boolean warmedUp = false;
+    int warmedUp = 0;
+    int finished = 0;
     private long testIterations = -1;
     AtomicLong counter = new AtomicLong();
     BigDecimal rate;
     long lastTime = -1;
+    int nbInjectors;
 
     public void setWarmupIterations(long warmupIterations) {
         this.warmupIterations = warmupIterations;
@@ -30,6 +32,10 @@ public class SimplePE1 extends ProcessingElement {
 
     public void setTestIterations(long testIterations) {
         this.testIterations = testIterations;
+    }
+
+    public void setNbInjectors(int nbInjectors) {
+        this.nbInjectors = nbInjectors;
     }
 
     public void onEvent(Event event) {
@@ -47,19 +53,20 @@ public class SimplePE1 extends ProcessingElement {
             }
         }
 
-        Long value = event.get("value", Long.class);
+        Long value = event.get("value", long.class);
         // logger.info("reached value {}", value);
-        if (!warmedUp && (value == -1)) {
-            logger.info("**** Warmed up");
-            addSequentialNode("/warmup");
-            warmedUp = true;
+        if (!(warmedUp == nbInjectors) && (value == -1)) {
+            logger.info("**** Warmed up for an injector");
+            addSequentialNode("/warmup/injector-" + event.get("injector", Integer.class));
+            warmedUp++;
 
-        } else if (value == (-2)) {
-            logger.info("******* finished **************");
-
-            addSequentialNode("/test");
-            System.exit(0);
-            logger.info("SADFASFDASFDASFDASFDASDFASDFASDF**************");
+        } else if (!(finished == nbInjectors) && (value == (-2))) {
+            logger.info("******* finished an injector **************");
+            finished++;
+            addSequentialNode("/test/injector-" + event.get("injector", Integer.class));
+            if (finished == nbInjectors) {
+                System.exit(0);
+            }
 
         }
 

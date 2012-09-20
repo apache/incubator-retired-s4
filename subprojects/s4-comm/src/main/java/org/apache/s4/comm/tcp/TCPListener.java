@@ -19,6 +19,7 @@
 package org.apache.s4.comm.tcp;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
@@ -56,7 +57,7 @@ import com.google.inject.name.Named;
  */
 public class TCPListener implements Listener {
     private static final Logger logger = LoggerFactory.getLogger(TCPListener.class);
-    private BlockingQueue<byte[]> handoffQueue = new SynchronousQueue<byte[]>();
+    private BlockingQueue<ChannelBuffer> handoffQueue = new SynchronousQueue<ChannelBuffer>();
     private ClusterNode node;
     private ServerBootstrap bootstrap;
     private final ChannelGroup channels = new DefaultChannelGroup();
@@ -93,10 +94,9 @@ public class TCPListener implements Listener {
         channels.add(c);
     }
 
-    public byte[] recv() {
+    public ByteBuffer recv() {
         try {
-            byte[] msg = handoffQueue.take();
-            return msg;
+            return handoffQueue.take().toByteBuffer();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;
@@ -118,9 +118,9 @@ public class TCPListener implements Listener {
     }
 
     public class ChannelHandler extends SimpleChannelHandler {
-        private BlockingQueue<byte[]> handoffQueue;
+        private BlockingQueue<ChannelBuffer> handoffQueue;
 
-        public ChannelHandler(BlockingQueue<byte[]> handOffQueue) {
+        public ChannelHandler(BlockingQueue<ChannelBuffer> handOffQueue) {
             this.handoffQueue = handOffQueue;
         }
 
@@ -128,8 +128,8 @@ public class TCPListener implements Listener {
             channels.add(e.getChannel());
             ChannelBuffer buffer = (ChannelBuffer) e.getMessage();
             try {
-                handoffQueue.put(buffer.array()); // this holds up the Netty upstream I/O thread if
-                                                  // there's no receiver at the other end of the handoff queue
+                handoffQueue.put(buffer); // this holds up the Netty upstream I/O thread if
+                                          // there's no receiver at the other end of the handoff queue
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
             }

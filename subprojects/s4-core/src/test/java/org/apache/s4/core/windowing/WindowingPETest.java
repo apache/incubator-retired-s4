@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
 import org.apache.s4.core.Stream;
@@ -65,8 +64,9 @@ public class WindowingPETest {
 
         for (int i = 0; i < NB_EVENTS; i++) {
             Event e = new Event();
-            e.put("value", Integer.class, i);
-            app.stream1.receiveEvent(new EventMessage(APP_NAME, STREAM_NAME, app.getSerDeser().serialize(e)));
+            e.setStreamId(STREAM_NAME);
+            e.put("value", Integer.class, (Integer) i);
+            app.stream1.receiveEvent(e);
         }
 
         try {

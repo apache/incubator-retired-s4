@@ -58,9 +58,9 @@ project.ext["libraries"] = [
     guice:              'com.google.inject:guice:3.0',
     aop_alliance:       'aopalliance:aopalliance:1.0',
     guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
-    kryo:               'com.googlecode:kryo:1.04',
+    kryo:               'com.esotericsoftware.kryo:kryo:2.17',
     minlog:             'com.googlecode:minlog:1.2',
-    reflectasm:         'com.googlecode:reflectasm:1.01',
+    reflectasm:         'com.esotericsoftware.reflectasm:reflectasm:1.07',
     netty:              'org.jboss.netty:netty:3.2.5.Final',
     mockito_core:       'org.mockito:mockito-core:1.9.0',
     commons_config:     'commons-configuration:commons-configuration:1.6',
@@ -81,7 +81,7 @@ project.ext["libraries"] = [
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
     jcommander:         'com.beust:jcommander:1.25',
-    asm:                'asm:asm:3.2',
+    asm:                'org.ow2.asm:asm:4.0',
     javax_inject:       'javax.inject:javax.inject:1',
     gradle_base_services: 'org.gradle:gradle-base-services:1.0',
     gradle_core: 'org.gradle:gradle-core:1.0',
@@ -142,6 +142,7 @@ subprojects {
         runtime(libraries.aop_alliance)
         runtime(libraries.minlog)
         runtime(libraries.gson)
+        compile(libraries.reflectasm)
         runtime(libraries.objenesis)
         runtime(libraries.kryo)
         runtime(libraries.netty)

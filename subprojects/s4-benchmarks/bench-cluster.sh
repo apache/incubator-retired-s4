@@ -4,6 +4,7 @@
 HOSTS=$1
 INJECTOR_CONFIG=$2
 NODE_CONFIG=$3
+NB_INJECTORS=$4
 BENCH_ROOTDIR=`pwd`
 
 echo "hosts = $HOSTS"
@@ -26,7 +27,7 @@ do
 	((NB_NODES++))
 done
 
-(cd $BENCH_ROOTDIR/../../ && ./s4 zkServer -clusters=c=testCluster1:flp=12000:nbTasks=1,c=testCluster2:flp=13000:nbTasks=$NB_NODES &)
+(cd $BENCH_ROOTDIR/../../ && ./s4 zkServer -clusters=c=testCluster1:flp=12000:nbTasks=$NB_INJECTORS,c=testCluster2:flp=13000:nbTasks=$NB_NODES &)
 
 
 sleep 6
@@ -52,7 +53,9 @@ done
 
 sleep 15
 
-java -cp `cat classpath.txt` org.apache.s4.core.Main "@$INJECTOR_CONFIG"
+for ((i = 1; i <= $NB_INJECTORS; i++)); do
+	java -Xmx200m -Xms200m -verbose:gc -Xloggc:gc.log -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -cp `cat classpath.txt` org.apache.s4.core.Main "@$INJECTOR_CONFIG" &
+done
 
 
 

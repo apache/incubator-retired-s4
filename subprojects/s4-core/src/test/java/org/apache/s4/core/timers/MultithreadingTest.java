@@ -26,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
@@ -58,7 +57,9 @@ public class MultithreadingTest {
         app.init();
         app.start();
 
-        app.testStream.receiveEvent(new EventMessage(APP_NAME, STREAM_NAME, app.getSerDeser().serialize(new Event())));
+        Event event = new Event();
+        event.setStreamId(STREAM_NAME);
+        app.testStream.receiveEvent(event);
 
         /*
          * This must raise a timeout, since the onTime() event is blocked waiting for the onEvent() call to finish. If

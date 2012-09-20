@@ -23,10 +23,11 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.GenericKeyFinder;
 import org.apache.s4.base.Key;
 import org.apache.s4.base.KeyFinder;
+import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,13 +52,14 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     private String name;
     protected Key<T> key;
     private ProcessingElement[] targetPEs;
-    protected final BlockingQueue<EventMessage> queue = new ArrayBlockingQueue<EventMessage>(CAPACITY);
+    protected final BlockingQueue<Event> queue = new ArrayBlockingQueue<Event>(CAPACITY);
     private Thread thread;
     final private Sender sender;
     final private Receiver receiver;
     // final private int id;
     final private App app;
     private Class<T> eventType = null;
+    SerializerDeserializer serDeser;
 
     /**
      * Send events using a {@link KeyFinder}. The key finder extracts the value of the key which is used to determine
@@ -191,8 +193,8 @@ public class Stream<T extends Event> implements Runnable, Streamable {
                      * Sender checked and decided that the target is local so we simply put the event in the queue and
                      * we save the trip over the network.
                      */
-                    queue.put(new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), app
-                            .getSerDeser().serialize(event)));
+                    // TODO no need to serialize for local queue
+                    queue.put(event);
                 }
 
             } else {
@@ -204,8 +206,8 @@ public class Stream<T extends Event> implements Runnable, Streamable {
                  */
                 sender.sendToRemotePartitions(event);
 
-                queue.put(new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), app.getSerDeser()
-                        .serialize(event)));
+                // TODO no need to serialize for local queue
+                queue.put(event);
                 // TODO abstraction around queue and add dropped counter
                 // TODO add counter for local events
 
@@ -219,7 +221,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     /**
      * The low level {@link Receiver} object call this method when a new {@link Event} is available.
      */
-    public void receiveEvent(EventMessage event) {
+    public void receiveEvent(Event event) {
         try {
             queue.put(event);
             // TODO abstraction around queue and add dropped counter
@@ -283,11 +285,8 @@ public class Stream<T extends Event> implements Runnable, Streamable {
         while (true) {
             try {
                 /* Get oldest event in queue. */
-                EventMessage eventMessage = queue.take();
+                T event = (T) queue.take();
                 S4Metrics.dequeuedEvent(name);
-
-                @SuppressWarnings("unchecked")
-                T event = (T) app.getSerDeser().deserialize(eventMessage.getSerializedEvent());
 
                 /* Send event to each target PE. */
                 for (int i = 0; i < targetPEs.length; i++) {
@@ -329,6 +328,11 @@ public class Stream<T extends Event> implements Runnable, Streamable {
 
     public Stream<T> register() {
         app.addStream(this);
+        return this;
+    }
+
+    public Stream<T> setSerializerDeserializerFactory(SerializerDeserializerFactory serDeserFactory) {
+        this.serDeser = serDeserFactory.createSerializerDeserializer(getClass().getClassLoader());
         return this;
     }
 }

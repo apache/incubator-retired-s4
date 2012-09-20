@@ -23,9 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.RemoteEmitters;
 import org.apache.s4.comm.topology.Clusters;
 import org.apache.s4.comm.topology.RemoteStreams;
@@ -44,35 +44,39 @@ public class RemoteSenders {
 
     Logger logger = LoggerFactory.getLogger(RemoteSenders.class);
 
-    @Inject
-    RemoteEmitters emitters;
+    RemoteEmitters remoteEmitters;
 
-    @Inject
-    RemoteStreams streams;
+    RemoteStreams remoteStreams;
 
-    @Inject
-    Clusters topologies;
+    Clusters remoteClusters;
 
-    @Inject
     SerializerDeserializer serDeser;
 
-    @Inject
     Hasher hasher;
 
     ConcurrentMap<String, RemoteSender> sendersByTopology = new ConcurrentHashMap<String, RemoteSender>();
 
+    @Inject
+    public RemoteSenders(RemoteEmitters remoteEmitters, RemoteStreams remoteStreams, Clusters remoteClusters,
+            SerializerDeserializerFactory serDeserFactory, Hasher hasher) {
+        this.remoteEmitters = remoteEmitters;
+        this.remoteStreams = remoteStreams;
+        this.remoteClusters = remoteClusters;
+        this.hasher = hasher;
+
+        serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
+    }
+
     public void send(String hashKey, Event event) {
 
-        Set<StreamConsumer> consumers = streams.getConsumers(event.getStreamName());
+        Set<StreamConsumer> consumers = remoteStreams.getConsumers(event.getStreamName());
         event.setAppId(-1);
-        EventMessage eventMessage = new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(),
-                serDeser.serialize(event));
         for (StreamConsumer consumer : consumers) {
             // NOTE: even though there might be several ephemeral znodes for the same app and topology, they are
             // represented by a single stream consumer
             RemoteSender sender = sendersByTopology.get(consumer.getClusterName());
             if (sender == null) {
-                RemoteSender newSender = new RemoteSender(emitters.getEmitter(topologies.getCluster(consumer
+                RemoteSender newSender = new RemoteSender(remoteEmitters.getEmitter(remoteClusters.getCluster(consumer
                         .getClusterName())), hasher, consumer.getClusterName());
                 // TODO cleanup when remote topologies die
                 sender = sendersByTopology.putIfAbsent(consumer.getClusterName(), newSender);
@@ -82,7 +86,7 @@ public class RemoteSenders {
             }
             // we must set the app id of the consumer app for correct dispatch within the consumer node
             // NOTE: this implies multiple serializations, there might be an optimization
-            sender.send(hashKey, eventMessage);
+            sender.send(hashKey, serDeser.serialize(event));
         }
 
     }

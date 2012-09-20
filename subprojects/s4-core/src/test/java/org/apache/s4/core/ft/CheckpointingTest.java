@@ -29,7 +29,6 @@ import junit.framework.Assert;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
 import org.apache.s4.core.ProcessingElement;
@@ -88,10 +87,11 @@ public class CheckpointingTest {
         app.start();
 
         Event event = new Event();
+        event.setStreamId("stream1");
         event.put("command", String.class, "setValue1");
         event.put("value", String.class, "message1");
 
-        app.testStream.receiveEvent(new EventMessage("", "stream1", app.getSerDeser().serialize(event)));
+        app.testStream.receiveEvent(event);
 
         signalValue1Set.await();
 
@@ -102,8 +102,9 @@ public class CheckpointingTest {
 
         // 3. generate a checkpoint event
         event = new Event();
+        event.setStreamId("stream1");
         event.put("command", String.class, "checkpoint");
-        app.testStream.receiveEvent(new EventMessage("", "stream1", app.getSerDeser().serialize(event)));
+        app.testStream.receiveEvent(event);
         Assert.assertTrue(signalCheckpointed.await(10, TimeUnit.SECONDS));
 
         // NOTE: the backend has asynchronous save operations
@@ -125,7 +126,7 @@ public class CheckpointingTest {
         idField.setAccessible(true);
         idField.set(refPE, "X");
 
-        byte[] refBytes = app.getSerDeser().serialize(refPE);
+        byte[] refBytes = app.getSerDeser().serialize(refPE).array();
 
         Assert.assertTrue(Arrays.equals(refBytes, Files.toByteArray(expected)));
 

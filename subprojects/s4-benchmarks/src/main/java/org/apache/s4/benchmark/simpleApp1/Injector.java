@@ -27,7 +27,6 @@ import com.google.inject.name.Named;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.reporting.ConsoleReporter;
-import com.yammer.metrics.reporting.CsvReporter;
 
 public class Injector extends AdapterApp {
 
@@ -73,9 +72,9 @@ public class Injector extends AdapterApp {
 
         File logDir = new File(System.getProperty("user.dir") + "/measurements/injectors");
         if (!logDir.mkdirs()) {
-            throw new RuntimeException("Cannot create dir " + logDir.getAbsolutePath());
+            logger.debug("Cannot create dir " + logDir.getAbsolutePath());
         }
-        CsvReporter.enable(logDir, 5, TimeUnit.SECONDS);
+        // CsvReporter.enable(logDir, 5, TimeUnit.SECONDS);
         remoteStreamKeyFinder = new KeyFinder<Event>() {
 
             @Override
@@ -85,10 +84,21 @@ public class Injector extends AdapterApp {
         };
         super.onInit();
         ConsoleReporter.enable(30, TimeUnit.SECONDS);
+        // Metrics.shutdown();
         ZkClient zkClient = new ZkClient(zkString);
-        zkClient.createPersistent("/benchmarkConfig");
-        zkClient.createPersistent("/benchmarkConfig/warmupIterations", warmupIterations * parallelism);
-        zkClient.createPersistent("/benchmarkConfig/testIterations", testIterations * parallelism);
+        if (getReceiver().getPartition() == 0) {
+            zkClient.createPersistent("/benchmarkConfig");
+            zkClient.createPersistent("/benchmarkConfig/warmupIterations", warmupIterations * parallelism);
+            zkClient.createPersistent("/benchmarkConfig/testIterations", testIterations * parallelism);
+            zkClient.createPersistent("/warmup");
+            zkClient.createPersistent("/test");
+        }
+
+        if (!(getReceiver().getPartition() == 0)) {
+            zkClient.waitUntilExists("/test", TimeUnit.SECONDS, 10);
+        }
+        zkClient.createPersistent("/warmup/injector-" + getReceiver().getPartition());
+        zkClient.createPersistent("/test/injector-" + getReceiver().getPartition());
         zkClient.close();
     }
 
@@ -121,7 +131,8 @@ public class Injector extends AdapterApp {
             }
         });
 
-        CountDownLatch signalWarmupComplete = Utils.getReadySignal(zkString, "/warmup", keysCount);
+        CountDownLatch signalWarmupComplete = Utils.getReadySignal(zkString, "/warmup/injector-"
+                + getReceiver().getPartition(), keysCount);
 
         RemoteStream remoteStream = getRemoteStream();
         generateEvents(remoteStream, warmupIterations, keysCount, warmupSleepInterval, parallelism);
@@ -131,13 +142,15 @@ public class Injector extends AdapterApp {
         // now that we are certain app nodes are connected, check the target cluster
         ZkClient zkClient = new ZkClient(zkString);
         zkClient.setZkSerializer(new ZNRecordSerializer());
+
         ZNRecord readData = zkClient.readData("/s4/streams/" + getRemoteStream().getName() + "/consumers/"
                 + zkClient.getChildren("/s4/streams/" + getRemoteStream().getName() + "/consumers").get(0));
         String remoteClusterName = readData.getSimpleField("clusterName");
 
         int appPartitionCount = zkClient.countChildren("/s4/clusters/" + remoteClusterName + "/tasks");
         zkClient.close();
-        CountDownLatch signalBenchComplete = Utils.getReadySignal(zkString, "/test", appPartitionCount);
+        CountDownLatch signalBenchComplete = Utils.getReadySignal(zkString, "/test/injector-"
+                + getReceiver().getPartition(), appPartitionCount);
 
         try {
             signalWarmupComplete.await();
@@ -186,6 +199,7 @@ public class Injector extends AdapterApp {
             Event event = new Event();
             event.put("key", Integer.class, j);
             event.put("value", Long.class, stopKey);
+            event.put("injector", Integer.class, getReceiver().getPartition());
             logger.info("Sending stop event with key {}", stopKey);
             remoteStream.put(event);
         }
@@ -216,8 +230,9 @@ public class Injector extends AdapterApp {
             for (long i = 0; i < iterations; i++) {
                 for (int j = 0; j < keysCount; j++) {
                     Event event = new Event();
-                    event.put("key", Integer.class, j);
-                    event.put("value", Long.class, counter.incrementAndGet());
+                    event.put("key", int.class, j);
+                    event.put("value", long.class, counter.incrementAndGet());
+                    event.put("injector", Integer.class, getReceiver().getPartition());
                     // logger.info("{}/{}/{}/",
                     // new String[] { Thread.currentThread().getName(), String.valueOf(i), String.valueOf(j),
                     // String.valueOf(event.get("value")) });

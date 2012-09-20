@@ -27,7 +27,7 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.serialize.KryoSerDeser;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.window.AbstractSlidingWindowPE;
@@ -85,7 +85,14 @@ public abstract class App {
     CheckpointingFramework checkpointingFramework;
 
     // serialization uses the application class loader
-    private SerializerDeserializer serDeser = new KryoSerDeser(getClass().getClassLoader());
+    @Inject
+    private SerializerDeserializerFactory serDeserFactory;
+    private SerializerDeserializer serDeser;
+
+    @Inject
+    private void initSerDeser() {
+        this.serDeser = serDeserFactory.createSerializerDeserializer(getClass().getClassLoader());
+    }
 
     /**
      * The internal clock can be configured as "wall clock" or "event clock". The wall clock computes time from the
@@ -299,7 +306,7 @@ public abstract class App {
             ProcessingElement... processingElements) {
 
         return new Stream<T>(this).setName(name).setKey(finder).setPEs(processingElements).setEventType(eventType)
-                .register();
+                .setSerializerDeserializerFactory(serDeserFactory).register();
     }
 
     /**

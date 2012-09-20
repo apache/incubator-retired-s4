@@ -19,12 +19,14 @@
 package org.apache.s4.fixtures;
 
 import java.io.IOException;
+import java.lang.Thread.UncaughtExceptionHandler;
 
 import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +44,21 @@ public abstract class ZkBasedTest {
         this.numTasks = numTasks;
     }
 
+    @BeforeClass
+    public static void initClass() {
+        Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                logger.error("Uncaught error in thread {}: {}", t.getName(), e);
+
+            }
+        });
+    }
+
     @Before
     public void prepare() throws IOException, InterruptedException, KeeperException {
+
         CommTestUtils.cleanupTmpDirs();
 
         zkFactory = CommTestUtils.startZookeeperServer();

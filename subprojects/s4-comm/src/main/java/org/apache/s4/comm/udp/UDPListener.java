@@ -21,12 +21,15 @@ package org.apache.s4.comm.udp;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 
 import org.apache.s4.base.Listener;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.ClusterNode;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 
 import com.google.inject.Inject;
 
@@ -41,7 +44,7 @@ public class UDPListener implements Listener, Runnable {
     private DatagramPacket datagram;
     private byte[] bs;
     static int BUFFER_LENGTH = 65507;
-    private BlockingQueue<byte[]> handoffQueue = new SynchronousQueue<byte[]>();
+    private BlockingQueue<ByteBuffer> handoffQueue = new SynchronousQueue<ByteBuffer>();
     private ClusterNode node;
 
     @Inject
@@ -74,11 +77,11 @@ public class UDPListener implements Listener, Runnable {
         try {
             while (!Thread.interrupted()) {
                 socket.receive(datagram);
-                byte[] data = new byte[datagram.getLength()];
-                System.arraycopy(datagram.getData(), datagram.getOffset(), data, 0, data.length);
+                ChannelBuffer copiedBuffer = ChannelBuffers.copiedBuffer(datagram.getData(), datagram.getOffset(),
+                        datagram.getLength());
                 datagram.setLength(BUFFER_LENGTH);
                 try {
-                    handoffQueue.put(data);
+                    handoffQueue.put(copiedBuffer.toByteBuffer());
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
@@ -88,7 +91,7 @@ public class UDPListener implements Listener, Runnable {
         }
     }
 
-    public byte[] recv() {
+    public ByteBuffer recv() {
         try {
             return handoffQueue.take();
         } catch (InterruptedException e) {

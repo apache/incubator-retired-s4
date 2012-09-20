@@ -18,12 +18,13 @@
 
 package org.apache.s4.core;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,9 +58,9 @@ public class Receiver implements Runnable {
     private Thread thread;
 
     @Inject
-    public Receiver(Listener listener, SerializerDeserializer serDeser) {
+    public Receiver(Listener listener, SerializerDeserializerFactory serDeserFactory) {
         this.listener = listener;
-        this.serDeser = serDeser;
+        this.serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
 
         thread = new Thread(this, "Receiver");
         // TODO avoid starting the thread here
@@ -98,11 +99,10 @@ public class Receiver implements Runnable {
         // TODO: this thread never seems to get interrupted. SHould we catch an interrupted exception from listener
         // here?
         while (!Thread.interrupted()) {
-            byte[] message = listener.recv();
-            S4Metrics.receivedEvent(message.length);
-            EventMessage event = (EventMessage) serDeser.deserialize(message);
+            ByteBuffer message = listener.recv();
+            S4Metrics.receivedEvent(message.array().length);
+            Event event = (Event) serDeser.deserialize(message);
 
-            int appId = Integer.valueOf(event.getAppName());
             String streamId = event.getStreamName();
 
             /*
@@ -110,9 +110,9 @@ public class Receiver implements Runnable {
              * make this more efficient for the case in which we send the same event to multiple PEs.
              */
             try {
-                streams.get(appId).get(streamId).receiveEvent(event);
+                streams.get(-1).get(streamId).receiveEvent(event);
             } catch (NullPointerException e) {
-                logger.error("Could not find target stream for event with appId={} and streamId={}", appId, streamId);
+                logger.error("Could not find target stream for event with streamId={}", streamId);
             }
         }
     }

@@ -25,8 +25,7 @@ import java.util.concurrent.TimeUnit;
 import junit.framework.Assert;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
-import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
@@ -117,9 +116,12 @@ public class FTWordCountTest extends ZkBasedTest {
     private void injectSentence(Injector injector, TCPEmitter emitter, String sentence) {
         Event event;
         event = new Event();
+        event.setStreamId("inputStream");
         event.put("sentence", String.class, sentence);
-        emitter.send(0, new EventMessage("-1", "inputStream", injector.getInstance(SerializerDeserializer.class)
-                .serialize(event)));
+        emitter.send(
+                0,
+                injector.getInstance(SerializerDeserializerFactory.class)
+                        .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
     }
 
     private void restartNode() throws IOException, InterruptedException {

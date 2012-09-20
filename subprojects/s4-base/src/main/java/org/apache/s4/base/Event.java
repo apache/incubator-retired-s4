@@ -134,11 +134,6 @@ public class Event {
 
         Data<?> data = map.get(key);
 
-        if (type != data.type) {
-            logger.error("Trying to get a value of type {} for an attribute of type {}.", type, data.type);
-            return null;
-        }
-
         return (T) data.value;
     }
 

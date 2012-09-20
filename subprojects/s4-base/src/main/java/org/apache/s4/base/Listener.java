@@ -18,6 +18,8 @@
 
 package org.apache.s4.base;
 
+import java.nio.ByteBuffer;
+
 /**
  * 
  * Get a byte array received by a lower level layer.
@@ -33,7 +35,7 @@ public interface Listener {
      *         <li>null if the associated blocking thread is interrupted</li>
      *         </ul>
      */
-    byte[] recv();
+    ByteBuffer recv();
 
     public int getPartitionId();
 

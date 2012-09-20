@@ -18,9 +18,11 @@
 
 package org.apache.s4.base;
 
+import java.nio.ByteBuffer;
+
 /**
  * Defines an event emitter, responsible for sending an event to a given partition of the cluster.
- *
+ * 
  */
 public interface Emitter {
 
@@ -33,7 +35,7 @@ public interface Emitter {
      * 
      * @return - true - if message is sent across successfully - false - if send fails
      */
-    boolean send(int partitionId, EventMessage message);
+    boolean send(int partitionId, ByteBuffer message);
 
     int getPartitionCount();
 

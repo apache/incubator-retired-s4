@@ -18,12 +18,14 @@
 
 package org.apache.s4.base;
 
+import java.nio.ByteBuffer;
+
 /**
  * Defines serialization and deserialization methods used within the S4 platform, typically for events and PEs.
- *
+ * 
  */
 public interface SerializerDeserializer {
-    public byte[] serialize(Object message);
+    public ByteBuffer serialize(Object message);
 
-    public Object deserialize(byte[] rawMessage);
+    public Object deserialize(ByteBuffer rawMessage);
 }

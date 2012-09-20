@@ -18,14 +18,15 @@
 
 package org.apache.s4.comm.util;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
 import org.apache.s4.base.Emitter;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,13 +57,13 @@ public class PartitionInfo {
     private int partitionId;
     private ProtocolTestUtil ptu;
 
-    @Inject
     SerializerDeserializer serDeser;
 
     @Inject
-    public PartitionInfo(Emitter emitter, Listener listener) {
+    public PartitionInfo(Emitter emitter, Listener listener, SerializerDeserializerFactory serDeserFactory) {
         this.emitter = emitter;
         this.listener = listener;
+        this.serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
         this.partitionId = this.listener.getPartitionId();
         logger.debug("# Partitions = {}; Current partition = {}", this.emitter.getPartitionCount(),
                 this.listener.getPartitionId());
@@ -90,10 +91,8 @@ public class PartitionInfo {
             try {
                 for (int i = 0; i < numMessages; i++) {
                     for (int partition = 0; partition < emitter.getPartitionCount(); partition++) {
-                        EventMessage message = new EventMessage("app1", "stream1",
-                                new String(partitionId + " " + i).getBytes());
                         for (int retries = 0; retries < numRetries; retries++) {
-                            if (emitter.send(partition, message)) {
+                            if (emitter.send(partition, ByteBuffer.wrap(new String(partitionId + " " + i).getBytes()))) {
                                 sendCounts[partition]++;
                                 break;
                             }
@@ -128,15 +127,14 @@ public class PartitionInfo {
         @Override
         public void run() {
             while (messagesReceived < ptu.expectedMessages[partitionId]) {
-                byte[] message = listener.recv();
+                ByteBuffer message = listener.recv();
                 if (message == null) {
                     logger.error("ReceiveThread {}: received a null message", partitionId);
                     break;
                 }
 
-                EventMessage deserialized = (EventMessage) serDeser.deserialize(message);
                 // process and store the message
-                String msgString = new String(deserialized.getSerializedEvent());
+                String msgString = new String(message.array());
                 String[] msgTokens = msgString.split(" ");
                 Integer senderPartition = Integer.parseInt(msgTokens[0]);
                 Integer receivedMsg = Integer.parseInt(msgTokens[1]);

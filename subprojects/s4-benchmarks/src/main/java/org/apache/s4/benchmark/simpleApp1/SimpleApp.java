@@ -44,6 +44,10 @@ public class SimpleApp extends App {
         Long warmupIterations = zkClient.readData("/benchmarkConfig/warmupIterations");
         Long testIterations = zkClient.readData("/benchmarkConfig/testIterations");
 
+        // TODO fix hardcoded cluster name (pass injector config?)
+        int nbInjectors = zkClient.countChildren("/s4/clusters/testCluster1/tasks");
+        simplePE1.setNbInjectors(nbInjectors);
+
         simplePE1.setWarmupIterations(warmupIterations);
         simplePE1.setTestIterations(testIterations);
         createInputStream("inputStream", new KeyFinder<Event>() {

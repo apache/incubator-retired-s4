@@ -21,6 +21,7 @@ package org.apache.s4.core;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TimerTask;
@@ -792,11 +793,11 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     public byte[] serializeState() {
-        return getApp().getSerDeser().serialize(this);
+        return getApp().getSerDeser().serialize(this).array();
     }
 
     public ProcessingElement deserializeState(byte[] loadedState) {
-        return (ProcessingElement) getApp().getSerDeser().deserialize(loadedState);
+        return (ProcessingElement) getApp().getSerDeser().deserialize(ByteBuffer.wrap(loadedState));
     }
 
     public void restoreState(ProcessingElement oldState) {

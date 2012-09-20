@@ -60,3 +60,8 @@ When the benchmark finishes, results are available in `measurements/injectors` f
 
 Most statistics files come from the probes of the platform and some of them use weighted moving averages. These are good for long running applications. For the benchmarks we also show instant rates, which are available in `injection-rate.csv` and `simplePE1.csv` files.
 
+## Notes
+
+In the current design of S4, messages sent to output streams are not queued by S4 and directly passed to the communication layer.
+
+This implies that if the communication layer is not able to send those messages at least as fast as they are generated, the buffer of pending messages will increase rapidly. This may lead to memory problems in the injector. Solving the problem requires tuning the number of parallel injection threads.
