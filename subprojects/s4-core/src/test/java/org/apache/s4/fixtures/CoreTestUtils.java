@@ -26,6 +26,7 @@ import java.util.List;
 import junit.framework.Assert;
 
 import org.apache.s4.comm.DefaultCommModule;
+import org.apache.s4.core.AppModule;
 import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.core.Main;
 import org.gradle.tooling.BuildLauncher;
@@ -114,9 +115,12 @@ public class CoreTestUtils extends CommTestUtils {
     }
 
     public static Injector createInjectorWithNonFailFastZKClients() throws IOException {
-        return Guice.createInjector(Modules.override(
-                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
-                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream())).with(
-                new NonFailFastZookeeperClientsModule()));
+        return Guice.createInjector(
+                Modules.override(
+                        new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(),
+                                "cluster1"),
+                        new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream())).with(
+                        new NonFailFastZookeeperClientsModule()), new AppModule(Thread.currentThread()
+                        .getContextClassLoader()));
     }
 }

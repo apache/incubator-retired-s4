@@ -31,6 +31,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
+import org.apache.s4.core.AppModule;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
 import org.apache.s4.core.ft.FileSystemBasedBackendWithZKStorageCallbackCheckpointingModule.DummyZKStorageCallbackFactory;
@@ -81,7 +82,7 @@ public class CheckpointingTest {
         CoreTestUtils.watchAndSignalCreation("/checkpointed", signalCheckpointed, zk);
 
         Injector injector = Guice.createInjector(new MockCommModule(),
-                new MockCoreModuleWithFileBaseCheckpointingBackend());
+                new MockCoreModuleWithFileBaseCheckpointingBackend(), new AppModule(getClass().getClassLoader()));
         TestApp app = injector.getInstance(TestApp.class);
         app.init();
         app.start();

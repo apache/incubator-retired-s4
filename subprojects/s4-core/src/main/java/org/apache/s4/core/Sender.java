@@ -24,7 +24,6 @@ import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.core.util.S4Metrics;
@@ -62,9 +61,9 @@ public class Sender {
      *            a hashing function to map keys to partition IDs.
      */
     @Inject
-    public Sender(Emitter emitter, SerializerDeserializerFactory serDeserFactory, Hasher hasher, Assignment assignment) {
+    public Sender(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment) {
         this.emitter = emitter;
-        this.serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
+        this.serDeser = serDeser;
         this.hasher = hasher;
         this.assignment = assignment;
     }

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
+import org.apache.s4.core.AppModule;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
 import org.apache.s4.fixtures.MockCommModule;
@@ -51,7 +52,8 @@ public class MultithreadingTest {
      */
     @Test
     public void testSynchronization() throws IOException, InterruptedException {
-        Injector injector = Guice.createInjector(new MockCommModule(), new MockCoreModule());
+        Injector injector = Guice.createInjector(new MockCommModule(), new MockCoreModule(), new AppModule(getClass()
+                .getClassLoader()));
         TestApp app = injector.getInstance(TestApp.class);
         app.count = 2; // One for the event, another for the timer
         app.init();

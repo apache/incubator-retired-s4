@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,9 +57,9 @@ public class Receiver implements Runnable {
     private Thread thread;
 
     @Inject
-    public Receiver(Listener listener, SerializerDeserializerFactory serDeserFactory) {
+    public Receiver(Listener listener, SerializerDeserializer serDeser) {
         this.listener = listener;
-        this.serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
+        this.serDeser = serDeser;
 
         thread = new Thread(this, "Receiver");
         // TODO avoid starting the thread here

@@ -154,6 +154,15 @@ public class Main {
                 combinedModule = Modules.override(combinedModule).with(new ParametersInjectionModule(namedParameters));
             }
 
+            if (mainArgs.appClass != null) {
+                // In that case we won't be using an S4R classloader, app classes are available from the current
+                // classloader
+                // The app module provides bindings specific to the app class loader, in this case the current thread's
+                // class loader.
+                AppModule appModule = new AppModule(Thread.currentThread().getContextClassLoader());
+                combinedModule = Modules.override(combinedModule).with(appModule);
+            }
+
             injector = Guice.createInjector(combinedModule);
 
             if (mainArgs.appClass != null) {

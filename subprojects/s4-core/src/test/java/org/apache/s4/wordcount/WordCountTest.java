@@ -28,6 +28,7 @@ import org.apache.s4.base.Event;
 import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.TCPEmitter;
+import org.apache.s4.core.AppModule;
 import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.core.Main;
 import org.apache.s4.fixtures.CommTestUtils;
@@ -68,7 +69,7 @@ public class WordCountTest extends ZkBasedTest {
     public void prepareEmitter() throws IOException {
         injector = Guice.createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
                 .openStream(), "cluster1"), new DefaultCoreModule(Resources.getResource("default.s4.core.properties")
-                .openStream()));
+                .openStream()), new AppModule(getClass().getClassLoader()));
 
         emitter = injector.getInstance(TCPEmitter.class);
 

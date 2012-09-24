@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
+import org.apache.s4.core.AppModule;
 import org.apache.s4.core.Stream;
 import org.apache.s4.core.window.AbstractSlidingWindowPE;
 import org.apache.s4.core.window.DefaultAggregatingSlot;
@@ -57,7 +58,8 @@ public class WindowingPETest {
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
                 .getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.DEBUG);
-        Injector injector = Guice.createInjector(new MockCommModule(), new MockCoreModule());
+        Injector injector = Guice.createInjector(new MockCommModule(), new MockCoreModule(), new AppModule(getClass()
+                .getClassLoader()));
         TestTimeWindowedApp app = injector.getInstance(TestTimeWindowedApp.class);
         app.init();
         app.start();
