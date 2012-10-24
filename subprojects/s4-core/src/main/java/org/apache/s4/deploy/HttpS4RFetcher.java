@@ -71,6 +71,11 @@ public class HttpS4RFetcher implements S4RFetcher {
     private static Logger logger = LoggerFactory.getLogger(HttpS4RFetcher.class);
 
     @Override
+    public boolean handlesProtocol(URI uri) {
+        return ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()));
+    }
+
+    @Override
     public InputStream fetch(URI uri) throws DeploymentFailedException {
         logger.debug("Fetching file through http: {}", uri.toString());
 
@@ -183,4 +188,5 @@ public class HttpS4RFetcher implements S4RFetcher {
             ByteStreams.copy(cbis, fos);
         }
     }
+
 }

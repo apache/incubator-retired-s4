@@ -1,0 +1,102 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+description = 'The S4 yarn tool'
+
+apply plugin: 'java'
+
+
+task "create-dirs" << {
+   sourceSets.all*.java.srcDirs*.each { it.mkdirs() }
+   sourceSets.all*.resources.srcDirs*.each { it.mkdirs() }
+}
+
+configurations.all {
+        transitive = true
+    }
+
+
+dependencies {
+    compile project(":s4-base")
+    compile project(":s4-comm")
+    compile project(":s4-core")
+    compile project(":s4-tools")
+    compile libraries.jcommander
+    compile libraries.gradle_base_services
+    compile libraries.gradle_core
+    compile libraries.gradle_tooling_api
+    compile libraries.gradle_wrapper
+    compile libraries.log4j
+    compile libraries.zkclient
+    
+    testCompile project(path: ':s4-comm', configuration: 'tests')
+    testCompile project(path: ':s4-core', configuration: 'tests')
+    
+    compile('commons-cli:commons-cli:1.2')
+    runtime('org.apache.hadoop:hadoop-auth:2.0.2-alpha') {transitive = true}
+    compile('org.apache.hadoop:hadoop-common:2.0.2-alpha') {transitive = true} 
+    runtime('org.apache.hadoop:hadoop-hdfs:2.0.2-alpha') {transitive = true}
+    testRuntime('org.apache.hadoop:hadoop-yarn-server:2.0.2-alpha') {transitive = true}
+    compile('org.apache.hadoop:hadoop-yarn-client:2.0.2-alpha') {transitive = true}
+    testRuntime('org.apache.hadoop:hadoop-yarn-server-common:2.0.2-alpha') {transitive = true}
+    testRuntime('org.apache.hadoop:hadoop-yarn-server-nodemanager:2.0.2-alpha') {transitive = true}
+    testRuntime('org.apache.hadoop:hadoop-yarn-server-resourcemanager:2.0.2-alpha') {transitive = true}
+    testRuntime('org.apache.hadoop:hadoop-yarn-server-web-proxy:2.0.2-alpha') {transitive = true}
+    runtime('org.apache.hadoop:hadoop-mapreduce-client-shuffle:2.0.2-alpha') {transitive = true}
+    // NOTE: the tests jars are available on maven but can't find a way to reference them) so we copied them locally with modified names
+    testCompile('org.apache.hadoop:hadoop-common-tests:2.0.2-alpha') {transitive = true}
+    testCompile('org.apache.hadoop:hadoop-hdfs-tests:2.0.2-alpha@jar') {transitive = true}
+    testCompile('org.apache.hadoop:hadoop-yarn-server-tests:2.0.2-alpha-tests') {transitive = true}
+    testRuntime('javax.servlet:servlet-api:2.5')
+    testRuntime('com.google.inject.extensions:guice-servlet:3.0') {transitive=true}
+    compile('org.apache.hadoop:hadoop-yarn-api:2.0.2-alpha') {transitive = true}
+    compile('org.apache.hadoop:hadoop-yarn-common:2.0.2-alpha') {transitive = true}
+    runtime('com.google.protobuf:protobuf-java:2.4.1')
+    // Problem of commons-daemon is that there is a dependency on 1.0.3 but that version is not available in maven repos. 
+    // For that reason we explicitly specify version 1.0.10 
+    compile('commons-daemon:commons-daemon:1.0.10') {transitive = true}
+    runtime('org.apache.zookeeper:zookeeper:3.3.1'){force=true}
+
+}
+
+apply plugin:'application'
+mainClassName = "org.apache.s4.tools.yarn.S4YarnClient"
+
+task copyTemplates << {
+    copy {
+        from 'src/main/java/hello'
+        into 'src/main/resources'
+    }
+}
+
+run {
+    // run doesn't yet directly accept command line parameters...
+    if ( project.hasProperty('args') ) {
+        args project.args.split('\\s+')
+        print args
+    }
+ }
+
+
+test {
+    forkEvery=1
+    // testLogging.showStandardStreams = true
+}
+
+test.dependsOn installApp

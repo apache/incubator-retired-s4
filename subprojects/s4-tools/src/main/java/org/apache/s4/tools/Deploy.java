@@ -66,18 +66,21 @@ public class Deploy extends S4ArgsBase {
                 System.exit(1);
             }
 
-            File s4rToDeploy;
+            java.net.URI s4rURI = null;
 
             if (deployArgs.s4rPath != null) {
-                s4rToDeploy = new File(deployArgs.s4rPath);
-                if (!s4rToDeploy.exists()) {
-                    logger.error("Specified S4R file does not exist in {}", s4rToDeploy.getAbsolutePath());
-                    System.exit(1);
-                } else {
-                    logger.info(
-                            "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
-                            s4rToDeploy.getAbsolutePath());
+                s4rURI = new java.net.URI(deployArgs.s4rPath);
+                if (s4rURI.getScheme().equalsIgnoreCase("file")) {
+                    File s4rToDeploy = new File(deployArgs.s4rPath);
+                    if (!s4rToDeploy.exists()) {
+                        logger.error("Specified S4R file does not exist in {}", s4rToDeploy.getAbsolutePath());
+                        System.exit(1);
+                    }
                 }
+                logger.info(
+                        "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
+                        s4rURI.toString());
+
             } else {
                 List<String> params = new ArrayList<String>();
                 // prepare gradle -P parameters, including passed gradle opts
@@ -89,21 +92,22 @@ public class Deploy extends S4ArgsBase {
                 File tmpS4R = new File(tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r");
                 if (!Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
                     logger.info("Copying generated S4R to [{}]", deployArgs.generatedS4R);
-                    s4rToDeploy = new File(deployArgs.generatedS4R);
+                    File s4rToDeploy = new File(deployArgs.generatedS4R);
                     if (!(ByteStreams.copy(Files.newInputStreamSupplier(tmpS4R),
                             Files.newOutputStreamSupplier(s4rToDeploy)) > 0)) {
                         logger.error("Cannot copy generated s4r from {} to {}", tmpS4R.getAbsolutePath(),
                                 s4rToDeploy.getAbsolutePath());
                         System.exit(1);
+                    } else {
+                        s4rURI = s4rToDeploy.toURI();
                     }
                 } else {
-                    s4rToDeploy = tmpS4R;
+                    s4rURI = tmpS4R.toURI();
                 }
             }
 
-            final String uri = s4rToDeploy.toURI().toString();
             ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-            record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
+            record.putSimpleField(DistributedDeploymentManager.S4R_URI, s4rURI.toString());
             record.putSimpleField("name", deployArgs.appName);
             String deployedAppPath = "/s4/clusters/" + deployArgs.clusterName + "/app/s4App";
             if (zkClient.exists(deployedAppPath)) {
@@ -117,11 +121,12 @@ public class Deploy extends S4ArgsBase {
             logger.info(
                     "uploaded application [{}] to cluster [{}], using zookeeper znode [{}], and s4r file [{}]",
                     new String[] { deployArgs.appName, deployArgs.clusterName,
-                            "/s4/clusters/" + deployArgs.clusterName + "/app/" + deployArgs.appName,
-                            s4rToDeploy.getAbsolutePath() });
+                            "/s4/clusters/" + deployArgs.clusterName + "/app/" + deployArgs.appName, s4rURI.toString() });
 
             // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
-            System.exit(0);
+            if (deployArgs.shutdown) {
+                System.exit(0);
+            }
         } catch (Exception e) {
             LoggerFactory.getLogger(Deploy.class).error("Cannot deploy app", e);
         }
@@ -154,6 +159,9 @@ public class Deploy extends S4ArgsBase {
 
         @Parameter(names = "-timeout", description = "Connection timeout to Zookeeper, in ms")
         int timeout = 10000;
+
+        @Parameter(names = "-shutdown", description = "Shutdown JVM after deployment. Useful to avoid waiting for remaining long running threads from Gradle", arity = 1)
+        boolean shutdown = true;
 
     }
 

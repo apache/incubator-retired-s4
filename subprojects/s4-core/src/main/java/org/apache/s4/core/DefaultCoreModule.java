@@ -33,11 +33,15 @@ import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.ft.NoOpCheckpointingFramework;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.DistributedDeploymentManager;
+import org.apache.s4.deploy.FileSystemS4RFetcher;
+import org.apache.s4.deploy.HttpS4RFetcher;
+import org.apache.s4.deploy.S4RFetcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 
 /**
@@ -77,6 +81,11 @@ public class DefaultCoreModule extends AbstractModule {
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
 
         bind(DeploymentManager.class).to(DistributedDeploymentManager.class);
+
+        // allow for pluggable s4r fetching strategies
+        Multibinder<S4RFetcher> s4rFetcherMultibinder = Multibinder.newSetBinder(binder(), S4RFetcher.class);
+        s4rFetcherMultibinder.addBinding().to(FileSystemS4RFetcher.class);
+        s4rFetcherMultibinder.addBinding().to(HttpS4RFetcher.class);
 
         bind(S4RLoaderFactory.class);
 

@@ -24,18 +24,30 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URI;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Fetches S4R files from a file system, possibly distributed.
  * 
  */
 public class FileSystemS4RFetcher implements S4RFetcher {
 
+    private static Logger logger = LoggerFactory.getLogger(FileSystemS4RFetcher.class);
+
+    @Override
+    public boolean handlesProtocol(URI uri) {
+        return "file".equalsIgnoreCase(uri.getScheme());
+    }
+
     @Override
     public InputStream fetch(URI uri) throws DeploymentFailedException {
+        logger.debug("Fetching uri through the file system : {}", uri.toString());
         try {
             return new FileInputStream(new File(uri));
         } catch (FileNotFoundException e) {
             throw new DeploymentFailedException("Cannot retrieve file from uri [" + uri.toString() + "]");
         }
     }
+
 }

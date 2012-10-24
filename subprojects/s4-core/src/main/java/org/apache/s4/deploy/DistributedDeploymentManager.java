@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Set;
 
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.ZkClient;
@@ -78,14 +79,17 @@ public class DistributedDeploymentManager implements DeploymentManager {
     private final Server server;
     boolean deployed = false;
 
+    private final Set<S4RFetcher> s4rFetchers;
+
     @Inject
     public DistributedDeploymentManager(@Named("s4.cluster.name") String clusterName,
             @Named("s4.cluster.zk_address") String zookeeperAddress,
             @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, Server server) {
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, Server server, Set<S4RFetcher> s4rFetchers) {
 
         this.clusterName = clusterName;
         this.server = server;
+        this.s4rFetchers = s4rFetchers;
 
         zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
         zkClient.setZkSerializer(new ZNRecordSerializer());
@@ -146,13 +150,13 @@ public class DistributedDeploymentManager implements DeploymentManager {
     // NOTE: in theory, we could support any protocol by implementing a chained visitor scheme,
     // but that's probably not that useful, and we can simply provide whichever protocol is needed
     public InputStream fetchS4App(URI uri) throws DeploymentFailedException {
+
+        for (S4RFetcher s4rFetcher : s4rFetchers) {
+            if (s4rFetcher.handlesProtocol(uri)) {
+                return s4rFetcher.fetch(uri);
+            }
+        }
         String scheme = uri.getScheme();
-        if ("file".equalsIgnoreCase(scheme)) {
-            return new FileSystemS4RFetcher().fetch(uri);
-        }
-        if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
-            return new HttpS4RFetcher().fetch(uri);
-        }
         throw new DeploymentFailedException("Unsupported protocol " + scheme);
     }
 

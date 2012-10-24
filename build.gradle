@@ -40,6 +40,8 @@ allprojects {
         maven { url 'http://google-gson.googlecode.com/svn/mavenrepo' }
         maven { url 'https://repo.springsource.org/libs-release' }
         maven { url 'http://repo.gradle.org/gradle/libs-releases-local' }
+        
+        
 
         /* Add lib dir as a repo. Some jar files that are not available
          in a public repo are distributed in the lib dir. */
@@ -58,6 +60,7 @@ project.ext["libraries"] = [
     guice:              'com.google.inject:guice:3.0',
     aop_alliance:       'aopalliance:aopalliance:1.0',
     guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
+    guice_multibindings:'com.google.inject.extensions:guice-multibindings:3.0',
     kryo:               'com.googlecode:kryo:1.04',
     minlog:             'com.googlecode:minlog:1.2',
     reflectasm:         'com.googlecode:reflectasm:1.01',
@@ -86,7 +89,8 @@ project.ext["libraries"] = [
     gradle_base_services: 'org.gradle:gradle-base-services:1.0',
     gradle_core: 'org.gradle:gradle-core:1.0',
     gradle_tooling_api: 'org.gradle:gradle-tooling-api:1.0',
-    gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0'
+    gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0',
+
 ]
 
 subprojects {
@@ -114,12 +118,13 @@ subprojects {
         compile ( libraries.guava )
         compile ( libraries.guice )
         compile ( libraries.guice_assist)
+        compile ( libraries.guice_multibindings)
 
         /* Logging. */
         compile( libraries.slf4j )
         compile( libraries.logback_core )
         compile( libraries.logback_classic )
-        runtime( libraries.commons_logging)
+        compile( libraries.commons_logging)
 
         /* Commons. */
         compile( libraries.commons_config )
@@ -146,6 +151,7 @@ subprojects {
         runtime(libraries.asm)
         runtime(libraries.javax_inject)
         runtime(libraries.commons_codec)
+
     }
     
     jar {

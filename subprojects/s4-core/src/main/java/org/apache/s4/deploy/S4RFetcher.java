@@ -29,6 +29,13 @@ import java.net.URI;
 public interface S4RFetcher {
 
     /**
+     * 
+     * @param uri
+     * @return true if the uri's protocol is handled by this fetcher
+     */
+    boolean handlesProtocol(URI uri);
+
+    /**
      * Returns a stream to an S4R archive file
      * 
      * @param uri

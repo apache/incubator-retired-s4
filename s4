@@ -1,14 +1,30 @@
 #!/bin/bash
 
-# NOTE: "./gradlew s4-tools:installApp" will prepare/update the tools subproject and related startup scripts
+# NOTE1: "./gradlew s4-tools:installApp" will prepare/update the tools subproject and related startup scripts
+# NOTE2: "./gradlew s4-yarn:installApp" will prepare/update the yarn deployment tools if needed
 
 S4_DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 S4_SCRIPT_PATH="$S4_DIR/s4"
 
-# JVM options for starting nodes and for other s4 tools can be configured here
-# export JAVA_OPTS=-Xmx1G
+case "$1" in
+"yarn")
+    if [ ! -f subprojects/s4-yarn/build/install/s4-yarn/bin/s4-yarn ]
+    then
+        echo "Cannot find s4 yarn script (subprojects/s4-yarn/build/install/s4-yarn/bin/s4-yarn). Please install the script with './gradlew s4-yarn:installApp' "
+        exit 1
+    fi
+    shift 1
+    subprojects/s4-yarn/build/install/s4-yarn/bin/s4-yarn -s4Dir=$S4_DIR $@
+;;
 
-subprojects/s4-tools/build/install/s4-tools/bin/s4-tools -s4ScriptPath=$S4_SCRIPT_PATH $@
+*)
 
+    # JVM options for starting nodes and for other s4 tools can be configured here
+    # export JAVA_OPTS=-Xmx1G
+
+    subprojects/s4-tools/build/install/s4-tools/bin/s4-tools -s4ScriptPath=$S4_SCRIPT_PATH $@
+;;
+
+esac
 
 

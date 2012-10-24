@@ -184,8 +184,8 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         zkClient.subscribeChildChanges("/s4/clusters/cluster1/process", new IZkChildListener() {
 
             @Override
-            public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
-                if (currentChilds.size() == 2) {
+            public void handleChildChange(String parentPath, List<String> currentChildren) throws Exception {
+                if (currentChildren.size() == 1) {
                     signalProcessesReady.countDown();
                 }
 
@@ -195,8 +195,8 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=cluster1" });
 
         // TODO synchro with ready state from zk
-        Thread.sleep(10000);
-        // Assert.assertTrue(signalProcessesReady.await(10, TimeUnit.SECONDS));
+        // Thread.sleep(10000);
+        Assert.assertTrue(signalProcessesReady.await(30, TimeUnit.SECONDS));
 
     }
 
