@@ -100,3 +100,5 @@ test {
 }
 
 test.dependsOn installApp
+
+installApp.dependsOn ":s4-tools:installApp"

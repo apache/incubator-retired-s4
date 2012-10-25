@@ -36,6 +36,10 @@ import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
+import com.google.common.base.Strings;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+
 public class TwitterInputAdapter extends AdapterApp {
 
     private static Logger logger = LoggerFactory.getLogger(TwitterInputAdapter.class);
@@ -48,6 +52,18 @@ public class TwitterInputAdapter extends AdapterApp {
     protected ServerSocket serverSocket;
 
     private Thread t;
+
+    @Named("twitter4j.user")
+    @Inject
+    String twitterUser;
+
+    @Named("twitter4j.password")
+    @Inject
+    String twitterPassword;
+
+    @Named("twitter4j.debug")
+    @Inject
+    String twitter4jDebug;
 
     @Override
     protected void onClose() {
@@ -64,16 +80,24 @@ public class TwitterInputAdapter extends AdapterApp {
         ConfigurationBuilder cb = new ConfigurationBuilder();
         Properties twitterProperties = new Properties();
         File twitter4jPropsFile = new File(System.getProperty("user.home") + "/twitter4j.properties");
-        if (!twitter4jPropsFile.exists()) {
-            logger.error(
-                    "Cannot find twitter4j.properties file in this location :[{}]. Make sure it is available at this place and includes user/password credentials",
+        if (!twitter4jPropsFile.exists()
+                && (Strings.isNullOrEmpty(twitterUser) || Strings.isNullOrEmpty(twitterPassword))) {
+            logger.info(
+                    "Cannot find twitter4j.properties file in this location :[{}], nor through inline parameters. Make sure there is a configuration file available at this place and includes user/password credentials, or that you are passing the twitter4j.user and twitter4j.password parameters to the node",
                     twitter4jPropsFile.getAbsolutePath());
             return;
         }
-        twitterProperties.load(new FileInputStream(twitter4jPropsFile));
+        if (twitter4jPropsFile.exists()) {
+            twitterProperties.load(new FileInputStream(twitter4jPropsFile));
+        }
 
-        cb.setDebugEnabled(Boolean.valueOf(twitterProperties.getProperty("debug")))
-                .setUser(twitterProperties.getProperty("user")).setPassword(twitterProperties.getProperty("password"));
+        cb.setDebugEnabled(
+                !Strings.isNullOrEmpty(twitter4jDebug) ? Boolean.valueOf(twitter4jDebug) : Boolean
+                        .valueOf(twitterProperties.getProperty("debug")))
+                .setUser(!Strings.isNullOrEmpty(twitterUser) ? twitterUser : twitterProperties.getProperty("user"))
+                .setPassword(
+                        !Strings.isNullOrEmpty(twitterPassword) ? twitterPassword : twitterProperties
+                                .getProperty("password"));
         TwitterStream twitterStream = new TwitterStreamFactory(cb.build()).getInstance();
         StatusListener statusListener = new StatusListener() {
 

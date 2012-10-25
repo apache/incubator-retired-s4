@@ -39,6 +39,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -148,6 +149,10 @@ public class S4ApplicationMaster {
 
     private String user;
 
+    private String extraModulesClasses;
+
+    private String namedStringParameters;
+
     /**
      * @param args
      *            Command line args
@@ -209,6 +214,8 @@ public class S4ApplicationMaster {
         opts.addOption("priority", true, "Application Priority. Default 0");
         opts.addOption("debug", false, "Dump out debug information");
         opts.addOption("test", false, "Test mode");
+        opts.addOption("extraModulesClasses", true, "Extra modules classes for S4 node configuration");
+        opts.addOption("namedStringParameters", true, "Named configuration parameters for S4 node configuration");
 
         opts.addOption("help", false, "Print usage");
         CommandLine cliParser = new GnuParser().parse(opts, args);
@@ -259,6 +266,13 @@ public class S4ApplicationMaster {
         requestPriority = Integer.parseInt(cliParser.getOptionValue("priority", "0"));
         user = cliParser.getOptionValue("user");
 
+        if (cliParser.hasOption("extraModulesClasses")) {
+            extraModulesClasses = cliParser.getOptionValue("extraModulesClasses");
+        }
+        if (cliParser.hasOption("namedStringParameters")) {
+            namedStringParameters = cliParser.getOptionValue("namedStringParameters");
+        }
+
         conf = new YarnConfiguration();
         if (cliParser.hasOption("test")) {
             testMode = true;
@@ -291,6 +305,8 @@ public class S4ApplicationMaster {
         resourceManager = connectToRM();
 
         // Setup local RPC Server to accept status requests directly from clients
+        // TODO need to setup a protocol for client to be able to communicate to the RPC server
+        // TODO use the rpc port info to register with the RM for the client to send requests to this app master
 
         // Register self with ResourceManager
         RegisterApplicationMasterResponse response = registerToRM();
@@ -522,7 +538,8 @@ public class S4ApplicationMaster {
             try {
                 FileSystem fs = FileSystem.get(conf);
 
-                RemoteIterator<LocatedFileStatus> files = fs.listFiles(fs.getHomeDirectory(), false);
+                RemoteIterator<LocatedFileStatus> files = fs.listFiles(new Path(fs.getHomeDirectory(), "/app-"
+                        + appAttemptID.getApplicationId().getId()), false);
                 while (files.hasNext()) {
                     LocatedFileStatus file = files.next();
                     LocalResource localResource = Records.newRecord(LocalResource.class);
@@ -566,12 +583,26 @@ public class S4ApplicationMaster {
             vargs.add("-zk=" + zkString);
             vargs.add("-c=" + cluster);
 
+            if (Strings.isNullOrEmpty(extraModulesClasses)) {
+                extraModulesClasses = HdfsFetcherModule.class.getName();
+            } else {
+                extraModulesClasses += "," + HdfsFetcherModule.class.getName();
+            }
             // add module for fetchings from hdfs
-            vargs.add("-emc=" + HdfsFetcherModule.class.getName());
+            vargs.add("-extraModulesClasses=" + extraModulesClasses);
 
             // add reference to the configuration
             if (testMode) {
-                vargs.add("-p=" + FileSystem.FS_DEFAULT_NAME_KEY + "=" + conf.get(FileSystem.FS_DEFAULT_NAME_KEY));
+                if (Strings.isNullOrEmpty(namedStringParameters)) {
+                    namedStringParameters = FileSystem.FS_DEFAULT_NAME_KEY + "="
+                            + conf.get(FileSystem.FS_DEFAULT_NAME_KEY);
+                } else {
+                    namedStringParameters += "," + FileSystem.FS_DEFAULT_NAME_KEY + "="
+                            + conf.get(FileSystem.FS_DEFAULT_NAME_KEY);
+                }
+            }
+            if (!Strings.isNullOrEmpty(namedStringParameters)) {
+                vargs.add("-namedStringParameters=" + namedStringParameters);
             }
 
             // TODO

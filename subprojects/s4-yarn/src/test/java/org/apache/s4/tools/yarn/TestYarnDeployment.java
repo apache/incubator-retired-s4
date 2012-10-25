@@ -128,12 +128,6 @@ public class TestYarnDeployment extends ZkBasedTest {
 
         fs.close();
 
-        // File s4rToDeploy = File.createTempFile("testapp" + System.currentTimeMillis(), "s4r");
-        //
-        // Assert.assertTrue(ByteStreams.copy(
-        // Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-        // + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
-
         // deploy with Yarn Client
         final String[] params = ("-cluster=cluster1 -nbTasks=2 -flp=14000 -s4r=" + destS4rPath.toUri().toString()
                 + " -zk=localhost:2181 -s4Dir=" + gradlewFile.getParentFile().getAbsolutePath()).split("[ ]");
@@ -183,15 +177,6 @@ public class TestYarnDeployment extends ZkBasedTest {
 
         // cleanup
         client.killApplication(client.getApplicationList().get(0).getApplicationId());
-        // LOG.info("Initializing DS Client");
-        // Client client = new Client();
-        // boolean initSuccess = client.init(args);
-        // assert (initSuccess);
-        // LOG.info("Running DS Client");
-        // boolean result = client.run();
-        //
-        // LOG.info("Client run completed. Result=" + result);
-        // assert (result == true);
 
     }
 }

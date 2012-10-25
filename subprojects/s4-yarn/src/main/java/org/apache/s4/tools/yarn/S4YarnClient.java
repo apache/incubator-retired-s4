@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Vector;
 
@@ -122,9 +123,6 @@ public class S4YarnClient extends YarnClientImpl {
     private Configuration conf;
 
     YarnArgs yarnArgs;
-
-    // Handle to talk to the Resource Manager/Applications Manager
-    private ClientRMProtocol applicationsManager;
 
     private int amMemory;
 
@@ -274,7 +272,7 @@ public class S4YarnClient extends YarnClientImpl {
         FileSystem fs = FileSystem.get(conf);
 
         for (int i = 0; i < classPathFiles.length; i++) {
-            Path dest = copyToLocalResources(fs, localResources, classPathFiles[i]);
+            Path dest = copyToLocalResources(appId, fs, localResources, classPathFiles[i]);
             logger.info("Copied classpath resource " + classPathFiles[i].getAbsolutePath() + " to "
                     + dest.toUri().toString());
         }
@@ -321,6 +319,25 @@ public class S4YarnClient extends YarnClientImpl {
         vargs.add("--container_memory " + String.valueOf(yarnArgs.containerMemory));
         vargs.add("--num_containers " + String.valueOf(yarnArgs.numContainers));
         vargs.add("--priority " + String.valueOf(yarnArgs.priority));
+        if (!yarnArgs.extraModulesClasses.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("-extraModulesClasses ");
+            ListIterator<String> it = yarnArgs.extraModulesClasses.listIterator();
+            while (it.hasNext()) {
+                sb.append(it.next() + (it.hasNext() ? "," : ""));
+            }
+            vargs.add(sb.toString());
+        }
+        if (!yarnArgs.extraNamedParameters.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("-namedStringParameters ");
+            ListIterator<String> it = yarnArgs.extraNamedParameters.listIterator();
+            while (it.hasNext()) {
+                sb.append(it.next() + (it.hasNext() ? "," : ""));
+            }
+            vargs.add(sb.toString());
+        }
+
         vargs.add("-c " + String.valueOf(yarnArgs.cluster));
         vargs.add("-zk " + String.valueOf(yarnArgs.zkString));
         if (testMode) {
@@ -388,12 +405,12 @@ public class S4YarnClient extends YarnClientImpl {
 
     }
 
-    private Path copyToLocalResources(FileSystem fs, Map<String, LocalResource> localResources, File file)
-            throws IOException {
+    private Path copyToLocalResources(ApplicationId appId, FileSystem fs, Map<String, LocalResource> localResources,
+            File file) throws IOException {
         Path src = new Path(file.getAbsolutePath());
 
         // TODO use home directory + appId / appName?
-        Path dst = new Path(fs.getHomeDirectory(), file.getName());
+        Path dst = new Path(new Path(fs.getHomeDirectory(), "/app-" + appId.getId()), file.getName());
         fs.copyFromLocalFile(false, true, src, dst);
         FileStatus destStatus = fs.getFileStatus(dst);
         LocalResource resource = Records.newRecord(LocalResource.class);

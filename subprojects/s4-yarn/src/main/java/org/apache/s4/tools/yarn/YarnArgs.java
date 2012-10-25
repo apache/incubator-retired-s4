@@ -1,5 +1,10 @@
 package org.apache.s4.tools.yarn;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.s4.core.Main.InlineConfigParameterConverter;
+
 import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -50,6 +55,12 @@ class YarnArgs {
 
     @Parameter(names = "-s4r", description = "URI to S4 archive (.s4r) file. It will be automatically deployed on the allocated S4 nodes. Examples: file:///home/s4/file.s4r or more probably hdfs:///hostname:port/path/file.s4r", required = true)
     String s4rPath;
+
+    @Parameter(names = { "-extraModulesClasses", "-emc" }, description = "Comma-separated list of additional configuration modules (they will be instantiated through their constructor without arguments).", required = false, hidden = false)
+    List<String> extraModulesClasses = new ArrayList<String>();
+
+    @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = InlineConfigParameterConverter.class)
+    List<String> extraNamedParameters = new ArrayList<String>();
 
     @Parameter(names = "-container_memory", description = "Amount of memory in MB to be requested to host the S4 node", required = false, validateWith = YarnArgs.MemoryValidator.class)
     int containerMemory = 10;
