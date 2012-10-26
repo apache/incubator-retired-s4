@@ -47,7 +47,8 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Names;
 
 /**
- * Default configuration module for the communication layer. Parameterizable through a configuration file.
+ * Default configuration module for the communication layer. Parameterizable / overridable through custom modules and /
+ * or configuration file (for string literals).
  * 
  */
 public class DefaultCommModule extends AbstractModule {

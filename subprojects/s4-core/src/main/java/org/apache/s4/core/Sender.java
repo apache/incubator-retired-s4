@@ -24,6 +24,8 @@ import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.topology.Assignment;
+import org.apache.s4.comm.topology.Cluster;
+import org.apache.s4.comm.topology.ClusterChangeListener;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,16 +40,17 @@ import com.google.inject.Inject;
  * Details on how the cluster is partitioned and how events are serialized and transmitted to its destination are hidden
  * from the application developer.
  */
-public class Sender {
+public class Sender implements ClusterChangeListener {
 
     private static Logger logger = LoggerFactory.getLogger(Sender.class);
 
     final private Emitter emitter;
     final private SerializerDeserializer serDeser;
     final private Hasher hasher;
+    final private Cluster cluster;
 
-    Assignment assignment;
-    private int localPartitionId = -1;
+    final private Assignment assignment;
+    private volatile int localPartitionId = -1;
 
     /**
      * 
@@ -59,11 +62,14 @@ public class Sender {
      *            a hashing function to map keys to partition IDs.
      */
     @Inject
-    public Sender(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment) {
+    public Sender(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment,
+            Cluster cluster) {
         this.emitter = emitter;
         this.serDeser = serDeser;
         this.hasher = hasher;
         this.assignment = assignment;
+        this.cluster = cluster;
+        this.cluster.addListener(this);
     }
 
     @Inject
@@ -119,6 +125,11 @@ public class Sender {
                         new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(), serDeser
                                 .serialize(event)));
         }
+    }
+
+    @Override
+    public void onChange() {
+        resolveLocalPartitionId();
     }
 
 }

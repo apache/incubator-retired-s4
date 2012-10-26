@@ -20,6 +20,8 @@ package org.apache.s4.fixtures;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Listener;
+import org.apache.s4.comm.topology.Cluster;
+import org.apache.s4.comm.topology.PhysicalCluster;
 import org.apache.s4.core.Receiver;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.NoOpDeploymentManager;
@@ -47,5 +49,8 @@ public class MockCoreModule extends AbstractModule {
         bind(Emitter.class).toInstance(Mockito.mock(Emitter.class));
         bind(Listener.class).toInstance(Mockito.mock(Listener.class));
         bind(Receiver.class).toInstance(Mockito.mock(Receiver.class));
+        Cluster clusterMock = Mockito.mock(Cluster.class);
+        Mockito.when(clusterMock.getPhysicalCluster()).thenReturn(new PhysicalCluster(1));
+        bind(Cluster.class).toInstance(clusterMock);
     }
 }

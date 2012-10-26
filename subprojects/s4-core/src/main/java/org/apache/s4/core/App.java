@@ -28,6 +28,7 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
+import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.window.AbstractSlidingWindowPE;
@@ -41,7 +42,7 @@ import com.google.inject.name.Named;
 
 /**
  * Container base class to hold all processing elements.
- *
+ * 
  * It is also where one defines the application graph: PE prototypes, internal streams, input and output streams.
  */
 public abstract class App {
@@ -57,7 +58,7 @@ public abstract class App {
     final private List<Streamable<Event>> streams = new ArrayList<Streamable<Event>>();
 
     /* Pes indexed by name. */
-    Map<String, ProcessingElement> peByName = Maps.newHashMap();
+    final Map<String, ProcessingElement> peByName = Maps.newHashMap();
 
     private ClockType clockType = ClockType.WALL_CLOCK;
     private int id = -1;
@@ -68,17 +69,20 @@ public abstract class App {
     private Receiver receiver;
 
     @Inject
-    RemoteSenders remoteSenders;
+    private Cluster cluster;
 
     @Inject
-    Hasher hasher;
+    private RemoteSenders remoteSenders;
 
     @Inject
-    RemoteStreams remoteStreams;
+    private Hasher hasher;
+
+    @Inject
+    private RemoteStreams remoteStreams;
 
     @Inject
     @Named("s4.cluster.name")
-    String clusterName;
+    private String clusterName;
 
     // default is NoOpCheckpointingFramework
     @Inject
@@ -253,6 +257,25 @@ public abstract class App {
      */
     public ClockType getClockType() {
         return clockType;
+    }
+
+    /**
+     * 
+     * Returns the id of the partition assigned to the current node.
+     * 
+     * NOTE: This method will block until the current node gets assigned a partition
+     * 
+     */
+    public int getPartitionId() {
+        return getReceiver().getPartitionId();
+    }
+
+    /**
+     * 
+     * Returns the total number of partitions of the cluster this nodes belongs to.
+     */
+    public int getPartitionCount() {
+        return cluster.getPhysicalCluster().getPartitionCount();
     }
 
     /**

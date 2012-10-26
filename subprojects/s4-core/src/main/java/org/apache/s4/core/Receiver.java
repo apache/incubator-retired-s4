@@ -67,7 +67,7 @@ public class Receiver implements Runnable {
         streams = new MapMaker().makeMap();
     }
 
-    int getPartition() {
+    int getPartitionId() {
         return listener.getPartitionId();
     }
 
