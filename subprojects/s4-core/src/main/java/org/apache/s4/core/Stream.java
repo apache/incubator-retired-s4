@@ -46,7 +46,6 @@ public class Stream<T extends Event> implements Runnable, Streamable {
 
     final static private String DEFAULT_SEPARATOR = "^";
     final static private int CAPACITY = 1000;
-    private static int idCounter = 0;
     private String name;
     protected Key<T> key;
     private ProcessingElement[] targetPEs;
@@ -139,27 +138,15 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     }
 
     /**
-     * Send events from this stream to a PE.
-     * 
-     * @param pe
-     *            a target PE.
-     * 
-     * @return the stream object
-     */
-    public Stream<T> setPE(ProcessingElement pe) {
-        app.addStream(this);
-        return this;
-    }
-
-    /**
-     * Send events from this stream to various PEs.
+     * Send events from this stream to one or more PEs.
      * 
      * @param pes
-     *            a target PE array.
+     *            one or more target prototypes
+     * 
      * 
      * @return the stream object
      */
-    public Stream<T> setPEs(ProcessingElement[] pes) {
+    public Stream<T> setPEs(ProcessingElement... pes) {
         this.targetPEs = pes;
         return this;
     }
@@ -320,7 +307,7 @@ public class Stream<T extends Event> implements Runnable, Streamable {
         }
     }
 
-    public Stream<T> register() {
+    Stream<T> register() {
         app.addStream(this);
         return this;
     }
