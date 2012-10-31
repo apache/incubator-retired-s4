@@ -75,7 +75,7 @@ public class OverloadDispatcherGenerator {
     private final List<Hierarchy> inputEventHierarchies = new ArrayList<Hierarchy>();
     private final List<Hierarchy> outputEventHierarchies = new ArrayList<Hierarchy>();
     private Class<?> targetClass;
-    private static final boolean DUMP = true;
+    private static final boolean DUMP = false;
 
     public OverloadDispatcherGenerator() {
     }
