@@ -1,0 +1,185 @@
+package org.apache.s4.comm;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.ForwardingListeningExecutorService;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+/**
+ * This thread pool executor throttles the submission of new tasks by using a semaphore. Task submissions require
+ * permits, task completions release permits.
+ * 
+ * NOTE: you should either use the {@link ThrottlingThreadPoolExecutorService#submit(java.util.concurrent.Callable)}
+ * methods or the {@link ThrottlingThreadPoolExecutorService#execute(Runnable)} method.
+ * 
+ */
+public class ThrottlingThreadPoolExecutorService extends ForwardingListeningExecutorService {
+
+    private static Logger logger = LoggerFactory.getLogger(ThrottlingThreadPoolExecutorService.class);
+
+    int parallelism;
+    String streamName;
+    final ClassLoader classLoader;
+    int workQueueSize;
+    private BlockingQueue<Runnable> workQueue;
+    private Semaphore queueingPermits;
+    private ListeningExecutorService executorDelegatee;
+
+    /**
+     * 
+     * @param parallelism
+     *            Maximum number of threads in the pool
+     * @param fairParallelism
+     *            If true, in case of contention, waiting threads will be scheduled in a first-in first-out manner. This
+     *            can be help ensure ordering, though there is an associated performance cost (typically small).
+     * @param threadName
+     *            Naming scheme
+     * @param workQueueSize
+     *            Queue capacity
+     * @param classLoader
+     *            ClassLoader used as contextClassLoader for spawned threads
+     */
+    public ThrottlingThreadPoolExecutorService(int parallelism, boolean fairParallelism, String threadName,
+            int workQueueSize, final ClassLoader classLoader) {
+        super();
+        this.parallelism = parallelism;
+        this.streamName = threadName;
+        this.classLoader = classLoader;
+        this.workQueueSize = workQueueSize;
+        queueingPermits = new Semaphore(workQueueSize + parallelism, false);
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).setNameFormat(threadName)
+                .setThreadFactory(new ThreadFactory() {
+
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread t = new Thread(r);
+                        t.setContextClassLoader(classLoader);
+                        return t;
+                    }
+                }).build();
+        // queueingPermits semaphore controls the size of the queue, thus no need to use a bounded queue
+        workQueue = new LinkedBlockingQueue<Runnable>(workQueueSize + parallelism);
+        ThreadPoolExecutor eventProcessingExecutor = new ThreadPoolExecutor(parallelism, parallelism, 60,
+                TimeUnit.SECONDS, workQueue, threadFactory, new RejectedExecutionHandler() {
+
+                    @Override
+                    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                        // This is not expected to happen.
+                        logger.error("Could not submit task to executor {}", executor.toString());
+                    }
+                });
+        ((ThreadPoolExecutor) eventProcessingExecutor).allowCoreThreadTimeOut(true);
+        executorDelegatee = MoreExecutors.listeningDecorator(eventProcessingExecutor);
+
+    }
+
+    @Override
+    protected ListeningExecutorService delegate() {
+        return executorDelegatee;
+    }
+
+    @Override
+    public <T> ListenableFuture<T> submit(Callable<T> task) {
+        try {
+            queueingPermits.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+        }
+        ListenableFuture<T> future = super.submit(new CallableWithPermitRelease<T>(task));
+        return future;
+    }
+
+    @Override
+    public <T> ListenableFuture<T> submit(Runnable task, T result) {
+        try {
+            queueingPermits.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        ListenableFuture<T> future = super.submit(new RunnableWithPermitRelease(task), result);
+        return future;
+    }
+
+    @Override
+    public ListenableFuture<?> submit(Runnable task) {
+        try {
+            queueingPermits.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        ListenableFuture<?> future = super.submit(new RunnableWithPermitRelease(task));
+        return future;
+    }
+
+    @Override
+    public void execute(Runnable command) {
+        try {
+            queueingPermits.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+        }
+        super.execute(new RunnableWithPermitRelease(command));
+    }
+
+    /**
+     * Releases a permit after the task is executed
+     * 
+     */
+    class RunnableWithPermitRelease implements Runnable {
+
+        Runnable delegatee;
+
+        public RunnableWithPermitRelease(Runnable delegatee) {
+            this.delegatee = delegatee;
+        }
+
+        @Override
+        public void run() {
+            try {
+                delegatee.run();
+            } finally {
+                queueingPermits.release();
+            }
+
+        }
+    }
+
+    /**
+     * Releases a permit after the task is completed
+     * 
+     */
+    class CallableWithPermitRelease<T> implements Callable<T> {
+
+        Callable<T> delegatee;
+
+        public CallableWithPermitRelease(Callable<T> delegatee) {
+            this.delegatee = delegatee;
+        }
+
+        @Override
+        public T call() throws Exception {
+            try {
+                return delegatee.call();
+            } finally {
+                queueingPermits.release();
+            }
+        }
+
+    }
+
+}

@@ -19,13 +19,17 @@
 package org.apache.s4.core;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
+import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.ClusterNode;
+import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,16 +37,16 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 
 /**
- * The {@link Sender} and its counterpart {@link Receiver} are the top level classes of the communication layer.
+ * The {@link SenderImpl} and its counterpart {@link ReceiverImpl} are the top level classes of the communication layer.
  * <p>
- * {@link Sender} is responsible for sending an event to a {@link ProcessingElement} instance using a hashKey.
+ * {@link SenderImpl} is responsible for sending an event to a {@link ProcessingElement} instance using a hashKey.
  * <p>
  * Details on how the cluster is partitioned and how events are serialized and transmitted to its destination are hidden
  * from the application developer.
  */
-public class Sender {
+public class SenderImpl implements Sender {
 
-    private static Logger logger = LoggerFactory.getLogger(Sender.class);
+    private static Logger logger = LoggerFactory.getLogger(SenderImpl.class);
 
     final private Emitter emitter;
     final private SerializerDeserializer serDeser;
@@ -50,6 +54,8 @@ public class Sender {
 
     Assignment assignment;
     private int localPartitionId = -1;
+
+    private ExecutorService tpe;
 
     /**
      * 
@@ -61,11 +67,13 @@ public class Sender {
      *            a hashing function to map keys to partition IDs.
      */
     @Inject
-    public Sender(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment) {
+    public SenderImpl(Emitter emitter, SerializerDeserializerFactory serDeserFactory, Hasher hasher,
+            Assignment assignment, SenderExecutorServiceFactory senderExecutorServiceFactory) {
         this.emitter = emitter;
-        this.serDeser = serDeser;
+        this.serDeser = serDeserFactory.createSerializerDeserializer(getClass().getClassLoader());
         this.hasher = hasher;
         this.assignment = assignment;
+        this.tpe = senderExecutorServiceFactory.create();
     }
 
     @Inject
@@ -76,23 +84,19 @@ public class Sender {
         }
     }
 
-    /**
-     * This method attempts to send an event to a remote partition. If the destination is local, the method does not
-     * send the event and returns false. <b>The caller is then expected to put the event in a local queue instead.</b>
+    /*
+     * (non-Javadoc)
      * 
-     * @param hashKey
-     *            the string used to map the value of a key to a specific partition.
-     * @param event
-     *            the event to be delivered to a {@link ProcessingElement} instance.
-     * @return true if the event was sent because the destination is <b>not</b> local.
-     * 
+     * @see org.apache.s4.core.Sender#checkAndSendIfNotLocal(java.lang.String, org.apache.s4.base.Event)
      */
+    @Override
     public boolean checkAndSendIfNotLocal(String hashKey, Event event) {
         int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
         if (partition == localPartitionId) {
             /* Hey we are in the same JVM, don't use the network. */
             return false;
         }
+        // TODO asynch
         send(partition, serDeser.serialize(event));
         S4Metrics.sentEvent(partition);
         return true;
@@ -103,24 +107,60 @@ public class Sender {
         emitter.send(partition, message);
     }
 
-    /**
-     * Send an event to all the remote partitions in the cluster. The caller is expected to also put the event in a
-     * local queue.
+    /*
+     * (non-Javadoc)
      * 
-     * @param event
-     *            the event to be delivered to {@link ProcessingElement} instances.
+     * @see org.apache.s4.core.Sender#sendToRemotePartitions(org.apache.s4.base.Event)
      */
-    public void sendToRemotePartitions(Event event) {
+    @Override
+    public void sendToAllRemotePartitions(Event event) {
+        tpe.submit(new SerializeAndSendToAllRemotePartitionsTask(event));
 
-        for (int i = 0; i < emitter.getPartitionCount(); i++) {
+    }
 
-            /* Don't use the comm layer when we send to the same partition. */
-            if (localPartitionId != i) {
-                emitter.send(i, serDeser.serialize(event));
-                S4Metrics.sentEvent(i);
+    class SerializeAndSendToRemotePartitionTask implements Runnable {
+        Event event;
+        int remotePartitionId;
 
-            }
+        public SerializeAndSendToRemotePartitionTask(Event event, int remotePartitionId) {
+            this.event = event;
+            this.remotePartitionId = remotePartitionId;
         }
+
+        @Override
+        public void run() {
+            ByteBuffer serializedEvent = serDeser.serialize(event);
+            emitter.send(remotePartitionId, serializedEvent);
+
+        }
+
+    }
+
+    class SerializeAndSendToAllRemotePartitionsTask implements Runnable {
+
+        Event event;
+
+        public SerializeAndSendToAllRemotePartitionsTask(Event event) {
+            super();
+            this.event = event;
+        }
+
+        @Override
+        public void run() {
+            ByteBuffer serializedEvent = serDeser.serialize(event);
+
+            for (int i = 0; i < emitter.getPartitionCount(); i++) {
+
+                /* Don't use the comm layer when we send to the same partition. */
+                if (localPartitionId != i) {
+                    emitter.send(i, serializedEvent);
+                    S4Metrics.sentEvent(i);
+
+                }
+            }
+
+        }
+
     }
 
 }

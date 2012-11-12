@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.s4.fixtures.CommTestUtils;
+import org.apache.s4.fixtures.ZkBasedTest;
 import org.junit.Test;
 
 import com.google.common.base.Splitter;
@@ -36,7 +37,7 @@ import com.google.common.collect.Sets;
  * in that other class.
  * 
  */
-public class AssignmentsFromZKTest1 extends ZKBaseTest {
+public class AssignmentsFromZKTest1 extends ZkBasedTest {
 
     @Test
     public void testAssignmentFor1Cluster() throws Exception {

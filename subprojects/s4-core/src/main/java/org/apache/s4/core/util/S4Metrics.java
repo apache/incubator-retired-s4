@@ -7,9 +7,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.core.ProcessingElement;
-import org.apache.s4.core.Receiver;
+import org.apache.s4.core.ReceiverImpl;
 import org.apache.s4.core.RemoteSender;
-import org.apache.s4.core.Sender;
+import org.apache.s4.core.SenderImpl;
 import org.apache.s4.core.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,15 +36,16 @@ public class S4Metrics {
 
     static List<Meter> partitionSenderMeters = Lists.newArrayList();
 
-    private static Meter eventMeter = Metrics.newMeter(Receiver.class, "received-events", "event-count",
+    private static Meter eventMeter = Metrics.newMeter(ReceiverImpl.class, "received-events", "event-count",
             TimeUnit.SECONDS);
-    private static Meter bytesMeter = Metrics.newMeter(Receiver.class, "received-bytes", "bytes-count",
+    private static Meter bytesMeter = Metrics.newMeter(ReceiverImpl.class, "received-bytes", "bytes-count",
             TimeUnit.SECONDS);
 
     private static Meter[] senderMeters;
 
     private static Map<String, Meter> dequeuingStreamMeters = Maps.newHashMap();
     private static Map<String, Meter> droppedStreamMeters = Maps.newHashMap();
+    private static Map<String, Meter> streamQueueFullMeters = Maps.newHashMap();
 
     private static Map<String, Meter[]> remoteSenderMeters = Maps.newHashMap();
 
@@ -53,7 +54,7 @@ public class S4Metrics {
         senderMeters = new Meter[emitter.getPartitionCount()];
         // int localPartitionId = assignment.assignClusterNode().getPartition();
         for (int i = 0; i < senderMeters.length; i++) {
-            senderMeters[i] = Metrics.newMeter(Sender.class, "sender", "sent-to-" + (i), TimeUnit.SECONDS);
+            senderMeters[i] = Metrics.newMeter(SenderImpl.class, "sender", "sent-to-" + (i), TimeUnit.SECONDS);
         }
     }
 
@@ -83,9 +84,14 @@ public class S4Metrics {
         });
     }
 
-    public static void receivedEvent(int bytes) {
+    public static void receivedEventFromCommLayer(int bytes) {
         eventMeter.mark();
         bytesMeter.mark(bytes);
+    }
+
+    public static void queueIsFull(String name) {
+        streamQueueFullMeters.get(name).mark();
+
     }
 
     public static void sentEvent(int partition) {
@@ -103,7 +109,8 @@ public class S4Metrics {
         dequeuingStreamMeters.put(name,
                 Metrics.newMeter(Stream.class, "dequeued@" + name, "dequeued", TimeUnit.SECONDS));
         droppedStreamMeters.put(name, Metrics.newMeter(Stream.class, "dropped@" + name, "dropped", TimeUnit.SECONDS));
-
+        streamQueueFullMeters.put(name,
+                Metrics.newMeter(Stream.class, "stream-full@" + name, "stream-full", TimeUnit.SECONDS));
     }
 
     public static void dequeuedEvent(String name) {
@@ -153,4 +160,5 @@ public class S4Metrics {
             fetchedCheckpointFailure.mark();
         }
     }
+
 }

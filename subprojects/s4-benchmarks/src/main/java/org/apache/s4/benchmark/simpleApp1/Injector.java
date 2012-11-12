@@ -4,7 +4,6 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -12,10 +11,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.base.KeyFinder;
-import org.apache.s4.benchmark.utils.Utils;
-import org.apache.s4.comm.topology.ZNRecord;
-import org.apache.s4.comm.topology.ZNRecordSerializer;
-import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.core.RemoteStream;
 import org.apache.s4.core.adapter.AdapterApp;
 import org.slf4j.Logger;
@@ -84,22 +79,6 @@ public class Injector extends AdapterApp {
         };
         super.onInit();
         ConsoleReporter.enable(30, TimeUnit.SECONDS);
-        // Metrics.shutdown();
-        ZkClient zkClient = new ZkClient(zkString);
-        if (getReceiver().getPartition() == 0) {
-            zkClient.createPersistent("/benchmarkConfig");
-            zkClient.createPersistent("/benchmarkConfig/warmupIterations", warmupIterations * parallelism);
-            zkClient.createPersistent("/benchmarkConfig/testIterations", testIterations * parallelism);
-            zkClient.createPersistent("/warmup");
-            zkClient.createPersistent("/test");
-        }
-
-        if (!(getReceiver().getPartition() == 0)) {
-            zkClient.waitUntilExists("/test", TimeUnit.SECONDS, 10);
-        }
-        zkClient.createPersistent("/warmup/injector-" + getReceiver().getPartition());
-        zkClient.createPersistent("/test/injector-" + getReceiver().getPartition());
-        zkClient.close();
     }
 
     @Override
@@ -131,47 +110,13 @@ public class Injector extends AdapterApp {
             }
         });
 
-        CountDownLatch signalWarmupComplete = Utils.getReadySignal(zkString, "/warmup/injector-"
-                + getReceiver().getPartition(), keysCount);
-
         RemoteStream remoteStream = getRemoteStream();
-        generateEvents(remoteStream, warmupIterations, keysCount, warmupSleepInterval, parallelism);
 
-        generateStopEvent(remoteStream, -1, keysCount);
-
-        // now that we are certain app nodes are connected, check the target cluster
-        ZkClient zkClient = new ZkClient(zkString);
-        zkClient.setZkSerializer(new ZNRecordSerializer());
-
-        ZNRecord readData = zkClient.readData("/s4/streams/" + getRemoteStream().getName() + "/consumers/"
-                + zkClient.getChildren("/s4/streams/" + getRemoteStream().getName() + "/consumers").get(0));
-        String remoteClusterName = readData.getSimpleField("clusterName");
-
-        int appPartitionCount = zkClient.countChildren("/s4/clusters/" + remoteClusterName + "/tasks");
-        zkClient.close();
-        CountDownLatch signalBenchComplete = Utils.getReadySignal(zkString, "/test/injector-"
-                + getReceiver().getPartition(), appPartitionCount);
-
-        try {
-            signalWarmupComplete.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        logger.info("Warmup over with {} iterations over {} keys", warmupIterations, keysCount);
         counter.set(0);
 
         generateEvents(remoteStream, testIterations, keysCount, testSleepInterval, parallelism);
 
-        generateStopEvent(remoteStream, -2, appPartitionCount);
-        try {
-            // only need 1 message/partition. Upon reception, a znode is written and the node exits
-            signalBenchComplete.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        logger.info("Tests completed after {} warmup and {} test events", warmupIterations * parallelism * keysCount,
-                testIterations * parallelism * keysCount);
+        logger.info("Tests completed after test events", testIterations * parallelism * keysCount);
 
         System.exit(0);
     }
@@ -187,25 +132,6 @@ public class Injector extends AdapterApp {
         threadPool.shutdown();
         try {
             threadPool.awaitTermination(10, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void generateStopEvent(RemoteStream remoteStream, long stopKey, int keysCount) {
-
-        ExecutorService threadPool = Executors.newFixedThreadPool(1);
-        for (int j = 0; j < keysCount; j++) {
-            Event event = new Event();
-            event.put("key", Integer.class, j);
-            event.put("value", Long.class, stopKey);
-            event.put("injector", Integer.class, getReceiver().getPartition());
-            logger.info("Sending stop event with key {}", stopKey);
-            remoteStream.put(event);
-        }
-        threadPool.shutdown();
-        try {
-            threadPool.awaitTermination(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -232,7 +158,7 @@ public class Injector extends AdapterApp {
                     Event event = new Event();
                     event.put("key", int.class, j);
                     event.put("value", long.class, counter.incrementAndGet());
-                    event.put("injector", Integer.class, getReceiver().getPartition());
+                    event.put("injector", Integer.class, getReceiver().getPartitionId());
                     // logger.info("{}/{}/{}/",
                     // new String[] { Thread.currentThread().getName(), String.valueOf(i), String.valueOf(j),
                     // String.valueOf(event.get("value")) });

@@ -26,13 +26,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.s4.fixtures.CommTestUtils;
+import org.apache.s4.fixtures.ZkBasedTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
 
-public class ClustersFromZKTest extends ZKBaseTest {
+public class ClustersFromZKTest extends ZkBasedTest {
 
     @Test
     @Ignore

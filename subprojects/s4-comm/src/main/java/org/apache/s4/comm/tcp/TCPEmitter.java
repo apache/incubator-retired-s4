@@ -180,7 +180,6 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
             logger.warn("Could not find channel for partition {}", partitionId);
             return;
         }
-
         c.write(buffer).addListener(new MessageSendingListener(partitionId));
     }
 

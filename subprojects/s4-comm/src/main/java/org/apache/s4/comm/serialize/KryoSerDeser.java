@@ -29,7 +29,7 @@ import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 
 /**
- * Serializer/deserializer based on <a href="http://code.google.com/p/kryo/">kryo</a>
+ * Serializer/deserializer based on <a href="http://code.google.com/p/kryo/">kryo 2</a>
  * 
  */
 public class KryoSerDeser implements SerializerDeserializer {
@@ -89,7 +89,6 @@ public class KryoSerDeser implements SerializerDeserializer {
         Output output = outputThreadLocal.get();
         try {
             kryoThreadLocal.get().writeClassAndObject(output, message);
-
             return ByteBuffer.wrap(output.toBytes());
         } finally {
             output.clear();

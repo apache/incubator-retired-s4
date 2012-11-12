@@ -55,7 +55,6 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
 
 /**
  * <p>
@@ -441,7 +440,7 @@ public abstract class ProcessingElement implements Cloneable {
 
     protected void handleInputEvent(Event event) {
 
-        TimerContext timerContext = processingTimer.time();
+        // TimerContext timerContext = processingTimer.time();
         Object object;
         if (isThreadSafe) {
             object = new Object(); // a dummy object TODO improve this.
@@ -470,7 +469,7 @@ public abstract class ProcessingElement implements Cloneable {
                 checkpoint();
             }
         }
-        timerContext.stop();
+        // timerContext.stop();
     }
 
     protected boolean isCheckpointable() {

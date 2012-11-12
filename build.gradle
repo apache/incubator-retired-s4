@@ -58,10 +58,11 @@ project.ext["libraries"] = [
     guice:              'com.google.inject:guice:3.0',
     aop_alliance:       'aopalliance:aopalliance:1.0',
     guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
-    kryo:               'com.esotericsoftware.kryo:kryo:2.17',
+    kryo:               'com.esotericsoftware.kryo:kryo:2.20',
     minlog:             'com.googlecode:minlog:1.2',
-    reflectasm:         'com.esotericsoftware.reflectasm:reflectasm:1.07',
-    netty:              'org.jboss.netty:netty:3.2.5.Final',
+    // NOTE shaded jar is not resolved correctly, we include it in /lib directory
+    reflectasm:         'com.esotericsoftware.reflectasm:reflectasm:1.07-shaded',
+    netty:              'io.netty:netty:3.5.9.Final',
     mockito_core:       'org.mockito:mockito-core:1.9.0',
     commons_config:     'commons-configuration:commons-configuration:1.6',
     commons_codec:      'commons-codec:commons-codec:1.4',
@@ -145,9 +146,10 @@ subprojects {
         compile(libraries.reflectasm)
         runtime(libraries.objenesis)
         runtime(libraries.kryo)
+        runtime(libraries.reflectasm)
         runtime(libraries.netty)
         runtime(libraries.asm)
-        runtime(libraries.javax_inject)
+        compile(libraries.javax_inject)
         runtime(libraries.commons_codec)
     }
     

@@ -9,19 +9,19 @@ That said, let's look at what the benchmarking framework does and how to use it.
 
 ## Measurements
 
-The benchmarking framework consists of a multithreaded injector and an application. App nodes and injector are launched directly, there is no deployment step. This allows to skip the packaging and deployment steps and allows to easily add profiling parameters, but requires a source distribution and a shared file system.
+The benchmarking framework consists of a multithreaded injector and an application. App nodes and injector are launched directly, there is no deployment step. This allows to skip the packaging and deployment steps and to easily add profiling parameters, but requires a source distribution and a shared file system.
 
-The simplest application does nothing but count incoming keyed messages, on a single stream, but other simple application can be easily added. For instance, with multiple streams, and communicating PEs.
+The simplest application does nothing but count incoming keyed messages, but other simple application can be easily added, in particular, involving multiple communicating PEs. There are 2 input streams available: `inputStream` and `inputStream2`.
 
-The injector sends basic keyed messages. The outputstream of the injector uses a keyfinder to partition the events across the application nodes.
+The injector sends basic keyed messages to a given named stream. The outputstream of the injector uses a keyfinder to partition the events across the application nodes.
 
 We get metrics from the probes across the codebase, in particular:
 - the rate of events sent per second (in the injector)
 - the rate of events received per second (in the app nodes)
 
-Metrics from the platform code are computed with weighted moving averages.
+Metrics from the platform code are computed with weighted moving averages. It is recommended to let the application run for a few minutes and observe the metrics from the last minute.
 
-Profiling options can easily be added to the injector or app nodes in order to identify hotspots.
+Profiling options (e.g. YourKit) can easily be added to the injector or app nodes in order to identify hotspots.
 
 ## Parameters
 
@@ -38,9 +38,9 @@ Input parameters are:
 Exmample configuration files are available in `/config` and you can configure :
 
 - the number of keys
-- the number of warmup iterations
 - the number of test iterations
 - the number of parallel injection threads
+- the number of threads for the sender stage
 - etc…
 
 By default in this example the size of a message is 188 bytes.
@@ -53,15 +53,24 @@ Running 2 S4 nodes on the local machine:
 
 For a distributed setup, you should modify the host names in the above command line, and specify the correct Zookeeper connection string in `node.config`.
 
+Here is an example for driving the test on a cluster:
+`incubator-s4/subprojects/s4-benchmarks/bench-cluster.sh "processingHost1 processingHost2 processingHost3" "injectorConfigStream1.cfg injectorConfigStream2.cfg" node.cfg 2 "injectorHost1 injectorHost2 injectorHost3 injectorHost4"` (the `2` controls the number of injectors per stream per injector host)
+
 ## Results
 
 
-When the benchmark finishes, results are available in `measurements/injectors` for the injection rates and in `measurements/node[0-n]` for other statistics.
+When the benchmark finishes (and even during the execution), results are available in `measurements/injectors` for the injection rates and in `measurements/node[0-n]` for other statistics.
+
+Results are also available from the console output for each of the nodes.
 
 Most statistics files come from the probes of the platform and some of them use weighted moving averages. These are good for long running applications. For the benchmarks we also show instant rates, which are available in `injection-rate.csv` and `simplePE1.csv` files.
 
 ## Notes
 
-In the current design of S4, messages sent to output streams are not queued by S4 and directly passed to the communication layer.
-
-This implies that if the communication layer is not able to send those messages at least as fast as they are generated, the buffer of pending messages will increase rapidly. This may lead to memory problems in the injector. Solving the problem requires tuning the number of parallel injection threads.
+There are a lot of knobs for optimally configuring the stages, and the optimal settings will also depend upon:
+- the hardware
+- the network
+- the operating system (scheduling, networking)
+- the JVM implementation and tuning parameters
+- the application
+- the skewness and diversity of the data (there a maximum of 1 event executing in a given PE instance (i.e. keyed))

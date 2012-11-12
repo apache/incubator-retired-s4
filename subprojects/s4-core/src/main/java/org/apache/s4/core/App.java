@@ -26,10 +26,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.KeyFinder;
+import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.core.ft.CheckpointingFramework;
+import org.apache.s4.core.staging.StreamExecutorServiceFactory;
 import org.apache.s4.core.window.AbstractSlidingWindowPE;
 import org.apache.s4.core.window.SlotFactory;
 import org.slf4j.Logger;
@@ -65,7 +67,7 @@ public abstract class App {
     @Inject
     private Sender sender;
     @Inject
-    private Receiver receiver;
+    private ReceiverImpl receiver;
 
     @Inject
     RemoteSenders remoteSenders;
@@ -88,6 +90,9 @@ public abstract class App {
     @Inject
     private SerializerDeserializerFactory serDeserFactory;
     private SerializerDeserializer serDeser;
+
+    @Inject
+    StreamExecutorServiceFactory streamExecutorFactory;
 
     @Inject
     private void initSerDeser() {
@@ -272,7 +277,7 @@ public abstract class App {
     /**
      * @return the receiver object
      */
-    public Receiver getReceiver() {
+    public ReceiverImpl getReceiver() {
         return receiver;
     }
 
@@ -282,6 +287,10 @@ public abstract class App {
 
     public CheckpointingFramework getCheckpointingFramework() {
         return checkpointingFramework;
+    }
+
+    public StreamExecutorServiceFactory getStreamExecutorFactory() {
+        return streamExecutorFactory;
     }
 
     /**

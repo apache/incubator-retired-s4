@@ -115,6 +115,7 @@ public class DefaultCommModule extends AbstractModule {
             bind(Listener.class).to(
                     (Class<? extends Listener>) Class.forName(config.getString("s4.comm.listener.class")));
 
+            bind(DeserializerExecutorFactory.class).to(DefaultDeserializerExecutorFactory.class);
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find class implementation ", e);
         }

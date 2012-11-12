@@ -166,6 +166,7 @@ public class CheckpointingTest {
             bind(StateStorage.class).to(DefaultFileSystemStateStorage.class);
             bind(CheckpointingFramework.class).to(SafeKeeper.class);
             bind(StorageCallbackFactory.class).to(DummyZKStorageCallbackFactory.class);
+
         }
 
     }

@@ -5,15 +5,9 @@ import org.apache.s4.core.ProcessingElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SimplePE1 extends ProcessingElement {
+public class SimplePE2 extends ProcessingElement {
 
-    private static Logger logger = LoggerFactory.getLogger(SimplePE1.class);
-
-    int nbInjectors;
-
-    public void setNbInjectors(int nbInjectors) {
-        this.nbInjectors = nbInjectors;
-    }
+    private static Logger logger = LoggerFactory.getLogger(SimplePE2.class);
 
     public void onEvent(Event event) {
 

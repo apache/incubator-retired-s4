@@ -21,6 +21,7 @@ package org.apache.s4.core;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
@@ -30,6 +31,7 @@ import org.apache.s4.comm.tcp.RemoteEmitters;
 import org.apache.s4.comm.topology.Clusters;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.comm.topology.StreamConsumer;
+import org.apache.s4.core.staging.RemoteSendersExecutorServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,25 +46,29 @@ public class RemoteSenders {
 
     Logger logger = LoggerFactory.getLogger(RemoteSenders.class);
 
-    RemoteEmitters remoteEmitters;
+    final RemoteEmitters remoteEmitters;
 
-    RemoteStreams remoteStreams;
+    final RemoteStreams remoteStreams;
 
-    Clusters remoteClusters;
+    final Clusters remoteClusters;
 
-    SerializerDeserializer serDeser;
+    final SerializerDeserializer serDeser;
 
-    Hasher hasher;
+    final Hasher hasher;
 
     ConcurrentMap<String, RemoteSender> sendersByTopology = new ConcurrentHashMap<String, RemoteSender>();
 
+    private ExecutorService executorService;
+
     @Inject
     public RemoteSenders(RemoteEmitters remoteEmitters, RemoteStreams remoteStreams, Clusters remoteClusters,
-            SerializerDeserializerFactory serDeserFactory, Hasher hasher) {
+            SerializerDeserializerFactory serDeserFactory, Hasher hasher,
+            RemoteSendersExecutorServiceFactory senderExecutorFactory) {
         this.remoteEmitters = remoteEmitters;
         this.remoteStreams = remoteStreams;
         this.remoteClusters = remoteClusters;
         this.hasher = hasher;
+        executorService = senderExecutorFactory.create();
 
         serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
     }
@@ -84,8 +90,26 @@ public class RemoteSenders {
                     sender = newSender;
                 }
             }
-            // we must set the app id of the consumer app for correct dispatch within the consumer node
             // NOTE: this implies multiple serializations, there might be an optimization
+            executorService.execute(new SendToRemoteClusterTask(hashKey, event, sender));
+        }
+    }
+
+    class SendToRemoteClusterTask implements Runnable {
+
+        String hashKey;
+        Event event;
+        RemoteSender sender;
+
+        public SendToRemoteClusterTask(String hashKey, Event event, RemoteSender sender) {
+            super();
+            this.hashKey = hashKey;
+            this.event = event;
+            this.sender = sender;
+        }
+
+        @Override
+        public void run() {
             sender.send(hashKey, serDeser.serialize(event));
         }
 

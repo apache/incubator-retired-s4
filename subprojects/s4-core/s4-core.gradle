@@ -27,6 +27,7 @@ dependencies {
     compile libraries.asm
     compile libraries.netty
     compile libraries.zkclient
+    compile libraries.reflectasm
     testCompile project(path: ':s4-comm', configuration: 'tests')
     testCompile libraries.gradle_base_services
     testCompile libraries.gradle_core

@@ -19,13 +19,14 @@
 package org.apache.s4.core;
 
 import java.util.Collection;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.base.GenericKeyFinder;
 import org.apache.s4.base.Key;
 import org.apache.s4.base.KeyFinder;
+import org.apache.s4.base.Receiver;
+import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.core.util.S4Metrics;
@@ -42,24 +43,28 @@ import com.google.common.base.Preconditions;
  * <p>
  * To build an application, create stream objects using relevant methods in the {@link App} class.
  */
-public class Stream<T extends Event> implements Runnable, Streamable {
+public class Stream<T extends Event> implements Streamable {
 
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
 
     final static private String DEFAULT_SEPARATOR = "^";
-    final static private int CAPACITY = 1000;
+    final static private int CAPACITY = 100000;
     private static int idCounter = 0;
     private String name;
     protected Key<T> key;
     private ProcessingElement[] targetPEs;
-    protected final BlockingQueue<Event> queue = new ArrayBlockingQueue<Event>(CAPACITY);
-    private Thread thread;
+    // protected final BlockingQueue<Event> queue = new ArrayBlockingQueue<Event>(CAPACITY);
+    // final BlockingQueue<StreamEventProcessingTask> taskQueue = new ArrayBlockingQueue<StreamEventProcessingTask>(
+    // CAPACITY);
+    private Executor eventProcessingExecutor;
     final private Sender sender;
-    final private Receiver receiver;
+    final private ReceiverImpl receiver;
     // final private int id;
     final private App app;
     private Class<T> eventType = null;
     SerializerDeserializer serDeser;
+
+    private int parallelism = 1;
 
     /**
      * Send events using a {@link KeyFinder}. The key finder extracts the value of the key which is used to determine
@@ -84,10 +89,9 @@ public class Stream<T extends Event> implements Runnable, Streamable {
             }
         }
 
-        /* Start streaming. */
-        thread = new Thread(this, name);
-        thread.setContextClassLoader(getApp().getClass().getClassLoader());
-        thread.start();
+        eventProcessingExecutor = app.getStreamExecutorFactory().create(parallelism, name,
+                app.getClass().getClassLoader());
+
         this.receiver.addStream(this);
     }
 
@@ -100,6 +104,14 @@ public class Stream<T extends Event> implements Runnable, Streamable {
      */
     public Stream<T> setName(String name) {
         this.name = name;
+        // Metrics.newGauge(getClass(), "stream-size-" + name, new Gauge<Integer>() {
+        //
+        // @Override
+        // public Integer value() {
+        // return taskQueue.size();
+        // }
+        // });
+
         return this;
     }
 
@@ -174,61 +186,55 @@ public class Stream<T extends Event> implements Runnable, Streamable {
      */
     @SuppressWarnings("unchecked")
     public void put(Event event) {
-        try {
-            event.setStreamId(getName());
-            event.setAppId(app.getId());
+        event.setStreamId(getName());
+        event.setAppId(app.getId());
+
+        /*
+         * Events may be sent to local or remote partitions or both. The following code implements the logic.
+         */
+        if (key != null) {
 
             /*
-             * Events may be sent to local or remote partitions or both. The following code implements the logic.
+             * We send to a specific PE instance using the key but we don't know if the target partition is remote or
+             * local. We need to ask the sender.
              */
-            if (key != null) {
+            if (!sender.checkAndSendIfNotLocal(key.get((T) event), event)) {
 
                 /*
-                 * We send to a specific PE instance using the key but we don't know if the target partition is remote
-                 * or local. We need to ask the sender.
+                 * Sender checked and decided that the target is local so we simply put the event in the queue and we
+                 * save the trip over the network.
                  */
-                if (!sender.checkAndSendIfNotLocal(key.get((T) event), event)) {
-
-                    /*
-                     * Sender checked and decided that the target is local so we simply put the event in the queue and
-                     * we save the trip over the network.
-                     */
-                    // TODO no need to serialize for local queue
-                    queue.put(event);
-                }
-
-            } else {
-
-                /*
-                 * We are broadcasting this event to all PE instance. In a cluster, we need to send the event to every
-                 * node. The sender method takes care of the remote partitions an we take care of putting the event into
-                 * the queue.
-                 */
-                sender.sendToRemotePartitions(event);
-
-                // TODO no need to serialize for local queue
-                queue.put(event);
-                // TODO abstraction around queue and add dropped counter
-                // TODO add counter for local events
-
+                eventProcessingExecutor.execute(new StreamEventProcessingTask((T) event));
             }
-        } catch (InterruptedException e) {
-            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            Thread.currentThread().interrupt();
+
+        } else {
+
+            /*
+             * We are broadcasting this event to all PE instance. In a cluster, we need to send the event to every node.
+             * The sender method takes care of the remote partitions an we take care of putting the event into the
+             * queue.
+             */
+            sender.sendToAllRemotePartitions(event);
+
+            // now send to local queue
+            eventProcessingExecutor.execute(new StreamEventProcessingTask((T) event));
+            // TODO abstraction around queue and add dropped counter
+            // TODO add counter for local events
+
         }
     }
 
     /**
-     * The low level {@link Receiver} object call this method when a new {@link Event} is available.
+     * The low level {@link ReceiverImpl} object call this method when a new {@link Event} is available.
      */
     public void receiveEvent(Event event) {
-        try {
-            queue.put(event);
-            // TODO abstraction around queue and add dropped counter
-        } catch (InterruptedException e) {
-            logger.error("Interrupted while waiting to put an event in the queue: {}.", e.getMessage());
-            Thread.currentThread().interrupt();
-        }
+        // NOTE: ArrayBlockingQueue.size is O(1).
+        // if (taskQueue.remainingCapacity() == 0) {
+        // S4Metrics.queueIsFull(name);
+        // }
+
+        eventProcessingExecutor.execute(new StreamEventProcessingTask((T) event));
+        // TODO abstraction around queue and add dropped counter
     }
 
     /**
@@ -263,7 +269,6 @@ public class Stream<T extends Event> implements Runnable, Streamable {
      * Stop and close this stream.
      */
     public void close() {
-        thread.interrupt();
     }
 
     /**
@@ -280,52 +285,6 @@ public class Stream<T extends Event> implements Runnable, Streamable {
         return receiver;
     }
 
-    @Override
-    public void run() {
-        while (true) {
-            try {
-                /* Get oldest event in queue. */
-                T event = (T) queue.take();
-                S4Metrics.dequeuedEvent(name);
-
-                /* Send event to each target PE. */
-                for (int i = 0; i < targetPEs.length; i++) {
-
-                    if (key == null) {
-
-                        /* Broadcast to all PE instances! */
-
-                        /* STEP 1: find all PE instances. */
-
-                        Collection<ProcessingElement> pes = targetPEs[i].getInstances();
-
-                        /* STEP 2: iterate and pass event to PE instance. */
-                        for (ProcessingElement pe : pes) {
-
-                            pe.handleInputEvent(event);
-                        }
-
-                    } else {
-
-                        /* We have a key, send to target PE. */
-
-                        /* STEP 1: find the PE instance for key. */
-                        ProcessingElement pe = targetPEs[i].getInstanceForKey(key.get(event));
-
-                        /* STEP 2: pass event to PE instance. */
-                        pe.handleInputEvent(event);
-                    }
-                }
-
-            } catch (InterruptedException e) {
-                logger.info("Closing stream {}.", name);
-                receiver.removeStream(this);
-                Thread.currentThread().interrupt();
-                return;
-            }
-        }
-    }
-
     public Stream<T> register() {
         app.addStream(this);
         return this;
@@ -334,5 +293,74 @@ public class Stream<T extends Event> implements Runnable, Streamable {
     public Stream<T> setSerializerDeserializerFactory(SerializerDeserializerFactory serDeserFactory) {
         this.serDeser = serDeserFactory.createSerializerDeserializer(getClass().getClassLoader());
         return this;
+    }
+
+    /**
+     * <p>
+     * Defines the maximum number of concurrent threads that should be used for processing events for this stream.
+     * Threads will only be created as necessary, up to the specified maximum.
+     * </p>
+     * <p>
+     * Default is 1 (i.e. with default stream executor service, this corresponds to asynchronous processing, but no
+     * parallelism)
+     * </p>
+     * <p>
+     * It might be useful to increase parallelism when:
+     * <ul>
+     * <li>Processing elements handling events for this stream are CPU bound</li>
+     * <li>Processing elements handling events for this stream use blocking I/O operations</li>
+     * </ul>
+     * <p>
+     * 
+     * 
+     */
+    public Stream<T> setParallelism(int parallelism) {
+        this.parallelism = parallelism;
+        return this;
+    }
+
+    class StreamEventProcessingTask implements Runnable {
+
+        T event;
+
+        public StreamEventProcessingTask(T event) {
+            this.event = event;
+        }
+
+        @Override
+        public void run() {
+            S4Metrics.dequeuedEvent(name);
+
+            /* Send event to each target PE. */
+            for (int i = 0; i < targetPEs.length; i++) {
+
+                if (key == null) {
+
+                    /* Broadcast to all PE instances! */
+
+                    /* STEP 1: find all PE instances. */
+
+                    Collection<ProcessingElement> pes = targetPEs[i].getInstances();
+
+                    /* STEP 2: iterate and pass event to PE instance. */
+                    for (ProcessingElement pe : pes) {
+
+                        pe.handleInputEvent(event);
+                    }
+
+                } else {
+
+                    /* We have a key, send to target PE. */
+
+                    /* STEP 1: find the PE instance for key. */
+                    ProcessingElement pe = targetPEs[i].getInstanceForKey(key.get(event));
+
+                    /* STEP 2: pass event to PE instance. */
+                    pe.handleInputEvent(event);
+                }
+            }
+
+        }
+
     }
 }
