@@ -122,7 +122,7 @@ public class S4YarnClient extends YarnClientImpl {
     // Configuration
     private Configuration conf;
 
-    YarnArgs yarnArgs;
+    S4CLIYarnArgs yarnArgs;
 
     private int amMemory;
 
@@ -134,7 +134,7 @@ public class S4YarnClient extends YarnClientImpl {
      */
     public static void main(String[] args) {
 
-        YarnArgs yarnArgs = new YarnArgs();
+        S4CLIYarnArgs yarnArgs = new S4CLIYarnArgs();
         logger.info("S4YarnClient args = " + Arrays.toString(args));
 
         Tools.parseArgs(yarnArgs, args);
@@ -155,7 +155,8 @@ public class S4YarnClient extends YarnClientImpl {
                     return YARN_CONF_FILES.contains(pathname.getName());
                 }
             }).length == 4)) {
-                logger.error("The {} directory must contain files [core,hdfs,yarn,mapred]-site.xml");
+                logger.error("The {} directory must contain files [core,hdfs,yarn,mapred]-site.xml",
+                        HADOOP_CONF_DIR_ENV);
                 System.exit(1);
             }
 
@@ -177,7 +178,7 @@ public class S4YarnClient extends YarnClientImpl {
         System.exit(1);
     }
 
-    public S4YarnClient(YarnArgs yarnArgs, Configuration conf) throws Exception {
+    public S4YarnClient(S4CLIYarnArgs yarnArgs, Configuration conf) throws Exception {
         this.yarnArgs = yarnArgs;
         this.conf = conf;
         init(this.conf);
@@ -235,6 +236,9 @@ public class S4YarnClient extends YarnClientImpl {
         // A resource ask has to be atleast the minimum of the capability of the cluster, the value has to be
         // a multiple of the min value and cannot exceed the max.
         // If it is not an exact multiple of min, the RM will allocate to the nearest multiple of min
+
+        amMemory = yarnArgs.masterMemory;
+
         if (amMemory < minMem) {
             logger.info("AM memory specified below min threshold of cluster. Using min value." + ", specified="
                     + amMemory + ", min=" + minMem);
@@ -308,6 +312,7 @@ public class S4YarnClient extends YarnClientImpl {
         logger.info("Setting up app master command");
 
         // vargs.add("${JAVA_HOME}" + "/bin/java");
+        // TODO set java from JAVA_HOME
         vargs.add("java");
         // Set Xmx based on am memory size
         vargs.add("-Xmx" + amMemory + "m");
@@ -316,27 +321,13 @@ public class S4YarnClient extends YarnClientImpl {
         // Set Application Master class name
         vargs.add(S4ApplicationMaster.class.getName());
         // Set params for Application Master
-        vargs.add("--container_memory " + String.valueOf(yarnArgs.containerMemory));
-        vargs.add("--num_containers " + String.valueOf(yarnArgs.numContainers));
-        vargs.add("--priority " + String.valueOf(yarnArgs.priority));
-        if (!yarnArgs.extraModulesClasses.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("-extraModulesClasses ");
-            ListIterator<String> it = yarnArgs.extraModulesClasses.listIterator();
-            while (it.hasNext()) {
-                sb.append(it.next() + (it.hasNext() ? "," : ""));
-            }
-            vargs.add(sb.toString());
-        }
-        if (!yarnArgs.extraNamedParameters.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("-namedStringParameters ");
-            ListIterator<String> it = yarnArgs.extraNamedParameters.listIterator();
-            while (it.hasNext()) {
-                sb.append(it.next() + (it.hasNext() ? "," : ""));
-            }
-            vargs.add(sb.toString());
-        }
+        vargs.add(CommonS4YarnArgs.S4_NODE_MEMORY + " " + String.valueOf(yarnArgs.containerMemory));
+        vargs.add(CommonS4YarnArgs.NB_S4_NODES + " " + String.valueOf(yarnArgs.numContainers));
+        vargs.add(CommonS4YarnArgs.PRIORITY + " " + String.valueOf(yarnArgs.priority));
+
+        addListElementsToCommandLineBuffer(vargs, CommonS4YarnArgs.S4_NODE_JVM_PARAMETERS, ",", yarnArgs.extraS4NodeJVMParams);
+        addListElementsToCommandLineBuffer(vargs, CommonS4YarnArgs.EXTRA_MODULES_CLASSES, ",", yarnArgs.extraModulesClasses);
+        addListElementsToCommandLineBuffer(vargs, "-namedStringParameters", ",", yarnArgs.extraNamedParameters);
 
         vargs.add("-c " + String.valueOf(yarnArgs.cluster));
         vargs.add("-zk " + String.valueOf(yarnArgs.zkString));
@@ -403,6 +394,21 @@ public class S4YarnClient extends YarnClientImpl {
 
         return monitorApplication(appId);
 
+    }
+
+    public static void addListElementsToCommandLineBuffer(Vector<CharSequence> vargs, String paramName,
+            String paramSeparator, List<String> yarnArg) {
+        if (yarnArg != null && !yarnArg.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            if (!Strings.isNullOrEmpty(paramName)) {
+                sb.append(paramName + "=");
+            }
+            ListIterator<String> it = yarnArg.listIterator();
+            while (it.hasNext()) {
+                sb.append(it.next() + (it.hasNext() ? paramSeparator : ""));
+            }
+            vargs.add(sb.toString());
+        }
     }
 
     private Path copyToLocalResources(ApplicationId appId, FileSystem fs, Map<String, LocalResource> localResources,

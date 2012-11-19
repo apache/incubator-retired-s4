@@ -30,12 +30,6 @@ import java.util.Vector;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
@@ -72,10 +66,12 @@ import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.s4.deploy.HdfsFetcherModule;
+import org.apache.s4.tools.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 
 /**
  * An ApplicationMaster for launching S4 nodes on a set of launched containers using the YARN framework.
@@ -109,14 +105,6 @@ public class S4ApplicationMaster {
     // Tracking url to which app master publishes info for clients to monitor
     private String appMasterTrackingUrl = "";
 
-    // App Master configuration
-    // No. of containers to host S4 nodes on
-    private int numTotalContainers = 1;
-    // Memory to request for the container on which the S4 nodes will be hosted
-    private int containerMemory = 10;
-    // Priority of the request
-    private int requestPriority;
-
     // Incremental counter for rpc calls to the RM
     private AtomicInteger rmRequestID = new AtomicInteger();
 
@@ -134,24 +122,15 @@ public class S4ApplicationMaster {
     // Only request for more if the original requirement changes.
     private AtomicInteger numRequestedContainers = new AtomicInteger();
 
-    // The cluster (or application) name
-    private String cluster = "";
-
-    private String zkString = "";
-
     // Containers to be released
     private CopyOnWriteArrayList<ContainerId> releasedContainers = new CopyOnWriteArrayList<ContainerId>();
 
     // Launch threads
     private List<Thread> launchThreads = new ArrayList<Thread>();
 
-    private boolean testMode;
+    private int containerMemory;
 
-    private String user;
-
-    private String extraModulesClasses;
-
-    private String namedStringParameters;
+    private static AppMasterYarnArgs yarnArgs;
 
     /**
      * @param args
@@ -160,13 +139,16 @@ public class S4ApplicationMaster {
     public static void main(String[] args) {
         boolean result = false;
         try {
+            yarnArgs = new AppMasterYarnArgs();
+            logger.info("S4YarnApplicationMaster args = " + Arrays.toString(args));
+
+            Tools.parseArgs(yarnArgs, args);
+
+            Thread.sleep(10000);
 
             S4ApplicationMaster appMaster = new S4ApplicationMaster();
             logger.info("Initializing ApplicationMaster with args " + Arrays.toString(args));
-            boolean doRun = appMaster.init(args);
-            if (!doRun) {
-                System.exit(0);
-            }
+            appMaster.init();
             result = appMaster.run();
         } catch (Throwable t) {
             t.printStackTrace();
@@ -195,48 +177,15 @@ public class S4ApplicationMaster {
     }
 
     /**
-     * Parse command line options
-     * 
-     * @param args
-     *            Command line args
-     * @return Whether init successful and run should be invoked
-     * @throws ParseException
-     * @throws IOException
      */
-    public boolean init(String[] args) throws ParseException, IOException {
-
-        Options opts = new Options();
-        opts.addOption("app_attempt_id", true, "App Attempt ID. Not to be used unless for testing purposes");
-        opts.addOption("c", "cluster", true, "The cluster (or application) name");
-        opts.addOption("zk", true, "Zookeeper connection string");
-        opts.addOption("container_memory", true, "Amount of memory in MB to be requested to host the S4 node");
-        opts.addOption("num_containers", true, "No. of containers on which the S4 node needs to be hosted");
-        opts.addOption("priority", true, "Application Priority. Default 0");
-        opts.addOption("debug", false, "Dump out debug information");
-        opts.addOption("test", false, "Test mode");
-        opts.addOption("extraModulesClasses", true, "Extra modules classes for S4 node configuration");
-        opts.addOption("namedStringParameters", true, "Named configuration parameters for S4 node configuration");
-
-        opts.addOption("help", false, "Print usage");
-        CommandLine cliParser = new GnuParser().parse(opts, args);
-
-        if (args.length == 0) {
-            printUsage(opts);
-            throw new IllegalArgumentException("No args specified for application master to initialize");
-        }
-
-        if (cliParser.hasOption("help")) {
-            printUsage(opts);
-            return false;
-        }
+    public void init() throws IOException {
 
         Map<String, String> envs = System.getenv();
 
         appAttemptID = Records.newRecord(ApplicationAttemptId.class);
         if (!envs.containsKey(ApplicationConstants.AM_CONTAINER_ID_ENV)) {
-            if (cliParser.hasOption("app_attempt_id")) {
-                String appIdStr = cliParser.getOptionValue("app_attempt_id", "");
-                appAttemptID = ConverterUtils.toApplicationAttemptId(appIdStr);
+            if (!Strings.isNullOrEmpty(yarnArgs.appAttemptId)) {
+                appAttemptID = ConverterUtils.toApplicationAttemptId(yarnArgs.appAttemptId);
             } else {
                 throw new IllegalArgumentException("Application Attempt Id not set in the environment");
             }
@@ -248,49 +197,17 @@ public class S4ApplicationMaster {
         logger.info("Application master for app" + ", appId=" + appAttemptID.getApplicationId().getId()
                 + ", clustertimestamp=" + appAttemptID.getApplicationId().getClusterTimestamp() + ", attemptId="
                 + appAttemptID.getAttemptId());
-        logger.info("Application master args = " + Arrays.toString(cliParser.getArgs()));
-        for (Option option : cliParser.getOptions()) {
-            logger.info(option.getArgName() + " / " + option.getDescription() + " / " + option.getOpt() + " / "
-                    + option.getValue());
-        }
-        logger.info("Application master args = " + Arrays.toString(cliParser.getOptions()));
 
-        if (!cliParser.hasOption("cluster")) {
+        if (Strings.isNullOrEmpty(yarnArgs.cluster)) {
             throw new IllegalArgumentException("No cluster ID specified to be provisioned by application master");
-        }
-        cluster = cliParser.getOptionValue("cluster");
-        zkString = cliParser.getOptionValue("zk");
-
-        containerMemory = Integer.parseInt(cliParser.getOptionValue("container_memory", "128"));
-        numTotalContainers = Integer.parseInt(cliParser.getOptionValue("num_containers", "1"));
-        requestPriority = Integer.parseInt(cliParser.getOptionValue("priority", "0"));
-        user = cliParser.getOptionValue("user");
-
-        if (cliParser.hasOption("extraModulesClasses")) {
-            extraModulesClasses = cliParser.getOptionValue("extraModulesClasses");
-        }
-        if (cliParser.hasOption("namedStringParameters")) {
-            namedStringParameters = cliParser.getOptionValue("namedStringParameters");
         }
 
         conf = new YarnConfiguration();
-        if (cliParser.hasOption("test")) {
-            testMode = true;
+        if (yarnArgs.test) {
+            // testMode = true;
             conf.set(FileSystem.FS_DEFAULT_NAME_KEY, "hdfs://localhost:9000");
         }
         rpc = YarnRPC.create(conf);
-
-        return true;
-    }
-
-    /**
-     * Helper function to print usage
-     * 
-     * @param opts
-     *            Parsed command line options
-     */
-    private void printUsage(Options opts) {
-        new HelpFormatter().printHelp("ApplicationMaster", opts);
     }
 
     /**
@@ -320,23 +237,23 @@ public class S4ApplicationMaster {
         // a multiple of the min value and cannot exceed the max.
         // If it is not an exact multiple of min, the RM will allocate to the nearest multiple of min
         if (containerMemory < minMem) {
-            logger.info("Container memory specified below min threshold of cluster. Using min value." + ", specified="
-                    + containerMemory + ", min=" + minMem);
+            logger.info("Container memory for S4 node specified below min threshold of YARN cluster. Using min value."
+                    + ", specified=" + containerMemory + ", min=" + minMem);
             containerMemory = minMem;
         } else if (containerMemory > maxMem) {
-            logger.info("Container memory specified above max threshold of cluster. Using max value." + ", specified="
-                    + containerMemory + ", max=" + maxMem);
+            logger.info("Container memory for S4 node specified above max threshold of YARN cluster. Using max value."
+                    + ", specified=" + containerMemory + ", max=" + maxMem);
             containerMemory = maxMem;
         }
 
         int loopCounter = -1;
 
-        while (numCompletedContainers.get() < numTotalContainers && !appDone) {
+        while (numCompletedContainers.get() < yarnArgs.numContainers && !appDone) {
             loopCounter++;
 
             // log current state
             logger.info("Current application state: loop=" + loopCounter + ", appDone=" + appDone + ", total="
-                    + numTotalContainers + ", requested=" + numRequestedContainers + ", completed="
+                    + yarnArgs.numContainers + ", requested=" + numRequestedContainers + ", completed="
                     + numCompletedContainers + ", failed=" + numFailedContainers + ", currentAllocated="
                     + numAllocatedContainers);
 
@@ -354,7 +271,7 @@ public class S4ApplicationMaster {
             // For the first loop, askCount will be equal to total containers needed
             // From that point on, askCount will always be 0 as current implementation
             // does not change its ask on container failures.
-            int askCount = numTotalContainers - numRequestedContainers.get();
+            int askCount = yarnArgs.numContainers - numRequestedContainers.get();
             numRequestedContainers.addAndGet(askCount);
 
             // Setup request to be sent to RM to allocate containers
@@ -432,12 +349,12 @@ public class S4ApplicationMaster {
                 }
 
             }
-            if (numCompletedContainers.get() == numTotalContainers) {
+            if (numCompletedContainers.get() == yarnArgs.numContainers) {
                 appDone = true;
             }
 
             logger.info("Current application state: loop=" + loopCounter + ", appDone=" + appDone + ", total="
-                    + numTotalContainers + ", requested=" + numRequestedContainers + ", completed="
+                    + yarnArgs.numContainers + ", requested=" + numRequestedContainers + ", completed="
                     + numCompletedContainers + ", failed=" + numFailedContainers + ", currentAllocated="
                     + numAllocatedContainers);
 
@@ -466,7 +383,7 @@ public class S4ApplicationMaster {
             finishReq.setFinishApplicationStatus(FinalApplicationStatus.SUCCEEDED);
         } else {
             finishReq.setFinishApplicationStatus(FinalApplicationStatus.FAILED);
-            String diagnostics = "Diagnostics." + ", total=" + numTotalContainers + ", completed="
+            String diagnostics = "Diagnostics." + ", total=" + yarnArgs.numContainers + ", completed="
                     + numCompletedContainers.get() + ", allocated=" + numAllocatedContainers.get() + ", failed="
                     + numFailedContainers.get();
             finishReq.setDiagnostics(diagnostics);
@@ -512,6 +429,13 @@ public class S4ApplicationMaster {
          * start request to the CM.
          */
         public void run() {
+
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e2) {
+                // TODO Auto-generated catch block
+                e2.printStackTrace();
+            }
             // Connect to ContainerManager
             connectToCM();
 
@@ -522,8 +446,8 @@ public class S4ApplicationMaster {
             ctx.setResource(container.getResource());
 
             try {
-                if (!Strings.isNullOrEmpty(user)) {
-                    ctx.setUser(user);
+                if (!Strings.isNullOrEmpty(yarnArgs.user)) {
+                    ctx.setUser(yarnArgs.user);
                 } else {
                     logger.info("Using default user name {}", UserGroupInformation.getCurrentUser().getShortUserName());
                     ctx.setUser(UserGroupInformation.getCurrentUser().getShortUserName());
@@ -576,42 +500,42 @@ public class S4ApplicationMaster {
             Vector<CharSequence> vargs = new Vector<CharSequence>(5);
 
             vargs.add("java");
+
+            vargs.add("-Xmx" + containerMemory + "m");
+
+            S4YarnClient.addListElementsToCommandLineBuffer(vargs, null, " ", yarnArgs.extraS4NodeJVMParams);
+
+            if (!yarnArgs.extraS4NodeJVMParams.isEmpty()) {
+                vargs.add(CommonS4YarnArgs.S4_NODE_JVM_PARAMETERS);
+            }
             // TODO add memory parameter
             // vargs.add("-Xdebug");
             // vargs.add("-Xrunjdwp:transport=dt_socket,address=8889,server=y");
             vargs.add("org.apache.s4.core.Main");
-            vargs.add("-zk=" + zkString);
-            vargs.add("-c=" + cluster);
+            vargs.add("-zk=" + yarnArgs.zkString);
+            vargs.add("-c=" + yarnArgs.cluster);
 
-            if (Strings.isNullOrEmpty(extraModulesClasses)) {
-                extraModulesClasses = HdfsFetcherModule.class.getName();
-            } else {
-                extraModulesClasses += "," + HdfsFetcherModule.class.getName();
-            }
+            List<String> extraModulesClasses = Lists.newArrayList(yarnArgs.extraModulesClasses);
             // add module for fetchings from hdfs
-            vargs.add("-extraModulesClasses=" + extraModulesClasses);
+            extraModulesClasses.add(HdfsFetcherModule.class.getName());
+            S4YarnClient.addListElementsToCommandLineBuffer(vargs, CommonS4YarnArgs.EXTRA_MODULES_CLASSES, ",",
+                    extraModulesClasses);
 
             // add reference to the configuration
-            if (testMode) {
-                if (Strings.isNullOrEmpty(namedStringParameters)) {
-                    namedStringParameters = FileSystem.FS_DEFAULT_NAME_KEY + "="
-                            + conf.get(FileSystem.FS_DEFAULT_NAME_KEY);
-                } else {
-                    namedStringParameters += "," + FileSystem.FS_DEFAULT_NAME_KEY + "="
-                            + conf.get(FileSystem.FS_DEFAULT_NAME_KEY);
-                }
+            List<String> namedStringParams = Lists.newArrayList(yarnArgs.extraNamedParameters);
+            if (yarnArgs.test) {
+                namedStringParams.add(FileSystem.FS_DEFAULT_NAME_KEY + "=" + conf.get(FileSystem.FS_DEFAULT_NAME_KEY));
             }
-            if (!Strings.isNullOrEmpty(namedStringParameters)) {
-                vargs.add("-namedStringParameters=" + namedStringParameters);
-            }
+            S4YarnClient.addListElementsToCommandLineBuffer(vargs, CommonS4YarnArgs.NAMED_STRING_PARAMETERS, ",",
+                    namedStringParams);
 
             // TODO
             // We should redirect the output to hdfs instead of local logs
             // so as to be able to look at the final output after the containers
             // have been released.
             // Could use a path suffixed with /AppId/AppAttempId/ContainerId/std[out|err]
-            vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout");
-            vargs.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr");
+            vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/s4-node-stdout");
+            vargs.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/s4-node-stderr");
 
             // Get final commmand
             StringBuilder command = new StringBuilder();
@@ -693,7 +617,7 @@ public class S4ApplicationMaster {
         // set the priority for the request
         Priority pri = Records.newRecord(Priority.class);
         // TODO - what is the range for priority? how to decide?
-        pri.setPriority(requestPriority);
+        pri.setPriority(yarnArgs.priority);
         request.setPriority(pri);
 
         // Set up resource type requirements
@@ -719,7 +643,7 @@ public class S4ApplicationMaster {
         req.setApplicationAttemptId(appAttemptID);
         req.addAllAsks(requestedContainers);
         req.addAllReleases(releasedContainers);
-        req.setProgress((float) numCompletedContainers.get() / numTotalContainers);
+        req.setProgress((float) numCompletedContainers.get() / yarnArgs.numContainers);
 
         logger.info("Sending request to RM for containers" + ", requestedSet=" + requestedContainers.size()
                 + ", releasedSet=" + releasedContainers.size() + ", progress=" + req.getProgress());

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.io.Files;
 import com.google.inject.Injector;
 
+// NOTE: you must have an updated s4-yarn installed app (this is automatic when tests are run from the command line, otherwise do: gradlew s4-yarn:installApp)
 public class TestYarnDeployment extends ZkBasedTest {
 
     private static Logger logger = LoggerFactory.getLogger(TestYarnDeployment.class);
@@ -132,7 +133,7 @@ public class TestYarnDeployment extends ZkBasedTest {
         final String[] params = ("-cluster=cluster1 -nbTasks=2 -flp=14000 -s4r=" + destS4rPath.toUri().toString()
                 + " -zk=localhost:2181 -s4Dir=" + gradlewFile.getParentFile().getAbsolutePath()).split("[ ]");
 
-        YarnArgs yarnArgs = new YarnArgs();
+        S4CLIYarnArgs yarnArgs = new S4CLIYarnArgs();
 
         Tools.parseArgs(yarnArgs, params);
         final S4YarnClient client = new S4YarnClient(yarnArgs, conf);
