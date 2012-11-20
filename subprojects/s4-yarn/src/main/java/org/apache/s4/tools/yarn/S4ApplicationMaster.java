@@ -430,12 +430,6 @@ public class S4ApplicationMaster {
          */
         public void run() {
 
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e2) {
-                // TODO Auto-generated catch block
-                e2.printStackTrace();
-            }
             // Connect to ContainerManager
             connectToCM();
 
