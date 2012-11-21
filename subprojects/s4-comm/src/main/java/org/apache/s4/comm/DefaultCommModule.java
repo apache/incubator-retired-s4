@@ -27,7 +27,6 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Hasher;
-import org.apache.s4.base.Listener;
 import org.apache.s4.base.RemoteEmitter;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
@@ -100,6 +99,10 @@ public class DefaultCommModule extends AbstractModule {
 
         bind(Clusters.class).to(ClustersFromZK.class);
 
+        bind(RemoteEmitters.class);
+
+        bind(DeserializerExecutorFactory.class).to(DefaultDeserializerExecutorFactory.class);
+
         try {
             Class<? extends Emitter> emitterClass = (Class<? extends Emitter>) Class.forName(config
                     .getString("s4.comm.emitter.class"));
@@ -112,14 +115,9 @@ public class DefaultCommModule extends AbstractModule {
                     RemoteEmitterFactory.class));
             bind(RemoteEmitters.class);
 
-            bind(Listener.class).to(
-                    (Class<? extends Listener>) Class.forName(config.getString("s4.comm.listener.class")));
-
-            bind(DeserializerExecutorFactory.class).to(DefaultDeserializerExecutorFactory.class);
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find class implementation ", e);
         }
-
     }
 
     @SuppressWarnings("serial")

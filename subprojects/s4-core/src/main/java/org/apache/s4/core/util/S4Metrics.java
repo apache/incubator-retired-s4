@@ -36,18 +36,18 @@ public class S4Metrics {
 
     static List<Meter> partitionSenderMeters = Lists.newArrayList();
 
-    private static Meter eventMeter = Metrics.newMeter(ReceiverImpl.class, "received-events", "event-count",
+    private final Meter eventMeter = Metrics.newMeter(ReceiverImpl.class, "received-events", "event-count",
             TimeUnit.SECONDS);
-    private static Meter bytesMeter = Metrics.newMeter(ReceiverImpl.class, "received-bytes", "bytes-count",
+    private final Meter bytesMeter = Metrics.newMeter(ReceiverImpl.class, "received-bytes", "bytes-count",
             TimeUnit.SECONDS);
 
-    private static Meter[] senderMeters;
+    private Meter[] senderMeters;
 
-    private static Map<String, Meter> dequeuingStreamMeters = Maps.newHashMap();
-    private static Map<String, Meter> droppedStreamMeters = Maps.newHashMap();
-    private static Map<String, Meter> streamQueueFullMeters = Maps.newHashMap();
+    private final Map<String, Meter> dequeuingStreamMeters = Maps.newHashMap();
+    private final Map<String, Meter> droppedStreamMeters = Maps.newHashMap();
+    private final Map<String, Meter> streamQueueFullMeters = Maps.newHashMap();
 
-    private static Map<String, Meter[]> remoteSenderMeters = Maps.newHashMap();
+    private final Map<String, Meter[]> remoteSenderMeters = Maps.newHashMap();
 
     @Inject
     private void init() {
@@ -58,24 +58,23 @@ public class S4Metrics {
         }
     }
 
-    public static void createCacheGauges(ProcessingElement prototype,
-            final LoadingCache<String, ProcessingElement> cache) {
+    public void createCacheGauges(ProcessingElement prototype, final LoadingCache<String, ProcessingElement> cache) {
 
-        Metrics.newGauge(prototype.getClass(), "PE-cache-entries", new Gauge<Long>() {
+        Metrics.newGauge(prototype.getClass(), prototype.getClass().getName() + "-cache-entries", new Gauge<Long>() {
 
             @Override
             public Long value() {
                 return cache.size();
             }
         });
-        Metrics.newGauge(prototype.getClass(), "PE-cache-evictions", new Gauge<Long>() {
+        Metrics.newGauge(prototype.getClass(), prototype.getClass().getName() + "-cache-evictions", new Gauge<Long>() {
 
             @Override
             public Long value() {
                 return cache.stats().evictionCount();
             }
         });
-        Metrics.newGauge(prototype.getClass(), "PE-cache-misses", new Gauge<Long>() {
+        Metrics.newGauge(prototype.getClass(), prototype.getClass().getName() + "-cache-misses", new Gauge<Long>() {
 
             @Override
             public Long value() {
@@ -84,17 +83,17 @@ public class S4Metrics {
         });
     }
 
-    public static void receivedEventFromCommLayer(int bytes) {
+    public void receivedEventFromCommLayer(int bytes) {
         eventMeter.mark();
         bytesMeter.mark(bytes);
     }
 
-    public static void queueIsFull(String name) {
+    public void queueIsFull(String name) {
         streamQueueFullMeters.get(name).mark();
 
     }
 
-    public static void sentEvent(int partition) {
+    public void sentEvent(int partition) {
         try {
             senderMeters[partition].mark();
         } catch (NullPointerException e) {
@@ -104,7 +103,7 @@ public class S4Metrics {
         }
     }
 
-    public static void createStreamMeters(String name) {
+    public void createStreamMeters(String name) {
         // TODO avoid maps to avoid map lookups?
         dequeuingStreamMeters.put(name,
                 Metrics.newMeter(Stream.class, "dequeued@" + name, "dequeued", TimeUnit.SECONDS));
@@ -113,11 +112,11 @@ public class S4Metrics {
                 Metrics.newMeter(Stream.class, "stream-full@" + name, "stream-full", TimeUnit.SECONDS));
     }
 
-    public static void dequeuedEvent(String name) {
+    public void dequeuedEvent(String name) {
         dequeuingStreamMeters.get(name).mark();
     }
 
-    public static void createRemoteStreamMeters(String remoteClusterName, int partitionCount) {
+    public void createRemoteStreamMeters(String remoteClusterName, int partitionCount) {
         Meter[] meters = new Meter[partitionCount];
         for (int i = 0; i < partitionCount; i++) {
             meters[i] = Metrics.newMeter(RemoteSender.class, "remote-sender@" + remoteClusterName + "@partition-" + i,
@@ -129,7 +128,7 @@ public class S4Metrics {
 
     }
 
-    public static void sentEventToRemoteCluster(String remoteClusterName, int partition) {
+    public void sentEventToRemoteCluster(String remoteClusterName, int partition) {
         remoteSenderMeters.get(remoteClusterName)[partition].mark();
     }
 

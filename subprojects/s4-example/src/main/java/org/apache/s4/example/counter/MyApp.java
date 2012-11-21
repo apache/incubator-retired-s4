@@ -131,6 +131,6 @@ final public class MyApp extends App {
             e.printStackTrace();
         }
         myApp.close();
-        receiver.close();
+        // receiver.close();
     }
 }

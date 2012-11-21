@@ -32,6 +32,7 @@ import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
+import org.apache.s4.core.util.S4Metrics;
 import org.apache.s4.core.window.AbstractSlidingWindowPE;
 import org.apache.s4.core.window.SlotFactory;
 import org.slf4j.Logger;
@@ -85,6 +86,9 @@ public abstract class App {
     // default is NoOpCheckpointingFramework
     @Inject
     CheckpointingFramework checkpointingFramework;
+
+    @Inject
+    S4Metrics metrics;
 
     // serialization uses the application class loader
     @Inject
@@ -222,6 +226,7 @@ public abstract class App {
 
         // logger.info("Add PE prototype [{}] with stream [{}].", toString(pePrototype), toString(stream));
         pePrototypes.add(pePrototype);
+        metrics.createCacheGauges(pePrototype, pePrototype.peInstances);
 
     }
 

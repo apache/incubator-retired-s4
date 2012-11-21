@@ -29,7 +29,6 @@ import org.apache.s4.base.Receiver;
 import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
-import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +78,9 @@ public class Stream<T extends Event> implements Streamable {
         this.receiver = app.getReceiver();
     }
 
+    @Override
     public void start() {
-        S4Metrics.createStreamMeters(name);
+        app.metrics.createStreamMeters(getName());
         if (logger.isTraceEnabled()) {
             if (targetPEs != null) {
                 for (ProcessingElement pe : targetPEs) {
@@ -184,6 +184,7 @@ public class Stream<T extends Event> implements Streamable {
      * 
      * @param event
      */
+    @Override
     @SuppressWarnings("unchecked")
     public void put(Event event) {
         event.setStreamId(getName());
@@ -240,6 +241,7 @@ public class Stream<T extends Event> implements Streamable {
     /**
      * @return the name
      */
+    @Override
     public String getName() {
         return name;
     }
@@ -268,6 +270,7 @@ public class Stream<T extends Event> implements Streamable {
     /**
      * Stop and close this stream.
      */
+    @Override
     public void close() {
     }
 
@@ -329,7 +332,7 @@ public class Stream<T extends Event> implements Streamable {
 
         @Override
         public void run() {
-            S4Metrics.dequeuedEvent(name);
+            app.metrics.dequeuedEvent(name);
 
             /* Send event to each target PE. */
             for (int i = 0; i < targetPEs.length; i++) {

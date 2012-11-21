@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.yammer.metrics.reporting.ConsoleReporter;
+import com.yammer.metrics.reporting.CsvReporter;
 
 public class SimpleApp extends App {
 
@@ -34,7 +35,7 @@ public class SimpleApp extends App {
                 throw new RuntimeException("Cannot create log dir " + logDirectory.getAbsolutePath());
             }
         }
-        // CsvReporter.enable(logDirectory, 5, TimeUnit.SECONDS);
+        CsvReporter.enable(logDirectory, 10, TimeUnit.SECONDS);
         ConsoleReporter.enable(10, TimeUnit.SECONDS);
 
         SimplePE1 simplePE1 = createPE(SimplePE1.class, "simplePE1");

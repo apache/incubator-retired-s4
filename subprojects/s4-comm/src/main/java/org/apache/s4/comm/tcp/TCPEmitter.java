@@ -32,8 +32,7 @@ import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterChangeListener;
 import org.apache.s4.comm.topology.ClusterNode;
-import org.apache.s4.comm.util.CommMetrics;
-import org.apache.s4.comm.util.CommMetrics.EmitterMetrics;
+import org.apache.s4.comm.util.EmitterMetrics;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -94,7 +93,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     SerializerDeserializerFactory serDeserFactory;
     SerializerDeserializer serDeser;
 
-    CommMetrics.EmitterMetrics metrics;
+    EmitterMetrics metrics;
 
     @Inject
     public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout) throws InterruptedException {
@@ -133,8 +132,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         refreshCluster();
         this.topology.addListener(this);
         serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
-
         metrics = new EmitterMetrics(topology);
+
     }
 
     private boolean connectTo(Integer partitionId) {
@@ -205,6 +204,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         });
     }
 
+    @Override
     public void close() {
         try {
             channels.close().await();

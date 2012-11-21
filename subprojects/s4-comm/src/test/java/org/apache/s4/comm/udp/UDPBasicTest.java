@@ -11,6 +11,7 @@ import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.MockReceiverModule;
 import org.apache.s4.fixtures.NoOpReceiverModule;
+import org.apache.s4.fixtures.UDPTransportModule;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.junit.Test;
 
@@ -26,12 +27,12 @@ public class UDPBasicTest extends ZkBasedTest {
         try {
             Injector injector1 = Guice.createInjector(
                     new DefaultCommModule(Resources.getResource("udp.s4.comm.properties").openStream(), "cluster1"),
-                    new NoOpReceiverModule());
+                    new UDPTransportModule(), new NoOpReceiverModule());
             Emitter emitter = injector1.getInstance(Emitter.class);
 
             Injector injector2 = Guice.createInjector(
                     new DefaultCommModule(Resources.getResource("udp.s4.comm.properties").openStream(), "cluster1"),
-                    new MockReceiverModule());
+                    new UDPTransportModule(), new MockReceiverModule());
             // creating the listener will inject assignment (i.e. assign a partition) and receiver (delegatee for
             // listener)
             injector2.getInstance(Listener.class);

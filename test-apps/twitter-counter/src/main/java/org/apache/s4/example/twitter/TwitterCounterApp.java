@@ -18,16 +18,21 @@
 
 package org.apache.s4.example.twitter;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
 import org.apache.s4.core.Stream;
 import org.apache.s4.core.ft.CheckpointingConfig;
 import org.apache.s4.core.ft.CheckpointingConfig.CheckpointingMode;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.yammer.metrics.reporting.CsvReporter;
 
 public class TwitterCounterApp extends App {
 
@@ -38,6 +43,9 @@ public class TwitterCounterApp extends App {
     @Override
     protected void onInit() {
         try {
+
+            // uncomment the following in order to get metrics outputs in .csv files
+            // prepareMetricsOutputs();
 
             TopNTopicPE topNTopicPE = createPE(TopNTopicPE.class);
             topNTopicPE.setTimerInterval(10, TimeUnit.SECONDS);
@@ -75,6 +83,19 @@ public class TwitterCounterApp extends App {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void prepareMetricsOutputs() throws IOException {
+        File metricsDirForPartition = new File("metrics/" + getReceiver().getPartitionId());
+        if (metricsDirForPartition.exists()) {
+            FileUtils.deleteDirectory(metricsDirForPartition);
+        }
+        // activate metrics csv dump
+        if (!metricsDirForPartition.mkdirs()) {
+            LoggerFactory.getLogger(getClass()).error("Cannot create directory {}",
+                    new File("metrics").getAbsolutePath());
+        }
+        CsvReporter.enable(metricsDirForPartition, 10, TimeUnit.SECONDS);
     }
 
     @Override

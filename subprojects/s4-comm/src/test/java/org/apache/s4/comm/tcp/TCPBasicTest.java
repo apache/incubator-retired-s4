@@ -11,6 +11,7 @@ import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.MockReceiverModule;
 import org.apache.s4.fixtures.NoOpReceiverModule;
+import org.apache.s4.fixtures.TCPTransportModule;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.junit.Test;
 
@@ -26,12 +27,12 @@ public class TCPBasicTest extends ZkBasedTest {
         try {
             Injector injector1 = Guice
                     .createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                            .openStream(), "cluster1"), new NoOpReceiverModule());
+                            .openStream(), "cluster1"), new TCPTransportModule(), new NoOpReceiverModule());
             Emitter emitter = injector1.getInstance(Emitter.class);
 
             Injector injector2 = Guice
                     .createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                            .openStream(), "cluster1"), new MockReceiverModule());
+                            .openStream(), "cluster1"), new TCPTransportModule(), new MockReceiverModule());
             // creating the listener will inject assignment (i.e. assign a partition) and receiver (delegatee for
             // listener, here a mock which simply intercepts the message and notifies through a countdown latch)
             injector2.getInstance(Listener.class);

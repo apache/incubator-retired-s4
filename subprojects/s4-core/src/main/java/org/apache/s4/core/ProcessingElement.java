@@ -40,7 +40,6 @@ import org.apache.s4.core.ft.CheckpointingConfig.CheckpointingMode;
 import org.apache.s4.core.ft.CheckpointingTask;
 import org.apache.s4.core.gen.OverloadDispatcher;
 import org.apache.s4.core.gen.OverloadDispatcherGenerator;
-import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,8 +170,6 @@ public abstract class ProcessingElement implements Cloneable {
          * to the prototype.
          */
         this.pePrototype = this;
-
-        S4Metrics.createCacheGauges(this, peInstances);
 
         processingTimer = Metrics.newTimer(getClass(), getClass().getName() + "-pe-processing-time");
     }

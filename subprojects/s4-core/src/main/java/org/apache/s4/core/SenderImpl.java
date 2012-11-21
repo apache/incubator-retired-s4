@@ -26,7 +26,6 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
@@ -55,7 +54,10 @@ public class SenderImpl implements Sender {
     Assignment assignment;
     private int localPartitionId = -1;
 
-    private ExecutorService tpe;
+    private final ExecutorService tpe;
+
+    @Inject
+    S4Metrics metrics;
 
     /**
      * 
@@ -67,10 +69,10 @@ public class SenderImpl implements Sender {
      *            a hashing function to map keys to partition IDs.
      */
     @Inject
-    public SenderImpl(Emitter emitter, SerializerDeserializerFactory serDeserFactory, Hasher hasher,
-            Assignment assignment, SenderExecutorServiceFactory senderExecutorServiceFactory) {
+    public SenderImpl(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment,
+            SenderExecutorServiceFactory senderExecutorServiceFactory) {
         this.emitter = emitter;
-        this.serDeser = serDeserFactory.createSerializerDeserializer(getClass().getClassLoader());
+        this.serDeser = serDeser;
         this.hasher = hasher;
         this.assignment = assignment;
         this.tpe = senderExecutorServiceFactory.create();
@@ -98,7 +100,7 @@ public class SenderImpl implements Sender {
         }
         // TODO asynch
         send(partition, serDeser.serialize(event));
-        S4Metrics.sentEvent(partition);
+        metrics.sentEvent(partition);
         return true;
     }
 
@@ -154,7 +156,7 @@ public class SenderImpl implements Sender {
                 /* Don't use the comm layer when we send to the same partition. */
                 if (localPartitionId != i) {
                     emitter.send(i, serializedEvent);
-                    S4Metrics.sentEvent(i);
+                    metrics.sentEvent(i);
 
                 }
             }

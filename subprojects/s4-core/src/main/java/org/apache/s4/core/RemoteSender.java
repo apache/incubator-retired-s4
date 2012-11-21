@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Hasher;
-import org.apache.s4.core.util.S4Metrics;
 
 /**
  * Sends events to a remote cluster.
@@ -42,8 +41,6 @@ public class RemoteSender {
         this.hasher = hasher;
         this.remoteClusterName = clusterName;
 
-        S4Metrics.createRemoteStreamMeters(clusterName, emitter.getPartitionCount());
-
     }
 
     public void send(String hashKey, ByteBuffer message) {
@@ -55,7 +52,5 @@ public class RemoteSender {
             partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
         }
         emitter.send(partition, message);
-        S4Metrics.sentEventToRemoteCluster(remoteClusterName, partition);
-
     }
 }

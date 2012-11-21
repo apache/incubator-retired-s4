@@ -58,7 +58,7 @@ public class RemoteSenders {
 
     ConcurrentMap<String, RemoteSender> sendersByTopology = new ConcurrentHashMap<String, RemoteSender>();
 
-    private ExecutorService executorService;
+    private final ExecutorService executorService;
 
     @Inject
     public RemoteSenders(RemoteEmitters remoteEmitters, RemoteStreams remoteStreams, Clusters remoteClusters,
@@ -111,6 +111,7 @@ public class RemoteSenders {
         @Override
         public void run() {
             sender.send(hashKey, serDeser.serialize(event));
+
         }
 
     }

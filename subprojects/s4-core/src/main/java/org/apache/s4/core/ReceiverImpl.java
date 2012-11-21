@@ -25,7 +25,6 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.Receiver;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.core.util.S4Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,12 +54,15 @@ public class ReceiverImpl implements Receiver {
 
     final private Listener listener;
     final private SerializerDeserializer serDeser;
-    private Map<Integer, Map<String, Stream<? extends Event>>> streams;
+    private final Map<Integer, Map<String, Stream<? extends Event>>> streams;
 
     @Inject
-    public ReceiverImpl(Listener listener, SerializerDeserializerFactory serDeserFactory) {
+    S4Metrics metrics;
+
+    @Inject
+    public ReceiverImpl(Listener listener, SerializerDeserializer serDeser) {
         this.listener = listener;
-        this.serDeser = serDeserFactory.createSerializerDeserializer(getClass().getClassLoader());
+        this.serDeser = serDeser;
 
         streams = new MapMaker().makeMap();
     }
@@ -94,7 +96,7 @@ public class ReceiverImpl implements Receiver {
 
     @Override
     public void receive(ByteBuffer message) {
-        S4Metrics.receivedEventFromCommLayer(message.array().length);
+        metrics.receivedEventFromCommLayer(message.array().length);
         Event event = (Event) serDeser.deserialize(message);
 
         String streamId = event.getStreamName();

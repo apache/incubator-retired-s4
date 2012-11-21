@@ -18,17 +18,14 @@
 
 package org.apache.s4.fixtures;
 
-import org.apache.s4.base.Emitter;
-import org.apache.s4.base.Listener;
-import org.apache.s4.base.Sender;
-import org.apache.s4.core.ReceiverImpl;
+import org.apache.s4.comm.DefaultDeserializerExecutorFactory;
+import org.apache.s4.comm.DeserializerExecutorFactory;
 import org.apache.s4.core.staging.DefaultSenderExecutorServiceFactory;
 import org.apache.s4.core.staging.DefaultStreamProcessingExecutorServiceFactory;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.NoOpDeploymentManager;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,16 +47,13 @@ public class MockCoreModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(DeploymentManager.class).to(NoOpDeploymentManager.class);
-        bind(Emitter.class).toInstance(Mockito.mock(Emitter.class));
-        bind(Listener.class).toInstance(Mockito.mock(Listener.class));
-        bind(ReceiverImpl.class).toInstance(Mockito.mock(ReceiverImpl.class));
-        bind(Sender.class).toInstance(Mockito.mock(Sender.class));
 
         // Although we want to mock as much as possible, most tests still require the machinery for routing events
         // within a stream/node, therefore sender and stream executors are not mocked
         bind(StreamExecutorServiceFactory.class).to(DefaultStreamProcessingExecutorServiceFactory.class);
 
         bind(SenderExecutorServiceFactory.class).to(DefaultSenderExecutorServiceFactory.class);
+        bind(DeserializerExecutorFactory.class).to(DefaultDeserializerExecutorFactory.class);
 
         bind(Integer.class).annotatedWith(Names.named("s4.sender.parallelism")).toInstance(8);
         bind(Integer.class).annotatedWith(Names.named("s4.sender.workQueueSize")).toInstance(10000);
