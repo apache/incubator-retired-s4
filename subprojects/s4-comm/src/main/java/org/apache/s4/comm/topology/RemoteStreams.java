@@ -52,7 +52,7 @@ import com.google.inject.name.Named;
  * 
  */
 @Singleton
-public class RemoteStreams implements IZkStateListener, IZkChildListener {
+public class RemoteStreams implements IZkStateListener, IZkChildListener, RemoteStreamsManager {
 
     private static final Logger logger = LoggerFactory.getLogger(ClustersFromZK.class);
     private KeeperState state;
@@ -107,6 +107,10 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener {
 
     }
 
+    /* (non-Javadoc)
+     * @see org.apache.s4.comm.topology.RemoteStreamsManager#getConsumers(java.lang.String)
+     */
+    @Override
     public Set<StreamConsumer> getConsumers(String streamName) {
         if (!streams.containsKey(streamName)) {
             return Collections.emptySet();
@@ -182,6 +186,10 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener {
         streams.get(streamName).put(type.getCollectionName(), Collections.unmodifiableSet(consumers));
     }
 
+    /* (non-Javadoc)
+     * @see org.apache.s4.comm.topology.RemoteStreamsManager#addOutputStream(java.lang.String, java.lang.String, java.lang.String)
+     */
+    @Override
     public void addOutputStream(String appId, String clusterName, String streamName) {
         lock.lock();
         try {
@@ -211,13 +219,10 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener {
         zkClient.createPersistent(StreamType.CONSUMER.getPath(streamName), true);
     }
 
-    /**
-     * Publishes interest in a stream from an application.
-     * 
-     * @param appId
-     * @param clusterName
-     * @param streamName
+    /* (non-Javadoc)
+     * @see org.apache.s4.comm.topology.RemoteStreamsManager#addInputStream(int, java.lang.String, java.lang.String)
      */
+    @Override
     public void addInputStream(int appId, String clusterName, String streamName) {
         lock.lock();
         try {

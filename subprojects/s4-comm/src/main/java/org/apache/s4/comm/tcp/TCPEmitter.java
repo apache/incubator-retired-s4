@@ -56,6 +56,7 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import org.apache.helix.model.InstanceConfig;
 
 /**
  * TCPEmitter - Uses TCP to send messages across partitions.
@@ -63,216 +64,201 @@ import com.google.inject.name.Named;
  */
 
 public class TCPEmitter implements Emitter, ClusterChangeListener {
-    private static final Logger logger = LoggerFactory.getLogger(TCPEmitter.class);
+	private static final Logger logger = LoggerFactory
+			.getLogger(TCPEmitter.class);
 
-    private final int nettyTimeout;
+	private final int nettyTimeout;
 
-    private Cluster topology;
-    private final ClientBootstrap bootstrap;
+	private Cluster topology;
+	private final ClientBootstrap bootstrap;
 
-    /*
-     * All channels
-     */
-    private final ChannelGroup channels = new DefaultChannelGroup();
+	/*
+	 * All channels
+	 */
+	private final ChannelGroup channels = new DefaultChannelGroup();
 
-    /*
-     * Channel used to send messages to each partition
-     */
-    private final BiMap<Integer, Channel> partitionChannelMap;
+	/*
+	 * Channel used to send messages to each Node
+	 */
+	private final BiMap<InstanceConfig, Channel> nodeChannelMap;
 
-    /*
-     * Node hosting each partition
-     */
-    private final BiMap<Integer, ClusterNode> partitionNodeMap;
+	// lock for synchronizing between cluster updates callbacks and other code
+	private final Lock lock;
 
-    // lock for synchronizing between cluster updates callbacks and other code
-    private final Lock lock;
+	@Inject
+	SerializerDeserializer serDeser;
 
-    @Inject
-    SerializerDeserializer serDeser;
+	@Inject
+	public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout)
+			throws InterruptedException {
+		this.nettyTimeout = timeout;
+		this.topology = topology;
+		this.lock = new ReentrantLock();
 
-    @Inject
-    public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout) throws InterruptedException {
-        this.nettyTimeout = timeout;
-        this.topology = topology;
-        this.lock = new ReentrantLock();
+		// Initialize data structures
+		//int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
+		// TODO cluster can grow in size
+		nodeChannelMap = Maps.synchronizedBiMap(HashBiMap
+				.<InstanceConfig, Channel> create());
 
-        // Initialize data structures
-        int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
-        partitionChannelMap = Maps.synchronizedBiMap(HashBiMap.<Integer, Channel> create(clusterSize));
-        partitionNodeMap = HashBiMap.create(clusterSize);
+		// Initialize netty related structures
+		ChannelFactory factory = new NioClientSocketChannelFactory(
+				Executors.newCachedThreadPool(),
+				Executors.newCachedThreadPool());
+		bootstrap = new ClientBootstrap(factory);
+		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+			@Override
+			public ChannelPipeline getPipeline() {
+				ChannelPipeline p = Channels.pipeline();
+				p.addLast("1", new LengthFieldPrepender(4));
+				p.addLast("2", new ExceptionHandler());
+				return p;
+			}
+		});
 
-        // Initialize netty related structures
-        ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
-                Executors.newCachedThreadPool());
-        bootstrap = new ClientBootstrap(factory);
-        bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-            @Override
-            public ChannelPipeline getPipeline() {
-                ChannelPipeline p = Channels.pipeline();
-                p.addLast("1", new LengthFieldPrepender(4));
-                p.addLast("2", new ExceptionHandler());
-                return p;
-            }
-        });
+		bootstrap.setOption("tcpNoDelay", true);
+		bootstrap.setOption("keepAlive", true);
+		bootstrap.setOption("reuseAddress", true);
+		bootstrap.setOption("connectTimeoutMillis", this.nettyTimeout);
+	}
 
-        bootstrap.setOption("tcpNoDelay", true);
-        bootstrap.setOption("keepAlive", true);
-        bootstrap.setOption("reuseAddress", true);
-        bootstrap.setOption("connectTimeoutMillis", this.nettyTimeout);
-    }
+	@Inject
+	private void init() {
+		this.topology.addListener(this);
+	}
 
-    @Inject
-    private void init() {
-        refreshCluster();
-        this.topology.addListener(this);
-    }
+	private boolean connectTo(InstanceConfig config) {
 
-    private boolean connectTo(Integer partitionId) {
-        ClusterNode clusterNode = partitionNodeMap.get(partitionId);
+		if (config == null) {
 
-        if (clusterNode == null) {
+			logger.error("Invalid clusterNode");
+			return false;
+		}
 
-            logger.error("No ClusterNode exists for partitionId " + partitionId);
-            refreshCluster();
-            return false;
-        }
+		try {
+			ChannelFuture connectFuture = this.bootstrap
+					.connect(new InetSocketAddress(config.getHostName(),
+							Integer.parseInt(config.getPort())));
+			connectFuture.await();
+			if (connectFuture.isSuccess()) {
+				channels.add(connectFuture.getChannel());
+				nodeChannelMap
+						.forcePut(config, connectFuture.getChannel());
+				return true;
+			}
+		} catch (InterruptedException ie) {
+			logger.error(String.format("Interrupted while connecting to %s:%d",
+					config.getHostName(), config.getPort()));
+			Thread.currentThread().interrupt();
+		}
+		return false;
+	}
 
-        try {
-            ChannelFuture connectFuture = this.bootstrap.connect(new InetSocketAddress(clusterNode.getMachineName(),
-                    clusterNode.getPort()));
-            connectFuture.await();
-            if (connectFuture.isSuccess()) {
-                channels.add(connectFuture.getChannel());
-                partitionChannelMap.forcePut(partitionId, connectFuture.getChannel());
-                return true;
-            }
-        } catch (InterruptedException ie) {
-            logger.error(String.format("Interrupted while connecting to %s:%d", clusterNode.getMachineName(),
-                    clusterNode.getPort()));
-            Thread.currentThread().interrupt();
-        }
-        return false;
-    }
+	private void sendMessage(String streamName, int partitionId, byte[] message) {
+		ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
+		buffer.writeBytes(message);
+		InstanceConfig config = topology
+				.getDestination(streamName, partitionId);
+		if (!nodeChannelMap.containsKey(config)) {
+			if (!connectTo(config)) {
+				// Couldn't connect, discard message
+				return;
+			}
+		}
 
-    private void sendMessage(int partitionId, byte[] message) {
-        ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
-        buffer.writeBytes(message);
+		Channel c = nodeChannelMap.get(partitionId);
+		if (c == null)
+			return;
 
-        if (!partitionChannelMap.containsKey(partitionId)) {
-            if (!connectTo(partitionId)) {
-                // Couldn't connect, discard message
-                return;
-            }
-        }
+		c.write(buffer).addListener(new MessageSendingListener(partitionId));
+	}
 
-        Channel c = partitionChannelMap.get(partitionId);
-        if (c == null)
-            return;
+	@Override
+	public boolean send(int partitionId, EventMessage message) {
+		sendMessage(message.getStreamName(), partitionId,
+				serDeser.serialize(message));
+		return true;
+	}
 
-        c.write(buffer).addListener(new MessageSendingListener(partitionId));
-    }
+	protected void removeChannel(int partition) {
+		Channel c = nodeChannelMap.remove(partition);
+		if (c == null) {
+			return;
+		}
+		c.close().addListener(new ChannelFutureListener() {
+			@Override
+			public void operationComplete(ChannelFuture future)
+					throws Exception {
+				if (future.isSuccess())
+					channels.remove(future.getChannel());
+				else
+					logger.error("Failed to close channel");
+			}
+		});
+	}
 
-    @Override
-    public boolean send(int partitionId, EventMessage message) {
-        sendMessage(partitionId, serDeser.serialize(message));
-        return true;
-    }
+	public void close() {
+		try {
+			channels.close().await();
+			bootstrap.releaseExternalResources();
+		} catch (InterruptedException ie) {
+			logger.error("Interrupted while closing");
+			Thread.currentThread().interrupt();
+		}
+	}
 
-    protected void removeChannel(int partition) {
-        Channel c = partitionChannelMap.remove(partition);
-        if (c == null) {
-            return;
-        }
-        c.close().addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (future.isSuccess())
-                    channels.remove(future.getChannel());
-                else
-                    logger.error("Failed to close channel");
-            }
-        });
-    }
+	@Override
+	public int getPartitionCount() {
+		return topology.getPhysicalCluster().getPartitionCount();
+	}
 
-    public void close() {
-        try {
-            channels.close().await();
-            bootstrap.releaseExternalResources();
-        } catch (InterruptedException ie) {
-            logger.error("Interrupted while closing");
-            Thread.currentThread().interrupt();
-        }
-    }
+	class ExceptionHandler extends SimpleChannelUpstreamHandler {
+		@Override
+		public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+				throws Exception {
+			Throwable t = e.getCause();
+			if (t instanceof ClosedChannelException) {
+				nodeChannelMap.inverse().remove(e.getChannel());
+				return;
+			} else if (t instanceof ConnectException) {
+				nodeChannelMap.inverse().remove(e.getChannel());
+				return;
+			} else {
+				logger.error("Unexpected exception", t);
+			}
+		}
+	}
 
-    @Override
-    public void onChange() {
-        refreshCluster();
-    }
+	class MessageSendingListener implements ChannelFutureListener {
 
-    private void refreshCluster() {
-        lock.lock();
-        try {
-            for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
-                Integer partition = clusterNode.getPartition();
-                if (partition == null) {
-                    logger.error("Illegal partition for clusterNode - " + clusterNode);
-                    return;
-                }
+		int partitionId = -1;
 
-                ClusterNode oldNode = partitionNodeMap.remove(partition);
-                if (oldNode != null && !oldNode.equals(clusterNode)) {
-                    removeChannel(partition);
-                }
-                partitionNodeMap.forcePut(partition, clusterNode);
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
+		public MessageSendingListener(int partitionId) {
+			super();
+			this.partitionId = partitionId;
+		}
 
-    @Override
-    public int getPartitionCount() {
-        return topology.getPhysicalCluster().getPartitionCount();
-    }
+		@Override
+		public void operationComplete(ChannelFuture future) throws Exception {
+			if (!future.isSuccess()) {
+				try {
+					// TODO handle possible cluster reconfiguration between send
+					// and failure callback
+					logger.warn(
+							"Failed to send message to node {} (according to current cluster information)",
+							topology.getPhysicalCluster().getNodes()
+									.get(partitionId));
+				} catch (IndexOutOfBoundsException ignored) {
+					// cluster was changed
+				}
+			}
 
-    class ExceptionHandler extends SimpleChannelUpstreamHandler {
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            Throwable t = e.getCause();
-            if (t instanceof ClosedChannelException) {
-                partitionChannelMap.inverse().remove(e.getChannel());
-                return;
-            } else if (t instanceof ConnectException) {
-                partitionChannelMap.inverse().remove(e.getChannel());
-                return;
-            } else {
-                logger.error("Unexpected exception", t);
-            }
-        }
-    }
+		}
+	}
 
-    class MessageSendingListener implements ChannelFutureListener {
-
-        int partitionId = -1;
-
-        public MessageSendingListener(int partitionId) {
-            super();
-            this.partitionId = partitionId;
-        }
-
-        @Override
-        public void operationComplete(ChannelFuture future) throws Exception {
-            if (!future.isSuccess()) {
-                try {
-                    // TODO handle possible cluster reconfiguration between send and failure callback
-                    logger.warn("Failed to send message to node {} (according to current cluster information)",
-                            topology.getPhysicalCluster().getNodes().get(partitionId));
-                } catch (IndexOutOfBoundsException ignored) {
-                    // cluster was changed
-                }
-            }
-
-        }
-    }
+	@Override
+	public void onChange() {
+		// TODO Auto-generated method stub
+		
+	}
 }

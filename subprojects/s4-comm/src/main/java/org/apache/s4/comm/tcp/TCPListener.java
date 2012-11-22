@@ -64,7 +64,8 @@ public class TCPListener implements Listener {
 
     @Inject
     public TCPListener(Assignment assignment, @Named("s4.comm.timeout") int timeout) {
-        // wait for an assignment
+System.out.println("TCPListener.TCPListener()");
+    	// wait for an assignment
         node = assignment.assignClusterNode();
         nettyTimeout = timeout;
 

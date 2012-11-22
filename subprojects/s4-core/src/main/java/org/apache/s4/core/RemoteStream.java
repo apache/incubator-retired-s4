@@ -24,7 +24,7 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.Key;
 import org.apache.s4.base.KeyFinder;
-import org.apache.s4.comm.topology.RemoteStreams;
+import org.apache.s4.comm.topology.RemoteStreamsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +39,7 @@ public class RemoteStream implements Streamable<Event> {
     final static private String DEFAULT_SEPARATOR = "^";
     // final private int id;
 
-    RemoteSenders remoteSenders;
+    RemoteSendersManager remoteSenders;
 
     Hasher hasher;
 
@@ -49,8 +49,8 @@ public class RemoteStream implements Streamable<Event> {
 
     private static AtomicInteger remoteStreamCounter = new AtomicInteger();
 
-    public RemoteStream(App app, String name, KeyFinder<Event> finder, RemoteSenders remoteSenders, Hasher hasher,
-            RemoteStreams remoteStreams, String clusterName) {
+    public RemoteStream(App app, String name, KeyFinder<Event> finder, RemoteSendersManager remoteSenders, Hasher hasher,
+            RemoteStreamsManager remoteStreams, String clusterName) {
         this.app = app;
         this.name = name;
         this.remoteSenders = remoteSenders;

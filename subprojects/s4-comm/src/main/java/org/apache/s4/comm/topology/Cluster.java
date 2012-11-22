@@ -18,6 +18,8 @@
 
 package org.apache.s4.comm.topology;
 
+import org.apache.helix.model.InstanceConfig;
+
 /**
  * Represents a logical cluster
  * 
@@ -29,4 +31,6 @@ public interface Cluster {
     public void addListener(ClusterChangeListener listener);
 
     public void removeListener(ClusterChangeListener listener);
+
+    InstanceConfig getDestination(String streamName, int partitionId);
 }

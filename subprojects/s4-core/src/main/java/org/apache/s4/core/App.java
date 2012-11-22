@@ -28,7 +28,7 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
-import org.apache.s4.comm.topology.RemoteStreams;
+import org.apache.s4.comm.topology.RemoteStreamsManager;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.window.AbstractSlidingWindowPE;
 import org.apache.s4.core.window.SlotFactory;
@@ -68,13 +68,13 @@ public abstract class App {
     private Receiver receiver;
 
     @Inject
-    RemoteSenders remoteSenders;
+    RemoteSendersManager remoteSenders;
 
     @Inject
     Hasher hasher;
 
     @Inject
-    RemoteStreams remoteStreams;
+    RemoteStreamsManager remoteStreams;
 
     @Inject
     @Named("s4.cluster.name")
@@ -334,7 +334,7 @@ public abstract class App {
      * @return a reference to the created remote stream
      */
     protected <T extends Event> RemoteStream createOutputStream(String name, KeyFinder<Event> finder) {
-        return new RemoteStream(this, name, finder, remoteSenders, hasher, remoteStreams, clusterName);
+       return new RemoteStream(this, name, finder, remoteSenders, hasher, remoteStreams, clusterName);
     }
 
     /**

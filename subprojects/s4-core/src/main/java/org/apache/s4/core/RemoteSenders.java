@@ -28,7 +28,7 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.tcp.RemoteEmitters;
 import org.apache.s4.comm.topology.Clusters;
-import org.apache.s4.comm.topology.RemoteStreams;
+import org.apache.s4.comm.topology.RemoteStreamsManager;
 import org.apache.s4.comm.topology.StreamConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ import com.google.inject.Inject;
  * the event.
  *
  */
-public class RemoteSenders {
+public class RemoteSenders implements RemoteSendersManager {
 
     Logger logger = LoggerFactory.getLogger(RemoteSenders.class);
 
@@ -48,7 +48,7 @@ public class RemoteSenders {
     RemoteEmitters emitters;
 
     @Inject
-    RemoteStreams streams;
+    RemoteStreamsManager streams;
 
     @Inject
     Clusters topologies;
@@ -61,6 +61,10 @@ public class RemoteSenders {
 
     Map<String, RemoteSender> sendersByTopology = new HashMap<String, RemoteSender>();
 
+    /* (non-Javadoc)
+     * @see org.apache.s4.core.RemoteSendersManager#send(java.lang.String, org.apache.s4.base.Event)
+     */
+    @Override
     public void send(String hashKey, Event event) {
 
         Set<StreamConsumer> consumers = streams.getConsumers(event.getStreamName());

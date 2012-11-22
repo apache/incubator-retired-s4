@@ -27,6 +27,8 @@ import java.util.jar.JarFile;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.base.util.S4RLoader;
 import org.apache.s4.base.util.S4RLoaderFactory;
+import org.apache.s4.comm.topology.Assignment;
+import org.apache.s4.comm.topology.AssignmentFromHelix;
 import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.deploy.DeploymentManager;
@@ -57,7 +59,7 @@ public class Server {
     private DeploymentManager deploymentManager;
 
     @Inject
-    private AssignmentFromZK assignment;
+    private Assignment assignment;
 
     private ZkClient zkClient;
 

@@ -22,15 +22,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.net.Inet4Address;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.helix.controller.HelixControllerMain;
 import org.apache.s4.comm.DefaultCommModule;
+import org.apache.s4.comm.HelixBasedCommModule;
 import org.apache.s4.core.util.ParametersInjectionModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,6 +150,9 @@ public class Main {
             }
 
             injector = Guice.createInjector(combinedModule);
+            //start a HelixController to manage the cluster
+            String controllerName = Inet4Address.getLocalHost().getCanonicalHostName() + UUID.randomUUID().toString();
+            HelixControllerMain.startHelixController(mainArgs.zkConnectionString, mainArgs.clusterName, controllerName, HelixControllerMain.STANDALONE);
 
             if (mainArgs.appClass != null) {
                 logger.info("Starting S4 node with single application from class [{}]", mainArgs.appClass);
@@ -178,7 +185,7 @@ public class Main {
         String clusterName = null;
 
         @Parameter(names = "-commModuleClass", description = "configuration module class for the communication layer", required = false)
-        String commModuleClass = DefaultCommModule.class.getName();
+        String commModuleClass = HelixBasedCommModule.class.getName();
 
         @Parameter(names = "-commConfig", description = "s4 communication layer configuration file", required = false)
         String commConfigFilePath;
