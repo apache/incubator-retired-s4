@@ -123,7 +123,7 @@ public class AppBuilder extends App {
         for (StreamBuilder<? extends Event> sb : streamBuilders) {
             for (String peName : sb.pes) {
                 ProcessingElement pe = getPE(peName);
-                sb.stream.setPE(pe);
+                sb.stream.setPEs(pe);
             }
         }
 
