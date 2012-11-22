@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.apache.s4.core.Main.InlineConfigParameterConverter;
 
+import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 
 public class CommonS4YarnArgs {
 
@@ -53,8 +55,18 @@ public class CommonS4YarnArgs {
     List<String> extraNamedParameters = new ArrayList<String>();
 
     // TODO parse JVM parameters that include commas
-    @Parameter(names = S4CLIYarnArgs.S4_NODE_JVM_PARAMETERS, description = "Extra JVM parameter for running the nodes, specified as a comma separated list. The memory is usually configured through "
-            + S4_NODE_MEMORY, required = false)
+    @Parameter(names = S4_NODE_JVM_PARAMETERS, description = "Extra JVM parameter for running the nodes, specified as a comma separated list. The memory parameter -Xmx must be configured through "
+            + S4_NODE_MEMORY, required = false, validateWith = NodeJVMParametersValidator.class)
     List<String> extraS4NodeJVMParams = new ArrayList<String>();
 
+    public static class NodeJVMParametersValidator implements IParameterValidator {
+
+        @Override
+        public void validate(String name, String value) throws ParameterException {
+            if (value.matches(".*-Xmx\\d+.*")) {
+                throw new ParameterException("-Xmx JVM parameter cannot be specified here. You must use the "
+                        + S4_NODE_MEMORY + " parameter instead.");
+            }
+        }
+    }
 }

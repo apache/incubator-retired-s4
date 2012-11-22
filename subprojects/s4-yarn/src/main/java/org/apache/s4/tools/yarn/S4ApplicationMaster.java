@@ -99,34 +99,34 @@ public class S4ApplicationMaster {
 
     // For status update for clients - yet to be implemented
     // Hostname of the container
-    private String appMasterHostname = "";
+    private final String appMasterHostname = "";
     // Port on which the app master listens for status update requests from clients
-    private int appMasterRpcPort = 0;
+    private final int appMasterRpcPort = 0;
     // Tracking url to which app master publishes info for clients to monitor
-    private String appMasterTrackingUrl = "";
+    private final String appMasterTrackingUrl = "";
 
     // Incremental counter for rpc calls to the RM
-    private AtomicInteger rmRequestID = new AtomicInteger();
+    private final AtomicInteger rmRequestID = new AtomicInteger();
 
     // Simple flag to denote whether all works is done
     private boolean appDone = false;
     // Counter for completed containers ( complete denotes successful or failed )
-    private AtomicInteger numCompletedContainers = new AtomicInteger();
+    private final AtomicInteger numCompletedContainers = new AtomicInteger();
     // Allocated container count so that we know how many containers has the RM
     // allocated to us
-    private AtomicInteger numAllocatedContainers = new AtomicInteger();
+    private final AtomicInteger numAllocatedContainers = new AtomicInteger();
     // Count of failed containers
-    private AtomicInteger numFailedContainers = new AtomicInteger();
+    private final AtomicInteger numFailedContainers = new AtomicInteger();
     // Count of containers already requested from the RM
     // Needed as once requested, we should not request for containers again and again.
     // Only request for more if the original requirement changes.
-    private AtomicInteger numRequestedContainers = new AtomicInteger();
+    private final AtomicInteger numRequestedContainers = new AtomicInteger();
 
     // Containers to be released
-    private CopyOnWriteArrayList<ContainerId> releasedContainers = new CopyOnWriteArrayList<ContainerId>();
+    private final CopyOnWriteArrayList<ContainerId> releasedContainers = new CopyOnWriteArrayList<ContainerId>();
 
     // Launch threads
-    private List<Thread> launchThreads = new ArrayList<Thread>();
+    private final List<Thread> launchThreads = new ArrayList<Thread>();
 
     private int containerMemory;
 
@@ -143,8 +143,6 @@ public class S4ApplicationMaster {
             logger.info("S4YarnApplicationMaster args = " + Arrays.toString(args));
 
             Tools.parseArgs(yarnArgs, args);
-
-            Thread.sleep(10000);
 
             S4ApplicationMaster appMaster = new S4ApplicationMaster();
             logger.info("Initializing ApplicationMaster with args " + Arrays.toString(args));
@@ -499,9 +497,6 @@ public class S4ApplicationMaster {
 
             S4YarnClient.addListElementsToCommandLineBuffer(vargs, null, " ", yarnArgs.extraS4NodeJVMParams);
 
-            if (!yarnArgs.extraS4NodeJVMParams.isEmpty()) {
-                vargs.add(CommonS4YarnArgs.S4_NODE_JVM_PARAMETERS);
-            }
             // TODO add memory parameter
             // vargs.add("-Xdebug");
             // vargs.add("-Xrunjdwp:transport=dt_socket,address=8889,server=y");

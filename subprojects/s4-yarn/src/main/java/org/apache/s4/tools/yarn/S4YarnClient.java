@@ -120,7 +120,7 @@ public class S4YarnClient extends YarnClientImpl {
     private static Logger logger = LoggerFactory.getLogger(S4YarnClient.class);
 
     // Configuration
-    private Configuration conf;
+    private final Configuration conf;
 
     S4CLIYarnArgs yarnArgs;
 
@@ -325,8 +325,10 @@ public class S4YarnClient extends YarnClientImpl {
         vargs.add(CommonS4YarnArgs.NB_S4_NODES + " " + String.valueOf(yarnArgs.numContainers));
         vargs.add(CommonS4YarnArgs.PRIORITY + " " + String.valueOf(yarnArgs.priority));
 
-        addListElementsToCommandLineBuffer(vargs, CommonS4YarnArgs.S4_NODE_JVM_PARAMETERS, ",", yarnArgs.extraS4NodeJVMParams);
-        addListElementsToCommandLineBuffer(vargs, CommonS4YarnArgs.EXTRA_MODULES_CLASSES, ",", yarnArgs.extraModulesClasses);
+        addListElementsToCommandLineBuffer(vargs, CommonS4YarnArgs.S4_NODE_JVM_PARAMETERS, ",",
+                yarnArgs.extraS4NodeJVMParams);
+        addListElementsToCommandLineBuffer(vargs, CommonS4YarnArgs.EXTRA_MODULES_CLASSES, ",",
+                yarnArgs.extraModulesClasses);
         addListElementsToCommandLineBuffer(vargs, "-namedStringParameters", ",", yarnArgs.extraNamedParameters);
 
         vargs.add("-c " + String.valueOf(yarnArgs.cluster));
