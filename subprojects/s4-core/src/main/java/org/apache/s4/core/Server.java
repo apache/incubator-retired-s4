@@ -28,12 +28,14 @@ import org.I0Itec.zkclient.ZkClient;
 import org.apache.helix.HelixManager;
 import org.apache.helix.HelixManagerFactory;
 import org.apache.helix.InstanceType;
+import org.apache.helix.spectator.RoutingTableProvider;
 import org.apache.s4.base.util.S4RLoader;
 import org.apache.s4.base.util.S4RLoaderFactory;
 import org.apache.s4.comm.helix.S4StateModelFactory;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromHelix;
 import org.apache.s4.comm.topology.AssignmentFromZK;
+import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.deploy.AppStateModelFactory;
 import org.apache.s4.deploy.DeploymentManager;
@@ -80,6 +82,9 @@ public class Server {
     @Inject
     private AppStateModelFactory appStateModelFactory;
     
+    @Inject
+    private Cluster cluster;
+    
     /**
      *
      */
@@ -123,12 +128,12 @@ public class Server {
       {
         helixManager = HelixManagerFactory.getZKHelixManager(clusterName,
             instanceName, InstanceType.PARTICIPANT, zookeeperAddress);
-     
         helixManager.getStateMachineEngine().registerStateModelFactory(
           "LeaderStandby", taskStateModelFactory);
         helixManager.getStateMachineEngine().registerStateModelFactory(
           "OnlineOffline", appStateModelFactory);
         helixManager.connect();  
+        helixManager.addExternalViewChangeListener((RoutingTableProvider)cluster);
       } catch (Exception e)
       {
         // TODO Auto-generated catch block

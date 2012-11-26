@@ -81,10 +81,13 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
 			NotificationContext changeContext) {
 		lock.lock();
 		try {
+		  logger.info("Start:Processing change in cluster topology");
 			super.onExternalViewChange(externalViewList, changeContext);
 			for(ClusterChangeListener listener:listeners){
 			  listener.onChange();
 			}
+	    logger.info("End:Processing change in cluster topology");
+
 		} catch (Exception e) {
 			logger.error("", e);
 		} finally {

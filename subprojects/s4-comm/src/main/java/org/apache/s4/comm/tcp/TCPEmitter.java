@@ -28,6 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterChangeListener;
 import org.apache.s4.comm.topology.ClusterNode;
@@ -86,7 +87,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 	private final Lock lock;
 
 	@Inject
-	SerializerDeserializer serDeser;
+	SerializerDeserializer serDeser= new KryoSerDeser();
 
 	@Inject
 	public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout)
@@ -166,7 +167,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 			}
 		}
 
-		Channel c = nodeChannelMap.get(partitionId);
+		Channel c = nodeChannelMap.get(config);
 		if (c == null)
 			return;
 
@@ -258,7 +259,6 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
 	@Override
 	public void onChange() {
-		// TODO Auto-generated method stub
 		
 	}
 }
