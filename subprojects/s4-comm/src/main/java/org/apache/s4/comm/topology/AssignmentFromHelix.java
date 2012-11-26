@@ -24,6 +24,8 @@ import org.apache.helix.manager.zk.ZNRecordSerializer;
 import org.apache.helix.manager.zk.ZkBaseDataAccessor;
 import org.apache.helix.manager.zk.ZkClient;
 import org.apache.helix.model.InstanceConfig;
+import org.apache.helix.participant.statemachine.StateModel;
+import org.apache.helix.participant.statemachine.StateModelFactory;
 import org.apache.s4.comm.helix.S4StateModelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,22 +44,28 @@ public class AssignmentFromHelix implements Assignment
   private final String zookeeperAddress;
   private String machineId;
   private HelixManager zkHelixManager;
-  private S4StateModelFactory s4StateModelFactory;
+  
   private HelixDataAccessor helixDataAccessor;
   AtomicReference<ClusterNode> clusterNodeRef;
   private final Lock lock;
   private final AtomicBoolean currentlyOwningTask;
   private final Condition taskAcquired;
 
+  private final StateModelFactory<? extends StateModel> taskStateModelFactory;
+  //private final StateModelFactory<? extends StateModel> appStateModelFactory;
+
   @Inject
   public AssignmentFromHelix(@Named("s4.cluster.name") String clusterName,
-      @Named("s4.cluster.zk_address") String zookeeperAddress) throws Exception
+                             @Named("s4.instance.name") String instanceName,
+                             @Named("s4.cluster.zk_address") String zookeeperAddress 
+                             ) throws Exception
   {
+    this.taskStateModelFactory = new S4StateModelFactory();
+//    this.appStateModelFactory = appStateModelFactory;
     System.out.println("here i am");
     this.clusterName = clusterName;
     this.zookeeperAddress = zookeeperAddress;
     machineId = "localhost";
-    s4StateModelFactory = new S4StateModelFactory();
     lock = new ReentrantLock();
     ZkClient zkClient = new ZkClient(zookeeperAddress);
     zkClient.setZkSerializer(new ZNRecordSerializer());
@@ -67,7 +75,7 @@ public class AssignmentFromHelix implements Assignment
     helixDataAccessor = new ZKHelixDataAccessor(clusterName, baseDataAccessor);
     clusterNodeRef = new AtomicReference<ClusterNode>();
     taskAcquired = lock.newCondition();
-    currentlyOwningTask = new AtomicBoolean(false);
+    currentlyOwningTask = new AtomicBoolean(true);
     try
     {
       machineId = InetAddress.getLocalHost().getCanonicalHostName();
@@ -76,12 +84,17 @@ public class AssignmentFromHelix implements Assignment
       logger.warn("Unable to get hostname", e);
       machineId = "UNKNOWN";
     }
+    ClusterNode node = new ClusterNode(-1,
+        Integer.parseInt(instanceName.split("_")[1]), machineId,
+        instanceName);
+    clusterNodeRef.set(node);
+    currentlyOwningTask.set(true);
   }
 
   @Inject
   public void init()
   {
-    joinCluster();
+    //joinCluster();
   }
 
   @Override
@@ -105,7 +118,7 @@ public class AssignmentFromHelix implements Assignment
     return clusterNodeRef.get();
   }
 
-  public void joinCluster()
+  public void joinClusterOld()
   {
     lock.lock();
     try
@@ -125,7 +138,8 @@ public class AssignmentFromHelix implements Assignment
             zkHelixManager = HelixManagerFactory.getZKHelixManager(clusterName,
                 instanceName, InstanceType.PARTICIPANT, zookeeperAddress);
             zkHelixManager.getStateMachineEngine().registerStateModelFactory(
-                "LeaderStandby", s4StateModelFactory);
+                "LeaderStandby", taskStateModelFactory);
+          
             zkHelixManager.connect();
             ClusterNode node = new ClusterNode(-1,
                 Integer.parseInt(instanceConfig.getPort()), machineId,

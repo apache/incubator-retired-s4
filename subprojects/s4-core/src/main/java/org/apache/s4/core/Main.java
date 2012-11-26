@@ -32,9 +32,13 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.helix.HelixManager;
+import org.apache.helix.HelixManagerFactory;
+import org.apache.helix.InstanceType;
 import org.apache.helix.controller.HelixControllerMain;
 import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.HelixBasedCommModule;
+import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.core.util.ParametersInjectionModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,6 +140,9 @@ public class Main {
             if (mainArgs.zkConnectionString != null) {
                 mainArgs.extraNamedParameters.add("s4.cluster.zk_address=" + mainArgs.zkConnectionString);
             }
+            if (mainArgs.instanceName != null) {
+                mainArgs.extraNamedParameters.add("s4.instance.name=" + mainArgs.instanceName);
+            }
 
             if (!mainArgs.extraNamedParameters.isEmpty()) {
                 logger.debug("Adding named parameters for injection : {}",
@@ -148,7 +155,7 @@ public class Main {
                 }
                 combinedModule = Modules.override(combinedModule).with(new ParametersInjectionModule(namedParameters));
             }
-
+            
             injector = Guice.createInjector(combinedModule);
             //start a HelixController to manage the cluster
             String controllerName = Inet4Address.getLocalHost().getCanonicalHostName() + UUID.randomUUID().toString();
@@ -183,6 +190,9 @@ public class Main {
 
         @Parameter(names = { "-c", "-cluster" }, description = "cluster name", required = true)
         String clusterName = null;
+        
+        @Parameter(names = { "-id", "-nodeId" }, description = "Node/Instance id that uniquely identifies a node", required = false)
+        String instanceName = null;
 
         @Parameter(names = "-commModuleClass", description = "configuration module class for the communication layer", required = false)
         String commModuleClass = HelixBasedCommModule.class.getName();

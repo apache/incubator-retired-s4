@@ -1,8 +1,5 @@
 package org.apache.s4.deploy;
 
-import java.io.File;
-
-import org.apache.s4.core.App;
 import org.apache.s4.core.Server;
 
 import com.google.inject.Inject;
@@ -30,15 +27,17 @@ public class HelixBasedDeploymentManager implements DeploymentManager
   @Override
   public void start()
   {
-    File s4r = new File(
+   /* File s4r = new File(
         "/Users/kgopalak/Documents/projects/s4/incubator-s4-helix/myApp/build/libs/myApp.s4r");
-    String appName="myApp";
-    try{
-    App loaded = server.loadApp(s4r, "myApp");
-    server.startApp(loaded, appName, clusterName);
-    }catch (Exception e) {
+    String appName = "myApp";
+    try
+    {
+      App loaded = server.loadApp(s4r, "myApp");
+      server.startApp(loaded, appName, clusterName);
+    } catch (Exception e)
+    {
       e.printStackTrace();
-    }
+    }*/
   }
 
 }

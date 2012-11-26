@@ -145,7 +145,7 @@ public class DistributedDeploymentManager implements DeploymentManager {
 
     // NOTE: in theory, we could support any protocol by implementing a chained visitor scheme,
     // but that's probably not that useful, and we can simply provide whichever protocol is needed
-    public InputStream fetchS4App(URI uri) throws DeploymentFailedException {
+    public static InputStream fetchS4App(URI uri) throws DeploymentFailedException {
         String scheme = uri.getScheme();
         if ("file".equalsIgnoreCase(scheme)) {
             return new FileSystemS4RFetcher().fetch(uri);

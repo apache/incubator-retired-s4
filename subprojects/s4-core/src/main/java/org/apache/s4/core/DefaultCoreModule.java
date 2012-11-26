@@ -25,15 +25,18 @@ import java.io.InputStream;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.helix.participant.statemachine.StateModelFactory;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.base.util.S4RLoaderFactory;
 import org.apache.s4.comm.DefaultHasher;
+import org.apache.s4.comm.helix.S4StateModelFactory;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.topology.RemoteStreamsManager;
 import org.apache.s4.comm.topology.RemoteStreamsManagerImpl;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.ft.NoOpCheckpointingFramework;
+import org.apache.s4.deploy.AppStateModelFactory;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.apache.s4.deploy.HelixBasedDeploymentManager;
@@ -79,6 +82,8 @@ public class DefaultCoreModule extends AbstractModule {
 
         /* Use Kryo to serialize events. */
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
+
+        bind(StateModelFactory.class).annotatedWith(Names.named("s4.app.statemodelfactory")).to(AppStateModelFactory.class);
 
         bind(DeploymentManager.class).to(HelixBasedDeploymentManager.class);
         

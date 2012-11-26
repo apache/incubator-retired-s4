@@ -25,12 +25,17 @@ import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
 
 import org.I0Itec.zkclient.ZkClient;
+import org.apache.helix.HelixManager;
+import org.apache.helix.HelixManagerFactory;
+import org.apache.helix.InstanceType;
 import org.apache.s4.base.util.S4RLoader;
 import org.apache.s4.base.util.S4RLoaderFactory;
+import org.apache.s4.comm.helix.S4StateModelFactory;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromHelix;
 import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
+import org.apache.s4.deploy.AppStateModelFactory;
 import org.apache.s4.deploy.DeploymentManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,20 +66,37 @@ public class Server {
     @Inject
     private Assignment assignment;
 
-    private ZkClient zkClient;
+    //private ZkClient zkClient;
 
+    private final String clusterName;
+
+    private final String zookeeperAddress;
+
+    private final String instanceName;
+    
+    @Inject
+    private S4StateModelFactory taskStateModelFactory;
+    
+    @Inject
+    private AppStateModelFactory appStateModelFactory;
+    
     /**
      *
      */
     @Inject
     public Server(String commModuleName, @Named("s4.logger_level") String logLevel,
-            @Named("s4.cluster.name") String clusterName, @Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.name") String clusterName, 
+            @Named("s4.instance.name") String instanceName,
+            @Named("s4.cluster.zk_address") String zookeeperAddress,
             @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) {
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout
+            ) {
         this.logLevel = logLevel;
-
-        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
-        zkClient.setZkSerializer(new ZNRecordSerializer());
+        this.clusterName = clusterName;
+        this.instanceName = instanceName;
+        this.zookeeperAddress = zookeeperAddress;
+//        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
+//        zkClient.setZkSerializer(new ZNRecordSerializer());
     }
 
     public void start(Injector injector) throws Exception {
@@ -84,7 +106,7 @@ public class Server {
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory
                 .getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.toLevel(logLevel));
-
+        registerWithHelix();
         if (deploymentManager != null) {
             deploymentManager.start();
         }
@@ -92,6 +114,26 @@ public class Server {
         // wait for an app to be loaded (otherwise the server would not have anything to do and just die)
         signalOneAppLoaded.await();
 
+    }
+
+    private void registerWithHelix()
+    {
+      HelixManager helixManager;
+      try
+      {
+        helixManager = HelixManagerFactory.getZKHelixManager(clusterName,
+            instanceName, InstanceType.PARTICIPANT, zookeeperAddress);
+     
+        helixManager.getStateMachineEngine().registerStateModelFactory(
+          "LeaderStandby", taskStateModelFactory);
+        helixManager.getStateMachineEngine().registerStateModelFactory(
+          "OnlineOffline", appStateModelFactory);
+        helixManager.connect();  
+      } catch (Exception e)
+      {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
     }
 
     public App loadApp(File s4r, String appName) {
