@@ -5,19 +5,19 @@ import java.util.List;
 
 import org.apache.s4.core.Main.InlineConfigParameterConverter;
 
-import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
 
 public class CommonS4YarnArgs {
 
+    public static final String JAVA_MEMORY_ALLOCATION_NOTICE = "For a Java process, like an S4 node, the total amount of memory is : java heap size + rest of process memory, including thread stack size, direct memory etc... By default, the S4 node, as a Java process, will be started with a java heap with a size "
+            + Utils.CONTAINER_MEMORY_REDUCTION_FACTOR + " times the container size. Can be overriden in ";
     public static final String NAMED_STRING_PARAMETERS = "-namedStringParameters";
 
     public static final String EXTRA_MODULES_CLASSES = "-extraModulesClasses";
 
     public static final String PRIORITY = "-priority";
 
-    public static final String S4_NODE_MEMORY = "-s4NodeMemory";
+    public static final String S4_NODE_CONTAINER_MEMORY = "-s4NodeContainerMemory";
 
     public static final String S4_NODE_JVM_PARAMETERS = "-s4NodeJVMParameters";
 
@@ -30,7 +30,8 @@ public class CommonS4YarnArgs {
     @Parameter(names = "-zk", description = "S4 Zookeeper cluster manager connection string", required = true)
     String zkString;
 
-    @Parameter(names = { S4_NODE_MEMORY, "-container_memory" }, description = "YARN parameter: Amount of memory in MB to be requested to host the S4 node", required = false, validateWith = S4CLIYarnArgs.MemoryValidator.class)
+    @Parameter(names = { S4_NODE_CONTAINER_MEMORY, "-container_memory" }, description = "YARN parameter: Amount of memory in MB to be requested to host the S4 node. "
+            + JAVA_MEMORY_ALLOCATION_NOTICE + S4_NODE_JVM_PARAMETERS, required = false, validateWith = S4CLIYarnArgs.MemoryValidator.class)
     int containerMemory = 256;
 
     @Parameter(names = PRIORITY, description = "YARN parameter: Application priority", required = false)
@@ -55,18 +56,7 @@ public class CommonS4YarnArgs {
     List<String> extraNamedParameters = new ArrayList<String>();
 
     // TODO parse JVM parameters that include commas
-    @Parameter(names = S4_NODE_JVM_PARAMETERS, description = "Extra JVM parameter for running the nodes, specified as a comma separated list. The memory parameter -Xmx must be configured through "
-            + S4_NODE_MEMORY, required = false, validateWith = NodeJVMParametersValidator.class)
+    @Parameter(names = S4_NODE_JVM_PARAMETERS, description = "Extra JVM parameter for running the nodes, specified as a comma separated list.", required = false)
     List<String> extraS4NodeJVMParams = new ArrayList<String>();
 
-    public static class NodeJVMParametersValidator implements IParameterValidator {
-
-        @Override
-        public void validate(String name, String value) throws ParameterException {
-            if (value.matches(".*-Xmx\\d+.*")) {
-                throw new ParameterException("-Xmx JVM parameter cannot be specified here. You must use the "
-                        + S4_NODE_MEMORY + " parameter instead.");
-            }
-        }
-    }
 }

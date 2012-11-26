@@ -180,4 +180,5 @@ public class TestYarnDeployment extends ZkBasedTest {
         client.killApplication(client.getApplicationList().get(0).getApplicationId());
 
     }
+
 }

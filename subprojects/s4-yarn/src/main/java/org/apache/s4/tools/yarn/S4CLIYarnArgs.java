@@ -1,5 +1,8 @@
 package org.apache.s4.tools.yarn;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -8,7 +11,9 @@ import com.beust.jcommander.Parameters;
 @Parameters(separators = "=")
 class S4CLIYarnArgs extends CommonS4YarnArgs {
 
-    public static final String S4_YARN_MASTER_MEMORY = "-s4YarnMasterMemory";
+    private static final String S4_YARN_APP_MASTER_JVM_PARAMETERS = "-s4YarnAppMasterJVMParameters";
+
+    public static final String S4_YARN_MASTER_MEMORY = "-s4YarnMasterContainerMemory";
 
     public static final String QUEUE = "-queue";
 
@@ -35,8 +40,12 @@ class S4CLIYarnArgs extends CommonS4YarnArgs {
     @Parameter(names = "-timeout", description = "YARN parameter: Application timeout in milliseconds (default is: -1 = no timeout)", required = false)
     int timeout = -1;
 
-    @Parameter(names = { "-master_memory", S4_YARN_MASTER_MEMORY }, description = "YARN parameter: Amount of memory in MB to be requested to run the application master", required = false, validateWith = S4CLIYarnArgs.MemoryValidator.class)
+    @Parameter(names = { "-master_memory", S4_YARN_MASTER_MEMORY }, description = "YARN parameter: Amount of memory in MB to be requested to run the application master."
+            + JAVA_MEMORY_ALLOCATION_NOTICE + S4_YARN_APP_MASTER_JVM_PARAMETERS, required = false, validateWith = S4CLIYarnArgs.MemoryValidator.class)
     int masterMemory = 256;
+
+    @Parameter(names = { S4_YARN_APP_MASTER_JVM_PARAMETERS }, description = "JVM parameters for the S4 YARN application master process")
+    List<String> appMasterJVMParameters = new ArrayList<String>();
 
     @Parameter(names = "-log_properties", description = "YARN parameter: log4j.properties file", required = false)
     String logProperties = "";

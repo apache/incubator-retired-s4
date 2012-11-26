@@ -138,6 +138,7 @@ public class S4YarnClient extends YarnClientImpl {
         logger.info("S4YarnClient args = " + Arrays.toString(args));
 
         Tools.parseArgs(yarnArgs, args);
+
         boolean result = false;
         try {
 
@@ -181,6 +182,8 @@ public class S4YarnClient extends YarnClientImpl {
     public S4YarnClient(S4CLIYarnArgs yarnArgs, Configuration conf) throws Exception {
         this.yarnArgs = yarnArgs;
         this.conf = conf;
+        amMemory = Utils.extractMemoryParam(yarnArgs.containerMemory, yarnArgs.appMasterJVMParameters);
+
         init(this.conf);
     }
 
@@ -321,7 +324,7 @@ public class S4YarnClient extends YarnClientImpl {
         // Set Application Master class name
         vargs.add(S4ApplicationMaster.class.getName());
         // Set params for Application Master
-        vargs.add(CommonS4YarnArgs.S4_NODE_MEMORY + " " + String.valueOf(yarnArgs.containerMemory));
+        vargs.add(CommonS4YarnArgs.S4_NODE_CONTAINER_MEMORY + " " + String.valueOf(yarnArgs.containerMemory));
         vargs.add(CommonS4YarnArgs.NB_S4_NODES + " " + String.valueOf(yarnArgs.numContainers));
         vargs.add(CommonS4YarnArgs.PRIORITY + " " + String.valueOf(yarnArgs.priority));
 

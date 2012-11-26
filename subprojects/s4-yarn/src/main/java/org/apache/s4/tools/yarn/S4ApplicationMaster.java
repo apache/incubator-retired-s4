@@ -178,6 +178,8 @@ public class S4ApplicationMaster {
      */
     public void init() throws IOException {
 
+        containerMemory = Utils.extractMemoryParam(yarnArgs.containerMemory, yarnArgs.extraS4NodeJVMParams);
+
         Map<String, String> envs = System.getenv();
 
         appAttemptID = Records.newRecord(ApplicationAttemptId.class);
