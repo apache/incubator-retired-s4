@@ -38,9 +38,9 @@ public class Tools {
 
     static Logger logger = LoggerFactory.getLogger(Tools.class);
 
-    enum Task {
-        deploy(Deploy.class), node(Main.class), zkServer(ZKServer.class), newCluster(DefineCluster.class), adapter(null), newApp(
-                CreateApp.class), s4r(Package.class), status(Status.class);
+    enum Task { deployApp(DeployApp.class),
+        deploy(Deploy.class), node(Main.class), zkServer(ZKServer.class), newCluster(DefineCluster.class), adapter(GenericEventAdapter.class), newApp(
+                CreateApp.class), s4r(Package.class), status(Status.class),createTask(CreateTask.class);
 
         Class<?> target;
 

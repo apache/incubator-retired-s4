@@ -1,5 +1,6 @@
 package org.apache.s4.tools;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +31,7 @@ public class DeployApp extends S4ArgsBase
     ConfigScopeBuilder builder = new ConfigScopeBuilder();
     ConfigScope scope = builder.forCluster(deployArgs.clusterName).forResource(deployArgs.appName).build();
     Map<String, String> properties = new HashMap<String, String>();
-    properties.put(DistributedDeploymentManager.S4R_URI, deployArgs.s4rPath);
+    properties.put(DistributedDeploymentManager.S4R_URI, new File(deployArgs.s4rPath).toURI().toString());
     admin.setConfig(scope, properties);
     
     IdealState is = new IdealState(deployArgs.appName);

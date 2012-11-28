@@ -62,7 +62,6 @@ public class AssignmentFromHelix implements Assignment
   {
     this.taskStateModelFactory = new S4StateModelFactory();
 //    this.appStateModelFactory = appStateModelFactory;
-    System.out.println("here i am");
     this.clusterName = clusterName;
     this.zookeeperAddress = zookeeperAddress;
     machineId = "localhost";
