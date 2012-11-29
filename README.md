@@ -45,7 +45,7 @@ Create the cluster, -nbNodes is just the number of s4 nodes that will be run. Th
 
     ./s4 newCluster -c=cluster1 -nbNodes=2 -flp=12000
 
-Create a task that processes events from stream(names). -id can be anything but should be unique, for now id and stream name needs to be the same. p is the number of partitions, so in this case it distributes 4 partitions among two nodes. -r is the number of replica/standby needed for each partition. Note that, when a node fails its load would be distributed among remaining nodes. So even though theoretically its possible to have number of standby's as the number of nodes, the performance would be horrible. In general this can be decided based on the head room available in the cluster.
+Create a task that processes events from stream(names). -id can be anything but should be unique within a cluster, for now id and stream name needs to be the same. p is the number of partitions, so in this case it distributes 4 partitions among two nodes. -r is the number of replica/standby needed for each partition. Note that, when a node fails its load would be distributed among remaining nodes. So even though theoretically its possible to have number of standby's as the number of nodes, the performance would be horrible. In general this can be decided based on the head room available in the cluster.
 
     ./s4 createTask  -zk localhost:2181 -c cluster1 -id names -t consumer -p 4 -r 1 -s names
 
@@ -53,11 +53,11 @@ Generate a HelloWorld App
 
      ./s4 newApp myApp -parentDir=/tmp
      cd /tmp/myApp
-     ./s4 s4r -a=hello.HelloApp -b=/tmp/build.gradle myApp
+     ./s4 s4r -a=hello.HelloApp -b=/tmp/myApp/build.gradle myApp
      
 Deploy the App by providing the s4r. One can optionally provide the list of nodes where this App has to be deployed.
 
-    ./s4 deployApp -c cluster1 -s4r /tmp/myApp/build/libs/myApp.s4r -appName myApp -zk localhost:2181
+    ./s4 deployApp -c=cluster1 -s4r=/tmp/myApp/build/libs/myApp.s4r -appName=myApp -zk=localhost:2181
 
 Start the two s4 nodes in two separate windows. Note we now need to specify the node id while starting. This allows nodes to associated with same partitions when they are started. 
 
