@@ -114,6 +114,7 @@ subprojects {
         exclude group: 'com.sun.jdmk', module: 'jmxtools'
         exclude group: 'com.sun.jmx', module: 'jmxri'
         exclude group: 'javax.jms', module: 'jms'
+        exclude group: 'javax.mail', module: 'mail'
     }
 
     dependencies {

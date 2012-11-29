@@ -39,7 +39,7 @@ public class DefineCluster {
 
             TaskSetup taskSetup = new TaskSetup(clusterArgs.zkConnectionString);
             taskSetup.clean(clusterArgs.clusterName);
-            taskSetup.setup(clusterArgs.clusterName, clusterArgs.nbTasks, clusterArgs.firstListeningPort);
+            taskSetup.setup(clusterArgs.clusterName, clusterArgs.nbNodes, clusterArgs.firstListeningPort);
             logger.info("New cluster configuration uploaded into zookeeper");
         } catch (Exception e) {
             logger.error("Cannot initialize zookeeper with specified configuration", e);
@@ -53,8 +53,11 @@ public class DefineCluster {
         @Parameter(names = { "-c", "-cluster" }, description = "S4 cluster name", required = true)
         String clusterName = "s4-test-cluster";
 
-        @Parameter(names = "-nbTasks", description = "number of tasks for the cluster", required = true)
+        @Parameter(names = "-nbTasks", description = "number of tasks for the cluster", required = false)
         int nbTasks = 1;
+
+        @Parameter(names = "-nbNodes", description = "number of S4 nodes for the cluster", required = true)
+        int nbNodes = 1;
 
         @Parameter(names = "-zk", description = "Zookeeper connection string")
         String zkConnectionString = "localhost:2181";
