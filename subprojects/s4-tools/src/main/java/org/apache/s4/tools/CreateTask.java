@@ -1,9 +1,13 @@
 package org.apache.s4.tools;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.I0Itec.zkclient.ZkClient;
+import org.apache.helix.ConfigScope;
+import org.apache.helix.ConfigScopeBuilder;
 import org.apache.helix.HelixAdmin;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
 import org.apache.helix.model.IdealState;
@@ -22,6 +26,13 @@ public class CreateTask extends S4ArgsBase
     Tools.parseArgs(taskArgs, args);
 
     HelixAdmin admin = new ZKHelixAdmin(taskArgs.zkConnectionString);
+    ConfigScopeBuilder builder = new ConfigScopeBuilder();
+    ConfigScope scope = builder.forCluster(taskArgs.clusterName).forResource(taskArgs.taskId).build();
+    Map<String, String> properties = new HashMap<String, String>();
+    properties.put("type", "Task");
+    properties.put("streamName", taskArgs.streamName);
+    properties.put("taskType", taskArgs.taskType);
+    admin.setConfig(scope, properties);
     // A task is modeled as a resource in Helix
     admin.addResource(taskArgs.clusterName, taskArgs.taskId,
         taskArgs.numPartitions, "LeaderStandby",

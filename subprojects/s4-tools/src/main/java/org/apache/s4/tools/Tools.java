@@ -40,7 +40,7 @@ public class Tools {
 
     enum Task { deployApp(DeployApp.class),
         deploy(Deploy.class), node(Main.class), zkServer(ZKServer.class), newCluster(DefineCluster.class), adapter(GenericEventAdapter.class), newApp(
-                CreateApp.class), s4r(Package.class), status(Status.class),createTask(CreateTask.class);
+                CreateApp.class), s4r(Package.class), status(S4Status.class),createTask(CreateTask.class);
 
         Class<?> target;
 
