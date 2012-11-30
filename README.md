@@ -69,6 +69,9 @@ Send some events to names stream. Notice that the partitions are divided among t
 
     ./s4 adapter -c=cluster1 -zk=localhost:2181 -s=names
 
+Run the status tool to view the cluster state. It provide which nodes are up, what Apps are deployed, metadata about tasks like what stream is it processing how many partitions, which node is leader for each partition etc
+
+    ./s4 status -c=cluster1
 
 Overview
 --------
