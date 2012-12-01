@@ -8,15 +8,15 @@ Goal is to provide better partition management, fault tolerance and automatic re
 
 Limitation in S4
    * Tasks are always partitioned based on the number of nodes
-   * If the stream is already partitioned outside of s4 or in a pub-sub system but number of nodes in s4 cluster is different, then the stream needs to be re-partitioned which results in additional hop. In cases where multiple streams that are already partitioned outside of S4 but needs to be joined in S4, it requires re-hashing both the streams.
-   * When the system needs to scale, adding new nodes mean the number of partitions change. This results in lot of data shuffling and possibly losing all the state that is stored.
-   * Also the fault tolerance is achieved by having stand alone nodes that remain idle and becomes active when a node fails. This results in inefficient use of hardware resources.
+   * If the stream is already partitioned outside of s4 or with a different partitioning factor, then the stream needs to be re-partitioned which results in additional hop. In cases where multiple streams that are already partitioned outside of S4 but needs to be joined in S4, it requires re-hashing both the streams.
+   * Adding new nodes to S4 cluster cause the number of partitions to change. This results in lot of data shuffling. For example if there are 4 nodes and you add another node then nearly all the keys need to be remapped where as ideally only 20% of the data should move.
+   * Fault tolerance is achieved by having standby nodes which become active when a node fails. This results in inefficient use of hardware resources.
    
-Integrating with Apache Helix, 
-   * Allows one to partition the task processing differently for each stream. 
-   * Allows adding new nodes without having to change the number of partitions. 
-   * Fault tolerance can be achieved at a partition level which means all nodes can be active and when a node fails its load can be equally balanced among the remaining active nodes.
-
+Advantages of integrating with Apache Helix, 
+   * Allows one to partition the task processing differently for each stream, which provides better load balancing.
+   * Uses consistent hashing to map partitions to nodes.
+   * When new nodes are added, partitions can be migrated to new nodes without changing the number of partitions and  minimizes the data movement.
+   * All Nodes in the cluster are active and when a node fails, its load gets redistributed among the remaining active nodes
 
 This is still in prototype mode.
 
@@ -69,6 +69,9 @@ Send some events to names stream. Notice that the partitions are divided among t
 
     ./s4 adapter -c=cluster1 -zk=localhost:2181 -s=names
 
+Run the status tool to view the cluster state. It provide which nodes are up, what Apps are deployed, metadata about tasks like what stream is it processing how many partitions, which node is leader for each partition etc
+
+    ./s4 status -c=cluster1
 
 Overview
 --------
