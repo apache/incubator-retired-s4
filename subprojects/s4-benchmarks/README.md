@@ -3,7 +3,7 @@ Simple S4 Benchmarking Framework
 
 This framework is intended primarily to identify hotspots in S4 platform code easily and to evaluate the impact of refactorings or new features. 
 
-> The numbers it produces are only useful in comparison with a baseline from other measurements from the same benchmark and do not represent absolute performance numbers. For that, one should use a full-fledged load injection framework or measure the performance of a live application.
+> The numbers it produces are mainly useful in comparison with a baseline from other measurements from the same benchmark and do not represent absolute performance numbers. For that, one should use a full-fledged load injection framework or measure the performance of a live application.
 
 That said, let's look at what the benchmarking framework does and how to use it.
 
@@ -11,13 +11,19 @@ That said, let's look at what the benchmarking framework does and how to use it.
 
 The benchmarking framework consists of a multithreaded injector and an application. App nodes and injector are launched directly, there is no deployment step. This allows to skip the packaging and deployment steps and to easily add profiling parameters, but requires a source distribution and a shared file system.
 
-The simplest application does nothing but count incoming keyed messages, but other simple application can be easily added, in particular, involving multiple communicating PEs. There are 2 input streams available: `inputStream` and `inputStream2`.
+2 simple applications are provided:
+
+* A producer consumer application between 2 different logical clusters. It measures the overhead of the communication layer. There are 2 available external input streams: `inputStream` and `inputStream2`. You may inject on one or both of these independent streams. (A node will process more events overall if it gets them from more parallel sources, unless it reaches network or cpu boundaries). 
+* A pipeline of processing elements, that mixes external and internal event communication
+
+There is almost no processing involved in the PE themselves, other than delegating to the next processing element in the pipeline, if any.
 
 The injector sends basic keyed messages to a given named stream. The outputstream of the injector uses a keyfinder to partition the events across the application nodes.
 
 We get metrics from the probes across the codebase, in particular:
 - the rate of events sent per second (in the injector)
 - the rate of events received per second (in the app nodes)
+- other metrics about the number of dequeue messages per stream, ratio between local and remote events etc...
 
 Metrics from the platform code are computed with weighted moving averages. It is recommended to let the application run for a few minutes and observe the metrics from the last minute.
 
@@ -26,6 +32,9 @@ Profiling options (e.g. YourKit) can easily be added to the injector or app node
 ## Parameters
 
 We provide a script for that purpose: `bench-cluster.sh`
+
+You can use arbitrary numbers of injectors and processing nodes, in order to vary the load and the number of concurrent connections.
+
 
 Input parameters are:
 
@@ -41,6 +50,8 @@ Exmample configuration files are available in `/config` and you can configure :
 - the number of test iterations
 - the number of parallel injection threads
 - the number of threads for the sender stage
+- the number of events between making a pause in the injection
+- the duration of the pause (can be 0)
 - etc…
 
 By default in this example the size of a message is 188 bytes.

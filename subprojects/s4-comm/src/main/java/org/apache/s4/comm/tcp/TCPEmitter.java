@@ -22,7 +22,9 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -55,11 +57,16 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
 /**
  * TCPEmitter - Uses TCP to send messages across partitions.
+ * <p>
+ * It maintains a mapping of partition to channel, updated upon cluster updates.
+ * <p>
+ * A throttling mechanism is also provided, so that back pressure can be applied if consumers are too slow.
  * 
  */
 
@@ -92,13 +99,29 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     @Inject
     SerializerDeserializerFactory serDeserFactory;
     SerializerDeserializer serDeser;
+    Map<Integer, Semaphore> writePermits = Maps.newHashMap();
 
     EmitterMetrics metrics;
 
+    final private int maxPendingWrites;
+
+    /**
+     * 
+     * @param topology
+     *            the target cluster configuration
+     * @param timeout
+     *            netty timeout
+     * @param maxPendingWrites
+     *            maximum number of events not yet flushed to the TCP buffer
+     * @throws InterruptedException
+     *             in case of an interruption
+     */
     @Inject
-    public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout) throws InterruptedException {
+    public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout,
+            @Named("s4.emitter.maxPendingWrites") int maxPendingWrites) throws InterruptedException {
         this.nettyTimeout = timeout;
         this.topology = topology;
+        this.maxPendingWrites = maxPendingWrites;
         this.lock = new ReentrantLock();
 
         // Initialize data structures
@@ -174,16 +197,26 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
             }
         }
 
+        try {
+            writePermits.get(partitionId).acquire();
+        } catch (InterruptedException e) {
+            logger.error("Interrupted while acquiring permit", e);
+            Thread.currentThread().interrupt();
+        }
+
         Channel c = partitionChannelMap.get(partitionId);
         if (c == null) {
             logger.warn("Could not find channel for partition {}", partitionId);
             return;
         }
+
         c.write(buffer).addListener(new MessageSendingListener(partitionId));
     }
 
     @Override
     public boolean send(int partitionId, ByteBuffer message) {
+        // TODO a possible optimization would be to buffer messages per partition, with a small timeout. This will limit
+        // the number of writes and therefore system calls.
         sendMessage(partitionId, message);
         return true;
     }
@@ -235,6 +268,9 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
                     removeChannel(partition);
                 }
                 partitionNodeMap.forcePut(partition, clusterNode);
+                if (!writePermits.containsKey(partition)) {
+                    writePermits.put(partition, new Semaphore(maxPendingWrites));
+                }
             }
         } finally {
             lock.unlock();
@@ -273,6 +309,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
         @Override
         public void operationComplete(ChannelFuture future) throws Exception {
+            writePermits.get(partitionId).release();
             if (!future.isSuccess()) {
                 try {
                     // TODO handle possible cluster reconfiguration between send and failure callback

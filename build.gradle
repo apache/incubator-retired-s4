@@ -62,7 +62,7 @@ project.ext["libraries"] = [
     minlog:             'com.googlecode:minlog:1.2',
     // NOTE shaded jar is not resolved correctly, we include it in /lib directory
     reflectasm:         'com.esotericsoftware.reflectasm:reflectasm:1.07-shaded',
-    netty:              'io.netty:netty:3.5.9.Final',
+    netty:              'io.netty:netty:3.5.11.Final',
     mockito_core:       'org.mockito:mockito-core:1.9.0',
     commons_config:     'commons-configuration:commons-configuration:1.6',
     commons_codec:      'commons-codec:commons-codec:1.4',
@@ -76,7 +76,7 @@ project.ext["libraries"] = [
     log4j:              'log4j:log4j:1.2.15',
     logback_core:       'ch.qos.logback:logback-core:0.9.29',
     logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
-    zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
+    zk:                 'org.apache.zookeeper:zookeeper:3.3.3',
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
@@ -108,6 +108,7 @@ subprojects {
         exclude group: 'com.sun.jdmk', module: 'jmxtools'
         exclude group: 'com.sun.jmx', module: 'jmxri'
         exclude group: 'javax.jms', module: 'jms'
+        exclude group: 'javax.mail', module: 'mail'
     }
 
     dependencies {

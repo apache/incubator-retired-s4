@@ -62,24 +62,35 @@ public class TCPListener implements Listener {
     private final ChannelGroup channels = new DefaultChannelGroup();
     private final int nettyTimeout;
 
+    /**
+     * 
+     * @param assignment
+     *            partition assignment information
+     * @param timeout
+     *            netty timeout
+     * @param receiver
+     *            link to the application layer
+     * @param deserializerExecutorFactory
+     *            factory for creating deserialization thread pool
+     */
     @Inject
     public TCPListener(Assignment assignment, @Named("s4.comm.timeout") int timeout, final Receiver receiver,
             final DeserializerExecutorFactory deserializerExecutorFactory) {
         // wait for an assignment
         node = assignment.assignClusterNode();
         nettyTimeout = timeout;
-
         ChannelFactory factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
                 Executors.newCachedThreadPool());
 
         bootstrap = new ServerBootstrap(factory);
 
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+            @Override
             public ChannelPipeline getPipeline() {
                 ChannelPipeline p = Channels.pipeline();
                 p.addLast("decoder", new LengthFieldBasedFrameDecoder(999999, 0, 4, 0, 4));
                 p.addLast("executionhandler", new ExecutionHandler(deserializerExecutorFactory.create()));
-                p.addLast("receiver", new ChannelHandler(receiver));
+                p.addLast("receiver", new EventDecoderHandler(receiver));
 
                 return p;
             }
@@ -100,6 +111,7 @@ public class TCPListener implements Listener {
         return node.getPartition();
     }
 
+    @Override
     public void close() {
         try {
             channels.close().await();
@@ -109,19 +121,21 @@ public class TCPListener implements Listener {
         bootstrap.releaseExternalResources();
     }
 
-    public class ChannelHandler extends SimpleChannelHandler {
+    public class EventDecoderHandler extends SimpleChannelHandler {
         private final Receiver receiver;
 
-        public ChannelHandler(Receiver receiver) {
+        public EventDecoderHandler(Receiver receiver) {
             this.receiver = receiver;
         }
 
+        @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
             channels.add(e.getChannel());
             ChannelBuffer buffer = (ChannelBuffer) e.getMessage();
             receiver.receive(buffer.toByteBuffer());
         }
 
+        @Override
         public void exceptionCaught(ChannelHandlerContext context, ExceptionEvent event) {
             logger.error("Error", event.getCause());
             Channel c = context.getChannel();

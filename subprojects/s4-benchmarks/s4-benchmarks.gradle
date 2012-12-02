@@ -78,5 +78,5 @@ task cp << {
     description='Dumps the classpath for running a class from this project, into a \'classpath.txt\' file in the current directory'
     String rt = ""
     configurations.runtime.files.each{File file -> rt+=(file.path+File.pathSeparator) }
-    new File("classpath.txt").write(sourceSets.main.output.classesDir.path + File.pathSeparator + rt + File.pathSeparator + '/Users/matthieu/apache-s4-0.5.0-incubating-bin' + '/subprojects/s4-tools/build/install/s4-tools/lib/*')
+    new File("classpath.txt").write(sourceSets.main.output.classesDir.path + File.pathSeparator + rt)
 }

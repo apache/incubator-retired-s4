@@ -33,12 +33,14 @@ public class TCPRemoteEmitter extends TCPEmitter implements RemoteEmitter {
 
     /**
      * Sends to remote subclusters. This is dynamically created, through an injected factory, when new subclusters are
-     * discovered (as remote streams outputs)
+     * discovered (as remote streams outputs).
+     * <p>
+     * See {@link TCPEmitter} for more information about the implementation.
      */
     @Inject
-    public TCPRemoteEmitter(@Assisted Cluster topology, @Named("s4.comm.timeout") int timeout)
-            throws InterruptedException {
-        super(topology, timeout);
+    public TCPRemoteEmitter(@Assisted Cluster topology, @Named("s4.comm.timeout") int timeout,
+            @Named("s4.emitter.maxPendingWrites") int maxPendingWrites) throws InterruptedException {
+        super(topology, timeout, maxPendingWrites);
     }
 
 }

@@ -31,6 +31,7 @@ import org.apache.s4.base.RemoteEmitter;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
+import org.apache.s4.comm.staging.MemoryAwareDeserializerExecutorFactory;
 import org.apache.s4.comm.tcp.RemoteEmitters;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromZK;
@@ -101,7 +102,7 @@ public class DefaultCommModule extends AbstractModule {
 
         bind(RemoteEmitters.class);
 
-        bind(DeserializerExecutorFactory.class).to(DefaultDeserializerExecutorFactory.class);
+        bind(DeserializerExecutorFactory.class).to(MemoryAwareDeserializerExecutorFactory.class);
 
         try {
             Class<? extends Emitter> emitterClass = (Class<? extends Emitter>) Class.forName(config

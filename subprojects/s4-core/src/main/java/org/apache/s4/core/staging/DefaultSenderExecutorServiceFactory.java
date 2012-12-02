@@ -2,7 +2,7 @@ package org.apache.s4.core.staging;
 
 import java.util.concurrent.ExecutorService;
 
-import org.apache.s4.comm.ThrottlingThreadPoolExecutorService;
+import org.apache.s4.comm.staging.ThrottlingThreadPoolExecutorService;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -14,8 +14,8 @@ import com.google.inject.name.Named;
  */
 public class DefaultSenderExecutorServiceFactory implements SenderExecutorServiceFactory {
 
-    private int threadPoolSize;
-    private int workQueueSize;
+    private final int threadPoolSize;
+    private final int workQueueSize;
 
     @Inject
     public DefaultSenderExecutorServiceFactory(@Named("s4.sender.parallelism") int threadPoolSize,

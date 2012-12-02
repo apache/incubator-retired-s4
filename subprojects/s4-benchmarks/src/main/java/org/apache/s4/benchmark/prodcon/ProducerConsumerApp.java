@@ -1,4 +1,4 @@
-package org.apache.s4.benchmark.simpleApp1;
+package org.apache.s4.benchmark.prodcon;
 
 import java.io.File;
 import java.util.List;
@@ -15,7 +15,7 @@ import com.google.inject.name.Named;
 import com.yammer.metrics.reporting.ConsoleReporter;
 import com.yammer.metrics.reporting.CsvReporter;
 
-public class SimpleApp extends App {
+public class ProducerConsumerApp extends App {
 
     @Inject
     @Named("s4.cluster.zk_address")

@@ -1,13 +1,18 @@
-package org.apache.s4.comm;
+package org.apache.s4.comm.staging;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +26,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 /**
  * This thread pool executor throttles the submission of new tasks by using a semaphore. Task submissions require
  * permits, task completions release permits.
- * 
+ * <p>
  * NOTE: you should either use the {@link ThrottlingThreadPoolExecutorService#submit(java.util.concurrent.Callable)}
  * methods or the {@link ThrottlingThreadPoolExecutorService#execute(Runnable)} method.
  * 
@@ -81,7 +86,7 @@ public class ThrottlingThreadPoolExecutorService extends ForwardingListeningExec
                         logger.error("Could not submit task to executor {}", executor.toString());
                     }
                 });
-        ((ThreadPoolExecutor) eventProcessingExecutor).allowCoreThreadTimeOut(true);
+        eventProcessingExecutor.allowCoreThreadTimeOut(true);
         executorDelegatee = MoreExecutors.listeningDecorator(eventProcessingExecutor);
 
     }
@@ -180,6 +185,28 @@ public class ThrottlingThreadPoolExecutorService extends ForwardingListeningExec
             }
         }
 
+    }
+
+    @Override
+    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+            throws InterruptedException {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        throw new RuntimeException("Not implemented");
     }
 
 }

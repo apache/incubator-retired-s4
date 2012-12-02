@@ -1,4 +1,4 @@
-package org.apache.s4.benchmark.simpleApp1;
+package org.apache.s4.benchmark.utils;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -28,10 +28,6 @@ public class Injector extends AdapterApp {
     private static Logger logger = LoggerFactory.getLogger(Injector.class);
 
     @Inject
-    @Named("s4.benchmark.warmupIterations")
-    long warmupIterations;
-
-    @Inject
     @Named("s4.benchmark.testIterations")
     long testIterations;
 
@@ -40,12 +36,12 @@ public class Injector extends AdapterApp {
     int keysCount;
 
     @Inject
-    @Named("s4.benchmark.warmupSleepInterval")
-    int warmupSleepInterval;
+    @Named("s4.benchmark.pauseTimeMs")
+    int pauseTimeMs;
 
     @Inject
-    @Named("s4.benchmark.testSleepInterval")
-    int testSleepInterval;
+    @Named("s4.benchmark.injector.iterationsBeforePause")
+    int iterationsBeforePause;
 
     @Inject
     @Named("s4.cluster.zk_address")
@@ -114,19 +110,18 @@ public class Injector extends AdapterApp {
 
         counter.set(0);
 
-        generateEvents(remoteStream, testIterations, keysCount, testSleepInterval, parallelism);
+        generateEvents(remoteStream, testIterations, keysCount, parallelism);
 
         logger.info("Tests completed after test events", testIterations * parallelism * keysCount);
 
         System.exit(0);
     }
 
-    private void generateEvents(RemoteStream remoteStream, long iterations, int keysCount, int sleepInterval,
-            int parallelism) {
+    private void generateEvents(RemoteStream remoteStream, long iterations, int keysCount, int parallelism) {
 
         ExecutorService threadPool = Executors.newFixedThreadPool(parallelism);
         for (int i = 0; i < parallelism; i++) {
-            threadPool.submit(new InjectionTask(iterations, remoteStream, sleepInterval));
+            threadPool.submit(new InjectionTask(iterations, remoteStream));
         }
 
         threadPool.shutdown();
@@ -139,15 +134,13 @@ public class Injector extends AdapterApp {
 
     class InjectionTask implements Runnable {
 
-        private long iterations;
-        private RemoteStream remoteStream;
-        private long sleepInterval;
+        private final long iterations;
+        private final RemoteStream remoteStream;
 
-        public InjectionTask(long iterations, RemoteStream remoteStream, long sleepInterval) {
+        public InjectionTask(long iterations, RemoteStream remoteStream) {
             super();
             this.iterations = iterations;
             this.remoteStream = remoteStream;
-            this.sleepInterval = sleepInterval;
 
         }
 
@@ -155,22 +148,27 @@ public class Injector extends AdapterApp {
         public void run() {
             for (long i = 0; i < iterations; i++) {
                 for (int j = 0; j < keysCount; j++) {
+                    long currentCount = counter.incrementAndGet();
                     Event event = new Event();
                     event.put("key", int.class, j);
-                    event.put("value", long.class, counter.incrementAndGet());
+                    event.put("value", long.class, currentCount);
                     event.put("injector", Integer.class, getReceiver().getPartitionId());
                     // logger.info("{}/{}/{}/",
                     // new String[] { Thread.currentThread().getName(), String.valueOf(i), String.valueOf(j),
                     // String.valueOf(event.get("value")) });
                     remoteStream.put(event);
                     eventCountPerInterval.incrementAndGet();
+
                     try {
-                        Thread.sleep(sleepInterval);
+                        if ((currentCount % iterationsBeforePause) == 0) {
+                            Thread.sleep(pauseTimeMs);
+                        }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
             }
+
         }
     }
 }

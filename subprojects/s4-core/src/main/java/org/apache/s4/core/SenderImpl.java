@@ -95,6 +95,7 @@ public class SenderImpl implements Sender {
     public boolean checkAndSendIfNotLocal(String hashKey, Event event) {
         int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
         if (partition == localPartitionId) {
+            metrics.sentLocal();
             /* Hey we are in the same JVM, don't use the network. */
             return false;
         }

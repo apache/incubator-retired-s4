@@ -1,13 +1,19 @@
-package org.apache.s4.benchmark.simpleApp1;
+package org.apache.s4.benchmark.prodcon;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.core.ProcessingElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SimplePE2 extends ProcessingElement {
+public class SimplePE1 extends ProcessingElement {
 
-    private static Logger logger = LoggerFactory.getLogger(SimplePE2.class);
+    private static Logger logger = LoggerFactory.getLogger(SimplePE1.class);
+
+    int nbInjectors;
+
+    public void setNbInjectors(int nbInjectors) {
+        this.nbInjectors = nbInjectors;
+    }
 
     public void onEvent(Event event) {
 

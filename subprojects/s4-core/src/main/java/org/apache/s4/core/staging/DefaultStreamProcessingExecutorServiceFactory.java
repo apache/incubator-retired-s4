@@ -2,7 +2,7 @@ package org.apache.s4.core.staging;
 
 import java.util.concurrent.ExecutorService;
 
-import org.apache.s4.comm.ThrottlingThreadPoolExecutorService;
+import org.apache.s4.comm.staging.ThrottlingThreadPoolExecutorService;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;

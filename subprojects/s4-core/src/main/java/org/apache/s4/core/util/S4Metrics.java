@@ -41,6 +41,10 @@ public class S4Metrics {
     private final Meter bytesMeter = Metrics.newMeter(ReceiverImpl.class, "received-bytes", "bytes-count",
             TimeUnit.SECONDS);
 
+    private final Meter localEventsMeter = Metrics.newMeter(Stream.class, "sent-local", "sent-local", TimeUnit.SECONDS);
+    private final Meter remoteEventsMeter = Metrics.newMeter(Stream.class, "sent-remote", "sent-remote",
+            TimeUnit.SECONDS);
+
     private Meter[] senderMeters;
 
     private final Map<String, Meter> dequeuingStreamMeters = Maps.newHashMap();
@@ -56,6 +60,16 @@ public class S4Metrics {
         for (int i = 0; i < senderMeters.length; i++) {
             senderMeters[i] = Metrics.newMeter(SenderImpl.class, "sender", "sent-to-" + (i), TimeUnit.SECONDS);
         }
+        Metrics.newGauge(Stream.class, "local-vs-remote", new Gauge<Double>() {
+
+            @Override
+            public Double value() {
+                // this will return NaN if divider is zero
+                return localEventsMeter.oneMinuteRate() / remoteEventsMeter.oneMinuteRate();
+            }
+
+        });
+
     }
 
     public void createCacheGauges(ProcessingElement prototype, final LoadingCache<String, ProcessingElement> cache) {
@@ -94,6 +108,7 @@ public class S4Metrics {
     }
 
     public void sentEvent(int partition) {
+        remoteEventsMeter.mark();
         try {
             senderMeters[partition].mark();
         } catch (NullPointerException e) {
@@ -101,6 +116,10 @@ public class S4Metrics {
         } catch (ArrayIndexOutOfBoundsException e) {
             logger.warn("Partition {} does not exist", partition);
         }
+    }
+
+    public void sentLocal() {
+        localEventsMeter.mark();
     }
 
     public void createStreamMeters(String name) {
@@ -134,14 +153,15 @@ public class S4Metrics {
 
     public static class CheckpointingMetrics {
 
-        static Meter rejectedSerializationTask = Metrics.newMeter(CheckpointingMetrics.class, "checkpointing",
-                "rejected-serialization-task", TimeUnit.SECONDS);
-        static Meter rejectedStorageTask = Metrics.newMeter(CheckpointingMetrics.class, "checkpointing",
-                "rejected-storage-task", TimeUnit.SECONDS);
-        static Meter fetchedCheckpoint = Metrics.newMeter(CheckpointingMetrics.class, "checkpointing",
-                "fetched-checkpoint", TimeUnit.SECONDS);
-        static Meter fetchedCheckpointFailure = Metrics.newMeter(CheckpointingMetrics.class, "checkpointing",
-                "fetched-checkpoint-failed", TimeUnit.SECONDS);
+        static Meter rejectedSerializationTask = Metrics.newMeter(CheckpointingMetrics.class,
+                "checkpointing-rejected-serialization-task", "checkpointing-rejected-serialization-task",
+                TimeUnit.SECONDS);
+        static Meter rejectedStorageTask = Metrics.newMeter(CheckpointingMetrics.class,
+                "checkpointing-rejected-storage-task", "checkpointing-rejected-storage-task", TimeUnit.SECONDS);
+        static Meter fetchedCheckpoint = Metrics.newMeter(CheckpointingMetrics.class,
+                "checkpointing-fetched-checkpoint", "checkpointing-fetched-checkpoint", TimeUnit.SECONDS);
+        static Meter fetchedCheckpointFailure = Metrics.newMeter(CheckpointingMetrics.class,
+                "checkpointing-fetched-checkpoint-failed", "checkpointing-fetched-checkpoint-failed", TimeUnit.SECONDS);
 
         public static void rejectedSerializationTask() {
             rejectedSerializationTask.mark();

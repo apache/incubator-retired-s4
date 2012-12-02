@@ -18,8 +18,8 @@
 
 package org.apache.s4.fixtures;
 
-import org.apache.s4.comm.DefaultDeserializerExecutorFactory;
 import org.apache.s4.comm.DeserializerExecutorFactory;
+import org.apache.s4.comm.staging.MemoryAwareDeserializerExecutorFactory;
 import org.apache.s4.core.staging.DefaultSenderExecutorServiceFactory;
 import org.apache.s4.core.staging.DefaultStreamProcessingExecutorServiceFactory;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
@@ -53,7 +53,7 @@ public class MockCoreModule extends AbstractModule {
         bind(StreamExecutorServiceFactory.class).to(DefaultStreamProcessingExecutorServiceFactory.class);
 
         bind(SenderExecutorServiceFactory.class).to(DefaultSenderExecutorServiceFactory.class);
-        bind(DeserializerExecutorFactory.class).to(DefaultDeserializerExecutorFactory.class);
+        bind(DeserializerExecutorFactory.class).to(MemoryAwareDeserializerExecutorFactory.class);
 
         bind(Integer.class).annotatedWith(Names.named("s4.sender.parallelism")).toInstance(8);
         bind(Integer.class).annotatedWith(Names.named("s4.sender.workQueueSize")).toInstance(10000);
