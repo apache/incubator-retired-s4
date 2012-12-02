@@ -103,11 +103,11 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
         return true;
     }
 
-    @Override
+   // @Override
     public int getPartitionCount() {
         return topology.getPhysicalCluster().getPartitionCount();
     }
-
+    
     @Override
     public void onChange() {
         refreshCluster();
@@ -128,5 +128,11 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
     public void close() {
         // TODO Auto-generated method stub
 
+    }
+
+    @Override
+    public int getPartitionCount(String stream)
+    {
+      return topology.getPhysicalCluster().getPartitionCount(stream);      
     }
 }

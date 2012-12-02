@@ -37,5 +37,7 @@ public interface Emitter {
 
     int getPartitionCount();
 
+    int getPartitionCount(String stream);
+
     void close();
 }

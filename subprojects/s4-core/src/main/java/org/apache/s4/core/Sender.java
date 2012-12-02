@@ -86,7 +86,7 @@ public class Sender {
      * 
      */
     public boolean checkAndSendIfNotLocal(String hashKey, Event event) {
-        int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
+        int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount(event.getStreamName()));
 
         if (partition == localPartitionId) {
             /* Hey we are in the same JVM, don't use the network. */
@@ -110,7 +110,7 @@ public class Sender {
      */
     public void sendToRemotePartitions(Event event) {
 
-        for (int i = 0; i < emitter.getPartitionCount(); i++) {
+        for (int i = 0; i < emitter.getPartitionCount(event.getStreamName()); i++) {
 
             /* Don't use the comm layer when we send to the same partition. */
             if (localPartitionId != i)

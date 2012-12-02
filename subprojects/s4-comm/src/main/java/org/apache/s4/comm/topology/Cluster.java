@@ -33,4 +33,6 @@ public interface Cluster {
     public void removeListener(ClusterChangeListener listener);
 
     InstanceConfig getDestination(String streamName, int partitionId);
+
+    Integer getPartitionCount(String streamName);
 }

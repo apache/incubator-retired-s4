@@ -221,4 +221,10 @@ public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener
       return null;
     }
 
+    @Override
+    public Integer getPartitionCount(String streamName)
+    {
+      return null;
+    }
+
 }
