@@ -4,6 +4,7 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +14,7 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.RemoteStream;
 import org.apache.s4.core.adapter.AdapterApp;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +24,7 @@ import com.google.inject.name.Named;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.reporting.ConsoleReporter;
+import com.yammer.metrics.reporting.CsvReporter;
 
 public class Injector extends AdapterApp {
 
@@ -51,6 +54,8 @@ public class Injector extends AdapterApp {
     @Named("s4.benchmark.injector.parallelism")
     int parallelism;
 
+    static int CSV_REPORTER_INTERVAL_S = 5;
+
     // Meter meter = Metrics.newMeter(Injector.class, "injector", "injected", TimeUnit.SECONDS);
 
     static AtomicLong counter = new AtomicLong();
@@ -61,11 +66,12 @@ public class Injector extends AdapterApp {
     @Override
     protected void onInit() {
 
-        File logDir = new File(System.getProperty("user.dir") + "/measurements/injectors");
+        File logDir = new File(System.getProperty("user.dir") + "/measurements/injectors/"
+                + getReceiver().getPartitionId());
         if (!logDir.mkdirs()) {
             logger.debug("Cannot create dir " + logDir.getAbsolutePath());
         }
-        // CsvReporter.enable(logDir, 5, TimeUnit.SECONDS);
+        CsvReporter.enable(logDir, CSV_REPORTER_INTERVAL_S, TimeUnit.SECONDS);
         remoteStreamKeyFinder = new KeyFinder<Event>() {
 
             @Override
@@ -79,6 +85,24 @@ public class Injector extends AdapterApp {
 
     @Override
     protected void onStart() {
+
+        ZooKeeper zk;
+        try {
+            zk = new ZooKeeper(zkString, 10000, null);
+
+            // NOTE: processing nodes cluster name is hardcoded!
+            int nbProcessingNodes = zk.getChildren("/s4/clusters/testCluster2/tasks", null).size();
+            CountDownLatch signalNodesConnected = new CountDownLatch(1);
+            Utils.watchAndSignalChildrenReachedCount("/s4/streams/" + getRemoteStream().getName() + "/consumers",
+                    signalNodesConnected, zk, nbProcessingNodes);
+            logger.info("Waiting for all consumers for stream {}", "inputStream");
+            signalNodesConnected.await();
+            logger.info("All consumers reached for stream {}, proceeding to injection", getRemoteStream().getName());
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("Cannot fetch config info from zookeeper", e);
+            System.exit(1);
+        }
 
         Executors.newScheduledThreadPool(1).scheduleAtFixedRate(new Runnable() {
 
@@ -112,7 +136,16 @@ public class Injector extends AdapterApp {
 
         generateEvents(remoteStream, testIterations, keysCount, parallelism);
 
-        logger.info("Tests completed after test events", testIterations * parallelism * keysCount);
+        try {
+            // make sure the last log is written
+            Thread.sleep(CSV_REPORTER_INTERVAL_S * 1000 + 5000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        logger.info("Tests completed after {} test events sent to stream {}", testIterations * parallelism * keysCount,
+                getRemoteStream().getName());
 
         System.exit(0);
     }

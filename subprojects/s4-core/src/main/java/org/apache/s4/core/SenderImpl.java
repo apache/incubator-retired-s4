@@ -99,15 +99,13 @@ public class SenderImpl implements Sender {
             /* Hey we are in the same JVM, don't use the network. */
             return false;
         }
-        // TODO asynch
-        send(partition, serDeser.serialize(event));
+        send(partition, event);
         metrics.sentEvent(partition);
         return true;
     }
 
-    private void send(int partition, ByteBuffer message) {
-
-        emitter.send(partition, message);
+    private void send(int partition, Event event) {
+        tpe.submit(new SerializeAndSendToRemotePartitionTask(event, partition));
     }
 
     /*

@@ -54,7 +54,10 @@ Exmample configuration files are available in `/config` and you can configure :
 - the duration of the pause (can be 0)
 - etc…
 
+The total number of events sent from an injector is `number of keys * number of test iterations * number of parallel injection threads`. Make sure this is significant in order to be able to correctly interpret the messaging rates (1000 would be too little for instance!).
+
 By default in this example the size of a message is 188 bytes.
+
 
 
 ## Running
@@ -75,6 +78,13 @@ When the benchmark finishes (and even during the execution), results are availab
 Results are also available from the console output for each of the nodes.
 
 Most statistics files come from the probes of the platform and some of them use weighted moving averages. These are good for long running applications. For the benchmarks we also show instant rates, which are available in `injection-rate.csv` and `simplePE1.csv` files.
+
+You may also check that all events have been processed: 
+
+* each injector reports how many events it sent on which stream
+* each node reports the total number of events received
+* you should get `total injected from all injectors = total received in all nodes` (minus events sent through internal streams in the app, if that applies)
+
 
 ## Notes
 

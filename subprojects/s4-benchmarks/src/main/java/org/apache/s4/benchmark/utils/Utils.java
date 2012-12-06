@@ -5,6 +5,11 @@ import java.util.concurrent.CountDownLatch;
 
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.ZkClient;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,4 +41,30 @@ public class Utils {
         return signalReady;
     }
 
+    public static void watchAndSignalChildrenReachedCount(final String path, final CountDownLatch latch,
+            final ZooKeeper zk, final int count) throws KeeperException, InterruptedException {
+
+        List<String> children = zk.getChildren(path, new Watcher() {
+            @Override
+            public void process(WatchedEvent event) {
+                if (EventType.NodeChildrenChanged.equals(event.getType())) {
+                    try {
+                        if (count == zk.getChildren(path, false).size()) {
+                            latch.countDown();
+                        }
+                    } catch (KeeperException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    latch.countDown();
+                }
+            }
+        });
+        if (children.size() == count) {
+            latch.countDown();
+        }
+    }
 }
