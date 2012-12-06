@@ -20,8 +20,8 @@ package org.apache.s4.fixtures;
 
 import org.apache.s4.comm.DeserializerExecutorFactory;
 import org.apache.s4.comm.staging.MemoryAwareDeserializerExecutorFactory;
-import org.apache.s4.core.staging.DefaultSenderExecutorServiceFactory;
-import org.apache.s4.core.staging.DefaultStreamProcessingExecutorServiceFactory;
+import org.apache.s4.core.staging.BlockingSenderExecutorServiceFactory;
+import org.apache.s4.core.staging.BlockingStreamExecutorServiceFactory;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
 import org.apache.s4.deploy.DeploymentManager;
@@ -50,9 +50,11 @@ public class MockCoreModule extends AbstractModule {
 
         // Although we want to mock as much as possible, most tests still require the machinery for routing events
         // within a stream/node, therefore sender and stream executors are not mocked
-        bind(StreamExecutorServiceFactory.class).to(DefaultStreamProcessingExecutorServiceFactory.class);
 
-        bind(SenderExecutorServiceFactory.class).to(DefaultSenderExecutorServiceFactory.class);
+        // NOTE: we use a blocking executor so that events don't get dropped in simple tests
+        bind(StreamExecutorServiceFactory.class).to(BlockingStreamExecutorServiceFactory.class);
+
+        bind(SenderExecutorServiceFactory.class).to(BlockingSenderExecutorServiceFactory.class);
         bind(DeserializerExecutorFactory.class).to(MemoryAwareDeserializerExecutorFactory.class);
 
         bind(Integer.class).annotatedWith(Names.named("s4.sender.parallelism")).toInstance(8);

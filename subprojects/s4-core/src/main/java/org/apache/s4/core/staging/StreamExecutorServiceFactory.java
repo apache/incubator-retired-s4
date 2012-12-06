@@ -9,7 +9,9 @@ import org.apache.s4.core.App;
  * a configurable thread pool.
  * <p>
  * Implementations may use dependency injection to set some default parameters.
- * </p>
+ * <p>
+ * Implementations may rely on different strategies for handling high loads: blocking, throttling, dropping and that may
+ * also be provided on a per-stream basis (based on the name of the stream for instance).
  */
 public interface StreamExecutorServiceFactory {
 

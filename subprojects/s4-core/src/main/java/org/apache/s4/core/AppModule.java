@@ -6,7 +6,6 @@ import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.TCPListener;
-import org.apache.s4.core.util.S4Metrics;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -26,7 +25,7 @@ public class AppModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(S4Metrics.class);
+        // bind(S4Metrics.class);
 
         bind(Receiver.class).to(ReceiverImpl.class);
         bind(Sender.class).to(SenderImpl.class);

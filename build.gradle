@@ -53,7 +53,7 @@ allprojects {
 
 /* All project libraries must be defined here. */
 project.ext["libraries"] = [
-    guava:              'com.google.guava:guava:12.0.1',
+    guava:              'com.google.guava:guava:13.0.1',
     gson:               'com.google.code.gson:gson:1.6',
     guice:              'com.google.inject:guice:3.0',
     aop_alliance:       'aopalliance:aopalliance:1.0',

@@ -135,6 +135,10 @@ public class S4Metrics {
         dequeuingStreamMeters.get(name).mark();
     }
 
+    public void droppedEvent(String streamName) {
+        droppedStreamMeters.get(streamName).mark();
+    }
+
     public void createRemoteStreamMeters(String remoteClusterName, int partitionCount) {
         Meter[] meters = new Meter[partitionCount];
         for (int i = 0; i < partitionCount; i++) {

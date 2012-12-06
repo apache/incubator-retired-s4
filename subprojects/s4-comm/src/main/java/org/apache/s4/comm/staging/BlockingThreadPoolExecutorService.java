@@ -2,12 +2,13 @@ package org.apache.s4.comm.staging;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -20,23 +21,27 @@ import com.google.common.util.concurrent.ForwardingListeningExecutorService;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Meter;
 
-public class ThrottlingThreadPoolExecutorService extends ForwardingListeningExecutorService {
+/**
+ * This thread pool executor throttles the submission of new tasks by using a semaphore. Task submissions require
+ * permits, task completions release permits.
+ * <p>
+ * NOTE: you should either use the {@link BlockingThreadPoolExecutorService#submit(java.util.concurrent.Callable)}
+ * methods or the {@link BlockingThreadPoolExecutorService#execute(Runnable)} method.
+ * 
+ */
+public class BlockingThreadPoolExecutorService extends ForwardingListeningExecutorService {
 
-    private static Logger logger = LoggerFactory.getLogger(ThrottlingThreadPoolExecutorService.class);
+    private static Logger logger = LoggerFactory.getLogger(BlockingThreadPoolExecutorService.class);
 
     int parallelism;
     String streamName;
     final ClassLoader classLoader;
     int workQueueSize;
     private BlockingQueue<Runnable> workQueue;
-    private RateLimiter rateLimitedPermits;
+    private Semaphore queueingPermits;
     private ListeningExecutorService executorDelegatee;
-    Meter droppingMeter;
 
     /**
      * 
@@ -52,15 +57,14 @@ public class ThrottlingThreadPoolExecutorService extends ForwardingListeningExec
      * @param classLoader
      *            ClassLoader used as contextClassLoader for spawned threads
      */
-    public ThrottlingThreadPoolExecutorService(int parallelism, int rate, String threadName, int workQueueSize,
-            final ClassLoader classLoader) {
+    public BlockingThreadPoolExecutorService(int parallelism, boolean fairParallelism, String threadName,
+            int workQueueSize, final ClassLoader classLoader) {
         super();
         this.parallelism = parallelism;
         this.streamName = threadName;
         this.classLoader = classLoader;
         this.workQueueSize = workQueueSize;
-        this.droppingMeter = Metrics.newMeter(getClass(), "throttling-dropping", "throttling-dropping",
-                TimeUnit.SECONDS);
+        queueingPermits = new Semaphore(workQueueSize + parallelism, false);
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).setNameFormat(threadName)
                 .setThreadFactory(new ThreadFactory() {
 
@@ -71,14 +75,15 @@ public class ThrottlingThreadPoolExecutorService extends ForwardingListeningExec
                         return t;
                     }
                 }).build();
-        rateLimitedPermits = RateLimiter.create(rate);
-        workQueue = new ArrayBlockingQueue<Runnable>(workQueueSize + parallelism);
+        // queueingPermits semaphore controls the size of the queue, thus no need to use a bounded queue
+        workQueue = new LinkedBlockingQueue<Runnable>(workQueueSize + parallelism);
         ThreadPoolExecutor eventProcessingExecutor = new ThreadPoolExecutor(parallelism, parallelism, 60,
                 TimeUnit.SECONDS, workQueue, threadFactory, new RejectedExecutionHandler() {
 
                     @Override
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                        droppingMeter.mark();
+                        // This is not expected to happen.
+                        logger.error("Could not submit task to executor {}", executor.toString());
                     }
                 });
         eventProcessingExecutor.allowCoreThreadTimeOut(true);
@@ -93,29 +98,93 @@ public class ThrottlingThreadPoolExecutorService extends ForwardingListeningExec
 
     @Override
     public <T> ListenableFuture<T> submit(Callable<T> task) {
-        rateLimitedPermits.acquire();
-        ListenableFuture<T> future = super.submit(task);
+        try {
+            queueingPermits.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+        }
+        ListenableFuture<T> future = super.submit(new CallableWithPermitRelease<T>(task));
         return future;
     }
 
     @Override
     public <T> ListenableFuture<T> submit(Runnable task, T result) {
-        rateLimitedPermits.acquire();
-        ListenableFuture<T> future = super.submit(task, result);
+        try {
+            queueingPermits.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        ListenableFuture<T> future = super.submit(new RunnableWithPermitRelease(task), result);
         return future;
     }
 
     @Override
     public ListenableFuture<?> submit(Runnable task) {
-        rateLimitedPermits.acquire();
-        ListenableFuture<?> future = super.submit(task);
+        try {
+            queueingPermits.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        ListenableFuture<?> future = super.submit(new RunnableWithPermitRelease(task));
         return future;
     }
 
     @Override
     public void execute(Runnable command) {
-        rateLimitedPermits.acquire();
-        super.execute(command);
+        try {
+            queueingPermits.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+        }
+        super.execute(new RunnableWithPermitRelease(command));
+    }
+
+    /**
+     * Releases a permit after the task is executed
+     * 
+     */
+    class RunnableWithPermitRelease implements Runnable {
+
+        Runnable delegatee;
+
+        public RunnableWithPermitRelease(Runnable delegatee) {
+            this.delegatee = delegatee;
+        }
+
+        @Override
+        public void run() {
+            try {
+                delegatee.run();
+            } finally {
+                queueingPermits.release();
+            }
+
+        }
+    }
+
+    /**
+     * Releases a permit after the task is completed
+     * 
+     */
+    class CallableWithPermitRelease<T> implements Callable<T> {
+
+        Callable<T> delegatee;
+
+        public CallableWithPermitRelease(Callable<T> delegatee) {
+            this.delegatee = delegatee;
+        }
+
+        @Override
+        public T call() throws Exception {
+            try {
+                return delegatee.call();
+            } finally {
+                queueingPermits.release();
+            }
+        }
+
     }
 
     @Override
@@ -139,4 +208,5 @@ public class ThrottlingThreadPoolExecutorService extends ForwardingListeningExec
             throws InterruptedException, ExecutionException, TimeoutException {
         throw new RuntimeException("Not implemented");
     }
+
 }

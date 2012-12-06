@@ -53,6 +53,10 @@ Exmample configuration files are available in `/config` and you can configure :
 - the number of events between making a pause in the injection
 - the duration of the pause (can be 0)
 - etc…
+- It is also possible to limit the injection rate by using and configuring the InjectionLimiterModule class. Parameters are `s4.sender.maxRate` and `s4.sender.warmupPeriod`.
+
+
+The total number of events sent from an injector is `number of keys * number of test iterations * number of parallel injection threads`. Make sure this is significant in order to be able to correctly interpret the messaging rates (1000 would be too little for instance!).
 
 The total number of events sent from an injector is `number of keys * number of test iterations * number of parallel injection threads`. Make sure this is significant in order to be able to correctly interpret the messaging rates (1000 would be too little for instance!).
 
@@ -70,6 +74,7 @@ For a distributed setup, you should modify the host names in the above command l
 Here is an example for driving the test on a cluster:
 `incubator-s4/subprojects/s4-benchmarks/bench-cluster.sh "processingHost1 processingHost2 processingHost3" "injectorConfigStream1.cfg injectorConfigStream2.cfg" node.cfg 2 "injectorHost1 injectorHost2 injectorHost3 injectorHost4"` (the `2` controls the number of injectors per stream per injector host)
 
+
 ## Results
 
 
@@ -83,7 +88,7 @@ You may also check that all events have been processed:
 
 * each injector reports how many events it sent on which stream
 * each node reports the total number of events received
-* you should get `total injected from all injectors = total received in all nodes` (minus events sent through internal streams in the app, if that applies)
+* depending on the injection rate, you can see how many events have been dropped, if any: `total injected from all injectors >= total received in all nodes` (minus events sent through internal streams in the app, if that applies)
 
 
 ## Notes

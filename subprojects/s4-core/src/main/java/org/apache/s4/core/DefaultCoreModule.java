@@ -29,9 +29,9 @@ import org.apache.s4.base.util.S4RLoaderFactory;
 import org.apache.s4.comm.DefaultHasher;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.ft.NoOpCheckpointingFramework;
-import org.apache.s4.core.staging.DefaultRemoteSendersExecutorServiceFactory;
-import org.apache.s4.core.staging.DefaultSenderExecutorServiceFactory;
-import org.apache.s4.core.staging.DefaultStreamProcessingExecutorServiceFactory;
+import org.apache.s4.core.staging.BlockingRemoteSendersExecutorServiceFactory;
+import org.apache.s4.core.staging.BlockingSenderExecutorServiceFactory;
+import org.apache.s4.core.staging.LoadSheddingStreamExecutorServiceFactory;
 import org.apache.s4.core.staging.RemoteSendersExecutorServiceFactory;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
@@ -85,10 +85,10 @@ public class DefaultCoreModule extends AbstractModule {
         // org.apache.s4.core.ft.FileSytemBasedCheckpointingModule
         bind(CheckpointingFramework.class).to(NoOpCheckpointingFramework.class);
 
-        bind(SenderExecutorServiceFactory.class).to(DefaultSenderExecutorServiceFactory.class);
-        bind(RemoteSendersExecutorServiceFactory.class).to(DefaultRemoteSendersExecutorServiceFactory.class);
+        bind(SenderExecutorServiceFactory.class).to(BlockingSenderExecutorServiceFactory.class);
+        bind(RemoteSendersExecutorServiceFactory.class).to(BlockingRemoteSendersExecutorServiceFactory.class);
 
-        bind(StreamExecutorServiceFactory.class).to(DefaultStreamProcessingExecutorServiceFactory.class);
+        bind(StreamExecutorServiceFactory.class).to(LoadSheddingStreamExecutorServiceFactory.class);
 
     }
 
