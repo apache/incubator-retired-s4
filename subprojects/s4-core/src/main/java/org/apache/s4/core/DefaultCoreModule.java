@@ -30,7 +30,7 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.base.util.S4RLoaderFactory;
 import org.apache.s4.comm.DefaultHasher;
-import org.apache.s4.comm.helix.S4StateModelFactory;
+import org.apache.s4.comm.helix.TaskStateModelFactory;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.topology.RemoteStreamsManager;
 import org.apache.s4.comm.topology.RemoteStreamsManagerImpl;

@@ -31,7 +31,7 @@ import org.apache.helix.InstanceType;
 import org.apache.helix.spectator.RoutingTableProvider;
 import org.apache.s4.base.util.S4RLoader;
 import org.apache.s4.base.util.S4RLoaderFactory;
-import org.apache.s4.comm.helix.S4StateModelFactory;
+import org.apache.s4.comm.helix.TaskStateModelFactory;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromHelix;
 import org.apache.s4.comm.topology.AssignmentFromZK;
@@ -77,7 +77,7 @@ public class Server {
     private final String instanceName;
     
     @Inject
-    private S4StateModelFactory taskStateModelFactory;
+    private TaskStateModelFactory taskStateModelFactory;
     
     @Inject
     private AppStateModelFactory appStateModelFactory;

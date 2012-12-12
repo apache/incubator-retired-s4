@@ -13,7 +13,7 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.RemoteEmitter;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.helix.S4StateModelFactory;
+import org.apache.s4.comm.helix.TaskStateModelFactory;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.tcp.RemoteEmitters;
 import org.apache.s4.comm.topology.Assignment;
@@ -74,7 +74,7 @@ public class HelixBasedCommModule extends AbstractModule{
 
         // a node holds a single partition assignment
         // ==> Assignment and Cluster are singletons so they can be shared between comm layer and app.
-        bind(StateModelFactory.class).annotatedWith(Names.named("s4.task.statemodelfactory")).to(S4StateModelFactory.class);
+        bind(StateModelFactory.class).annotatedWith(Names.named("s4.task.statemodelfactory")).to(TaskStateModelFactory.class);
         bind(Assignment.class).to(AssignmentFromHelix.class);
         bind(Cluster.class).to(ClusterFromHelix.class);
 

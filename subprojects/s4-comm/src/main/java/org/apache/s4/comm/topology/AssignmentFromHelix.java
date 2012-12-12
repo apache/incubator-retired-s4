@@ -26,7 +26,7 @@ import org.apache.helix.manager.zk.ZkClient;
 import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.participant.statemachine.StateModel;
 import org.apache.helix.participant.statemachine.StateModelFactory;
-import org.apache.s4.comm.helix.S4StateModelFactory;
+import org.apache.s4.comm.helix.TaskStateModelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public class AssignmentFromHelix implements Assignment
                              @Named("s4.cluster.zk_address") String zookeeperAddress 
                              ) throws Exception
   {
-    this.taskStateModelFactory = new S4StateModelFactory();
+    this.taskStateModelFactory = new TaskStateModelFactory();
 //    this.appStateModelFactory = appStateModelFactory;
     this.clusterName = clusterName;
     this.zookeeperAddress = zookeeperAddress;
