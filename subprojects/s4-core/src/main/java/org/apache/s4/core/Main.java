@@ -155,11 +155,12 @@ public class Main {
                 }
                 combinedModule = Modules.override(combinedModule).with(new ParametersInjectionModule(namedParameters));
             }
-            
+
             injector = Guice.createInjector(combinedModule);
-            //start a HelixController to manage the cluster
+            // start a HelixController to manage the cluster
             String controllerName = Inet4Address.getLocalHost().getCanonicalHostName() + UUID.randomUUID().toString();
-            HelixControllerMain.startHelixController(mainArgs.zkConnectionString, mainArgs.clusterName, controllerName, HelixControllerMain.STANDALONE);
+            HelixControllerMain.startHelixController(mainArgs.zkConnectionString, mainArgs.clusterName, controllerName,
+                    HelixControllerMain.STANDALONE);
 
             if (mainArgs.appClass != null) {
                 logger.info("Starting S4 node with single application from class [{}]", mainArgs.appClass);
@@ -190,7 +191,7 @@ public class Main {
 
         @Parameter(names = { "-c", "-cluster" }, description = "cluster name", required = true)
         String clusterName = null;
-        
+
         @Parameter(names = { "-id", "-nodeId" }, description = "Node/Instance id that uniquely identifies a node", required = false)
         String instanceName = null;
 

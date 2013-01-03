@@ -65,8 +65,7 @@ import org.apache.helix.model.InstanceConfig;
  */
 
 public class TCPEmitter implements Emitter, ClusterChangeListener {
-    private static final Logger logger = LoggerFactory
-            .getLogger(TCPEmitter.class);
+    private static final Logger logger = LoggerFactory.getLogger(TCPEmitter.class);
 
     private final int nettyTimeout;
 
@@ -87,24 +86,21 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     private final Lock lock;
 
     @Inject
-    SerializerDeserializer serDeser= new KryoSerDeser();
+    SerializerDeserializer serDeser = new KryoSerDeser();
 
     @Inject
-    public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout)
-            throws InterruptedException {
+    public TCPEmitter(Cluster topology, @Named("s4.comm.timeout") int timeout) throws InterruptedException {
         this.nettyTimeout = timeout;
         this.topology = topology;
         this.lock = new ReentrantLock();
 
         // Initialize data structures
-        //int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
+        // int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
         // TODO cluster can grow in size
-        nodeChannelMap = Maps.synchronizedBiMap(HashBiMap
-                .<InstanceConfig, Channel> create());
+        nodeChannelMap = Maps.synchronizedBiMap(HashBiMap.<InstanceConfig, Channel> create());
 
         // Initialize netty related structures
-        ChannelFactory factory = new NioClientSocketChannelFactory(
-                Executors.newCachedThreadPool(),
+        ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
                 Executors.newCachedThreadPool());
         bootstrap = new ClientBootstrap(factory);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
@@ -137,19 +133,16 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         }
 
         try {
-            ChannelFuture connectFuture = this.bootstrap
-                    .connect(new InetSocketAddress(config.getHostName(),
-                            Integer.parseInt(config.getPort())));
+            ChannelFuture connectFuture = this.bootstrap.connect(new InetSocketAddress(config.getHostName(), Integer
+                    .parseInt(config.getPort())));
             connectFuture.await();
             if (connectFuture.isSuccess()) {
                 channels.add(connectFuture.getChannel());
-                nodeChannelMap
-                        .forcePut(config, connectFuture.getChannel());
+                nodeChannelMap.forcePut(config, connectFuture.getChannel());
                 return true;
             }
         } catch (InterruptedException ie) {
-            logger.error(String.format("Interrupted while connecting to %s:%d",
-                    config.getHostName(), config.getPort()));
+            logger.error(String.format("Interrupted while connecting to %s:%d", config.getHostName(), config.getPort()));
             Thread.currentThread().interrupt();
         }
         return false;
@@ -158,8 +151,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     private void sendMessage(String streamName, int partitionId, byte[] message) {
         ChannelBuffer buffer = ChannelBuffers.buffer(message.length);
         buffer.writeBytes(message);
-        InstanceConfig config = topology
-                .getDestination(streamName, partitionId);
+        InstanceConfig config = topology.getDestination(streamName, partitionId);
         if (!nodeChannelMap.containsKey(config)) {
             if (!connectTo(config)) {
                 // Couldn't connect, discard message
@@ -176,8 +168,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     @Override
     public boolean send(int partitionId, EventMessage message) {
-        sendMessage(message.getStreamName(), partitionId,
-                serDeser.serialize(message));
+        sendMessage(message.getStreamName(), partitionId, serDeser.serialize(message));
         return true;
     }
 
@@ -188,8 +179,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         }
         c.close().addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future)
-                    throws Exception {
+            public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess())
                     channels.remove(future.getChannel());
                 else
@@ -208,18 +198,18 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         }
     }
 
-    //@Override
+    // @Override
     public int getPartitionCount() {
         return topology.getPhysicalCluster().getPartitionCount();
     }
+
     public int getPartitionCount(String streamName) {
-    return topology.getPhysicalCluster().getPartitionCount();
-  }
+        return topology.getPhysicalCluster().getPartitionCount();
+    }
 
     class ExceptionHandler extends SimpleChannelUpstreamHandler {
         @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
-                throws Exception {
+        public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
             Throwable t = e.getCause();
             if (t instanceof ClosedChannelException) {
                 nodeChannelMap.inverse().remove(e.getChannel());
@@ -248,10 +238,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
                 try {
                     // TODO handle possible cluster reconfiguration between send
                     // and failure callback
-                    logger.warn(
-                            "Failed to send message to node {} (according to current cluster information)",
-                            topology.getPhysicalCluster().getNodes()
-                                    .get(partitionId));
+                    logger.warn("Failed to send message to node {} (according to current cluster information)",
+                            topology.getPhysicalCluster().getNodes().get(partitionId));
                 } catch (IndexOutOfBoundsException ignored) {
                     // cluster was changed
                 }
@@ -262,6 +250,6 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     @Override
     public void onChange() {
-        
+
     }
 }

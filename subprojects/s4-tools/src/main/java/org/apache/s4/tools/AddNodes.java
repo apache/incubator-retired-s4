@@ -38,7 +38,7 @@ public class AddNodes {
         Tools.parseArgs(clusterArgs, args);
         try {
 
-            logger.info("Adding new nodes [{}] to cluster [{}] node(s)",  clusterArgs.nbNodes, clusterArgs.clusterName);
+            logger.info("Adding new nodes [{}] to cluster [{}] node(s)", clusterArgs.nbNodes, clusterArgs.clusterName);
             HelixAdmin helixAdmin = new ZKHelixAdmin(clusterArgs.zkConnectionString);
             int initialPort = clusterArgs.firstListeningPort;
             if (clusterArgs.nbNodes > 0) {
@@ -74,14 +74,14 @@ public class AddNodes {
 
         @Parameter(names = "-nodes", description = "Host names of the nodes", required = false)
         String nodes = "";
-        
+
         @Parameter(names = "-zk", description = "Zookeeper connection string")
         String zkConnectionString = "localhost:2181";
 
         @Parameter(names = { "-flp", "-firstListeningPort" }, description = "Initial listening port for nodes in this cluster. First node listens on the specified port, other nodes listen on port initial + nodeIndex", required = true)
         int firstListeningPort = -1;
-        
-        @Parameter(names = {"-ng","-nodeGroup"}, description = "Assign the nodes to one or more groups. This will be useful when you create task", required=false)
+
+        @Parameter(names = { "-ng", "-nodeGroup" }, description = "Assign the nodes to one or more groups. This will be useful when you create task", required = false)
         String nodeGroup = "default";
     }
 

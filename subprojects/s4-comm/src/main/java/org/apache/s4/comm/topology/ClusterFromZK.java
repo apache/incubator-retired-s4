@@ -42,7 +42,7 @@ import com.google.inject.name.Named;
 /**
  * Represents a logical cluster definition fetched from Zookeeper. Notifies listeners of runtime changes in the
  * configuration.
- *
+ * 
  */
 public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener, IZkStateListener {
 
@@ -216,15 +216,13 @@ public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener
     }
 
     @Override
-    public InstanceConfig getDestination(String streamName, int partitionId)
-    {
-      return null;
+    public InstanceConfig getDestination(String streamName, int partitionId) {
+        return null;
     }
 
     @Override
-    public Integer getPartitionCount(String streamName)
-    {
-      return null;
+    public Integer getPartitionCount(String streamName) {
+        return null;
     }
 
 }

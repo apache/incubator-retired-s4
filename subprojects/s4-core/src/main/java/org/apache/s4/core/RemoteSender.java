@@ -24,7 +24,7 @@ import org.apache.s4.base.Hasher;
 
 /**
  * Sends events to a remote cluster.
- *
+ * 
  */
 public class RemoteSender {
 
@@ -41,7 +41,8 @@ public class RemoteSender {
     public void send(String hashKey, EventMessage eventMessage) {
         if (hashKey == null) {
             // round robin by default
-            emitter.send(Math.abs(targetPartition++ % emitter.getPartitionCount(eventMessage.getStreamName())), eventMessage);
+            emitter.send(Math.abs(targetPartition++ % emitter.getPartitionCount(eventMessage.getStreamName())),
+                    eventMessage);
         } else {
             int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount(eventMessage.getStreamName()));
             emitter.send(partition, eventMessage);

@@ -20,7 +20,7 @@ package org.apache.s4.comm.topology;
 
 /**
  * Represents an node.
- *
+ * 
  */
 public class ClusterNode {
     private int partition;

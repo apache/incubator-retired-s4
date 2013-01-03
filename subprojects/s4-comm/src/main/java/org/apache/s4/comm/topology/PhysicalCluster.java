@@ -99,8 +99,9 @@ public class PhysicalCluster {
     }
 
     public int getPartitionCount(String stream) {
-      return numPartitions;
-  }
+        return numPartitions;
+    }
+
     /**
      * @param node
      */

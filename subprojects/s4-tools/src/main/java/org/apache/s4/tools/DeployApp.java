@@ -47,14 +47,14 @@ public class DeployApp extends S4ArgsBase {
         for (String instanceName : instancesInCluster) {
             InstanceConfig instanceConfig = admin.getInstanceConfig(deployArgs.clusterName, instanceName);
             String nodeGroup = instanceConfig.getRecord().getSimpleField("GROUP");
-            if(nodeGroup.equals(deployArgs.nodeGroup)){
+            if (nodeGroup.equals(deployArgs.nodeGroup)) {
                 instancesInGroup.add(instanceName);
             }
         }
-        for(String instanceName:instancesInGroup){
+        for (String instanceName : instancesInGroup) {
             is.setPartitionState(deployArgs.appName, instanceName, "ONLINE");
         }
-        
+
         admin.setResourceIdealState(deployArgs.clusterName, deployArgs.appName, is);
     }
 

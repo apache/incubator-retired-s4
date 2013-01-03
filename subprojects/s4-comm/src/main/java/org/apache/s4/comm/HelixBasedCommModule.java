@@ -33,7 +33,7 @@ import com.google.inject.Binder;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Names;
 
-public class HelixBasedCommModule extends AbstractModule{
+public class HelixBasedCommModule extends AbstractModule {
 
     private static Logger logger = LoggerFactory.getLogger(DefaultCommModule.class);
     InputStream commConfigInputStream;
@@ -74,7 +74,8 @@ public class HelixBasedCommModule extends AbstractModule{
 
         // a node holds a single partition assignment
         // ==> Assignment and Cluster are singletons so they can be shared between comm layer and app.
-        bind(StateModelFactory.class).annotatedWith(Names.named("s4.task.statemodelfactory")).to(TaskStateModelFactory.class);
+        bind(StateModelFactory.class).annotatedWith(Names.named("s4.task.statemodelfactory")).to(
+                TaskStateModelFactory.class);
         bind(Assignment.class).to(AssignmentFromHelix.class);
         bind(Cluster.class).to(ClusterFromHelix.class);
 

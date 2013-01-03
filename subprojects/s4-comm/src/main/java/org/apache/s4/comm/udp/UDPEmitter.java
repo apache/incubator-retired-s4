@@ -39,7 +39,7 @@ import com.google.inject.Inject;
 
 /**
  * UDP based emitter.
- *
+ * 
  */
 public class UDPEmitter implements Emitter, ClusterChangeListener {
     private DatagramSocket socket;
@@ -103,11 +103,11 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
         return true;
     }
 
-   // @Override
+    // @Override
     public int getPartitionCount() {
         return topology.getPhysicalCluster().getPartitionCount();
     }
-    
+
     @Override
     public void onChange() {
         refreshCluster();
@@ -131,8 +131,7 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
     }
 
     @Override
-    public int getPartitionCount(String stream)
-    {
-      return topology.getPhysicalCluster().getPartitionCount(stream);      
+    public int getPartitionCount(String stream) {
+        return topology.getPhysicalCluster().getPartitionCount(stream);
     }
 }

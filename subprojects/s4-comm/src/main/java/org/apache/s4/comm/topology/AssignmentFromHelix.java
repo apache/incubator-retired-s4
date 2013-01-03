@@ -35,135 +35,109 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
 @Singleton
-public class AssignmentFromHelix implements Assignment
-{
-  private static final Logger logger = LoggerFactory
-      .getLogger(AssignmentFromHelix.class);
+public class AssignmentFromHelix implements Assignment {
+    private static final Logger logger = LoggerFactory.getLogger(AssignmentFromHelix.class);
 
-  private String clusterName;
-  private final String zookeeperAddress;
-  private String machineId;
-  private HelixManager zkHelixManager;
-  
-  private HelixDataAccessor helixDataAccessor;
-  AtomicReference<ClusterNode> clusterNodeRef;
-  private final Lock lock;
-  private final AtomicBoolean currentlyOwningTask;
-  private final Condition taskAcquired;
+    private String clusterName;
+    private final String zookeeperAddress;
+    private String machineId;
+    private HelixManager zkHelixManager;
 
-  private final StateModelFactory<? extends StateModel> taskStateModelFactory;
-  //private final StateModelFactory<? extends StateModel> appStateModelFactory;
+    private HelixDataAccessor helixDataAccessor;
+    AtomicReference<ClusterNode> clusterNodeRef;
+    private final Lock lock;
+    private final AtomicBoolean currentlyOwningTask;
+    private final Condition taskAcquired;
 
-  @Inject
-  public AssignmentFromHelix(@Named("s4.cluster.name") String clusterName,
-                             @Named("s4.instance.name") String instanceName,
-                             @Named("s4.cluster.zk_address") String zookeeperAddress 
-                             ) throws Exception
-  {
-    this.taskStateModelFactory = new TaskStateModelFactory();
-//    this.appStateModelFactory = appStateModelFactory;
-    this.clusterName = clusterName;
-    this.zookeeperAddress = zookeeperAddress;
-    machineId = "localhost";
-    lock = new ReentrantLock();
-    ZkClient zkClient = new ZkClient(zookeeperAddress);
-    zkClient.setZkSerializer(new ZNRecordSerializer());
-    zkClient.waitUntilConnected(60, TimeUnit.SECONDS);
-    BaseDataAccessor<ZNRecord> baseDataAccessor = new ZkBaseDataAccessor<ZNRecord>(
-        zkClient);
-    helixDataAccessor = new ZKHelixDataAccessor(clusterName, baseDataAccessor);
-    clusterNodeRef = new AtomicReference<ClusterNode>();
-    taskAcquired = lock.newCondition();
-    currentlyOwningTask = new AtomicBoolean(true);
-    try
-    {
-      machineId = InetAddress.getLocalHost().getCanonicalHostName();
-    } catch (UnknownHostException e)
-    {
-      logger.warn("Unable to get hostname", e);
-      machineId = "UNKNOWN";
-    }
-    ClusterNode node = new ClusterNode(-1,
-        Integer.parseInt(instanceName.split("_")[1]), machineId,
-        instanceName);
-    clusterNodeRef.set(node);
-    currentlyOwningTask.set(true);
-  }
+    private final StateModelFactory<? extends StateModel> taskStateModelFactory;
 
-  @Inject
-  public void init()
-  {
-    //joinCluster();
-  }
+    // private final StateModelFactory<? extends StateModel> appStateModelFactory;
 
-  @Override
-  public ClusterNode assignClusterNode()
-  {
-    lock.lock();
-    try
-    {
-      while (!currentlyOwningTask.get())
-      {
-        taskAcquired.awaitUninterruptibly();
-      }
-    } catch (Exception e)
-    {
-      logger.error("Exception while waiting to join the cluster");
-      return null;
-    } finally
-    {
-      lock.unlock();
-    }
-    return clusterNodeRef.get();
-  }
-
-  public void joinClusterOld()
-  {
-    lock.lock();
-    try
-    {
-      Builder keyBuilder = helixDataAccessor.keyBuilder();
-      do
-      {
-        List<InstanceConfig> instances = helixDataAccessor
-            .getChildValues(keyBuilder.instanceConfigs());
-        List<String> liveInstances = helixDataAccessor.getChildNames(keyBuilder
-            .liveInstances());
-        for (InstanceConfig instanceConfig : instances)
-        {
-          String instanceName = instanceConfig.getInstanceName();
-          if (!liveInstances.contains(instanceName))
-          {
-            zkHelixManager = HelixManagerFactory.getZKHelixManager(clusterName,
-                instanceName, InstanceType.PARTICIPANT, zookeeperAddress);
-            zkHelixManager.getStateMachineEngine().registerStateModelFactory(
-                "LeaderStandby", taskStateModelFactory);
-          
-            zkHelixManager.connect();
-            ClusterNode node = new ClusterNode(-1,
-                Integer.parseInt(instanceConfig.getPort()), machineId,
-                instanceName);
-            clusterNodeRef.set(node);
-            currentlyOwningTask.set(true);
-            taskAcquired.signalAll();
-            break;
-          }
+    @Inject
+    public AssignmentFromHelix(@Named("s4.cluster.name") String clusterName,
+            @Named("s4.instance.name") String instanceName, @Named("s4.cluster.zk_address") String zookeeperAddress)
+            throws Exception {
+        this.taskStateModelFactory = new TaskStateModelFactory();
+        // this.appStateModelFactory = appStateModelFactory;
+        this.clusterName = clusterName;
+        this.zookeeperAddress = zookeeperAddress;
+        machineId = "localhost";
+        lock = new ReentrantLock();
+        ZkClient zkClient = new ZkClient(zookeeperAddress);
+        zkClient.setZkSerializer(new ZNRecordSerializer());
+        zkClient.waitUntilConnected(60, TimeUnit.SECONDS);
+        BaseDataAccessor<ZNRecord> baseDataAccessor = new ZkBaseDataAccessor<ZNRecord>(zkClient);
+        helixDataAccessor = new ZKHelixDataAccessor(clusterName, baseDataAccessor);
+        clusterNodeRef = new AtomicReference<ClusterNode>();
+        taskAcquired = lock.newCondition();
+        currentlyOwningTask = new AtomicBoolean(true);
+        try {
+            machineId = InetAddress.getLocalHost().getCanonicalHostName();
+        } catch (UnknownHostException e) {
+            logger.warn("Unable to get hostname", e);
+            machineId = "UNKNOWN";
         }
-        if (instances.size() == liveInstances.size())
-        {
-          System.out
-              .println("No more nodes can join the cluster. Will wait for some node to die.");
-          Thread.sleep(100000);
-        }
-      } while (!currentlyOwningTask.get());
-      System.out.println("Joined the cluster:"+ clusterName +" as "+ clusterNodeRef.get().getTaskId());
-    } catch (Exception e)
-    {
-      e.printStackTrace();
-    } finally
-    {
-      lock.unlock();
+        ClusterNode node = new ClusterNode(-1, Integer.parseInt(instanceName.split("_")[1]), machineId, instanceName);
+        clusterNodeRef.set(node);
+        currentlyOwningTask.set(true);
     }
-  }
+
+    @Inject
+    public void init() {
+        // joinCluster();
+    }
+
+    @Override
+    public ClusterNode assignClusterNode() {
+        lock.lock();
+        try {
+            while (!currentlyOwningTask.get()) {
+                taskAcquired.awaitUninterruptibly();
+            }
+        } catch (Exception e) {
+            logger.error("Exception while waiting to join the cluster");
+            return null;
+        } finally {
+            lock.unlock();
+        }
+        return clusterNodeRef.get();
+    }
+
+    public void joinClusterOld() {
+        lock.lock();
+        try {
+            Builder keyBuilder = helixDataAccessor.keyBuilder();
+            do {
+                List<InstanceConfig> instances = helixDataAccessor.getChildValues(keyBuilder.instanceConfigs());
+                List<String> liveInstances = helixDataAccessor.getChildNames(keyBuilder.liveInstances());
+                for (InstanceConfig instanceConfig : instances) {
+                    String instanceName = instanceConfig.getInstanceName();
+                    if (!liveInstances.contains(instanceName)) {
+                        zkHelixManager = HelixManagerFactory.getZKHelixManager(clusterName, instanceName,
+                                InstanceType.PARTICIPANT, zookeeperAddress);
+                        zkHelixManager.getStateMachineEngine().registerStateModelFactory("LeaderStandby",
+                                taskStateModelFactory);
+
+                        zkHelixManager.connect();
+                        ClusterNode node = new ClusterNode(-1, Integer.parseInt(instanceConfig.getPort()), machineId,
+                                instanceName);
+                        clusterNodeRef.set(node);
+                        currentlyOwningTask.set(true);
+                        taskAcquired.signalAll();
+                        break;
+                    }
+                }
+                if (instances.size() == liveInstances.size()) {
+                    System.out.println("No more nodes can join the cluster. Will wait for some node to die.");
+                    Thread.sleep(100000);
+                }
+            } while (!currentlyOwningTask.get());
+            System.out.println("Joined the cluster:" + clusterName + " as " + clusterNodeRef.get().getTaskId());
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
 
 }

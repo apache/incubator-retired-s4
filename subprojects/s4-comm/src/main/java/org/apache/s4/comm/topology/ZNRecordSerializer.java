@@ -24,12 +24,12 @@ import org.I0Itec.zkclient.serialize.ZkSerializer;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 /**
  * 
  * Utility to serialize/deserialize data in ZK. <br/>
- * Using Json format and Gson library. 
- * TODO: Explore other libraries like jackson much richer features.
- * Gson needs no-arg constructor to work with without additional work
+ * Using Json format and Gson library. TODO: Explore other libraries like jackson much richer features. Gson needs
+ * no-arg constructor to work with without additional work
  */
 public class ZNRecordSerializer implements ZkSerializer {
 

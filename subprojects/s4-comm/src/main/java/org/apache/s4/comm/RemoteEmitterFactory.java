@@ -24,7 +24,7 @@ import org.apache.s4.comm.topology.Cluster;
 /**
  * Used for creating RemoteEmitter instances depending on the cluster configuration. Follows the "assisted injection"
  * pattern from Guice 3.
- *
+ * 
  */
 public interface RemoteEmitterFactory {
 

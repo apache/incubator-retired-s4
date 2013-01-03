@@ -38,7 +38,7 @@ import com.google.inject.Inject;
 /**
  * Sends events to remote clusters. Target clusters are selected dynamically based on the stream name information from
  * the event.
- *
+ * 
  */
 public class RemoteSenders implements RemoteSendersManager {
 
@@ -61,7 +61,9 @@ public class RemoteSenders implements RemoteSendersManager {
 
     Map<String, RemoteSender> sendersByTopology = new HashMap<String, RemoteSender>();
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.apache.s4.core.RemoteSendersManager#send(java.lang.String, org.apache.s4.base.Event)
      */
     @Override

@@ -10,52 +10,45 @@ import org.apache.helix.participant.statemachine.StateModelInfo;
 import org.apache.helix.participant.statemachine.Transition;
 
 @StateModelInfo(states = { "LEADER,STANDBY" }, initialState = "OFFLINE")
-public class S4StateModel extends StateModel
-{
-  private static Logger logger = LoggerFactory.getLogger(S4StateModel.class);
+public class S4StateModel extends StateModel {
+    private static Logger logger = LoggerFactory.getLogger(S4StateModel.class);
 
-  private final String streamName;
-  private final String partitionId;
+    private final String streamName;
+    private final String partitionId;
 
-  public S4StateModel(String partitionName)
-  {
-    String[] parts = partitionName.split("_");
-    this.streamName = parts[0];
-    this.partitionId = parts[1];
-  }
+    public S4StateModel(String partitionName) {
+        String[] parts = partitionName.split("_");
+        this.streamName = parts[0];
+        this.partitionId = parts[1];
+    }
 
-  @Transition(from = "OFFLINE", to = "STANDBY")
-  public void becomeLeaderFromOffline(Message msg, NotificationContext context)
-  {
-    logger.info("Transitioning from " + msg.getFromState() + " to "
-        + msg.getToState() + "for " + msg.getPartitionName());
-  }
+    @Transition(from = "OFFLINE", to = "STANDBY")
+    public void becomeLeaderFromOffline(Message msg, NotificationContext context) {
+        logger.info("Transitioning from " + msg.getFromState() + " to " + msg.getToState() + "for "
+                + msg.getPartitionName());
+    }
 
-  @Transition(from = "STANDBY", to = "LEADER")
-  public void becomeLeaderFromStandby(Message msg, NotificationContext context)
-  {
-    logger.info("Transitioning from " + msg.getFromState() + " to "
-        + msg.getToState() + "for " + msg.getPartitionName());
-  }
+    @Transition(from = "STANDBY", to = "LEADER")
+    public void becomeLeaderFromStandby(Message msg, NotificationContext context) {
+        logger.info("Transitioning from " + msg.getFromState() + " to " + msg.getToState() + "for "
+                + msg.getPartitionName());
+    }
 
-  @Transition(from = "LEADER", to = "STANDBY")
-  public void becomeStandbyFromLeader(Message msg, NotificationContext context)
-  {
-    logger.info("Transitioning from " + msg.getFromState() + " to "
-        + msg.getToState() + "for " + msg.getPartitionName());
-  }
+    @Transition(from = "LEADER", to = "STANDBY")
+    public void becomeStandbyFromLeader(Message msg, NotificationContext context) {
+        logger.info("Transitioning from " + msg.getFromState() + " to " + msg.getToState() + "for "
+                + msg.getPartitionName());
+    }
 
-  @Transition(from = "STANDBY", to = "OFFLINE")
-  public void becomeOfflineFromStandby(Message msg, NotificationContext context)
-  {
-    logger.info("Transitioning from " + msg.getFromState() + " to "
-        + msg.getToState() + "for " + msg.getPartitionName());
-  }
-  
-  @Transition(from = "OFFLINE", to = "DROPPED")
-  public void dropPartition(Message msg, NotificationContext context)
-  {
-    logger.info("Dropping partition" + msg.getPartitionName());
-  }
+    @Transition(from = "STANDBY", to = "OFFLINE")
+    public void becomeOfflineFromStandby(Message msg, NotificationContext context) {
+        logger.info("Transitioning from " + msg.getFromState() + " to " + msg.getToState() + "for "
+                + msg.getPartitionName());
+    }
+
+    @Transition(from = "OFFLINE", to = "DROPPED")
+    public void dropPartition(Message msg, NotificationContext context) {
+        logger.info("Dropping partition" + msg.getPartitionName());
+    }
 
 }

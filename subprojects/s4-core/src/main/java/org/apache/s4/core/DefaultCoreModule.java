@@ -83,14 +83,14 @@ public class DefaultCoreModule extends AbstractModule {
         /* Use Kryo to serialize events. */
         bind(SerializerDeserializer.class).to(KryoSerDeser.class);
 
-        bind(StateModelFactory.class).annotatedWith(Names.named("s4.app.statemodelfactory")).to(AppStateModelFactory.class);
+        bind(StateModelFactory.class).annotatedWith(Names.named("s4.app.statemodelfactory")).to(
+                AppStateModelFactory.class);
 
         bind(DeploymentManager.class).to(HelixBasedDeploymentManager.class);
-        
-        bind(RemoteSendersManager.class).to(RemoteSendersManagerImpl.class);
-        
-        bind(RemoteStreamsManager.class).to(RemoteStreamsManagerImpl.class);
 
+        bind(RemoteSendersManager.class).to(RemoteSendersManagerImpl.class);
+
+        bind(RemoteStreamsManager.class).to(RemoteStreamsManagerImpl.class);
 
         bind(S4RLoaderFactory.class);
 

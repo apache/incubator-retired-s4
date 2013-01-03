@@ -25,7 +25,7 @@ import com.google.inject.assistedinject.Assisted;
 
 /**
  * UDP-based emitter for sending events to remote clusters.
- *
+ * 
  */
 public class UDPRemoteEmitter extends UDPEmitter {
 

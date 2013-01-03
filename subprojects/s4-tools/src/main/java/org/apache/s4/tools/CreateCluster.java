@@ -88,10 +88,10 @@ public class CreateCluster {
 
         @Parameter(names = { "-flp", "-firstListeningPort" }, description = "Initial listening port for nodes in this cluster. First node listens on the specified port, other nodes listen on port initial + nodeIndex", required = true)
         int firstListeningPort = -1;
-        
+
         @Parameter(names = { "-ng", "-nodeGroup" }, description = "Name of the App", required = false, arity = 1)
         String nodeGroup = "default";
-        
+
     }
 
 }

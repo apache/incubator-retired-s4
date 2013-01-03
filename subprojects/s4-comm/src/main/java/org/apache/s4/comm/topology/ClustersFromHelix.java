@@ -55,10 +55,7 @@ public class ClustersFromHelix implements Clusters {
         this.clusterName = clusterName;
         this.connectionTimeout = connectionTimeout;
 
-
     }
-
-  
 
     public Cluster getCluster(String clusterName) {
         return clusters.get(clusterName);

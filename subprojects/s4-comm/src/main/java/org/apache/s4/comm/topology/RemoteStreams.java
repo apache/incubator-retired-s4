@@ -107,7 +107,9 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener, Remote
 
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.apache.s4.comm.topology.RemoteStreamsManager#getConsumers(java.lang.String)
      */
     @Override
@@ -186,8 +188,11 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener, Remote
         streams.get(streamName).put(type.getCollectionName(), Collections.unmodifiableSet(consumers));
     }
 
-    /* (non-Javadoc)
-     * @see org.apache.s4.comm.topology.RemoteStreamsManager#addOutputStream(java.lang.String, java.lang.String, java.lang.String)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.apache.s4.comm.topology.RemoteStreamsManager#addOutputStream(java.lang.String, java.lang.String,
+     * java.lang.String)
      */
     @Override
     public void addOutputStream(String appId, String clusterName, String streamName) {
@@ -219,7 +224,9 @@ public class RemoteStreams implements IZkStateListener, IZkChildListener, Remote
         zkClient.createPersistent(StreamType.CONSUMER.getPath(streamName), true);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.apache.s4.comm.topology.RemoteStreamsManager#addInputStream(int, java.lang.String, java.lang.String)
      */
     @Override
