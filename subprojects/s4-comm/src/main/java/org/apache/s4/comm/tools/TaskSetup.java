@@ -46,15 +46,7 @@ public class TaskSetup
   {
     if (isHelixEnabled)
     {
-      helixZkClient = new org.apache.helix.manager.zk.ZkClient(zookeeperAddress);
-      helixZkClient
-          .setZkSerializer(new org.apache.helix.manager.zk.ZNRecordSerializer());
-      if (!helixZkClient.waitUntilConnected(10, TimeUnit.SECONDS))
-      {
-        throw new RuntimeException(
-            "Could not connect to ZooKeeper after 10 seconds.");
-      }
-      helixAdmin = new ZKHelixAdmin(helixZkClient);
+      helixAdmin = new ZKHelixAdmin(zookeeperAddress);
     } else
     {
       zkclient = new ZkClient(zookeeperAddress);

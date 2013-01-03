@@ -51,5 +51,11 @@ public class S4StateModel extends StateModel
     logger.info("Transitioning from " + msg.getFromState() + " to "
         + msg.getToState() + "for " + msg.getPartitionName());
   }
+  
+  @Transition(from = "OFFLINE", to = "DROPPED")
+  public void dropPartition(Message msg, NotificationContext context)
+  {
+    logger.info("Dropping partition" + msg.getPartitionName());
+  }
 
 }

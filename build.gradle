@@ -84,7 +84,7 @@ project.ext["libraries"] = [
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
-    helix:              'org.apache.helix:helix-core:0.6-incubating-SNAPSHOT',
+    helix:              'org.apache.helix:helix-core:0.6.1-incubating-SNAPSHOT',
     jackson_core_asl:   'org.codehaus.jackson:jackson-core-asl:1.8.5',  
     jackson_mapper_asl: 'org.codehaus.jackson:jackson-mapper-asl:1.8.5',  
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',

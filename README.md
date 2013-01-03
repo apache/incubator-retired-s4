@@ -45,9 +45,9 @@ Create the cluster, -nbNodes is just the number of s4 nodes that will be run. Th
 
     ./s4 newCluster -c=cluster1 -nbNodes=2 -flp=12000
 
-Create a task that processes events from stream(names). -id can be anything but should be unique within a cluster, for now id and stream name needs to be the same. p is the number of partitions, so in this case it distributes 4 partitions among two nodes. -r is the number of replica/standby needed for each partition. Note that, when a node fails its load would be distributed among remaining nodes. So even though theoretically its possible to have number of standby's as the number of nodes, the performance would be horrible. In general this can be decided based on the head room available in the cluster.
+Create a task that processes events from stream(names). -id can be anything but should be unique within a cluster, for now id and stream name needs to be the same. p is the number of partitions, so in this case it distributes 6 partitions among two nodes. -r is the number of replica/standby needed for each partition. Note that, when a node fails its load would be distributed among remaining nodes. So even though theoretically its possible to have number of standby's as the number of nodes, the performance would be horrible. In general this can be decided based on the head room available in the cluster.
 
-    ./s4 createTask  -zk localhost:2181 -c cluster1 -id names -t consumer -p 4 -r 1 -s names
+    ./s4 createTask -c=cluster1 -id=names -t=consumer -p=6 -r=1 -s=names
 
 Generate a HelloWorld App
 
@@ -59,7 +59,7 @@ Deploy the App by providing the s4r. One can optionally provide the list of node
 
     ./s4 deployApp -c=cluster1 -s4r=/tmp/myApp/build/libs/myApp.s4r -appName=myApp -zk=localhost:2181
 
-Start the two s4 nodes in two separate windows. Note we now need to specify the node id while starting. This allows nodes to associated with same partitions when they are started. 
+Start the two s4 nodes in two separate windows. Note we now need to specify the node id while starting. This allows nodes to associate with same partitions when they are re-started. 
 
     ./s4 node -c=cluster1 -zk=localhost:2181 -id=localhost_12000
     ./s4 node -c=cluster1 -zk=localhost:2181 -id=localhost_12001
@@ -67,11 +67,21 @@ Start the two s4 nodes in two separate windows. Note we now need to specify the 
    
 Send some events to names stream. Notice that the partitions are divided among two nodes and each event is routed to appropriate node.
 
-    ./s4 adapter -c=cluster1 -zk=localhost:2181 -s=names
+    ./s4 genericAdapter -c=cluster1 -s=names
 
 Run the status tool to view the cluster state. It provide which nodes are up, what Apps are deployed, metadata about tasks like what stream is it processing how many partitions, which node is leader for each partition etc
 
     ./s4 status -c=cluster1
+    
+Add new nodes, deploy the app to new nodes and re-distribute the task amongst all nodes
+
+    ./s4 addNodes -c=cluster1 -nbNodes=1 -flp=12002 
+    ./s4 deployApp -c=cluster1 -s4r=/tmp/myApp/build/libs/myApp.s4r -appName=myApp -zk=localhost:2181
+    ./s4 rebalanceTask -c=cluster1 -id=names 
+    
+The partitions get re-distributed among 3 nodes. Run the status tool, it should show the new nodes and partition status.
+
+    ./s4 status -c=cluster1   
 
 Overview
 --------
