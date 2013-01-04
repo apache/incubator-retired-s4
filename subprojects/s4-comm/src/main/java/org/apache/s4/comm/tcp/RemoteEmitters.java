@@ -47,6 +47,9 @@ public class RemoteEmitters {
             emitter = emitters.putIfAbsent(topology, newEmitter);
             if (emitter == null) {
                 emitter = newEmitter;
+            } else {
+                // use the existing emitter instead
+                newEmitter.close();
             }
         }
         return emitter;

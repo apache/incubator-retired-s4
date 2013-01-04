@@ -131,7 +131,12 @@ public class SenderImpl implements Sender {
         @Override
         public void run() {
             ByteBuffer serializedEvent = serDeser.serialize(event);
-            emitter.send(remotePartitionId, serializedEvent);
+            try {
+                emitter.send(remotePartitionId, serializedEvent);
+            } catch (InterruptedException e) {
+                logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);
+                Thread.currentThread().interrupt();
+            }
 
         }
 
@@ -154,7 +159,11 @@ public class SenderImpl implements Sender {
 
                 /* Don't use the comm layer when we send to the same partition. */
                 if (localPartitionId != i) {
-                    emitter.send(i, serializedEvent);
+                    try {
+                        emitter.send(i, serializedEvent);
+                    } catch (InterruptedException e) {
+                        logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);
+                    }
                     metrics.sentEvent(i);
 
                 }

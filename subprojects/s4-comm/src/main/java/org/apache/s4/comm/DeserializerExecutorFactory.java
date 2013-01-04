@@ -11,8 +11,14 @@ import java.util.concurrent.Executor;
  * There are many possible implementations, that may consider various factors, in particular:
  * <ul>
  * <li>parallelism
- * <li>memory usage
+ * <li>memory usage (directly measured, or inferred from the number of buffered events)
  * <li>sharing threadpool among channel workers
+ * </ul>
+ * <p>
+ * When related thresholds are reached, deserializer executors may:
+ * <ul>
+ * <li>block: this indirectly blocks the reception of messages for this channel, applying upstream backpressure.
+ * <li>drop messages: a form of load shedding
  * 
  * 
  */

@@ -21,6 +21,8 @@ package org.apache.s4.fixtures;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 
+import junit.framework.Assert;
+
 import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
@@ -51,7 +53,7 @@ public abstract class ZkBasedTest {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
                 logger.error("Uncaught error in thread {}: {}", t.getName(), e);
-
+                Assert.fail("Uncaught error in thread " + t.getName() + " : " + e.getMessage());
             }
         });
     }

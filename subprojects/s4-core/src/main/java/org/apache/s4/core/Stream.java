@@ -230,9 +230,6 @@ public class Stream<T extends Event> implements Streamable {
      */
     public void receiveEvent(Event event) {
         // NOTE: ArrayBlockingQueue.size is O(1).
-        // if (taskQueue.remainingCapacity() == 0) {
-        // S4Metrics.queueIsFull(name);
-        // }
 
         eventProcessingExecutor.execute(new StreamEventProcessingTask((T) event));
         // TODO abstraction around queue and add dropped counter

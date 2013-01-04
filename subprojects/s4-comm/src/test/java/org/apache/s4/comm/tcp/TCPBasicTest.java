@@ -22,29 +22,24 @@ import com.google.inject.Injector;
 public class TCPBasicTest extends ZkBasedTest {
 
     @Test
-    public void testSingleMessage() {
+    public void testSingleMessage() throws Exception {
 
-        try {
-            Injector injector1 = Guice
-                    .createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                            .openStream(), "cluster1"), new TCPTransportModule(), new NoOpReceiverModule());
-            Emitter emitter = injector1.getInstance(Emitter.class);
+        Injector injector1 = Guice.createInjector(
+                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
+                new TCPTransportModule(), new NoOpReceiverModule());
+        Emitter emitter = injector1.getInstance(Emitter.class);
 
-            Injector injector2 = Guice
-                    .createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                            .openStream(), "cluster1"), new TCPTransportModule(), new MockReceiverModule());
-            // creating the listener will inject assignment (i.e. assign a partition) and receiver (delegatee for
-            // listener, here a mock which simply intercepts the message and notifies through a countdown latch)
-            injector2.getInstance(Listener.class);
+        Injector injector2 = Guice.createInjector(
+                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), "cluster1"),
+                new TCPTransportModule(), new MockReceiverModule());
+        // creating the listener will inject assignment (i.e. assign a partition) and receiver (delegatee for
+        // listener, here a mock which simply intercepts the message and notifies through a countdown latch)
+        injector2.getInstance(Listener.class);
 
-            emitter.send(0, injector1.getInstance(SerializerDeserializer.class).serialize(CommTestUtils.MESSAGE));
+        emitter.send(0, injector1.getInstance(SerializerDeserializer.class).serialize(CommTestUtils.MESSAGE));
 
-            // check receiver got the message
-            Assert.assertTrue(CommTestUtils.SIGNAL_MESSAGE_RECEIVED.await(5, TimeUnit.SECONDS));
+        // check receiver got the message
+        Assert.assertTrue(CommTestUtils.SIGNAL_MESSAGE_RECEIVED.await(5, TimeUnit.SECONDS));
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            Assert.fail(e.getMessage());
-        }
     }
 }

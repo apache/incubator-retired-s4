@@ -30,11 +30,11 @@ import org.apache.s4.comm.DefaultHasher;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.ft.NoOpCheckpointingFramework;
 import org.apache.s4.core.staging.BlockingRemoteSendersExecutorServiceFactory;
-import org.apache.s4.core.staging.BlockingSenderExecutorServiceFactory;
-import org.apache.s4.core.staging.LoadSheddingStreamExecutorServiceFactory;
+import org.apache.s4.core.staging.BlockingStreamExecutorServiceFactory;
 import org.apache.s4.core.staging.RemoteSendersExecutorServiceFactory;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
+import org.apache.s4.core.staging.ThrottlingSenderExecutorServiceFactory;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.slf4j.Logger;
@@ -85,10 +85,11 @@ public class DefaultCoreModule extends AbstractModule {
         // org.apache.s4.core.ft.FileSytemBasedCheckpointingModule
         bind(CheckpointingFramework.class).to(NoOpCheckpointingFramework.class);
 
-        bind(SenderExecutorServiceFactory.class).to(BlockingSenderExecutorServiceFactory.class);
+        // shed load in local sender only by default
+        bind(SenderExecutorServiceFactory.class).to(ThrottlingSenderExecutorServiceFactory.class);
         bind(RemoteSendersExecutorServiceFactory.class).to(BlockingRemoteSendersExecutorServiceFactory.class);
 
-        bind(StreamExecutorServiceFactory.class).to(LoadSheddingStreamExecutorServiceFactory.class);
+        bind(StreamExecutorServiceFactory.class).to(BlockingStreamExecutorServiceFactory.class);
 
     }
 

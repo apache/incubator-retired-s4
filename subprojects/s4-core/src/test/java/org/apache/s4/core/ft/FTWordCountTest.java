@@ -113,7 +113,7 @@ public class FTWordCountTest extends ZkBasedTest {
 
     }
 
-    private void injectSentence(Injector injector, TCPEmitter emitter, String sentence) {
+    private void injectSentence(Injector injector, TCPEmitter emitter, String sentence) throws InterruptedException {
         Event event;
         event = new Event();
         event.setStreamId("inputStream");

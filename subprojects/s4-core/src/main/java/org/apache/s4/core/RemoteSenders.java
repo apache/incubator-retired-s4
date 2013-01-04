@@ -110,7 +110,12 @@ public class RemoteSenders {
 
         @Override
         public void run() {
-            sender.send(hashKey, serDeser.serialize(event));
+            try {
+                sender.send(hashKey, serDeser.serialize(event));
+            } catch (InterruptedException e) {
+                logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);
+                Thread.currentThread().interrupt();
+            }
 
         }
 

@@ -147,7 +147,6 @@ subprojects {
         compile(libraries.reflectasm)
         runtime(libraries.objenesis)
         runtime(libraries.kryo)
-        runtime(libraries.reflectasm)
         runtime(libraries.netty)
         runtime(libraries.asm)
         compile(libraries.javax_inject)

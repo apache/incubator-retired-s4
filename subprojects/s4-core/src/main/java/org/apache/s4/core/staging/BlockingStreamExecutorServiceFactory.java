@@ -7,6 +7,10 @@ import org.apache.s4.comm.staging.BlockingThreadPoolExecutorService;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
+/**
+ * Factory for stream executors that block when task queue is full.
+ * 
+ */
 public class BlockingStreamExecutorServiceFactory implements StreamExecutorServiceFactory {
 
     private final int workQueueSize;
@@ -18,7 +22,7 @@ public class BlockingStreamExecutorServiceFactory implements StreamExecutorServi
 
     @Override
     public ExecutorService create(int parallelism, String name, ClassLoader classLoader) {
-        return new BlockingThreadPoolExecutorService(1, false, name, workQueueSize, classLoader);
+        return new BlockingThreadPoolExecutorService(parallelism, false, name, workQueueSize, classLoader);
     }
 
 }

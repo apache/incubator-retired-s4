@@ -8,6 +8,15 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
+/**
+ * 
+ * Factory for sender executors that limits submission rate.
+ * <p>
+ * If the specified rate is higher than what can be sent through the communication channel, events are dropped in a LIFO
+ * order (and logged through a corresponding meter).
+ * 
+ * 
+ */
 public class ThrottlingSenderExecutorServiceFactory implements SenderExecutorServiceFactory {
 
     private final int maxRate;

@@ -50,6 +50,10 @@ public class S4Metrics {
     private final Map<String, Meter> dequeuingStreamMeters = Maps.newHashMap();
     private final Map<String, Meter> droppedStreamMeters = Maps.newHashMap();
     private final Map<String, Meter> streamQueueFullMeters = Maps.newHashMap();
+    private final Meter droppedInSenderMeter = Metrics.newMeter(SenderImpl.class, "dropped@sender", "dropped@sender",
+            TimeUnit.SECONDS);
+    private final Meter droppedInRemoteSenderMeter = Metrics.newMeter(SenderImpl.class, "dropped@remote-sender",
+            "dropped@remote-sender", TimeUnit.SECONDS);
 
     private final Map<String, Meter[]> remoteSenderMeters = Maps.newHashMap();
 
@@ -61,13 +65,11 @@ public class S4Metrics {
             senderMeters[i] = Metrics.newMeter(SenderImpl.class, "sender", "sent-to-" + (i), TimeUnit.SECONDS);
         }
         Metrics.newGauge(Stream.class, "local-vs-remote", new Gauge<Double>() {
-
             @Override
             public Double value() {
                 // this will return NaN if divider is zero
                 return localEventsMeter.oneMinuteRate() / remoteEventsMeter.oneMinuteRate();
             }
-
         });
 
     }
@@ -116,6 +118,14 @@ public class S4Metrics {
         } catch (ArrayIndexOutOfBoundsException e) {
             logger.warn("Partition {} does not exist", partition);
         }
+    }
+
+    public void droppedEventInSender() {
+        droppedInSenderMeter.mark();
+    }
+
+    public void droppedEventInRemoteSender() {
+        droppedInRemoteSenderMeter.mark();
     }
 
     public void sentLocal() {

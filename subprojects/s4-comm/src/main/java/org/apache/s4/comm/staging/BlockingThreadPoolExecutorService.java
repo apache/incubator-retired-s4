@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ForwardingListeningExecutorService;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -101,8 +102,8 @@ public class BlockingThreadPoolExecutorService extends ForwardingListeningExecut
         try {
             queueingPermits.acquire();
         } catch (InterruptedException e) {
-            e.printStackTrace();
             Thread.currentThread().interrupt();
+            return Futures.immediateFailedCheckedFuture(e);
         }
         ListenableFuture<T> future = super.submit(new CallableWithPermitRelease<T>(task));
         return future;
@@ -114,6 +115,7 @@ public class BlockingThreadPoolExecutorService extends ForwardingListeningExecut
             queueingPermits.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return Futures.immediateFailedCheckedFuture(e);
         }
         ListenableFuture<T> future = super.submit(new RunnableWithPermitRelease(task), result);
         return future;
@@ -125,6 +127,7 @@ public class BlockingThreadPoolExecutorService extends ForwardingListeningExecut
             queueingPermits.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return Futures.immediateFailedCheckedFuture(e);
         }
         ListenableFuture<?> future = super.submit(new RunnableWithPermitRelease(task));
         return future;
@@ -135,7 +138,6 @@ public class BlockingThreadPoolExecutorService extends ForwardingListeningExecut
         try {
             queueingPermits.acquire();
         } catch (InterruptedException e) {
-            e.printStackTrace();
             Thread.currentThread().interrupt();
         }
         super.execute(new RunnableWithPermitRelease(command));

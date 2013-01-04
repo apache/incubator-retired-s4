@@ -6,6 +6,8 @@ import com.google.inject.name.Named;
 /**
  * Blocking implementation of the remote senders executor factory. It clones the implementation of the
  * {@link BlockingSenderExecutorServiceFactory} class.
+ * <p>
+ * This is convenient for sending events through adapters.
  * 
  */
 public class BlockingRemoteSendersExecutorServiceFactory extends BlockingSenderExecutorServiceFactory implements

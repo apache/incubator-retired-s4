@@ -43,7 +43,7 @@ public class RemoteSender {
 
     }
 
-    public void send(String hashKey, ByteBuffer message) {
+    public void send(String hashKey, ByteBuffer message) throws InterruptedException {
         int partition;
         if (hashKey == null) {
             // round robin by default

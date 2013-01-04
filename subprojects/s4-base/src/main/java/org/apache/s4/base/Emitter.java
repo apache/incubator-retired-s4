@@ -34,8 +34,10 @@ public interface Emitter {
      *            - message payload that needs to be sent
      * 
      * @return - true - if message is sent across successfully - false - if send fails
+     * @throws InterruptedException
+     *             if interrupted during blocking send operation
      */
-    boolean send(int partitionId, ByteBuffer message);
+    boolean send(int partitionId, ByteBuffer message) throws InterruptedException;
 
     int getPartitionCount();
 

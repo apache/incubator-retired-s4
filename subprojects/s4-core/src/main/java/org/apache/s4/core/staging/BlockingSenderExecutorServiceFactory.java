@@ -10,6 +10,8 @@ import com.google.inject.name.Named;
 /**
  * Blocking factory implementation for the sender executor service. It uses a mechanism that blocks the submission of
  * events when the work queue is full.
+ * <p>
+ * Beware that this can lead to deadlocks if processing queues are full on all nodes.
  * 
  */
 public class BlockingSenderExecutorServiceFactory implements SenderExecutorServiceFactory {

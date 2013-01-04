@@ -159,7 +159,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     }
 
-    private boolean connectTo(Integer partitionId) {
+    private boolean connectTo(Integer partitionId) throws InterruptedException {
         ClusterNode clusterNode = partitionNodeMap.get(partitionId);
 
         if (clusterNode == null) {
@@ -181,12 +181,12 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         } catch (InterruptedException ie) {
             logger.error(String.format("Interrupted while connecting to %s:%d", clusterNode.getMachineName(),
                     clusterNode.getPort()));
-            Thread.currentThread().interrupt();
+            throw ie;
         }
         return false;
     }
 
-    private void sendMessage(int partitionId, ByteBuffer message) {
+    private void sendMessage(int partitionId, ByteBuffer message) throws InterruptedException {
         ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(message);
 
         if (!partitionChannelMap.containsKey(partitionId)) {
@@ -197,12 +197,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
             }
         }
 
-        try {
-            writePermits.get(partitionId).acquire();
-        } catch (InterruptedException e) {
-            logger.error("Interrupted while acquiring permit", e);
-            Thread.currentThread().interrupt();
-        }
+        writePermits.get(partitionId).acquire();
 
         Channel c = partitionChannelMap.get(partitionId);
         if (c == null) {
@@ -214,7 +209,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     }
 
     @Override
-    public boolean send(int partitionId, ByteBuffer message) {
+    public boolean send(int partitionId, ByteBuffer message) throws InterruptedException {
         // TODO a possible optimization would be to buffer messages per partition, with a small timeout. This will limit
         // the number of writes and therefore system calls.
         sendMessage(partitionId, message);
@@ -240,6 +235,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     @Override
     public void close() {
         try {
+            topology.removeListener(this);
             channels.close().await();
             bootstrap.releaseExternalResources();
         } catch (InterruptedException ie) {

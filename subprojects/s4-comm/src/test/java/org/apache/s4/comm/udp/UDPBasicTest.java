@@ -22,28 +22,21 @@ import com.google.inject.Injector;
 public class UDPBasicTest extends ZkBasedTest {
 
     @Test
-    public void testSingleMessage() {
+    public void testSingleMessage() throws Exception {
 
-        try {
-            Injector injector1 = Guice.createInjector(
-                    new DefaultCommModule(Resources.getResource("udp.s4.comm.properties").openStream(), "cluster1"),
-                    new UDPTransportModule(), new NoOpReceiverModule());
-            Emitter emitter = injector1.getInstance(Emitter.class);
+        Injector injector1 = Guice.createInjector(new DefaultCommModule(Resources.getResource("udp.s4.comm.properties")
+                .openStream(), "cluster1"), new UDPTransportModule(), new NoOpReceiverModule());
+        Emitter emitter = injector1.getInstance(Emitter.class);
 
-            Injector injector2 = Guice.createInjector(
-                    new DefaultCommModule(Resources.getResource("udp.s4.comm.properties").openStream(), "cluster1"),
-                    new UDPTransportModule(), new MockReceiverModule());
-            // creating the listener will inject assignment (i.e. assign a partition) and receiver (delegatee for
-            // listener)
-            injector2.getInstance(Listener.class);
+        Injector injector2 = Guice.createInjector(new DefaultCommModule(Resources.getResource("udp.s4.comm.properties")
+                .openStream(), "cluster1"), new UDPTransportModule(), new MockReceiverModule());
+        // creating the listener will inject assignment (i.e. assign a partition) and receiver (delegatee for
+        // listener)
+        injector2.getInstance(Listener.class);
 
-            emitter.send(0, injector1.getInstance(SerializerDeserializer.class).serialize(CommTestUtils.MESSAGE));
+        emitter.send(0, injector1.getInstance(SerializerDeserializer.class).serialize(CommTestUtils.MESSAGE));
 
-            Assert.assertTrue(CommTestUtils.SIGNAL_MESSAGE_RECEIVED.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(CommTestUtils.SIGNAL_MESSAGE_RECEIVED.await(5, TimeUnit.SECONDS));
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            Assert.fail(e.getMessage());
-        }
     }
 }

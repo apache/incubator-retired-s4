@@ -58,8 +58,6 @@ Exmample configuration files are available in `/config` and you can configure :
 
 The total number of events sent from an injector is `number of keys * number of test iterations * number of parallel injection threads`. Make sure this is significant in order to be able to correctly interpret the messaging rates (1000 would be too little for instance!).
 
-The total number of events sent from an injector is `number of keys * number of test iterations * number of parallel injection threads`. Make sure this is significant in order to be able to correctly interpret the messaging rates (1000 would be too little for instance!).
-
 By default in this example the size of a message is 188 bytes.
 
 

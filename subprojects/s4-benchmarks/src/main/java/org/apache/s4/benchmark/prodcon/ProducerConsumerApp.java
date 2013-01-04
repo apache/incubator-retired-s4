@@ -52,7 +52,7 @@ public class ProducerConsumerApp extends App {
             public List<String> get(Event event) {
                 return ImmutableList.of(event.get("key"));
             }
-        }, simplePE1).setParallelism(1);
+        }, simplePE1).setParallelism(3);
 
         SimplePE2 simplePE2 = createPE(SimplePE2.class, "simplePE2");
 

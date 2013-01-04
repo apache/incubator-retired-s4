@@ -79,7 +79,7 @@ public class RecoveryTest extends ZkBasedTest {
                 CheckpointingModuleWithUnrespondingFetchingStorageBackend.class, false, "value1= ; value2=message2");
     }
 
-    private void insertCheckpointInstruction(Injector injector, TCPEmitter emitter) {
+    private void insertCheckpointInstruction(Injector injector, TCPEmitter emitter) throws InterruptedException {
         Event event;
         event = new Event();
         event.setStreamId("inputStream");

@@ -111,7 +111,7 @@ public class WordCountTest extends ZkBasedTest {
         Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", results);
     }
 
-    public void injectSentence(String sentence) throws IOException {
+    public void injectSentence(String sentence) throws IOException, InterruptedException {
         Event event = new Event();
         event.setStreamId("inputStream");
         event.put("sentence", String.class, sentence);
