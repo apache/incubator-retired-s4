@@ -161,11 +161,13 @@ public class SenderImpl implements Sender {
                 if (localPartitionId != i) {
                     try {
                         emitter.send(i, serializedEvent);
+                        metrics.sentEvent(i);
                     } catch (InterruptedException e) {
                         logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);
+                        // no reason to continue: we were interrupted, so we reset the interrupt status and leave
+                        Thread.currentThread().interrupt();
+                        break;
                     }
-                    metrics.sentEvent(i);
-
                 }
             }
 
