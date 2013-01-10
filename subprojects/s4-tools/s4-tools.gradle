@@ -38,6 +38,9 @@ dependencies {
     compile libraries.gradle_tooling_api
     compile libraries.gradle_wrapper
     compile libraries.log4j
+    testCompile project(path: ':s4-comm', configuration: 'tests')
+    testCompile project(path: ':s4-core', configuration: 'tests')
+    
 
 }
 
