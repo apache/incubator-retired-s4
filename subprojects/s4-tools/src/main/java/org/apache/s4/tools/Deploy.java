@@ -22,21 +22,25 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
-import org.apache.s4.deploy.DistributedDeploymentManager;
-import org.apache.zookeeper.CreateMode;
+import org.apache.s4.core.util.AppConfig;
+import org.apache.s4.deploy.DeploymentUtils;
 import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProgressListener;
 import org.gradle.tooling.ProjectConnection;
 import org.slf4j.LoggerFactory;
 
+import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.FileConverter;
+import com.beust.jcommander.internal.Maps;
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
@@ -101,31 +105,30 @@ public class Deploy extends S4ArgsBase {
                 }
             }
 
-            final String uri = s4rToDeploy.toURI().toString();
-            ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-            record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-            record.putSimpleField("name", deployArgs.appName);
-            String deployedAppPath = "/s4/clusters/" + deployArgs.clusterName + "/app/s4App";
-            if (zkClient.exists(deployedAppPath)) {
-                ZNRecord readData = zkClient.readData(deployedAppPath);
-                logger.error("Cannot deploy app [{}], because app [{}] is already deployed", deployArgs.appName,
-                        readData.getSimpleField("name"));
-                System.exit(1);
-            }
-
-            zkClient.create("/s4/clusters/" + deployArgs.clusterName + "/app/s4App", record, CreateMode.PERSISTENT);
-            logger.info(
-                    "uploaded application [{}] to cluster [{}], using zookeeper znode [{}], and s4r file [{}]",
-                    new String[] { deployArgs.appName, deployArgs.clusterName,
-                            "/s4/clusters/" + deployArgs.clusterName + "/app/" + deployArgs.appName,
-                            s4rToDeploy.getAbsolutePath() });
-
+            DeploymentUtils.initAppConfig(
+                    new AppConfig.Builder().appName(deployArgs.appName).appURI(s4rToDeploy.toURI().toString())
+                            .customModulesNames(deployArgs.modulesClassesNames)
+                            .customModulesURIs(deployArgs.modulesURIs)
+                            .namedParameters(convertListArgsToMap(deployArgs.extraNamedParameters)).build(),
+                    deployArgs.clusterName, false, deployArgs.zkConnectionString);
             // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
             System.exit(0);
         } catch (Exception e) {
             LoggerFactory.getLogger(Deploy.class).error("Cannot deploy app", e);
         }
 
+    }
+
+    private static Map<String, String> convertListArgsToMap(List<String> args) {
+        Map<String, String> result = Maps.newHashMap();
+        for (String arg : args) {
+            String[] split = arg.split("[=]");
+            if (!(split.length == 2)) {
+                throw new RuntimeException("Invalid args: " + Arrays.toString(args.toArray(new String[] {})));
+            }
+            result.put(split[0], split[1]);
+        }
+        return result;
     }
 
     @Parameters(commandNames = "s4 deploy", commandDescription = "Package and deploy application to S4 cluster", separators = "=")
@@ -155,6 +158,33 @@ public class Deploy extends S4ArgsBase {
         @Parameter(names = "-timeout", description = "Connection timeout to Zookeeper, in ms")
         int timeout = 10000;
 
+        @Parameter(names = { "-modulesURIs", "-mu" }, description = "URIs for fetching code of custom modules")
+        List<String> modulesURIs = new ArrayList<String>();
+
+        @Parameter(names = { "-modulesClasses", "-emc", "-mc" }, description = "Fully qualified class names of custom modules")
+        List<String> modulesClassesNames = new ArrayList<String>();
+
+        @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = InlineConfigParameterConverter.class)
+        List<String> extraNamedParameters = new ArrayList<String>();
+
+    }
+
+    /**
+     * Parameters parsing utility.
+     * 
+     */
+    public static class InlineConfigParameterConverter implements IStringConverter<String> {
+
+        @Override
+        public String convert(String arg) {
+            Pattern parameterPattern = Pattern.compile("(\\S+=\\S+)");
+            logger.info("processing inline configuration parameter {}", arg);
+            Matcher parameterMatcher = parameterPattern.matcher(arg);
+            if (!parameterMatcher.find()) {
+                throw new IllegalArgumentException("Cannot understand parameter " + arg);
+            }
+            return parameterMatcher.group(1);
+        }
     }
 
     static class ExecGradle {

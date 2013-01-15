@@ -29,14 +29,16 @@ import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.tcp.TCPEmitter;
+import org.apache.s4.core.BaseModule;
 import org.apache.s4.core.DefaultCoreModule;
-import org.apache.s4.core.Main;
+import org.apache.s4.core.S4Node;
+import org.apache.s4.core.util.AppConfig;
+import org.apache.s4.deploy.DeploymentUtils;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.io.Resources;
@@ -54,22 +56,13 @@ public class WordCountTest extends ZkBasedTest {
     public static final String FLAG = ";";
     public static int TOTAL_WORDS = SENTENCE_1_TOTAL_WORDS + SENTENCE_2_TOTAL_WORDS + SENTENCE_3_TOTAL_WORDS;
     private TCPEmitter emitter;
-    private Injector injector;
+    Injector injector;
 
-    // private static Factory zookeeperServerConnectionFactory;
-
-    // @Before
-    // public void prepare() throws IOException, InterruptedException, KeeperException {
-    // CommTestUtils.cleanupTmpDirs();
-    // zookeeperServerConnectionFactory = CommTestUtils.startZookeeperServer();
-    //
-    // }
-
-    @Before
-    public void prepareEmitter() throws IOException {
-        injector = Guice.createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                .openStream(), "cluster1"), new DefaultCoreModule(Resources.getResource("default.s4.core.properties")
-                .openStream()));
+    public void createEmitter() throws IOException {
+        injector = Guice.createInjector(new BaseModule(
+                Resources.getResource("default.s4.base.properties").openStream(), "cluster1"), new DefaultCommModule(
+                Resources.getResource("default.s4.comm.properties").openStream()), new DefaultCoreModule(Resources
+                .getResource("default.s4.core.properties").openStream()));
 
         emitter = injector.getInstance(TCPEmitter.class);
 
@@ -92,9 +85,12 @@ public class WordCountTest extends ZkBasedTest {
     @Test
     public void testSimple() throws Exception {
         final ZooKeeper zk = CommTestUtils.createZkClient();
+        DeploymentUtils.initAppConfig(new AppConfig.Builder().appClassName(WordCountApp.class.getName()).build(),
+                "cluster1", true, "localhost:2181");
+        S4Node.main(new String[] { "-cluster=cluster1", });
 
-        Main.main(new String[] { "-cluster=cluster1", "-appClass=" + WordCountApp.class.getName(),
-                "-extraModulesClasses=" + WordCountModule.class.getName() });
+        // we create the emitter now, it will share zk node assignment with the S4 node
+        createEmitter();
 
         CountDownLatch signalTextProcessed = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/results", signalTextProcessed, zk);
@@ -114,6 +110,8 @@ public class WordCountTest extends ZkBasedTest {
     public void injectSentence(String sentence) throws IOException {
         Event event = new Event();
         event.put("sentence", String.class, sentence);
+
+        // NOTE: we send to partition 1 since partition 0 hosts the emitter
         emitter.send(0, new EventMessage("-1", "inputStream", injector.getInstance(SerializerDeserializer.class)
                 .serialize(event)));
     }

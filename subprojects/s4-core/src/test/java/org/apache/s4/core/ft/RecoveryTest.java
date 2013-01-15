@@ -31,6 +31,9 @@ import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.comm.topology.ZkClient;
+import org.apache.s4.core.util.AppConfig;
+import org.apache.s4.deploy.DeploymentUtils;
+import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.zookeeper.KeeperException;
@@ -38,6 +41,8 @@ import org.apache.zookeeper.ZooKeeper;
 import org.junit.After;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 
 public class RecoveryTest extends ZkBasedTest {
@@ -99,9 +104,19 @@ public class RecoveryTest extends ZkBasedTest {
         // use a latch for waiting for app to be ready
         CountDownLatch signalConsumerReady = getConsumerReadySignal("inputStream");
 
+        DeploymentUtils.initAppConfig(
+                new AppConfig.Builder()
+                        .appClassName(appClass.getName())
+                        .namedParameters(
+                                ImmutableMap.of("s4.checkpointing.filesystem.storageRootPath",
+                                        CommTestUtils.DEFAULT_STORAGE_DIR.getAbsolutePath()))
+                        .customModulesNames(ImmutableList.of(backendModuleClass.getName())).build(), "cluster1", true,
+                "localhost:2181");
+        // recovering and making sure checkpointing still works
+
         // 1. instantiate remote S4 app
-        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1", "-appClass", appClass.getName(),
-                "-extraModulesClasses", backendModuleClass.getName() });
+
+        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" });
 
         Assert.assertTrue(signalConsumerReady.await(20, TimeUnit.SECONDS));
 
@@ -131,8 +146,16 @@ public class RecoveryTest extends ZkBasedTest {
         zk.delete("/data", -1);
 
         signalConsumerReady = getConsumerReadySignal("inputStream");
-        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1", "-appClass",
-                S4AppWithManualCheckpointing.class.getName(), "-extraModulesClasses", backendModuleClass.getName() });
+        DeploymentUtils.initAppConfig(
+                new AppConfig.Builder()
+                        .appClassName(S4AppWithManualCheckpointing.class.getName())
+                        .namedParameters(
+                                ImmutableMap.of("s4.checkpointing.filesystem.storageRootPath",
+                                        CommTestUtils.DEFAULT_STORAGE_DIR.getAbsolutePath()))
+                        .customModulesNames(ImmutableList.of(backendModuleClass.getName())).build(), "cluster1", true,
+                "localhost:2181");
+
+        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" });
 
         Assert.assertTrue(signalConsumerReady.await(20, TimeUnit.SECONDS));
         // // trigger recovery by sending application event to set value 2

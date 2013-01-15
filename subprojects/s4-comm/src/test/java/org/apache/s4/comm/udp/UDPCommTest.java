@@ -20,9 +20,9 @@ package org.apache.s4.comm.udp;
 
 import java.io.IOException;
 
-import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.DeliveryTestUtil;
 import org.apache.s4.comm.util.ProtocolTestUtil;
+import org.apache.s4.fixtures.TestCommModule;
 import org.junit.Assert;
 
 import com.google.common.io.Resources;
@@ -44,8 +44,8 @@ public abstract class UDPCommTest extends ProtocolTestUtil {
 
     @Override
     protected Injector newInjector() throws IOException {
-        return Guice.createInjector(new DefaultCommModule(Resources.getResource("udp.s4.comm.properties").openStream(),
-                "cluster1"), new UDPCommTestModule());
+        return Guice.createInjector(new TestCommModule(Resources.getResource("udp.s4.comm.properties").openStream()),
+                new UDPCommTestModule());
     }
 
     class UDPCommTestModule extends AbstractModule {

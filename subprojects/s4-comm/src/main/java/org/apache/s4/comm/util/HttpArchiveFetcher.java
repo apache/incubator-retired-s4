@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.s4.deploy;
+package org.apache.s4.comm.util;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -56,7 +56,7 @@ import com.google.common.io.ByteStreams;
 
 /**
  * <p>
- * Fetches S4R archive through HTTP.
+ * Fetches modules and app archives through HTTP.
  * </p>
  * <p>
  * The underlying implementation uses Netty, and borrows code from the Netty snoop example.</br>
@@ -66,12 +66,12 @@ import com.google.common.io.ByteStreams;
  * 
  *      </p>
  */
-public class HttpS4RFetcher implements S4RFetcher {
+public class HttpArchiveFetcher implements ArchiveFetcher {
 
-    private static Logger logger = LoggerFactory.getLogger(HttpS4RFetcher.class);
+    private static Logger logger = LoggerFactory.getLogger(HttpArchiveFetcher.class);
 
     @Override
-    public InputStream fetch(URI uri) throws DeploymentFailedException {
+    public InputStream fetch(URI uri) throws ArchiveFetchException {
         logger.debug("Fetching file through http: {}", uri.toString());
 
         String host = uri.getHost();
@@ -90,7 +90,7 @@ public class HttpS4RFetcher implements S4RFetcher {
         try {
             tmpFile = File.createTempFile("http", "download");
         } catch (IOException e) {
-            throw new DeploymentFailedException("Cannot create temporary file for fetching s4r data from http server",
+            throw new ArchiveFetchException("Cannot create temporary file for fetching archive data from http server",
                     e);
         }
         clientBootstrap.setPipelineFactory(new HttpClientPipelineFactory(tmpFile));
@@ -99,7 +99,7 @@ public class HttpS4RFetcher implements S4RFetcher {
         Channel channel = channelFuture.awaitUninterruptibly().getChannel();
         if (!channelFuture.isSuccess()) {
             clientBootstrap.releaseExternalResources();
-            throw new DeploymentFailedException("Cannot connect to http uri [" + uri.toString() + "]",
+            throw new ArchiveFetchException("Cannot connect to http uri [" + uri.toString() + "]",
                     channelFuture.getCause());
         }
 
@@ -114,11 +114,12 @@ public class HttpS4RFetcher implements S4RFetcher {
 
         clientBootstrap.releaseExternalResources();
 
-        logger.debug("Finished downloading s4r file through http {}", uri.toString());
+        logger.debug("Finished downloading archive file through http {}, as file: {}", uri.toString(),
+                tmpFile.getAbsolutePath());
         try {
             return new FileInputStream(tmpFile);
         } catch (FileNotFoundException e) {
-            throw new DeploymentFailedException("Cannot get input stream from temporary file with s4r data ["
+            throw new ArchiveFetchException("Cannot get input stream from temporary file with s4r data ["
                     + tmpFile.getAbsolutePath() + "]");
         }
     }

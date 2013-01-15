@@ -45,12 +45,13 @@ import com.google.inject.name.Named;
  * Checkpoints are stored in individual files (1 file = 1 checkpointId) in directories according to the following
  * structure: <code>(storageRootpath)/prototypeId/checkpointId</code>
  * </p>
- *
+ * 
  */
 public class DefaultFileSystemStateStorage implements StateStorage {
 
     private static Logger logger = LoggerFactory.getLogger(DefaultFileSystemStateStorage.class);
-    @Inject(optional = true)
+
+    @Inject
     @Named("s4.checkpointing.filesystem.storageRootPath")
     String storageRootPath;
 
@@ -64,7 +65,6 @@ public class DefaultFileSystemStateStorage implements StateStorage {
      */
     @Inject
     public void init() {
-        checkStorageDir();
     }
 
     @Override
@@ -120,22 +120,6 @@ public class DefaultFileSystemStateStorage implements StateStorage {
         CheckpointId id = null;
         id = new CheckpointId(new String(Base64.decodeBase64(file.getName())));
         return id;
-    }
-
-    public void checkStorageDir() {
-        if (storageRootPath == null) {
-
-            File defaultStorageDir = new File(System.getProperty("user.dir") + File.separator + "tmp" + File.separator
-                    + "storage");
-            storageRootPath = defaultStorageDir.getAbsolutePath();
-            logger.warn("Unspecified storage dir; using default dir: {}", defaultStorageDir.getAbsolutePath());
-            if (!defaultStorageDir.exists()) {
-                if (!(defaultStorageDir.mkdirs())) {
-                    logger.error("Storage directory not specified, and cannot create default storage directory : "
-                            + defaultStorageDir.getAbsolutePath() + "\n Checkpointing and recovery will be disabled.");
-                }
-            }
-        }
     }
 
     @Override

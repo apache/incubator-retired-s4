@@ -37,12 +37,11 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.tcp.TCPEmitter;
-import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
+import org.apache.s4.core.util.AppConfig;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.s4.fixtures.ZkBasedTest;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
@@ -113,9 +112,11 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         CommTestUtils.watchAndSignalCreation(AppConstants.INITIALIZED_ZNODE_1, signalAppStarted,
                 CommTestUtils.createZkClient());
 
-        ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-        record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-        zkClient.create("/s4/clusters/cluster1/app/s4App", record, CreateMode.PERSISTENT);
+        DeploymentUtils.initAppConfig(new AppConfig.Builder().appURI(uri).build(), "cluster1", true, "localhost:2181");
+
+        // ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
+        // record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
+        // zkClient.create("/s4/clusters/cluster1/app/s4App", record, CreateMode.PERSISTENT);
 
         Assert.assertTrue(signalAppInitialized.await(20, TimeUnit.SECONDS));
         Assert.assertTrue(signalAppStarted.await(20, TimeUnit.SECONDS));
@@ -153,7 +154,7 @@ public class TestAutomaticDeployment extends ZkBasedTest {
                 Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
                         + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
 
-        // we start a
+        // we start a simple web server
         InetSocketAddress addr = new InetSocketAddress(8080);
         httpServer = HttpServer.create(addr, 0);
 
@@ -166,6 +167,7 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         // check resource loading (we use a zkclient without custom serializer)
         ZkClient client2 = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
         Assert.assertEquals("Salut!", client2.readData("/resourceData"));
+        client2.close();
 
     }
 
@@ -191,6 +193,8 @@ public class TestAutomaticDeployment extends ZkBasedTest {
 
             }
         });
+
+        // CoreTestUtils.initAppConfig(new AppConfig.Builder().build(), true);
 
         forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=cluster1" });
 

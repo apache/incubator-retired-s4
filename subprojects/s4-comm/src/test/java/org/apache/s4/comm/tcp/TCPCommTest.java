@@ -20,9 +20,9 @@ package org.apache.s4.comm.tcp;
 
 import java.io.IOException;
 
-import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.DeliveryTestUtil;
 import org.apache.s4.comm.util.ProtocolTestUtil;
+import org.apache.s4.fixtures.TestCommModule;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,10 +45,11 @@ public abstract class TCPCommTest extends ProtocolTestUtil {
         super(numTasks);
     }
 
+    @Override
     public Injector newInjector() {
         try {
-            return Guice.createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                    .openStream(), CLUSTER_NAME));
+            return Guice.createInjector(new TestCommModule(Resources.getResource("default.s4.comm.properties")
+                    .openStream()));
         } catch (IOException e) {
             Assert.fail();
             return null;

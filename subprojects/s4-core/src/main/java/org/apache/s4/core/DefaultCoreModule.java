@@ -18,6 +18,7 @@
 
 package org.apache.s4.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -36,8 +37,11 @@ import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.io.Files;
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
+import com.google.inject.Provides;
+import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 
 /**
@@ -83,6 +87,17 @@ public class DefaultCoreModule extends AbstractModule {
         // For enabling checkpointing, one needs to use a custom module, such as
         // org.apache.s4.core.ft.FileSytemBasedCheckpointingModule
         bind(CheckpointingFramework.class).to(NoOpCheckpointingFramework.class);
+    }
+
+    @Provides
+    @Named("s4.tmp.dir")
+    public File provideTmpDir() {
+        File tmpS4Dir = Files.createTempDir();
+        tmpS4Dir.deleteOnExit();
+        logger.warn(
+                "s4.tmp.dir not specified, using temporary directory [{}] for unpacking S4R. You may want to specify a parent non-temporary directory.",
+                tmpS4Dir.getAbsolutePath());
+        return tmpS4Dir;
     }
 
     private void loadProperties(Binder binder) {

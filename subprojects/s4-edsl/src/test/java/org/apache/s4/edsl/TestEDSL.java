@@ -21,6 +21,7 @@ package org.apache.s4.edsl;
 import java.lang.reflect.Field;
 
 import org.apache.s4.comm.DefaultCommModule;
+import org.apache.s4.core.BaseModule;
 import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.junit.Test;
@@ -35,9 +36,11 @@ public class TestEDSL extends ZkBasedTest {
 
     @Test
     public void test() throws Exception {
-        Injector injector = Guice.createInjector(
-                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream(), CLUSTER_NAME),
-                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream()));
+        Injector injector = Guice
+                .createInjector(new BaseModule(Resources.getResource("default.s4.base.properties").openStream(),
+                        "cluster1"), new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
+                        .openStream()), new DefaultCoreModule(Resources.getResource("default.s4.core.properties")
+                        .openStream()));
         MyApp myApp = injector.getInstance(MyApp.class);
 
         /* Normally. the container will handle this but this is just a test. */

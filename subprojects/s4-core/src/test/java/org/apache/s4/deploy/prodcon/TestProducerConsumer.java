@@ -32,12 +32,11 @@ import org.I0Itec.zkclient.exception.ZkNoNodeException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.comm.tools.TaskSetup;
-import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
-import org.apache.s4.deploy.DistributedDeploymentManager;
+import org.apache.s4.core.util.AppConfig;
+import org.apache.s4.deploy.DeploymentUtils;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
@@ -139,15 +138,13 @@ public class TestProducerConsumer {
             }
         });
 
-        ZNRecord record2 = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-        record2.putSimpleField(DistributedDeploymentManager.S4R_URI, uriConsumer);
-        zkClient.create("/s4/clusters/" + CONSUMER_CLUSTER + "/app/s4App", record2, CreateMode.PERSISTENT);
+        DeploymentUtils.initAppConfig(new AppConfig.Builder().appURI(uriConsumer).build(), CONSUMER_CLUSTER, true,
+                "localhost:2181");
         // TODO check that consumer app is ready with a better way than checking stream consumers
         Assert.assertTrue(signalConsumerReady.await(20, TimeUnit.SECONDS));
 
-        ZNRecord record1 = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-        record1.putSimpleField(DistributedDeploymentManager.S4R_URI, uriProducer);
-        zkClient.create("/s4/clusters/" + PRODUCER_CLUSTER + "/app/s4App", record1, CreateMode.PERSISTENT);
+        DeploymentUtils.initAppConfig(new AppConfig.Builder().appURI(uriProducer).build(), PRODUCER_CLUSTER, true,
+                "localhost:2181");
 
         // that may be a bit long to complete...
         Assert.assertTrue(signalConsumptionComplete.await(30, TimeUnit.SECONDS));
@@ -194,8 +191,6 @@ public class TestProducerConsumer {
         forkedProducerNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + PRODUCER_CLUSTER });
         forkedConsumerNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + CONSUMER_CLUSTER });
 
-        // TODO synchro with ready state from zk
-        // Thread.sleep(10000);
         Assert.assertTrue(signalProcessesReady.await(20, TimeUnit.SECONDS));
 
     }
