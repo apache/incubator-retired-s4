@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.core.triggers.TriggeredApp;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.MockCommModule;
@@ -65,7 +64,8 @@ public abstract class TriggerTest extends ZkBasedTest {
 
     protected CountDownLatch createTriggerAppAndSendEvent() throws IOException, KeeperException, InterruptedException {
         final ZooKeeper zk = CommTestUtils.createZkClient();
-        Injector injector = Guice.createInjector(new MockCommModule(), new MockCoreModule());
+        Injector injector = Guice.createInjector(new MockCommModule(), new MockCoreModule(), new AppModule(getClass()
+                .getClassLoader()));
         app = injector.getInstance(TriggeredApp.class);
         app.init();
         app.start();
@@ -79,7 +79,9 @@ public abstract class TriggerTest extends ZkBasedTest {
         CountDownLatch signalEvent1Triggered = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation("/onTrigger[StringEvent]@" + time1, signalEvent1Triggered, zk);
 
-        app.stream.receiveEvent(new EventMessage("-1", "stream", app.getSerDeser().serialize(new StringEvent(time1))));
+        StringEvent event = new StringEvent(time1);
+        event.setStreamId("stream");
+        app.stream.receiveEvent(event);
 
         // check event processed
         Assert.assertTrue(signalEvent1Processed.await(5, TimeUnit.SECONDS));

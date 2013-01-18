@@ -29,7 +29,6 @@ import org.apache.s4.core.App;
 import org.apache.s4.core.window.AbstractSlidingWindowPE;
 import org.apache.s4.core.window.DefaultAggregatingSlot;
 import org.apache.s4.core.window.SlotFactory;
-import org.apache.s4.core.windowing.WindowingPETest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

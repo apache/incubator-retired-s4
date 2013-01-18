@@ -23,31 +23,25 @@ import java.nio.ByteBuffer;
 import org.apache.s4.base.SerializerDeserializer;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.ObjectBuffer;
-import com.esotericsoftware.kryo.serialize.ClassSerializer;
-import com.esotericsoftware.kryo.serialize.SimpleSerializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
 
 /**
- * Serializazer/deserializer based on <a href="http://code.google.com/p/kryo/">kryo</a>
- *
+ * Serializer/deserializer based on <a href="http://code.google.com/p/kryo/">kryo 2</a>
+ * 
  */
 public class KryoSerDeser implements SerializerDeserializer {
 
-    private Kryo kryo = new Kryo();
+    private ThreadLocal<Kryo> kryoThreadLocal;
+    private ThreadLocal<Output> outputThreadLocal;
 
     private int initialBufferSize = 2048;
     private int maxBufferSize = 256 * 1024;
 
-    public void setInitialBufferSize(int initialBufferSize) {
-        this.initialBufferSize = initialBufferSize;
-    }
-
     public void setMaxBufferSize(int maxBufferSize) {
         this.maxBufferSize = maxBufferSize;
-    }
-
-    public KryoSerDeser() {
-        this(Thread.currentThread().getContextClassLoader());
     }
 
     /**
@@ -56,37 +50,48 @@ public class KryoSerDeser implements SerializerDeserializer {
      *            classloader able to handle classes to serialize/deserialize. For instance, application-level events
      *            can only be handled by the application classloader.
      */
-    public KryoSerDeser(ClassLoader classLoader) {
-        kryo.setClassLoader(classLoader);
-        kryo.setRegistrationOptional(true);
-
-        kryo.register(Class.class, new ClassSerializer(kryo));
-        // UUIDs don't have a no-arg constructor.
-        kryo.register(java.util.UUID.class, new SimpleSerializer<java.util.UUID>() {
-            @Override
-            public java.util.UUID read(ByteBuffer buf) {
-                return new java.util.UUID(buf.getLong(), buf.getLong());
-            }
+    @Inject
+    public KryoSerDeser(@Assisted final ClassLoader classLoader) {
+        kryoThreadLocal = new ThreadLocal<Kryo>() {
 
             @Override
-            public void write(ByteBuffer buf, java.util.UUID uuid) {
-                buf.putLong(uuid.getMostSignificantBits());
-                buf.putLong(uuid.getLeastSignificantBits());
+            protected Kryo initialValue() {
+                Kryo kryo = new Kryo();
+                kryo.setClassLoader(classLoader);
+                kryo.setRegistrationRequired(false);
+                return kryo;
             }
+        };
 
-        });
+        outputThreadLocal = new ThreadLocal<Output>() {
+            @Override
+            protected Output initialValue() {
+                Output output = new Output(initialBufferSize, maxBufferSize);
+                return output;
+            }
+        };
 
     }
 
     @Override
-    public Object deserialize(byte[] rawMessage) {
-        ObjectBuffer buffer = new ObjectBuffer(kryo, initialBufferSize, maxBufferSize);
-        return buffer.readClassAndObject(rawMessage);
+    public Object deserialize(ByteBuffer rawMessage) {
+        Input input = new Input(rawMessage.array());
+        try {
+            return kryoThreadLocal.get().readClassAndObject(input);
+        } finally {
+            input.close();
+        }
     }
 
+    @SuppressWarnings("resource")
     @Override
-    public byte[] serialize(Object message) {
-        ObjectBuffer buffer = new ObjectBuffer(kryo, initialBufferSize, maxBufferSize);
-        return buffer.writeClassAndObject(message);
+    public ByteBuffer serialize(Object message) {
+        Output output = outputThreadLocal.get();
+        try {
+            kryoThreadLocal.get().writeClassAndObject(output, message);
+            return ByteBuffer.wrap(output.toBytes());
+        } finally {
+            output.clear();
+        }
     }
 }

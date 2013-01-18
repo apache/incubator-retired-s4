@@ -27,8 +27,7 @@ import junit.framework.Assert;
 
 import org.I0Itec.zkclient.IZkChildListener;
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
-import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.fixtures.CoreTestUtils;
@@ -80,12 +79,15 @@ public class RecoveryTest extends ZkBasedTest {
                 CheckpointingModuleWithUnrespondingFetchingStorageBackend.class, false, "value1= ; value2=message2");
     }
 
-    private void insertCheckpointInstruction(Injector injector, TCPEmitter emitter) {
+    private void insertCheckpointInstruction(Injector injector, TCPEmitter emitter) throws InterruptedException {
         Event event;
         event = new Event();
+        event.setStreamId("inputStream");
         event.put("command", String.class, "checkpoint");
-        emitter.send(0, new EventMessage("-1", "inputStream", injector.getInstance(SerializerDeserializer.class)
-                .serialize(event)));
+        emitter.send(
+                0,
+                injector.getInstance(SerializerDeserializerFactory.class)
+                        .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
     }
 
     private void testCheckpointingConfiguration(Class<?> appClass, Class<?> backendModuleClass,
@@ -117,8 +119,11 @@ public class RecoveryTest extends ZkBasedTest {
         Event event = new Event();
         event.put("command", String.class, "setValue1");
         event.put("value", String.class, "message1");
-        emitter.send(0, new EventMessage("-1", "inputStream", injector.getInstance(SerializerDeserializer.class)
-                .serialize(event)));
+        event.setStreamId("inputStream");
+        emitter.send(
+                0,
+                injector.getInstance(SerializerDeserializerFactory.class)
+                        .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
 
         if (manualCheckpointing) {
             insertCheckpointInstruction(injector, emitter);
@@ -140,10 +145,13 @@ public class RecoveryTest extends ZkBasedTest {
         CoreTestUtils.watchAndSignalCreation("/value2Set", signalValue2Set, zk);
 
         event = new Event();
+        event.setStreamId("inputStream");
         event.put("command", String.class, "setValue2");
         event.put("value", String.class, "message2");
-        emitter.send(0, new EventMessage("-1", "inputStream", injector.getInstance(SerializerDeserializer.class)
-                .serialize(event)));
+        emitter.send(
+                0,
+                injector.getInstance(SerializerDeserializerFactory.class)
+                        .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
 
         Assert.assertTrue(signalValue2Set.await(10, TimeUnit.SECONDS));
 

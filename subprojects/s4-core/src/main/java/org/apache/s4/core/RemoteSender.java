@@ -18,33 +18,39 @@
 
 package org.apache.s4.core;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.s4.base.Emitter;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
 
 /**
  * Sends events to a remote cluster.
- *
+ * 
  */
 public class RemoteSender {
 
     final private Emitter emitter;
     final private Hasher hasher;
-    int targetPartition = 0;
+    AtomicInteger targetPartition = new AtomicInteger();
+    final private String remoteClusterName;
 
-    public RemoteSender(Emitter emitter, Hasher hasher) {
+    public RemoteSender(Emitter emitter, Hasher hasher, String clusterName) {
         super();
         this.emitter = emitter;
         this.hasher = hasher;
+        this.remoteClusterName = clusterName;
+
     }
 
-    public void send(String hashKey, EventMessage eventMessage) {
+    public void send(String hashKey, ByteBuffer message) throws InterruptedException {
+        int partition;
         if (hashKey == null) {
             // round robin by default
-            emitter.send(Math.abs(targetPartition++ % emitter.getPartitionCount()), eventMessage);
+            partition = Math.abs(targetPartition.incrementAndGet() % emitter.getPartitionCount());
         } else {
-            int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
-            emitter.send(partition, eventMessage);
+            partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
         }
+        emitter.send(partition, message);
     }
 }

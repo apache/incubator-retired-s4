@@ -20,21 +20,16 @@ package org.apache.s4.base;
 
 /**
  * 
- * Get a byte array received by a lower level layer.
+ * Defines the communication level entry point for serialized events. The implementation is expected to open a server
+ * socket on the node's listening port, receive messages through this channel, and delegate to the application layer
+ * through the {@link Receiver} interface.
  * 
  */
 public interface Listener {
 
     /**
-     * Perform blocking receive on the appropriate communication channel
-     * 
-     * @return <ul>
-     *         <li>byte[] message returned by the channel</li>
-     *         <li>null if the associated blocking thread is interrupted</li>
-     *         </ul>
+     * Returns the id of the partition currently assigned to this node.
      */
-    byte[] recv();
-
     public int getPartitionId();
 
     void close();

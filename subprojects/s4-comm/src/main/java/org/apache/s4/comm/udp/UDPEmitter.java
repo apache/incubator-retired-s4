@@ -23,12 +23,13 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.s4.base.Emitter;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterChangeListener;
 import org.apache.s4.comm.topology.ClusterNode;
@@ -39,7 +40,7 @@ import com.google.inject.Inject;
 
 /**
  * UDP based emitter.
- *
+ * 
  */
 public class UDPEmitter implements Emitter, ClusterChangeListener {
     private DatagramSocket socket;
@@ -49,6 +50,7 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
     private final Cluster topology;
 
     @Inject
+    SerializerDeserializerFactory serDeserFactory;
     SerializerDeserializer serDeser;
 
     public long getMessageDropInQueueCount() {
@@ -72,14 +74,14 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
 
     @Inject
     private void init() {
+        serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
         topology.addListener(this);
         refreshCluster();
     }
 
     @Override
-    public boolean send(int partitionId, EventMessage eventMessage) {
+    public boolean send(int partitionId, ByteBuffer message) {
         try {
-            byte[] message = serDeser.serialize(eventMessage);
             ClusterNode node = nodes.get(partitionId);
             if (node == null) {
                 LoggerFactory.getLogger(getClass()).error(
@@ -87,8 +89,8 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
                         partitionId);
                 return false;
             }
-            byte[] byteBuffer = new byte[message.length];
-            System.arraycopy(message, 0, byteBuffer, 0, message.length);
+            byte[] byteBuffer = new byte[message.array().length];
+            System.arraycopy(message.array(), 0, byteBuffer, 0, message.array().length);
             InetAddress inetAddress = inetCache.get(partitionId);
             if (inetAddress == null) {
                 inetAddress = InetAddress.getByName(node.getMachineName());

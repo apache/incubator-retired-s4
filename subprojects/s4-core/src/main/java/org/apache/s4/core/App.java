@@ -26,10 +26,13 @@ import java.util.concurrent.TimeUnit;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.KeyFinder;
+import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
-import org.apache.s4.comm.serialize.KryoSerDeser;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.core.ft.CheckpointingFramework;
+import org.apache.s4.core.staging.StreamExecutorServiceFactory;
+import org.apache.s4.core.util.S4Metrics;
 import org.apache.s4.core.window.AbstractSlidingWindowPE;
 import org.apache.s4.core.window.SlotFactory;
 import org.slf4j.Logger;
@@ -41,7 +44,7 @@ import com.google.inject.name.Named;
 
 /**
  * Container base class to hold all processing elements.
- *
+ * 
  * It is also where one defines the application graph: PE prototypes, internal streams, input and output streams.
  */
 public abstract class App {
@@ -65,7 +68,7 @@ public abstract class App {
     @Inject
     private Sender sender;
     @Inject
-    private Receiver receiver;
+    private ReceiverImpl receiver;
 
     @Inject
     RemoteSenders remoteSenders;
@@ -84,8 +87,21 @@ public abstract class App {
     @Inject
     CheckpointingFramework checkpointingFramework;
 
+    @Inject
+    S4Metrics metrics;
+
     // serialization uses the application class loader
-    private SerializerDeserializer serDeser = new KryoSerDeser(getClass().getClassLoader());
+    @Inject
+    private SerializerDeserializerFactory serDeserFactory;
+    private SerializerDeserializer serDeser;
+
+    @Inject
+    StreamExecutorServiceFactory streamExecutorFactory;
+
+    @Inject
+    private void initSerDeser() {
+        this.serDeser = serDeserFactory.createSerializerDeserializer(getClass().getClassLoader());
+    }
 
     /**
      * The internal clock can be configured as "wall clock" or "event clock". The wall clock computes time from the
@@ -210,6 +226,7 @@ public abstract class App {
 
         // logger.info("Add PE prototype [{}] with stream [{}].", toString(pePrototype), toString(stream));
         pePrototypes.add(pePrototype);
+        metrics.createCacheGauges(pePrototype, pePrototype.peInstances);
 
     }
 
@@ -265,7 +282,7 @@ public abstract class App {
     /**
      * @return the receiver object
      */
-    public Receiver getReceiver() {
+    public ReceiverImpl getReceiver() {
         return receiver;
     }
 
@@ -275,6 +292,10 @@ public abstract class App {
 
     public CheckpointingFramework getCheckpointingFramework() {
         return checkpointingFramework;
+    }
+
+    public StreamExecutorServiceFactory getStreamExecutorFactory() {
+        return streamExecutorFactory;
     }
 
     /**
@@ -299,7 +320,7 @@ public abstract class App {
             ProcessingElement... processingElements) {
 
         return new Stream<T>(this).setName(name).setKey(finder).setPEs(processingElements).setEventType(eventType)
-                .register();
+                .setSerializerDeserializerFactory(serDeserFactory).register();
     }
 
     /**

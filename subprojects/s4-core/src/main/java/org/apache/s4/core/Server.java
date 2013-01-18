@@ -98,7 +98,7 @@ public class Server {
         logger.info("Loading application [{}] from file [{}]", appName, s4r.getAbsolutePath());
 
         S4RLoaderFactory loaderFactory = injector.getInstance(S4RLoaderFactory.class);
-        S4RLoader cl = loaderFactory.createS4RLoader(s4r.getAbsolutePath());
+        S4RLoader appClassLoader = loaderFactory.createS4RLoader(s4r.getAbsolutePath());
         try {
             JarFile s4rFile = new JarFile(s4r);
             if (s4rFile.getManifest() == null) {
@@ -115,9 +115,12 @@ public class Server {
             App app = null;
 
             try {
-                Object o = (cl.loadClass(appClassName)).newInstance();
+                Object o = (appClassLoader.loadClass(appClassName)).newInstance();
                 app = (App) o;
-                injector.injectMembers(app);
+                // we use the app module to provide bindings that depend upon a classloader savy of app classes, e.g.
+                // for serialization/deserialization
+                AppModule appModule = new AppModule(appClassLoader);
+                injector.createChildInjector(appModule).injectMembers(app);
             } catch (Exception e) {
                 logger.error("Could not load s4 application form s4r file [{" + s4r.getAbsolutePath() + "}]", e);
                 return null;

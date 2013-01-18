@@ -21,9 +21,10 @@ package org.apache.s4.example.counter;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.base.Sender;
 import org.apache.s4.core.App;
-import org.apache.s4.core.Receiver;
-import org.apache.s4.core.Sender;
+import org.apache.s4.core.ReceiverImpl;
+import org.apache.s4.core.SenderImpl;
 import org.apache.s4.core.Stream;
 
 import com.google.inject.Guice;
@@ -117,8 +118,8 @@ final public class MyApp extends App {
 
         Injector injector = Guice.createInjector(new Module());
         MyApp myApp = injector.getInstance(MyApp.class);
-        Sender sender = injector.getInstance(Sender.class);
-        Receiver receiver = injector.getInstance(Receiver.class);
+        Sender sender = injector.getInstance(SenderImpl.class);
+        ReceiverImpl receiver = injector.getInstance(ReceiverImpl.class);
         // myApp.setCommLayer(sender, receiver);
         myApp.init();
         myApp.start();
@@ -130,6 +131,6 @@ final public class MyApp extends App {
             e.printStackTrace();
         }
         myApp.close();
-        receiver.close();
+        // receiver.close();
     }
 }

@@ -63,6 +63,9 @@ public class CommTestUtils {
     static {
         logger.info("Storage dir: " + DEFAULT_STORAGE_DIR);
     }
+    public final static String MESSAGE = "message@" + System.currentTimeMillis();
+
+    public final static CountDownLatch SIGNAL_MESSAGE_RECEIVED = new CountDownLatch(1);
 
     protected static Process forkProcess(String mainClass, int debugPort, String... args) throws IOException,
             InterruptedException {

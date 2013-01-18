@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Primitives;
 
 /**
  * The base event class in S4. The base class supports generic key/value pairs which us useful for rapid prototyping and
@@ -134,12 +135,15 @@ public class Event {
 
         Data<?> data = map.get(key);
 
-        if (type != data.type) {
-            logger.error("Trying to get a value of type {} for an attribute of type {}.", type, data.type);
-            return null;
+        try {
+            return (T) data.value;
+        } catch (ClassCastException e) {
+            if (!Primitives.wrap(type).isAssignableFrom(Primitives.wrap(data.type))) {
+                logger.error("Trying to get a value of type {} for an attribute of type {}.", type, data.type);
+                return null;
+            }
+            throw e;
         }
-
-        return (T) data.value;
     }
 
     /**

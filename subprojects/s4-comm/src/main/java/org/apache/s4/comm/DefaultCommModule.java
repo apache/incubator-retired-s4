@@ -27,10 +27,11 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Hasher;
-import org.apache.s4.base.Listener;
 import org.apache.s4.base.RemoteEmitter;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
+import org.apache.s4.comm.staging.BlockingDeserializerExecutorFactory;
 import org.apache.s4.comm.tcp.RemoteEmitters;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromZK;
@@ -87,7 +88,10 @@ public class DefaultCommModule extends AbstractModule {
         /* The hashing function to map keys top partitions. */
         bind(Hasher.class).to(DefaultHasher.class);
         /* Use Kryo to serialize events. */
-        bind(SerializerDeserializer.class).to(KryoSerDeser.class);
+        // we use a factory for generating the serdeser instance in order to use runtime parameters such as the
+        // classloader
+        install(new FactoryModuleBuilder().implement(SerializerDeserializer.class, KryoSerDeser.class).build(
+                SerializerDeserializerFactory.class));
 
         // a node holds a single partition assignment
         // ==> Assignment and Cluster are singletons so they can be shared between comm layer and app.
@@ -95,6 +99,10 @@ public class DefaultCommModule extends AbstractModule {
         bind(Cluster.class).to(ClusterFromZK.class);
 
         bind(Clusters.class).to(ClustersFromZK.class);
+
+        bind(RemoteEmitters.class);
+
+        bind(DeserializerExecutorFactory.class).to(BlockingDeserializerExecutorFactory.class);
 
         try {
             Class<? extends Emitter> emitterClass = (Class<? extends Emitter>) Class.forName(config
@@ -108,13 +116,9 @@ public class DefaultCommModule extends AbstractModule {
                     RemoteEmitterFactory.class));
             bind(RemoteEmitters.class);
 
-            bind(Listener.class).to(
-                    (Class<? extends Listener>) Class.forName(config.getString("s4.comm.listener.class")));
-
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find class implementation ", e);
         }
-
     }
 
     @SuppressWarnings("serial")

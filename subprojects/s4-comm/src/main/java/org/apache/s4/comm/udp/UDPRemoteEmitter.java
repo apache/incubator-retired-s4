@@ -18,6 +18,7 @@
 
 package org.apache.s4.comm.udp;
 
+import org.apache.s4.base.RemoteEmitter;
 import org.apache.s4.comm.topology.Cluster;
 
 import com.google.inject.Inject;
@@ -25,9 +26,9 @@ import com.google.inject.assistedinject.Assisted;
 
 /**
  * UDP-based emitter for sending events to remote clusters.
- *
+ * 
  */
-public class UDPRemoteEmitter extends UDPEmitter {
+public class UDPRemoteEmitter extends UDPEmitter implements RemoteEmitter {
 
     /**
      * Sends to remote subclusters. This is dynamically created, through an injected factory, when new subclusters are

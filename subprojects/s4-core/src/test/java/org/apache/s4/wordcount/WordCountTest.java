@@ -25,10 +25,10 @@ import java.util.concurrent.TimeUnit;
 import junit.framework.Assert;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
-import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.DefaultCommModule;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.TCPEmitter;
+import org.apache.s4.core.AppModule;
 import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.core.Main;
 import org.apache.s4.fixtures.CommTestUtils;
@@ -69,7 +69,7 @@ public class WordCountTest extends ZkBasedTest {
     public void prepareEmitter() throws IOException {
         injector = Guice.createInjector(new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
                 .openStream(), "cluster1"), new DefaultCoreModule(Resources.getResource("default.s4.core.properties")
-                .openStream()));
+                .openStream()), new AppModule(getClass().getClassLoader()));
 
         emitter = injector.getInstance(TCPEmitter.class);
 
@@ -111,11 +111,14 @@ public class WordCountTest extends ZkBasedTest {
         Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", results);
     }
 
-    public void injectSentence(String sentence) throws IOException {
+    public void injectSentence(String sentence) throws IOException, InterruptedException {
         Event event = new Event();
+        event.setStreamId("inputStream");
         event.put("sentence", String.class, sentence);
-        emitter.send(0, new EventMessage("-1", "inputStream", injector.getInstance(SerializerDeserializer.class)
-                .serialize(event)));
+        emitter.send(
+                0,
+                injector.getInstance(SerializerDeserializerFactory.class)
+                        .createSerializerDeserializer(getClass().getClassLoader()).serialize(event));
     }
 
 }

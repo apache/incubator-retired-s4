@@ -21,6 +21,7 @@ package org.apache.s4.core;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TimerTask;
@@ -51,6 +52,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Timer;
 
 /**
  * <p>
@@ -141,6 +144,8 @@ public abstract class ProcessingElement implements Cloneable {
     transient private boolean recoveryAttempted = false;
     transient private boolean dirty = false;
 
+    transient private Timer processingTimer;
+
     transient private CheckpointingConfig checkpointingConfig = new CheckpointingConfig.Builder(CheckpointingMode.NONE)
             .build();
 
@@ -158,7 +163,6 @@ public abstract class ProcessingElement implements Cloneable {
                 return createPE(key);
             }
         });
-
         triggers = new MapMaker().makeMap();
 
         /*
@@ -166,6 +170,8 @@ public abstract class ProcessingElement implements Cloneable {
          * to the prototype.
          */
         this.pePrototype = this;
+
+        processingTimer = Metrics.newTimer(getClass(), getClass().getName() + "-pe-processing-time");
     }
 
     /**
@@ -431,6 +437,7 @@ public abstract class ProcessingElement implements Cloneable {
 
     protected void handleInputEvent(Event event) {
 
+        // TimerContext timerContext = processingTimer.time();
         Object object;
         if (isThreadSafe) {
             object = new Object(); // a dummy object TODO improve this.
@@ -459,6 +466,7 @@ public abstract class ProcessingElement implements Cloneable {
                 checkpoint();
             }
         }
+        // timerContext.stop();
     }
 
     protected boolean isCheckpointable() {
@@ -781,11 +789,11 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     public byte[] serializeState() {
-        return getApp().getSerDeser().serialize(this);
+        return getApp().getSerDeser().serialize(this).array();
     }
 
     public ProcessingElement deserializeState(byte[] loadedState) {
-        return (ProcessingElement) getApp().getSerDeser().deserialize(loadedState);
+        return (ProcessingElement) getApp().getSerDeser().deserialize(ByteBuffer.wrap(loadedState));
     }
 
     public void restoreState(ProcessingElement oldState) {

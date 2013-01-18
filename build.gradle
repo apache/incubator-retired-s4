@@ -53,15 +53,16 @@ allprojects {
 
 /* All project libraries must be defined here. */
 project.ext["libraries"] = [
-    guava:              'com.google.guava:guava:12.0.1',
+    guava:              'com.google.guava:guava:13.0.1',
     gson:               'com.google.code.gson:gson:1.6',
     guice:              'com.google.inject:guice:3.0',
     aop_alliance:       'aopalliance:aopalliance:1.0',
     guice_assist:       'com.google.inject.extensions:guice-assistedinject:3.0',
-    kryo:               'com.googlecode:kryo:1.04',
+    kryo:               'com.esotericsoftware.kryo:kryo:2.20',
     minlog:             'com.googlecode:minlog:1.2',
-    reflectasm:         'com.googlecode:reflectasm:1.01',
-    netty:              'org.jboss.netty:netty:3.2.5.Final',
+    // NOTE shaded jar is not resolved correctly, we include it in /lib directory
+    reflectasm:         'com.esotericsoftware.reflectasm:reflectasm:1.07-shaded',
+    netty:              'io.netty:netty:3.5.11.Final',
     mockito_core:       'org.mockito:mockito-core:1.9.0',
     commons_config:     'commons-configuration:commons-configuration:1.6',
     commons_codec:      'commons-codec:commons-codec:1.4',
@@ -75,18 +76,19 @@ project.ext["libraries"] = [
     log4j:              'log4j:log4j:1.2.15',
     logback_core:       'ch.qos.logback:logback-core:0.9.29',
     logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
-    zk:                 'org.apache.zookeeper:zookeeper:3.3.1',
+    zk:                 'org.apache.zookeeper:zookeeper:3.3.3',
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
     jcommander:         'com.beust:jcommander:1.25',
-    asm:                'asm:asm:3.2',
+    asm:                'org.ow2.asm:asm:4.0',
     javax_inject:       'javax.inject:javax.inject:1',
     gradle_base_services: 'org.gradle:gradle-base-services:1.0',
     gradle_core: 'org.gradle:gradle-core:1.0',
     gradle_tooling_api: 'org.gradle:gradle-tooling-api:1.0',
-    gradle_wrapper: 'gradle-wrapper:gradle-wrapper:1.0'
+    gradle_wrapper:     'gradle-wrapper:gradle-wrapper:1.0',
+    metrics:            'com.yammer.metrics:metrics-core:2.1.3'
 ]
 
 subprojects {
@@ -106,6 +108,7 @@ subprojects {
         exclude group: 'com.sun.jdmk', module: 'jmxtools'
         exclude group: 'com.sun.jmx', module: 'jmxri'
         exclude group: 'javax.jms', module: 'jms'
+        exclude group: 'javax.mail', module: 'mail'
     }
 
     dependencies {
@@ -131,6 +134,7 @@ subprojects {
         /* Misc. */
         compile( libraries.jcip )
         compile( libraries.zk )
+        compile( libraries.metrics )
 
         /* Testing. */
         testCompile( libraries.junit )
@@ -140,11 +144,12 @@ subprojects {
         runtime(libraries.aop_alliance)
         runtime(libraries.minlog)
         runtime(libraries.gson)
+        compile(libraries.reflectasm)
         runtime(libraries.objenesis)
         runtime(libraries.kryo)
         runtime(libraries.netty)
         runtime(libraries.asm)
-        runtime(libraries.javax_inject)
+        compile(libraries.javax_inject)
         runtime(libraries.commons_codec)
     }
     
@@ -168,7 +173,7 @@ subprojects {
 
 evaluationDependsOnChildren()
 
-project.ext["platformProjects"] = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-tools')]
+project.ext["platformProjects"] = [project(':s4-base'), project(':s4-core'), project(':s4-comm'), project(':s4-tools'), project(':s4-benchmarks')]
 
 configurations {
     platformLibs

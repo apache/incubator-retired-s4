@@ -18,18 +18,20 @@
 
 package org.apache.s4.core;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.RemoteEmitters;
 import org.apache.s4.comm.topology.Clusters;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.comm.topology.StreamConsumer;
+import org.apache.s4.core.staging.RemoteSendersExecutorServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,47 +40,83 @@ import com.google.inject.Inject;
 /**
  * Sends events to remote clusters. Target clusters are selected dynamically based on the stream name information from
  * the event.
- *
+ * 
  */
 public class RemoteSenders {
 
     Logger logger = LoggerFactory.getLogger(RemoteSenders.class);
 
-    @Inject
-    RemoteEmitters emitters;
+    final RemoteEmitters remoteEmitters;
+
+    final RemoteStreams remoteStreams;
+
+    final Clusters remoteClusters;
+
+    final SerializerDeserializer serDeser;
+
+    final Hasher hasher;
+
+    ConcurrentMap<String, RemoteSender> sendersByTopology = new ConcurrentHashMap<String, RemoteSender>();
+
+    private final ExecutorService executorService;
 
     @Inject
-    RemoteStreams streams;
+    public RemoteSenders(RemoteEmitters remoteEmitters, RemoteStreams remoteStreams, Clusters remoteClusters,
+            SerializerDeserializerFactory serDeserFactory, Hasher hasher,
+            RemoteSendersExecutorServiceFactory senderExecutorFactory) {
+        this.remoteEmitters = remoteEmitters;
+        this.remoteStreams = remoteStreams;
+        this.remoteClusters = remoteClusters;
+        this.hasher = hasher;
+        executorService = senderExecutorFactory.create();
 
-    @Inject
-    Clusters topologies;
-
-    @Inject
-    SerializerDeserializer serDeser;
-
-    @Inject
-    Hasher hasher;
-
-    Map<String, RemoteSender> sendersByTopology = new HashMap<String, RemoteSender>();
+        serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
+    }
 
     public void send(String hashKey, Event event) {
 
-        Set<StreamConsumer> consumers = streams.getConsumers(event.getStreamName());
+        Set<StreamConsumer> consumers = remoteStreams.getConsumers(event.getStreamName());
+        event.setAppId(-1);
         for (StreamConsumer consumer : consumers) {
             // NOTE: even though there might be several ephemeral znodes for the same app and topology, they are
             // represented by a single stream consumer
             RemoteSender sender = sendersByTopology.get(consumer.getClusterName());
             if (sender == null) {
-                sender = new RemoteSender(emitters.getEmitter(topologies.getCluster(consumer.getClusterName())), hasher);
+                RemoteSender newSender = new RemoteSender(remoteEmitters.getEmitter(remoteClusters.getCluster(consumer
+                        .getClusterName())), hasher, consumer.getClusterName());
                 // TODO cleanup when remote topologies die
-                sendersByTopology.put(consumer.getClusterName(), sender);
+                sender = sendersByTopology.putIfAbsent(consumer.getClusterName(), newSender);
+                if (sender == null) {
+                    sender = newSender;
+                }
             }
-            // we must set the app id of the consumer app for correct dispatch within the consumer node
             // NOTE: this implies multiple serializations, there might be an optimization
-            event.setAppId(consumer.getAppId());
-            EventMessage eventMessage = new EventMessage(String.valueOf(event.getAppId()), event.getStreamName(),
-                    serDeser.serialize(event));
-            sender.send(hashKey, eventMessage);
+            executorService.execute(new SendToRemoteClusterTask(hashKey, event, sender));
+        }
+    }
+
+    class SendToRemoteClusterTask implements Runnable {
+
+        String hashKey;
+        Event event;
+        RemoteSender sender;
+
+        public SendToRemoteClusterTask(String hashKey, Event event, RemoteSender sender) {
+            super();
+            this.hashKey = hashKey;
+            this.event = event;
+            this.sender = sender;
+        }
+
+        @Override
+        public void run() {
+            try {
+                sender.send(hashKey, serDeser.serialize(event));
+            } catch (InterruptedException e) {
+                logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);
+                Thread.currentThread().interrupt();
+            }
+
         }
 
     }

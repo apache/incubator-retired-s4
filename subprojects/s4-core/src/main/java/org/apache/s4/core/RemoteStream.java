@@ -18,8 +18,6 @@
 
 package org.apache.s4.core;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.Key;
@@ -37,17 +35,14 @@ public class RemoteStream implements Streamable<Event> {
     final private String name;
     final protected Key<Event> key;
     final static private String DEFAULT_SEPARATOR = "^";
-    // final private int id;
 
     RemoteSenders remoteSenders;
 
     Hasher hasher;
 
     int id;
-    private App app;
+    final private App app;
     private static Logger logger = LoggerFactory.getLogger(RemoteStream.class);
-
-    private static AtomicInteger remoteStreamCounter = new AtomicInteger();
 
     public RemoteStream(App app, String name, KeyFinder<Event> finder, RemoteSenders remoteSenders, Hasher hasher,
             RemoteStreams remoteStreams, String clusterName) {

@@ -62,6 +62,15 @@ public class Main {
      */
     public static void main(String[] args) {
 
+        Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                logger.error("Uncaught exception in thread {}", t.getName(), e);
+
+            }
+        });
+
         MainArgs mainArgs = new MainArgs();
         JCommander jc = new JCommander(mainArgs);
 
@@ -143,6 +152,15 @@ public class Main {
                             namedParam.substring(namedParam.indexOf('=') + 1).trim());
                 }
                 combinedModule = Modules.override(combinedModule).with(new ParametersInjectionModule(namedParameters));
+            }
+
+            if (mainArgs.appClass != null) {
+                // In that case we won't be using an S4R classloader, app classes are available from the current
+                // classloader
+                // The app module provides bindings specific to the app class loader, in this case the current thread's
+                // class loader.
+                AppModule appModule = new AppModule(Thread.currentThread().getContextClassLoader());
+                combinedModule = Modules.override(combinedModule).with(appModule);
             }
 
             injector = Guice.createInjector(combinedModule);

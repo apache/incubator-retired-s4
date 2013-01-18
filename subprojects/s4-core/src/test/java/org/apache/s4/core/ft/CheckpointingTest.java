@@ -29,9 +29,9 @@ import junit.framework.Assert;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.s4.base.Event;
-import org.apache.s4.base.EventMessage;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.core.App;
+import org.apache.s4.core.AppModule;
 import org.apache.s4.core.ProcessingElement;
 import org.apache.s4.core.Stream;
 import org.apache.s4.core.ft.FileSystemBasedBackendWithZKStorageCallbackCheckpointingModule.DummyZKStorageCallbackFactory;
@@ -82,16 +82,17 @@ public class CheckpointingTest {
         CoreTestUtils.watchAndSignalCreation("/checkpointed", signalCheckpointed, zk);
 
         Injector injector = Guice.createInjector(new MockCommModule(),
-                new MockCoreModuleWithFileBaseCheckpointingBackend());
+                new MockCoreModuleWithFileBaseCheckpointingBackend(), new AppModule(getClass().getClassLoader()));
         TestApp app = injector.getInstance(TestApp.class);
         app.init();
         app.start();
 
         Event event = new Event();
+        event.setStreamId("stream1");
         event.put("command", String.class, "setValue1");
         event.put("value", String.class, "message1");
 
-        app.testStream.receiveEvent(new EventMessage("", "stream1", app.getSerDeser().serialize(event)));
+        app.testStream.receiveEvent(event);
 
         signalValue1Set.await();
 
@@ -102,8 +103,9 @@ public class CheckpointingTest {
 
         // 3. generate a checkpoint event
         event = new Event();
+        event.setStreamId("stream1");
         event.put("command", String.class, "checkpoint");
-        app.testStream.receiveEvent(new EventMessage("", "stream1", app.getSerDeser().serialize(event)));
+        app.testStream.receiveEvent(event);
         Assert.assertTrue(signalCheckpointed.await(10, TimeUnit.SECONDS));
 
         // NOTE: the backend has asynchronous save operations
@@ -125,7 +127,7 @@ public class CheckpointingTest {
         idField.setAccessible(true);
         idField.set(refPE, "X");
 
-        byte[] refBytes = app.getSerDeser().serialize(refPE);
+        byte[] refBytes = app.getSerDeser().serialize(refPE).array();
 
         Assert.assertTrue(Arrays.equals(refBytes, Files.toByteArray(expected)));
 
@@ -164,6 +166,7 @@ public class CheckpointingTest {
             bind(StateStorage.class).to(DefaultFileSystemStateStorage.class);
             bind(CheckpointingFramework.class).to(SafeKeeper.class);
             bind(StorageCallbackFactory.class).to(DummyZKStorageCallbackFactory.class);
+
         }
 
     }
