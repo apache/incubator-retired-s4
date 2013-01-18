@@ -19,13 +19,9 @@
 package org.apache.s4.deploy;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
@@ -41,11 +37,11 @@ import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
+import org.apache.s4.fixtures.S4RHttpServer;
 import org.apache.s4.fixtures.ZkBasedTest;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.NIOServerCnxn.Factory;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,10 +49,6 @@ import org.junit.Test;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.inject.Injector;
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 
 /**
  * Tests deployment of packaged applications <br>
@@ -71,8 +63,8 @@ public class TestAutomaticDeployment extends ZkBasedTest {
     private Factory zookeeperServerConnectionFactory;
     private Process forkedNode;
     private ZkClient zkClient;
-    private HttpServer httpServer;
-    private static File tmpAppsDir;
+    private S4RHttpServer s4rHttpServer;
+    public static File tmpAppsDir;
 
     @BeforeClass
     public static void createS4RFiles() throws Exception {
@@ -101,11 +93,12 @@ public class TestAutomaticDeployment extends ZkBasedTest {
 
         final String uri = s4rToDeploy.toURI().toString();
 
-        assertDeployment(uri);
+        assertDeployment(uri, zkClient, true);
 
     }
 
-    private void assertDeployment(final String uri) throws KeeperException, InterruptedException, IOException {
+    public static void assertDeployment(final String uri, ZkClient zkClient, boolean createZkAppNode)
+            throws KeeperException, InterruptedException, IOException {
         CountDownLatch signalAppInitialized = new CountDownLatch(1);
         CountDownLatch signalAppStarted = new CountDownLatch(1);
         CommTestUtils.watchAndSignalCreation(AppConstants.INITIALIZED_ZNODE_1, signalAppInitialized,
@@ -113,9 +106,12 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         CommTestUtils.watchAndSignalCreation(AppConstants.INITIALIZED_ZNODE_1, signalAppStarted,
                 CommTestUtils.createZkClient());
 
-        ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-        record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
-        zkClient.create("/s4/clusters/cluster1/app/s4App", record, CreateMode.PERSISTENT);
+        if (createZkAppNode) {
+            // otherwise we need to do that through a separate tool
+            ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
+            record.putSimpleField(DistributedDeploymentManager.S4R_URI, uri);
+            zkClient.create("/s4/clusters/cluster1/app/s4App", record, CreateMode.PERSISTENT);
+        }
 
         Assert.assertTrue(signalAppInitialized.await(20, TimeUnit.SECONDS));
         Assert.assertTrue(signalAppStarted.await(20, TimeUnit.SECONDS));
@@ -154,14 +150,10 @@ public class TestAutomaticDeployment extends ZkBasedTest {
                         + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
 
         // we start a
-        InetSocketAddress addr = new InetSocketAddress(8080);
-        httpServer = HttpServer.create(addr, 0);
+        s4rHttpServer = new S4RHttpServer(8080, tmpDir);
+        s4rHttpServer.start();
 
-        httpServer.createContext("/s4", new MyHandler(tmpDir));
-        httpServer.setExecutor(Executors.newCachedThreadPool());
-        httpServer.start();
-
-        assertDeployment("http://localhost:8080/s4/" + s4rToDeploy.getName());
+        assertDeployment("http://localhost:8080/s4/" + s4rToDeploy.getName(), zkClient, true);
 
         // check resource loading (we use a zkclient without custom serializer)
         ZkClient client2 = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
@@ -177,6 +169,29 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         // 1. start s4 nodes. Check that no app is deployed.
         zkClient = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
         zkClient.setZkSerializer(new ZNRecordSerializer());
+
+        final CountDownLatch signalNodeReady = new CountDownLatch(1);
+
+        zkClient.subscribeChildChanges("/s4/clusters/cluster1/process", new IZkChildListener() {
+
+            @Override
+            public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
+                if (currentChilds.size() == 1) {
+                    signalNodeReady.countDown();
+                }
+
+            }
+        });
+
+        checkNoAppAlreadyDeployed(zkClient);
+
+        forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=cluster1" });
+
+        Assert.assertTrue(signalNodeReady.await(10, TimeUnit.SECONDS));
+
+    }
+
+    public static void checkNoAppAlreadyDeployed(ZkClient zkClient) {
         List<String> processes = zkClient.getChildren("/s4/clusters/cluster1/process");
         Assert.assertTrue(processes.size() == 0);
         final CountDownLatch signalProcessesReady = new CountDownLatch(1);
@@ -191,13 +206,6 @@ public class TestAutomaticDeployment extends ZkBasedTest {
 
             }
         });
-
-        forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=cluster1" });
-
-        // TODO synchro with ready state from zk
-        Thread.sleep(10000);
-        // Assert.assertTrue(signalProcessesReady.await(10, TimeUnit.SECONDS));
-
     }
 
     // @Before
@@ -214,39 +222,13 @@ public class TestAutomaticDeployment extends ZkBasedTest {
     @After
     public void cleanup() throws Exception {
         CommTestUtils.killS4App(forkedNode);
-        if (httpServer != null) {
-            httpServer.stop(0);
+        if (s4rHttpServer != null) {
+            s4rHttpServer.stop();
         }
     }
 
     public static void main(String[] args) throws IOException {
 
         System.out.println("Server is listening on port 8080");
-    }
-}
-
-class MyHandler implements HttpHandler {
-
-    File tmpDir;
-
-    public MyHandler(File tmpDir) {
-        this.tmpDir = tmpDir;
-    }
-
-    @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        String requestMethod = exchange.getRequestMethod();
-        if (requestMethod.equalsIgnoreCase("GET")) {
-            String fileName = exchange.getRequestURI().getPath().substring("/s4/".length());
-            Headers responseHeaders = exchange.getResponseHeaders();
-            responseHeaders.set(HttpHeaders.Names.CONTENT_TYPE, HttpHeaders.Values.BYTES);
-            exchange.sendResponseHeaders(200, Files.toByteArray(new File(tmpDir, fileName)).length);
-
-            OutputStream responseBody = exchange.getResponseBody();
-
-            ByteStreams.copy(new FileInputStream(new File(tmpDir, fileName)), responseBody);
-
-            responseBody.close();
-        }
     }
 }

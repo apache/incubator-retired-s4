@@ -35,6 +35,19 @@ dependencies {
     testCompile libraries.mockito_core
 }
 
+task testJar(type: Jar) {
+    baseName = "test-${project.archivesBaseName}"
+    from sourceSets.test.output
+}
+
+configurations {
+    tests
+}
+
+artifacts {
+    tests testJar
+}
+
 test {
     forkEvery=1;
 }
