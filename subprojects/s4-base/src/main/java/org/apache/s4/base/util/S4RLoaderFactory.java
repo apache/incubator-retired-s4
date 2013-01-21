@@ -69,7 +69,7 @@ public class S4RLoaderFactory {
         File s4rDir = null;
         if (tmpDir == null) {
             s4rDir = Files.createTempDir();
-            // s4rDir.deleteOnExit();
+            s4rDir.deleteOnExit();
             logger.warn(
                     "s4.tmp.dir not specified, using temporary directory [{}] for unpacking S4R. You may want to specify a parent non-temporary directory.",
                     s4rDir.getAbsolutePath());
