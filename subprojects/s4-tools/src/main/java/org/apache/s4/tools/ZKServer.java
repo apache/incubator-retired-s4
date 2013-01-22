@@ -108,7 +108,7 @@ public class ZKServer {
                 + "zookeeper" + File.separator + "data").getAbsolutePath();
 
         @Parameter(names = "-clean", description = "clean zookeeper data (make sure you specify correct directories...)")
-        boolean clean = true;
+        boolean clean = false;
 
         @Parameter(names = "-logDir", description = "log directory")
         String logDir = new File(System.getProperty("java.io.tmpdir") + File.separator + "tmp" + File.separator
