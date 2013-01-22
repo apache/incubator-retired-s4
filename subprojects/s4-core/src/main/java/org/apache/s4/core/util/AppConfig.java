@@ -137,17 +137,23 @@ public class AppConfig {
         }
 
         public Builder customModulesNames(List<String> customModulesNames) {
-            config.customModulesNames = customModulesNames;
+            if (customModulesNames != null) {
+                config.customModulesNames = customModulesNames;
+            }
             return this;
         }
 
         public Builder customModulesURIs(List<String> customModulesURIs) {
-            config.customModulesURIs = customModulesURIs;
+            if (customModulesURIs != null) {
+                config.customModulesURIs = customModulesURIs;
+            }
             return this;
         }
 
         public Builder namedParameters(Map<String, String> namedParameters) {
-            config.namedParameters = namedParameters;
+            if (namedParameters != null) {
+                config.namedParameters = namedParameters;
+            }
             return this;
         }
 

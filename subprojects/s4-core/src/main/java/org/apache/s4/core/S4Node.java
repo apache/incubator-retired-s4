@@ -39,7 +39,7 @@ public class S4Node {
 
     }
 
-    private static void startNode(S4NodeArgs mainArgs) throws InterruptedException, IOException {
+    private static void startNode(S4NodeArgs nodeArgs) throws InterruptedException, IOException {
         Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
 
             @Override
@@ -50,7 +50,7 @@ public class S4Node {
         });
 
         Injector injector = Guice.createInjector(new Module[] { new BaseModule(Resources.getResource(
-                "default.s4.base.properties").openStream(), mainArgs.clusterName) });
+                "default.s4.base.properties").openStream(), nodeArgs.clusterName) });
         S4Bootstrap bootstrap = injector.getInstance(S4Bootstrap.class);
         try {
             bootstrap.start(injector);

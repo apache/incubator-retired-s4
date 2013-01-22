@@ -70,9 +70,10 @@ public class Deploy extends S4ArgsBase {
                 System.exit(1);
             }
 
-            File s4rToDeploy;
+            File s4rToDeploy = null;
 
             if (deployArgs.s4rPath != null) {
+                // 1. if there is an application archive, we use it
                 s4rToDeploy = new File(deployArgs.s4rPath);
                 if (!s4rToDeploy.exists()) {
                     logger.error("Specified S4R file does not exist in {}", s4rToDeploy.getAbsolutePath());
@@ -82,7 +83,10 @@ public class Deploy extends S4ArgsBase {
                             "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
                             s4rToDeploy.getAbsolutePath());
                 }
-            } else {
+            } else if (deployArgs.gradleBuildFile != null) {
+
+                // 2. otherwise if there is a build file, we create the S4R archive from that
+
                 List<String> params = new ArrayList<String>();
                 // prepare gradle -P parameters, including passed gradle opts
                 params.addAll(deployArgs.gradleOpts);
@@ -103,11 +107,22 @@ public class Deploy extends S4ArgsBase {
                 } else {
                     s4rToDeploy = tmpS4R;
                 }
+            } else {
+                if (!Strings.isNullOrEmpty(deployArgs.appClass)) {
+                    // 3. otherwise if there is at least an app class specified (e.g. for running "s4 adapter"), we use
+                    // it and won't use an S4R
+                    logger.info("No S4R path specified, nor build file specified: this assumes the app is in the classpath");
+                } else {
+                    logger.error("You must specify an S4R file, a build file to create an S4R from, or an appClass that will be in the classpath");
+                    System.exit(1);
+                }
+
             }
 
             DeploymentUtils.initAppConfig(
-                    new AppConfig.Builder().appName(deployArgs.appName).appURI(s4rToDeploy.toURI().toString())
-                            .customModulesNames(deployArgs.modulesClassesNames)
+                    new AppConfig.Builder().appName(deployArgs.appName)
+                            .appURI(s4rToDeploy != null ? s4rToDeploy.toURI().toString() : null)
+                            .appClassName(deployArgs.appClass).customModulesNames(deployArgs.modulesClassesNames)
                             .customModulesURIs(deployArgs.modulesURIs)
                             .namedParameters(convertListArgsToMap(deployArgs.extraNamedParameters)).build(),
                     deployArgs.clusterName, false, deployArgs.zkConnectionString);

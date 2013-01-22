@@ -147,7 +147,7 @@ public class TestProducerConsumer {
                 "localhost:2181");
 
         // that may be a bit long to complete...
-        Assert.assertTrue(signalConsumptionComplete.await(30, TimeUnit.SECONDS));
+        Assert.assertTrue(signalConsumptionComplete.await(40, TimeUnit.SECONDS));
 
     }
 

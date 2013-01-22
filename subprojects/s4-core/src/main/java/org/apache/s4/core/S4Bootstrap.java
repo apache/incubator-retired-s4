@@ -107,7 +107,7 @@ public class S4Bootstrap {
         // can be null
         final AppConfig appConfig = new AppConfig(appData);
 
-        String appName = appData.getSimpleField("name");
+        String appName = appConfig.getAppName();
 
         List<File> modulesLocalCopies = new ArrayList<File>();
 
@@ -120,7 +120,7 @@ public class S4Bootstrap {
 
             @Override
             public void run() {
-                // load Main class through modules classloader and start it
+                // load app class through modules classloader and start it
                 S4Bootstrap.startS4App(appConfig, parentInjector, modulesLoader);
                 signalOneAppLoaded.countDown();
             }
