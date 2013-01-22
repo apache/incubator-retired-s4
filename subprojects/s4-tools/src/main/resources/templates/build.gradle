@@ -43,8 +43,8 @@ sourceCompatibility = 1.6
 targetCompatibility = 1.6
 
 repositories {
-    mavenLocal()
     mavenCentral()
+    mavenLocal()
     mavenRepo name: "gson", url: "http://google-gson.googlecode.com/svn/mavenrepo"
 
     /* Add lib dir as a repo. Some jar files that are not available
