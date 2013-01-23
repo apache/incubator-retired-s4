@@ -55,7 +55,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin:'application'
 
-mainClassName = "org.apache.s4.core.Main"
+mainClassName = "org.apache.s4.core.S4Node"
 
 /* The app classname is set automatically from the source files. */
 def appClassname = ''

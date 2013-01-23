@@ -32,6 +32,9 @@
  - application 2 must define an output stream with the same name (stream1)
 
  If you want to use a simple adapter process, listening to an external source, converting incoming data into S4 events, and sending that to S4 apps, you can define
- your own app that extends the AdapterApp class. Then to start it (for instance):
- - ./s4 adapter -cluster=c1 -appClass=org.apache.s4.example.twitter.TwitterInputAdapter -p=s4.adapter.output.stream=stream1
+ your own app that extends the AdapterApp class, for instance:
+ ./s4 deploy -appClass=hello.HelloInputAdapter -p=s4.adapter.output.stream=names -cluster=c2 -appName=adapter
+ 
+ Then in order to start a node and automatically using the classpath of the current project, use the "s4 adapter" command:
+ - ./s4 adapter -cluster=c2
 

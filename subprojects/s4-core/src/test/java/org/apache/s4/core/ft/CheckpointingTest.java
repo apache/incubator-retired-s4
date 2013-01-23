@@ -48,6 +48,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.name.Names;
 
 public class CheckpointingTest {
 
@@ -161,8 +162,11 @@ public class CheckpointingTest {
 
     private static class MockCoreModuleWithFileBaseCheckpointingBackend extends MockCoreModule {
 
+        @Override
         protected void configure() {
             super.configure();
+            bind(String.class).annotatedWith(Names.named("s4.checkpointing.filesystem.storageRootPath")).toInstance(
+                    DEFAULT_STORAGE_DIR.getAbsolutePath());
             bind(StateStorage.class).to(DefaultFileSystemStateStorage.class);
             bind(CheckpointingFramework.class).to(SafeKeeper.class);
             bind(StorageCallbackFactory.class).to(DummyZKStorageCallbackFactory.class);

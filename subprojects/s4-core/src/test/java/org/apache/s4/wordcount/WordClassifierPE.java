@@ -63,7 +63,7 @@ public class WordClassifierPE extends ProcessingElement implements Watcher {
                 }
             }
 
-            System.out.println("seen: " + wcEvent.getWord() + "/" + wcEvent.getCount());
+            logger.info("seen: " + wcEvent.getWord() + "/" + wcEvent.getCount());
 
             if (!counts.containsKey(wcEvent.getWord())
                     || (counts.containsKey(wcEvent.getWord()) && counts.get(wcEvent.getWord()).compareTo(

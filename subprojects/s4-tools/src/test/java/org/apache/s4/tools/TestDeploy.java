@@ -87,7 +87,6 @@ public class TestDeploy extends ZkBasedTest {
         s4rHttpServer = new S4RHttpServer(8080, tmpDir);
         s4rHttpServer.start();
 
-        // Deploy
         Deploy.main(new String[] { "-s4r", "http://localhost:8080/s4/" + s4rToDeploy.getName(), "-c", "cluster1",
                 "-appName", "toto", "-testMode" });
 

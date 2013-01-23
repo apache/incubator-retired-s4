@@ -59,7 +59,7 @@ public class Server {
     @Inject
     private AssignmentFromZK assignment;
 
-    private ZkClient zkClient;
+    private final ZkClient zkClient;
 
     /**
      *

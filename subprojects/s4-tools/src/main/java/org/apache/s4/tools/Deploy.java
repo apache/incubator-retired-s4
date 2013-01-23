@@ -23,21 +23,25 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
-import org.apache.s4.deploy.DistributedDeploymentManager;
-import org.apache.zookeeper.CreateMode;
+import org.apache.s4.core.util.AppConfig;
+import org.apache.s4.deploy.DeploymentUtils;
 import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProgressListener;
 import org.gradle.tooling.ProjectConnection;
 import org.slf4j.LoggerFactory;
 
+import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.FileConverter;
+import com.beust.jcommander.internal.Maps;
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
@@ -67,18 +71,21 @@ public class Deploy extends S4ArgsBase {
                 System.exit(1);
             }
 
-            URI s4rURI;
+            URI s4rURI = null;
 
             if (deployArgs.s4rPath != null) {
                 s4rURI = new URI(deployArgs.s4rPath);
-                // if (!s4rToDeploy.exists()) {
-                // logger.error("Specified S4R file does not exist in {}", s4rToDeploy.getAbsolutePath());
-                // System.exit(1);
-                // } else {
+                if (Strings.isNullOrEmpty(s4rURI.getScheme())) {
+                    // default is file
+                    s4rURI = new File(deployArgs.s4rPath).toURI();
+                }
                 logger.info(
                         "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
                         s4rURI.toString());
-            } else {
+            } else if (deployArgs.gradleBuildFile != null) {
+
+                // 2. otherwise if there is a build file, we create the S4R archive from that
+
                 List<String> params = new ArrayList<String>();
                 // prepare gradle -P parameters, including passed gradle opts
                 params.addAll(deployArgs.gradleOpts);
@@ -99,25 +106,25 @@ public class Deploy extends S4ArgsBase {
                 } else {
                     s4rURI = tmpS4R.toURI();
                 }
+            } else {
+                if (!Strings.isNullOrEmpty(deployArgs.appClass)) {
+                    // 3. otherwise if there is at least an app class specified (e.g. for running "s4 adapter"), we use
+                    // it and won't use an S4R
+                    logger.info("No S4R path specified, nor build file specified: this assumes the app is in the classpath");
+                } else {
+                    logger.error("You must specify an S4R file, a build file to create an S4R from, or an appClass that will be in the classpath");
+                    System.exit(1);
+                }
+
             }
 
-            ZNRecord record = new ZNRecord(String.valueOf(System.currentTimeMillis()));
-            record.putSimpleField(DistributedDeploymentManager.S4R_URI, s4rURI.toString());
-            record.putSimpleField("name", deployArgs.appName);
-            String deployedAppPath = "/s4/clusters/" + deployArgs.clusterName + "/app/s4App";
-            if (zkClient.exists(deployedAppPath)) {
-                ZNRecord readData = zkClient.readData(deployedAppPath);
-                logger.error("Cannot deploy app [{}], because app [{}] is already deployed", deployArgs.appName,
-                        readData.getSimpleField("name"));
-                System.exit(1);
-            }
-
-            zkClient.create("/s4/clusters/" + deployArgs.clusterName + "/app/s4App", record, CreateMode.PERSISTENT);
-            logger.info(
-                    "uploaded application [{}] to cluster [{}], using zookeeper znode [{}], and s4r file [{}]",
-                    new String[] { deployArgs.appName, deployArgs.clusterName,
-                            "/s4/clusters/" + deployArgs.clusterName + "/app/" + deployArgs.appName, s4rURI.toString() });
-
+            DeploymentUtils.initAppConfig(
+                    new AppConfig.Builder().appName(deployArgs.appName)
+                            .appURI(s4rURI == null ? null : s4rURI.toString())
+                            .customModulesNames(deployArgs.modulesClassesNames)
+                            .customModulesURIs(deployArgs.modulesURIs).appClassName(deployArgs.appClass)
+                            .namedParameters(convertListArgsToMap(deployArgs.extraNamedParameters)).build(),
+                    deployArgs.clusterName, false, deployArgs.zkConnectionString);
             // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
             if (!deployArgs.testMode) {
                 System.exit(0);
@@ -126,6 +133,18 @@ public class Deploy extends S4ArgsBase {
             LoggerFactory.getLogger(Deploy.class).error("Cannot deploy app", e);
         }
 
+    }
+
+    private static Map<String, String> convertListArgsToMap(List<String> args) {
+        Map<String, String> result = Maps.newHashMap();
+        for (String arg : args) {
+            String[] split = arg.split("[=]");
+            if (!(split.length == 2)) {
+                throw new RuntimeException("Invalid args: " + Arrays.toString(args.toArray(new String[] {})));
+            }
+            result.put(split[0], split[1]);
+        }
+        return result;
     }
 
     @Parameters(commandNames = "s4 deploy", commandDescription = "Package and deploy application to S4 cluster", separators = "=")
@@ -155,9 +174,35 @@ public class Deploy extends S4ArgsBase {
         @Parameter(names = "-timeout", description = "Connection timeout to Zookeeper, in ms")
         int timeout = 10000;
 
+        @Parameter(names = { "-modulesURIs", "-mu" }, description = "URIs for fetching code of custom modules")
+        List<String> modulesURIs = new ArrayList<String>();
+
+        @Parameter(names = { "-modulesClasses", "-emc", "-mc" }, description = "Fully qualified class names of custom modules")
+        List<String> modulesClassesNames = new ArrayList<String>();
+
+        @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = InlineConfigParameterConverter.class)
+        List<String> extraNamedParameters = new ArrayList<String>();
+
         @Parameter(names = "-testMode", description = "Special mode for regression testing", hidden = true)
         boolean testMode = false;
+    }
 
+    /**
+     * Parameters parsing utility.
+     * 
+     */
+    public static class InlineConfigParameterConverter implements IStringConverter<String> {
+
+        @Override
+        public String convert(String arg) {
+            Pattern parameterPattern = Pattern.compile("(\\S+=\\S+)");
+            logger.info("processing inline configuration parameter {}", arg);
+            Matcher parameterMatcher = parameterPattern.matcher(arg);
+            if (!parameterMatcher.find()) {
+                throw new IllegalArgumentException("Cannot understand parameter " + arg);
+            }
+            return parameterMatcher.group(1);
+        }
     }
 
     static class ExecGradle {
@@ -198,7 +243,5 @@ public class Deploy extends S4ArgsBase {
                 connection.close();
             }
         }
-
     }
-
 }

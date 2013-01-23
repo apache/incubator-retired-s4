@@ -27,6 +27,8 @@ import junit.framework.Assert;
 import org.apache.s4.base.Event;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.TCPEmitter;
+import org.apache.s4.core.util.AppConfig;
+import org.apache.s4.deploy.DeploymentUtils;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
 import org.apache.s4.fixtures.ZkBasedTest;
@@ -37,6 +39,8 @@ import org.apache.zookeeper.ZooKeeper;
 import org.junit.After;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 
 public class FTWordCountTest extends ZkBasedTest {
@@ -73,6 +77,7 @@ public class FTWordCountTest extends ZkBasedTest {
 
         injectSentence(injector, emitter, WordCountTest.SENTENCE_1);
         signalSentence1Processed.await(10, TimeUnit.SECONDS);
+        // TODO replace with zk-notified-latch
         Thread.sleep(1000);
 
         // crash the app
@@ -95,6 +100,7 @@ public class FTWordCountTest extends ZkBasedTest {
         injectSentence(injector, emitter, WordCountTest.SENTENCE_2);
 
         sentence2Processed.await(10, TimeUnit.SECONDS);
+        // TODO replace with zk-notified-latch
         Thread.sleep(1000);
 
         // crash the app
@@ -107,7 +113,7 @@ public class FTWordCountTest extends ZkBasedTest {
             zk.create("/continue_" + i, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
         }
         injectSentence(injector, emitter, WordCountTest.SENTENCE_3);
-        Assert.assertTrue(signalTextProcessed.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(signalTextProcessed.await(40, TimeUnit.SECONDS));
         String results = new String(zk.getData("/results", false, null));
         Assert.assertEquals("be=2;da=2;doobie=5;not=1;or=1;to=2;", results);
 
@@ -127,12 +133,17 @@ public class FTWordCountTest extends ZkBasedTest {
     private void restartNode() throws IOException, InterruptedException {
         CountDownLatch signalConsumerReady = RecoveryTest.getConsumerReadySignal("inputStream");
 
+        DeploymentUtils.initAppConfig(
+                new AppConfig.Builder()
+                        .appClassName(FTWordCountApp.class.getName())
+                        .namedParameters(
+                                ImmutableMap.of("s4.checkpointing.filesystem.storageRootPath",
+                                        CommTestUtils.DEFAULT_STORAGE_DIR.getAbsolutePath(),
+                                        "s4.checkpointing.storageMaxThreads", "3"))
+                        .customModulesNames(ImmutableList.of(FileSystemBackendCheckpointingModule.class.getName()))
+                        .build(), "cluster1", false, "localhost:2181");
         // recovering and making sure checkpointing still works
-        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1", "-appClass",
-                FTWordCountApp.class.getName(), "-p",
-                "s4.checkpointing.filesystem.storageRootPath=" + CommTestUtils.DEFAULT_STORAGE_DIR,
-                "-extraModulesClasses", FileSystemBackendCheckpointingModule.class.getName() });
+        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" });
         Assert.assertTrue(signalConsumerReady.await(20, TimeUnit.SECONDS));
     }
-
 }

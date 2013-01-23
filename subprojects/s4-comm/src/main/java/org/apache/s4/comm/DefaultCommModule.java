@@ -20,7 +20,6 @@ package org.apache.s4.comm;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
@@ -33,8 +32,6 @@ import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.staging.BlockingDeserializerExecutorFactory;
 import org.apache.s4.comm.tcp.RemoteEmitters;
-import org.apache.s4.comm.topology.Assignment;
-import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterFromZK;
 import org.apache.s4.comm.topology.Clusters;
@@ -56,7 +53,6 @@ public class DefaultCommModule extends AbstractModule {
     private static Logger logger = LoggerFactory.getLogger(DefaultCommModule.class);
     InputStream commConfigInputStream;
     private PropertiesConfiguration config;
-    String clusterName;
 
     /**
      * 
@@ -66,10 +62,9 @@ public class DefaultCommModule extends AbstractModule {
      *            the name of the cluster to which the current node belongs. If specified in the configuration file,
      *            this parameter will be ignored.
      */
-    public DefaultCommModule(InputStream commConfigInputStream, String clusterName) {
+    public DefaultCommModule(InputStream commConfigInputStream) {
         super();
         this.commConfigInputStream = commConfigInputStream;
-        this.clusterName = clusterName;
     }
 
     @SuppressWarnings("unchecked")
@@ -93,9 +88,6 @@ public class DefaultCommModule extends AbstractModule {
         install(new FactoryModuleBuilder().implement(SerializerDeserializer.class, KryoSerDeser.class).build(
                 SerializerDeserializerFactory.class));
 
-        // a node holds a single partition assignment
-        // ==> Assignment and Cluster are singletons so they can be shared between comm layer and app.
-        bind(Assignment.class).to(AssignmentFromZK.class);
         bind(Cluster.class).to(ClusterFromZK.class);
 
         bind(Clusters.class).to(ClustersFromZK.class);
@@ -131,20 +123,6 @@ public class DefaultCommModule extends AbstractModule {
 
             /* Make all properties injectable. Do we need this? */
             Names.bindProperties(binder, ConfigurationConverter.getProperties(config));
-
-            if (clusterName != null) {
-                if (config.containsKey("s4.cluster.name")) {
-                    logger.warn(
-                            "cluster [{}] passed as a parameter will not be used because an existing cluster.name parameter of value [{}] was found in the configuration file and will be used",
-                            clusterName, config.getProperty("s4.cluster.name"));
-                } else {
-                    Names.bindProperties(binder, new HashMap<String, String>() {
-                        {
-                            put("s4.cluster.name", clusterName);
-                        }
-                    });
-                }
-            }
 
         } catch (ConfigurationException e) {
             binder.addError(e);

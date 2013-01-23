@@ -30,7 +30,7 @@ import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.comm.topology.ZkClient;
-import org.apache.s4.tools.S4ArgsBase.GradleOptsConverter;
+import org.apache.s4.core.util.AppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,7 +219,7 @@ public class Status extends S4ArgsBase {
 
     /**
      * show as cluster1(app1), cluster2(app2)
-     *
+     * 
      * @param clusters
      *            cluster list
      * @param clusterAppMap
@@ -298,8 +298,9 @@ public class Status extends S4ArgsBase {
         private static String getApp(String clusterName, ZkClient zkClient) {
             String appPath = "/s4/clusters/" + clusterName + "/app/s4App";
             if (zkClient.exists(appPath)) {
-                ZNRecord appRecord = zkClient.readData("/s4/clusters/" + clusterName + "/app/s4App");
-                return appRecord.getSimpleField("name");
+                AppConfig appConfig = new AppConfig((ZNRecord) zkClient.readData("/s4/clusters/" + clusterName
+                        + "/app/s4App"));
+                return appConfig.getAppName();
             }
             return NONE;
         }
@@ -357,8 +358,9 @@ public class Status extends S4ArgsBase {
             app.cluster = clusterName;
             try {
                 ZNRecord appRecord = zkClient.readData(appPath);
-                app.name = appRecord.getSimpleField("name");
-                app.uri = appRecord.getSimpleField("s4r_uri");
+                AppConfig appConfig = new AppConfig(appRecord);
+                app.name = appConfig.getAppName();
+                app.uri = appConfig.getAppURI();
             } catch (ZkNoNodeException e) {
                 logger.warn(appPath + " doesn't exist");
             }

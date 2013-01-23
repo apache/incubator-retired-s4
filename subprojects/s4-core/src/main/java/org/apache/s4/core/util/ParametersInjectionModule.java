@@ -24,7 +24,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 
 /**
- * Injects String parameters from a map. Used for loading parameters outside of config files.
+ * Injects String parameters from a map. Used for loading parameters outside of config files, typically parameters
+ * passed through the application configuration.
  * 
  */
 public class ParametersInjectionModule extends AbstractModule {

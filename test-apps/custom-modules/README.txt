@@ -1,0 +1,1 @@
+This project contains some custom modules used for testing independently from the project's classpath

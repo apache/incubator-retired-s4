@@ -20,7 +20,6 @@ package org.apache.s4.deploy;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -28,8 +27,10 @@ import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
+import org.apache.s4.comm.util.ArchiveFetcher;
 import org.apache.s4.core.App;
 import org.apache.s4.core.Server;
+import org.apache.s4.core.util.AppConfig;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,14 +79,17 @@ public class DistributedDeploymentManager implements DeploymentManager {
     private final Server server;
     boolean deployed = false;
 
+    private final ArchiveFetcher fetcher;
+
     @Inject
     public DistributedDeploymentManager(@Named("s4.cluster.name") String clusterName,
             @Named("s4.cluster.zk_address") String zookeeperAddress,
             @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, Server server) {
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, Server server, ArchiveFetcher fetcher) {
 
         this.clusterName = clusterName;
         this.server = server;
+        this.fetcher = fetcher;
 
         zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
         zkClient.setZkSerializer(new ZNRecordSerializer());
@@ -99,10 +103,23 @@ public class DistributedDeploymentManager implements DeploymentManager {
 
     public void deployApplication() throws DeploymentFailedException {
         ZNRecord appData = zkClient.readData(appPath);
-        String uriString = appData.getSimpleField(S4R_URI);
-        String appName = appData.getSimpleField("name");
+        AppConfig appConfig = new AppConfig(appData);
+        if (appConfig.getAppURI() == null) {
+            if (appConfig.getAppClassName() != null) {
+                try {
+                    App app = (App) getClass().getClassLoader().loadClass(appConfig.getAppClassName()).newInstance();
+                    server.startApp(app, "appName", clusterName);
+                } catch (Exception e) {
+                    logger.error("Cannot start application: cannot instantiate app class {} due to: {}",
+                            appConfig.getAppClassName(), e.getMessage());
+                    return;
+                }
+            }
+            logger.info("{} value not set for {} : no application code will be downloaded", S4R_URI, appPath);
+            return;
+        }
         try {
-            URI uri = new URI(uriString);
+            URI uri = new URI(appConfig.getAppURI());
 
             // fetch application
             File localS4RFileCopy;
@@ -111,50 +128,40 @@ public class DistributedDeploymentManager implements DeploymentManager {
             } catch (IOException e1) {
                 logger.error(
                         "Cannot deploy app [{}] because a local copy of the S4R file could not be initialized due to [{}]",
-                        appName, e1.getClass().getName() + "->" + e1.getMessage());
-                throw new DeploymentFailedException("Cannot deploy application [" + appName + "]", e1);
+                        appConfig.getAppName(), e1.getClass().getName() + "->" + e1.getMessage());
+                throw new DeploymentFailedException("Cannot deploy application [" + appConfig.getAppName() + "]", e1);
             }
             localS4RFileCopy.deleteOnExit();
             try {
-                if (ByteStreams.copy(fetchS4App(uri), Files.newOutputStreamSupplier(localS4RFileCopy)) == 0) {
+                if (ByteStreams.copy(fetcher.fetch(uri), Files.newOutputStreamSupplier(localS4RFileCopy)) == 0) {
                     throw new DeploymentFailedException("Cannot copy archive from [" + uri.toString() + "] to ["
                             + localS4RFileCopy.getAbsolutePath() + "] (nothing was copied)");
                 }
-            } catch (IOException e) {
-                throw new DeploymentFailedException("Cannot deploy application [" + appName + "] from URI ["
-                        + uri.toString() + "] ", e);
+            } catch (Exception e) {
+                throw new DeploymentFailedException("Cannot deploy application [" + appConfig.getAppName()
+                        + "] from URI [" + uri.toString() + "] ", e);
             }
             // install locally
-            App loaded = server.loadApp(localS4RFileCopy, appName);
+            App loaded = server.loadApp(localS4RFileCopy, appConfig.getAppName());
             if (loaded != null) {
-                logger.info("Successfully installed application {}", appName);
+                logger.info("Successfully installed application {}", appConfig.getAppName());
                 // TODO sync with other nodes? (e.g. wait for other apps deployed before starting?
-                server.startApp(loaded, appName, clusterName);
+                server.startApp(loaded, appConfig.getAppName(), clusterName);
             } else {
-                throw new DeploymentFailedException("Cannot deploy application [" + appName + "] from URI ["
-                        + uri.toString() + "] : cannot start application");
+                throw new DeploymentFailedException("Cannot deploy application [" + appConfig.getAppName()
+                        + "] from URI [" + uri.toString() + "] : cannot start application");
             }
 
         } catch (URISyntaxException e) {
             logger.error("Cannot deploy app {} : invalid uri for fetching s4r archive {} : {} ", new String[] {
-                    appName, uriString, e.getMessage() });
-            throw new DeploymentFailedException("Cannot deploy application [" + appName + "]", e);
+                    appConfig.getAppName(), appConfig.getAppURI(), e.getMessage() });
+            throw new DeploymentFailedException("Cannot deploy application [" + appConfig.getAppName() + "]", e);
         }
         deployed = true;
     }
 
     // NOTE: in theory, we could support any protocol by implementing a chained visitor scheme,
     // but that's probably not that useful, and we can simply provide whichever protocol is needed
-    public InputStream fetchS4App(URI uri) throws DeploymentFailedException {
-        String scheme = uri.getScheme();
-        if ("file".equalsIgnoreCase(scheme)) {
-            return new FileSystemS4RFetcher().fetch(uri);
-        }
-        if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
-            return new HttpS4RFetcher().fetch(uri);
-        }
-        throw new DeploymentFailedException("Unsupported protocol " + scheme);
-    }
 
     private final class AppChangeListener implements IZkDataListener {
         @Override
