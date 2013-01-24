@@ -37,11 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 
-/**
- * Sends events to remote clusters. Target clusters are selected dynamically based on the stream name information from
- * the event.
- * 
- */
 public class DefaultRemoteSenders implements RemoteSenders {
 
     Logger logger = LoggerFactory.getLogger(DefaultRemoteSenders.class);
@@ -73,7 +68,9 @@ public class DefaultRemoteSenders implements RemoteSenders {
         serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.apache.s4.core.RemoteSenders#send(java.lang.String, org.apache.s4.base.Event)
      */
     @Override

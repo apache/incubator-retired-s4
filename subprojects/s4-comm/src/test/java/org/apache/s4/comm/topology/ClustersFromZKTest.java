@@ -56,11 +56,13 @@ public class ClustersFromZKTest extends ZkBasedTest {
             InterruptedException {
         final Set<String> clusterNames = Sets.newHashSet(Splitter.onPattern("\\s*,\\s*").split(clustersString));
         taskSetup.clean("s4");
+
         for (String clusterName : clusterNames) {
             taskSetup.setup(clusterName, 10, 1300);
         }
-
-        final ClustersFromZK clusterFromZK = new ClustersFromZK(null, CommTestUtils.ZK_STRING, 30000, 30000);
+        ZkClient zkClient1 = new ZkClient(CommTestUtils.ZK_STRING);
+        zkClient1.setZkSerializer(new ZNRecordSerializer());
+        final ClustersFromZK clusterFromZK = new ClustersFromZK(null, 30000, zkClient1);
 
         final CountDownLatch signalAllClustersComplete = new CountDownLatch(clusterNames.size());
         for (final String clusterName : clusterNames) {
@@ -87,7 +89,9 @@ public class ClustersFromZKTest extends ZkBasedTest {
                     AssignmentFromZK assignmentFromZK;
                     try {
                         for (String clusterName : clusterNames) {
-                            assignmentFromZK = new AssignmentFromZK(clusterName, CommTestUtils.ZK_STRING, 30000, 30000);
+                            ZkClient zkClient = new ZkClient(CommTestUtils.ZK_STRING);
+                            zkClient.setZkSerializer(new ZNRecordSerializer());
+                            assignmentFromZK = new AssignmentFromZK(clusterName, 30000, zkClient);
                             assignmentFromZK.init();
                             ClusterNode assignClusterNode = assignmentFromZK.assignClusterNode();
                             latch.countDown();

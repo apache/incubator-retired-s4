@@ -30,7 +30,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkStateListener;
-import org.I0Itec.zkclient.serialize.ZkSerializer;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,18 +38,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
-/**
- * <p>
- * Monitors streams available in the S4 cluster.
- * </p>
- * <p>
- * Maintains a data structure reflecting the currently published streams with their consumers and publishers.
- * </p>
- * <p>
- * Provides methods to publish producers and consumers of streams
- * </p>
- * 
- */
 @Singleton
 public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, RemoteStreams {
 
@@ -60,7 +47,7 @@ public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, Remo
     private final Lock lock;
     private final static String STREAMS_PATH = "/s4/streams";
     // by stream name, then "producer"|"consumer" then
-    private Map<String, Map<String, Set<StreamConsumer>>> streams = new HashMap<String, Map<String, Set<StreamConsumer>>>();
+    private final Map<String, Map<String, Set<StreamConsumer>>> streams = new HashMap<String, Map<String, Set<StreamConsumer>>>();
 
     public enum StreamType {
         PRODUCER, CONSUMER;
@@ -89,14 +76,11 @@ public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, Remo
     }
 
     @Inject
-    public ZkRemoteStreams(@Named("s4.cluster.zk_address") String zookeeperAddress,
-            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+    public ZkRemoteStreams(@Named("s4.cluster.zk_connection_timeout") int connectionTimeout, ZkClient zkClient)
+            throws Exception {
 
         lock = new ReentrantLock();
-        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
-        ZkSerializer serializer = new ZNRecordSerializer();
-        zkClient.setZkSerializer(serializer);
+        this.zkClient = zkClient;
         zkClient.subscribeStateChanges(this);
         zkClient.waitUntilConnected(connectionTimeout, TimeUnit.MILLISECONDS);
         // bug in zkClient, it does not invoke handleNewSession the first time
@@ -107,7 +91,9 @@ public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, Remo
 
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.apache.s4.comm.topology.RemoteStreams#getConsumers(java.lang.String)
      */
     @Override
@@ -186,8 +172,11 @@ public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, Remo
         streams.get(streamName).put(type.getCollectionName(), Collections.unmodifiableSet(consumers));
     }
 
-    /* (non-Javadoc)
-     * @see org.apache.s4.comm.topology.RemoteStreams#addOutputStream(java.lang.String, java.lang.String, java.lang.String)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.apache.s4.comm.topology.RemoteStreams#addOutputStream(java.lang.String, java.lang.String,
+     * java.lang.String)
      */
     @Override
     public void addOutputStream(String appId, String clusterName, String streamName) {
@@ -219,7 +208,9 @@ public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, Remo
         zkClient.createPersistent(StreamType.CONSUMER.getPath(streamName), true);
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.apache.s4.comm.topology.RemoteStreams#addInputStream(int, java.lang.String, java.lang.String)
      */
     @Override

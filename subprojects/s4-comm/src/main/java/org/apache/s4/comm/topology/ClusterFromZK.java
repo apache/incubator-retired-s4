@@ -30,7 +30,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
-import org.I0Itec.zkclient.serialize.ZkSerializer;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +40,7 @@ import com.google.inject.name.Named;
 /**
  * Represents a logical cluster definition fetched from Zookeeper. Notifies listeners of runtime changes in the
  * configuration.
- *
+ * 
  */
 public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener, IZkStateListener {
 
@@ -53,23 +52,19 @@ public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener
     private final String taskPath;
     private final String processPath;
     private final Lock lock;
-    private String clusterName;
+    private final String clusterName;
 
     /**
      * only the local topology
      */
     @Inject
     public ClusterFromZK(@Named("s4.cluster.name") String clusterName,
-            @Named("s4.cluster.zk_address") String zookeeperAddress,
-            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, ZkClient zkClient) throws Exception {
         this.clusterName = clusterName;
         this.taskPath = "/s4/clusters/" + clusterName + "/tasks";
         this.processPath = "/s4/clusters/" + clusterName + "/process";
         lock = new ReentrantLock();
-        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
-        ZkSerializer serializer = new ZNRecordSerializer();
-        zkClient.setZkSerializer(serializer);
+        this.zkClient = zkClient;
         zkClient.subscribeStateChanges(this);
         if (!zkClient.waitUntilConnected(connectionTimeout, TimeUnit.MILLISECONDS)) {
             throw new Exception("cannot connect to zookeeper");

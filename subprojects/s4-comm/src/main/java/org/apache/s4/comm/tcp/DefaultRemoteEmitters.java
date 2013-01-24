@@ -28,10 +28,6 @@ import org.apache.s4.comm.topology.Cluster;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
-/**
- * Manages the {@link RemoteEmitter} instances for sending messages to remote subclusters.
- * 
- */
 @Singleton
 public class DefaultRemoteEmitters implements RemoteEmitters {
 
@@ -40,7 +36,9 @@ public class DefaultRemoteEmitters implements RemoteEmitters {
     @Inject
     RemoteEmitterFactory emitterFactory;
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.apache.s4.comm.tcp.RemoteEmitters#getEmitter(org.apache.s4.comm.topology.Cluster)
      */
     @Override

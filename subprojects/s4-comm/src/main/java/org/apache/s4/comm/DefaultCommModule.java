@@ -115,7 +115,6 @@ public class DefaultCommModule extends AbstractModule {
         }
     }
 
-    @SuppressWarnings("serial")
     private void loadProperties(Binder binder) {
         try {
             config = new PropertiesConfiguration();

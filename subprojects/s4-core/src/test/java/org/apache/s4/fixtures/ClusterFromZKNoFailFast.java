@@ -19,6 +19,7 @@
 package org.apache.s4.fixtures;
 
 import org.apache.s4.comm.topology.ClusterFromZK;
+import org.apache.s4.comm.topology.ZkClient;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 
 import com.google.inject.Inject;
@@ -28,10 +29,8 @@ public class ClusterFromZKNoFailFast extends ClusterFromZK {
 
     @Inject
     public ClusterFromZKNoFailFast(@Named("s4.cluster.name") String clusterName,
-            @Named("s4.cluster.zk_address") String zookeeperAddress,
-            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
-        super(clusterName, zookeeperAddress, sessionTimeout, connectionTimeout);
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, ZkClient zkClient) throws Exception {
+        super(clusterName, connectionTimeout, zkClient);
     }
 
     @Override

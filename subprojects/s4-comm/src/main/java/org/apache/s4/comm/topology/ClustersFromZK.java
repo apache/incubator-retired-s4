@@ -46,21 +46,17 @@ public class ClustersFromZK implements Clusters, IZkStateListener {
     private final ZkClient zkClient;
     private final Lock lock;
     private String machineId;
-    private Map<String, ClusterFromZK> clusters = new HashMap<String, ClusterFromZK>();
-    private int connectionTimeout;
-    private String clusterName;
+    private final Map<String, ClusterFromZK> clusters = new HashMap<String, ClusterFromZK>();
+    private final int connectionTimeout;
+    private final String clusterName;
 
     @Inject
     public ClustersFromZK(@Named("s4.cluster.name") String clusterName,
-            @Named("s4.cluster.zk_address") String zookeeperAddress,
-            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, ZkClient zkClient) throws Exception {
         this.clusterName = clusterName;
         this.connectionTimeout = connectionTimeout;
         lock = new ReentrantLock();
-        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
-        ZkSerializer serializer = new ZNRecordSerializer();
-        zkClient.setZkSerializer(serializer);
+        this.zkClient = zkClient;
         zkClient.subscribeStateChanges(this);
         zkClient.waitUntilConnected(connectionTimeout, TimeUnit.MILLISECONDS);
         try {
@@ -115,6 +111,7 @@ public class ClustersFromZK implements Clusters, IZkStateListener {
         doProcess();
     }
 
+    @Override
     public Cluster getCluster(String clusterName) {
         return clusters.get(clusterName);
     }
