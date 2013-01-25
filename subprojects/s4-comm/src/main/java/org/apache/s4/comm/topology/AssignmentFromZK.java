@@ -44,7 +44,7 @@ import com.google.inject.name.Named;
 
 /**
  * Handles partition assignment through Zookeeper.
- *
+ * 
  */
 @Singleton
 public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateListener, IZkDataListener {
@@ -85,15 +85,13 @@ public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateL
      * Holds the reference to ClusterNode which points to the current partition owned
      */
     AtomicReference<ClusterNode> clusterNodeRef;
-    private int connectionTimeout;
-    private String clusterName;
+    private final int connectionTimeout;
+    private final String clusterName;
 
     // TODO we currently have a single assignment per node (i.e. a node can only belong to 1 topology)
     @Inject
     public AssignmentFromZK(@Named("s4.cluster.name") String clusterName,
-            @Named("s4.cluster.zk_address") String zookeeperAddress,
-            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, ZkClient zkClient) throws Exception {
         this.clusterName = clusterName;
         this.connectionTimeout = connectionTimeout;
         taskPath = "/s4/clusters/" + clusterName + "/tasks";
@@ -110,9 +108,7 @@ public class AssignmentFromZK implements Assignment, IZkChildListener, IZkStateL
             machineId = "UNKNOWN";
         }
 
-        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
-        ZkSerializer serializer = new ZNRecordSerializer();
-        zkClient.setZkSerializer(serializer);
+        this.zkClient = zkClient;
     }
 
     @Inject

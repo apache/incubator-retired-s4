@@ -31,6 +31,7 @@ import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.staging.BlockingDeserializerExecutorFactory;
+import org.apache.s4.comm.tcp.DefaultRemoteEmitters;
 import org.apache.s4.comm.tcp.RemoteEmitters;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterFromZK;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
+import com.google.inject.Scopes;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Names;
 
@@ -88,11 +90,11 @@ public class DefaultCommModule extends AbstractModule {
         install(new FactoryModuleBuilder().implement(SerializerDeserializer.class, KryoSerDeser.class).build(
                 SerializerDeserializerFactory.class));
 
-        bind(Cluster.class).to(ClusterFromZK.class);
+        bind(Cluster.class).to(ClusterFromZK.class).in(Scopes.SINGLETON);
 
-        bind(Clusters.class).to(ClustersFromZK.class);
+        bind(Clusters.class).to(ClustersFromZK.class).in(Scopes.SINGLETON);
 
-        bind(RemoteEmitters.class);
+        bind(RemoteEmitters.class).to(DefaultRemoteEmitters.class).in(Scopes.SINGLETON);
 
         bind(DeserializerExecutorFactory.class).to(BlockingDeserializerExecutorFactory.class);
 
@@ -106,14 +108,13 @@ public class DefaultCommModule extends AbstractModule {
                     .getString("s4.comm.emitter.remote.class"));
             install(new FactoryModuleBuilder().implement(RemoteEmitter.class, remoteEmitterClass).build(
                     RemoteEmitterFactory.class));
-            bind(RemoteEmitters.class);
+            bind(RemoteEmitters.class).to(DefaultRemoteEmitters.class).in(Scopes.SINGLETON);
 
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find class implementation ", e);
         }
     }
 
-    @SuppressWarnings("serial")
     private void loadProperties(Binder binder) {
         try {
             config = new PropertiesConfiguration();

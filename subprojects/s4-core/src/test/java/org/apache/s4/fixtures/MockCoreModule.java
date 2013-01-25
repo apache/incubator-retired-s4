@@ -20,12 +20,15 @@ package org.apache.s4.fixtures;
 
 import org.apache.s4.comm.DeserializerExecutorFactory;
 import org.apache.s4.comm.staging.MemoryAwareDeserializerExecutorFactory;
+import org.apache.s4.comm.topology.RemoteStreams;
+import org.apache.s4.core.RemoteSenders;
 import org.apache.s4.core.staging.BlockingSenderExecutorServiceFactory;
 import org.apache.s4.core.staging.BlockingStreamExecutorServiceFactory;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.NoOpDeploymentManager;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +59,9 @@ public class MockCoreModule extends AbstractModule {
 
         bind(SenderExecutorServiceFactory.class).to(BlockingSenderExecutorServiceFactory.class);
         bind(DeserializerExecutorFactory.class).to(MemoryAwareDeserializerExecutorFactory.class);
+
+        bind(RemoteStreams.class).toInstance(Mockito.mock(RemoteStreams.class));
+        bind(RemoteSenders.class).toInstance(Mockito.mock(RemoteSenders.class));
 
         bind(Integer.class).annotatedWith(Names.named("s4.sender.parallelism")).toInstance(8);
         bind(Integer.class).annotatedWith(Names.named("s4.sender.workQueueSize")).toInstance(10000);

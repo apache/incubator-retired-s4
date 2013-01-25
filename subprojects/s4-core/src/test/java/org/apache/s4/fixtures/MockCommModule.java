@@ -32,8 +32,6 @@ import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.Clusters;
 import org.apache.s4.comm.topology.PhysicalCluster;
-import org.apache.s4.comm.topology.RemoteStreams;
-import org.apache.s4.core.RemoteSenders;
 import org.mockito.Mockito;
 
 import com.google.common.collect.ImmutableMap;
@@ -58,8 +56,6 @@ public class MockCommModule extends AbstractModule {
         /* Use Kryo to serialize events. */
         install(new FactoryModuleBuilder().implement(SerializerDeserializer.class, KryoSerDeser.class).build(
                 SerializerDeserializerFactory.class));
-        bind(RemoteStreams.class).toInstance(Mockito.mock(RemoteStreams.class));
-        bind(RemoteSenders.class).toInstance(Mockito.mock(RemoteSenders.class));
         bind(RemoteEmitters.class).toInstance(Mockito.mock(RemoteEmitters.class));
         bind(Clusters.class).toInstance(Mockito.mock(Clusters.class));
         Cluster mockedCluster = Mockito.mock(Cluster.class);

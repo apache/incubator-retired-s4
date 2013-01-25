@@ -64,7 +64,9 @@ public class AssignmentsFromZKTest1 extends ZkBasedTest {
                     try {
 
                         for (String topologyName : names) {
-                            assignmentFromZK = new AssignmentFromZK(topologyName, CommTestUtils.ZK_STRING, 30000, 30000);
+                            ZkClient zkClient = new ZkClient(CommTestUtils.ZK_STRING);
+                            zkClient.setZkSerializer(new ZNRecordSerializer());
+                            assignmentFromZK = new AssignmentFromZK(topologyName, 30000, zkClient);
                             assignmentFromZK.init();
                             ClusterNode assignClusterNode = assignmentFromZK.assignClusterNode();
                             latch.countDown();
