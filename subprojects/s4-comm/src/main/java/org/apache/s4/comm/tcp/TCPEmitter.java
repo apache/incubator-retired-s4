@@ -277,6 +277,11 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     public int getPartitionCount() {
         return topology.getPhysicalCluster().getPartitionCount();
     }
+    
+    @Override
+    public int getPartitionCount(String streamName) {
+        return topology.getPhysicalCluster().getPartitionCount(streamName);
+    }
 
     class ExceptionHandler extends SimpleChannelUpstreamHandler {
         @Override

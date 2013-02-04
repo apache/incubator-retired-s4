@@ -18,6 +18,8 @@
 
 package org.apache.s4.deploy;
 
+import org.apache.s4.core.util.AppConfig;
+
 /**
  * Does not handle any deployment (hence does not require any cluster configuration settings)
  * 
@@ -28,4 +30,16 @@ public class NoOpDeploymentManager implements DeploymentManager {
     public void start() {
         // does nothing
     }
+
+	@Override
+	public void deploy(AppConfig appConfig) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void undeploy(AppConfig appConfig) {
+		// TODO Auto-generated method stub
+		
+	}
 }

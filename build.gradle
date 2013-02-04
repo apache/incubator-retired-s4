@@ -40,6 +40,7 @@ allprojects {
         maven { url 'http://google-gson.googlecode.com/svn/mavenrepo' }
         maven { url 'https://repo.springsource.org/libs-release' }
         maven { url 'http://repo.gradle.org/gradle/libs-releases-local' }
+        maven { url 'http://maven.restlet.org' }
 
         /* Add lib dir as a repo. Some jar files that are not available
          in a public repo are distributed in the lib dir. */
@@ -71,6 +72,10 @@ project.ext["libraries"] = [
     commons_lang:       'commons-lang:commons-lang:2.6',
     commons_logging:    'commons-logging:commons-logging:1.1.1',
     commons_collections:'commons-collections:commons-collections:3.2.1',
+    commons_cli:        'commons-cli:commons-cli:1.2',
+    commons_math:       'org.apache.commons:commons-math:2.1',
+    restlet_neo:        'com.noelios.restlet:com.noelios.restlet:1.1.10',
+    restlet:            'org.restlet:org.restlet:1.1.10',
     objenesis:          'org.objenesis:objenesis:1.2',
     slf4j:              'org.slf4j:slf4j-api:1.6.1',
     log4j:              'log4j:log4j:1.2.15',
@@ -80,6 +85,9 @@ project.ext["libraries"] = [
     jcip:               'net.jcip:jcip-annotations:1.0',
     junit:              'junit:junit:4.10',
     zkclient:           'com.github.sgroschupf:zkclient:0.1',
+    helix:              'org.apache.helix:helix-core:0.6.0-incubating',
+    jackson_core_asl:   'org.codehaus.jackson:jackson-core-asl:1.8.5',  
+    jackson_mapper_asl: 'org.codehaus.jackson:jackson-mapper-asl:1.8.5',  
     diezel:             'net.ericaro:diezel-maven-plugin:1.0.0-beta-4',
     jcommander:         'com.beust:jcommander:1.25',
     asm:                'org.ow2.asm:asm:4.0',
@@ -130,11 +138,18 @@ subprojects {
         compile( libraries.commons_io )
         compile ( libraries.commons_lang )
         runtime(libraries.commons_collections)
+        runtime(libraries.commons_cli)
+        runtime(libraries.commons_math)
 
         /* Misc. */
         compile( libraries.jcip )
         compile( libraries.zk )
         compile( libraries.metrics )
+        compile(libraries.helix)
+        compile(libraries.jackson_core_asl)
+        compile(libraries.jackson_mapper_asl)
+        runtime(libraries.restlet)
+        runtime(libraries.restlet_neo)
 
         /* Testing. */
         testCompile( libraries.junit )

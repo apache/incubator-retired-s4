@@ -25,7 +25,6 @@ import java.io.InputStream;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.helix.participant.statemachine.StateModelFactory;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.util.S4RLoaderFactory;
 import org.apache.s4.comm.DefaultHasher;
@@ -39,7 +38,6 @@ import org.apache.s4.core.staging.RemoteSendersExecutorServiceFactory;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
 import org.apache.s4.core.staging.ThrottlingSenderExecutorServiceFactory;
-import org.apache.s4.deploy.AppStateModelFactory;
 import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.apache.s4.deploy.HelixBasedDeploymentManager;
@@ -59,16 +57,16 @@ import com.google.inject.name.Names;
  * until we have a better way to customize node configuration
  * 
  */
-public class DefaultCoreModule extends AbstractModule {
+public class HelixBasedCoreModule extends AbstractModule {
 
-    private static Logger logger = LoggerFactory.getLogger(DefaultCoreModule.class);
+    private static Logger logger = LoggerFactory.getLogger(HelixBasedCoreModule.class);
 
     InputStream coreConfigFileInputStream;
     private PropertiesConfiguration config;
 
     String clusterName = null;
 
-    public DefaultCoreModule(InputStream coreConfigFileInputStream) {
+    public HelixBasedCoreModule(InputStream coreConfigFileInputStream) {
         this.coreConfigFileInputStream = coreConfigFileInputStream;
     }
 
@@ -87,9 +85,6 @@ public class DefaultCoreModule extends AbstractModule {
         /* The hashing function to map keys top partitions. */
         bind(Hasher.class).to(DefaultHasher.class);
 
-        bind(StateModelFactory.class).annotatedWith(Names.named("s4.app.statemodelfactory")).to(
-                AppStateModelFactory.class);
-        
         bind(DeploymentManager.class).to(HelixBasedDeploymentManager.class).in(Scopes.SINGLETON);
 
         bind(S4RLoaderFactory.class);

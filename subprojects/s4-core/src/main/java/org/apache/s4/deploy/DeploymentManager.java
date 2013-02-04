@@ -18,13 +18,20 @@
 
 package org.apache.s4.deploy;
 
+import org.apache.s4.core.util.AppConfig;
+
 /**
  * Marker interface for deployment managers. Allows to supply a no-op deployment manager through dependency injection.
  * (TODO that hack should be improved!)
  * 
  */
 public interface DeploymentManager {
-
+    public static final String S4R_URI = "s4r_uri";
+    
     void start();
+    
+    void deploy(AppConfig appConfig) throws DeploymentFailedException;
+    
+    void undeploy(AppConfig appConfig) throws DeploymentFailedException;
 
 }

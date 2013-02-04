@@ -50,7 +50,7 @@ public class S4Node {
         });
 
         Injector injector = Guice.createInjector(new Module[] { new BaseModule(Resources.getResource(
-                "default.s4.base.properties").openStream(), nodeArgs.clusterName) });
+                "default.s4.base.properties").openStream(), nodeArgs.clusterName, nodeArgs.instanceName) });
         S4Bootstrap bootstrap = injector.getInstance(S4Bootstrap.class);
         try {
             bootstrap.start(injector);
@@ -74,6 +74,8 @@ public class S4Node {
 
         @Parameter(names = "-zk", description = "Zookeeper connection string", required = false)
         String zkConnectionString;
-
+        
+        @Parameter(names = { "-id", "-nodeId" }, description = "Node/Instance id that uniquely identifies a node", required = false)
+        String instanceName = null;
     }
 }

@@ -40,6 +40,8 @@ public interface Emitter {
     boolean send(int partitionId, ByteBuffer message) throws InterruptedException;
 
     int getPartitionCount();
+    
+    int getPartitionCount(String stream);
 
     void close();
 }

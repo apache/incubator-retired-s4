@@ -26,6 +26,13 @@ import java.util.List;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.s4.core.S4Node;
+import org.apache.s4.tools.helix.AddNodes;
+import org.apache.s4.tools.helix.CreateCluster;
+import org.apache.s4.tools.helix.CreateTask;
+import org.apache.s4.tools.helix.DeployApp;
+import org.apache.s4.tools.helix.GenericEventAdapter;
+import org.apache.s4.tools.helix.RebalanceTask;
+import org.apache.s4.tools.helix.S4Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +46,14 @@ public class Tools {
     static Logger logger = LoggerFactory.getLogger(Tools.class);
 
     enum Task {
-        deploy(Deploy.class), node(S4Node.class), zkServer(ZKServer.class), newCluster(DefineCluster.class), adapter(
-                null), newApp(CreateApp.class), s4r(Package.class), status(Status.class);
+        //deploy(Deploy.class), node(S4Node.class), zkServer(ZKServer.class), newCluster(DefineCluster.class), adapter(
+          //      null), newApp(CreateApp.class), s4r(Package.class), status(Status.class);
 
+        deployApp(DeployApp.class), node(S4Node.class), zkServer(ZKServer.class), newCluster(CreateCluster.class), genericAdapter(
+                GenericEventAdapter.class), newApp(CreateApp.class), s4r(Package.class), status(S4Status.class),
+                addNodes(AddNodes.class),createTask(
+                        CreateTask.class), rebalanceTask(RebalanceTask.class);
+        
         Class<?> target;
 
         Task(Class<?> target) {

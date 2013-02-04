@@ -97,6 +97,14 @@ public class PhysicalCluster {
     public int getPartitionCount() {
         return numPartitions;
     }
+    
+    /**
+     * 
+     * @return Number of partitions in the cluster per stream
+     */
+    public int getPartitionCount(String streamName) {
+        return numPartitions;
+    }
 
     /**
      * @param node

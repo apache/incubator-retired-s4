@@ -58,7 +58,7 @@ import com.google.inject.util.Modules.OverriddenModuleBuilder;
  * 
  * 
  */
-public class S4Bootstrap {
+public class S4Bootstrap implements Bootstrap{
     private static Logger logger = LoggerFactory.getLogger(S4Bootstrap.class);
 
     private final ZkClient zkClient;

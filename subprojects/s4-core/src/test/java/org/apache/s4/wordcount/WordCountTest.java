@@ -59,7 +59,7 @@ public class WordCountTest extends ZkBasedTest {
 
     public void createEmitter() throws IOException {
         injector = Guice.createInjector(new BaseModule(
-                Resources.getResource("default.s4.base.properties").openStream(), "cluster1"), new DefaultCommModule(
+                Resources.getResource("default.s4.base.properties").openStream(), "cluster1", null), new DefaultCommModule(
                 Resources.getResource("default.s4.comm.properties").openStream()), new DefaultCoreModule(Resources
                 .getResource("default.s4.core.properties").openStream()));
 

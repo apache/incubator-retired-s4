@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
+import org.apache.helix.model.InstanceConfig;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -207,6 +208,15 @@ public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener
     public void handleNewSession() throws Exception {
         doProcess();
 
+    }
+    @Override
+    public InstanceConfig getDestination(String streamName, int partitionId) {
+        return null;
+    }
+
+    @Override
+    public Integer getPartitionCount(String streamName) {
+        return null;
     }
 
 }

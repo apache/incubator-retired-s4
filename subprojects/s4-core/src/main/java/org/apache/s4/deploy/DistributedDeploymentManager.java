@@ -68,7 +68,6 @@ import com.google.inject.name.Named;
  */
 public class DistributedDeploymentManager implements DeploymentManager {
 
-    public static final String S4R_URI = "s4r_uri";
 
     private static Logger logger = LoggerFactory.getLogger(DistributedDeploymentManager.class);
 
@@ -103,62 +102,13 @@ public class DistributedDeploymentManager implements DeploymentManager {
 
     public void deployApplication() throws DeploymentFailedException {
         ZNRecord appData = zkClient.readData(appPath);
-        AppConfig appConfig = new AppConfig(appData);
-        if (appConfig.getAppURI() == null) {
-            if (appConfig.getAppClassName() != null) {
-                try {
-                    App app = (App) getClass().getClassLoader().loadClass(appConfig.getAppClassName()).newInstance();
-                    server.startApp(app, "appName", clusterName);
-                } catch (Exception e) {
-                    logger.error("Cannot start application: cannot instantiate app class {} due to: {}",
-                            appConfig.getAppClassName(), e.getMessage());
-                    return;
-                }
-            }
-            logger.info("{} value not set for {} : no application code will be downloaded", S4R_URI, appPath);
-            return;
-        }
-        try {
-            URI uri = new URI(appConfig.getAppURI());
-
-            // fetch application
-            File localS4RFileCopy;
-            try {
-                localS4RFileCopy = File.createTempFile("tmp", "s4r");
-            } catch (IOException e1) {
-                logger.error(
-                        "Cannot deploy app [{}] because a local copy of the S4R file could not be initialized due to [{}]",
-                        appConfig.getAppName(), e1.getClass().getName() + "->" + e1.getMessage());
-                throw new DeploymentFailedException("Cannot deploy application [" + appConfig.getAppName() + "]", e1);
-            }
-            localS4RFileCopy.deleteOnExit();
-            try {
-                if (ByteStreams.copy(fetcher.fetch(uri), Files.newOutputStreamSupplier(localS4RFileCopy)) == 0) {
-                    throw new DeploymentFailedException("Cannot copy archive from [" + uri.toString() + "] to ["
-                            + localS4RFileCopy.getAbsolutePath() + "] (nothing was copied)");
-                }
-            } catch (Exception e) {
-                throw new DeploymentFailedException("Cannot deploy application [" + appConfig.getAppName()
-                        + "] from URI [" + uri.toString() + "] ", e);
-            }
-            // install locally
-            App loaded = server.loadApp(localS4RFileCopy, appConfig.getAppName());
-            if (loaded != null) {
-                logger.info("Successfully installed application {}", appConfig.getAppName());
-                // TODO sync with other nodes? (e.g. wait for other apps deployed before starting?
-                server.startApp(loaded, appConfig.getAppName(), clusterName);
-            } else {
-                throw new DeploymentFailedException("Cannot deploy application [" + appConfig.getAppName()
-                        + "] from URI [" + uri.toString() + "] : cannot start application");
-            }
-
-        } catch (URISyntaxException e) {
-            logger.error("Cannot deploy app {} : invalid uri for fetching s4r archive {} : {} ", new String[] {
-                    appConfig.getAppName(), appConfig.getAppURI(), e.getMessage() });
-            throw new DeploymentFailedException("Cannot deploy application [" + appConfig.getAppName() + "]", e);
-        }
+		AppConfig appConfig = new AppConfig(appData);
+        deploy(appConfig);
+        DeploymentUtils.deploy(server, fetcher, clusterName, appConfig);
         deployed = true;
     }
+
+
 
     // NOTE: in theory, we could support any protocol by implementing a chained visitor scheme,
     // but that's probably not that useful, and we can simply provide whichever protocol is needed
@@ -191,4 +141,16 @@ public class DistributedDeploymentManager implements DeploymentManager {
             }
         }
     }
+
+	@Override
+	public void deploy(AppConfig appConfig) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void undeploy(AppConfig appConfig) {
+		// TODO Auto-generated method stub
+		
+	}
 }
