@@ -11,7 +11,7 @@ public class HelixBasedDeploymentManager implements DeploymentManager {
     private final Server server;
     boolean deployed = false;
     private final String clusterName;
-	private ArchiveFetcher fetcher;
+    private final ArchiveFetcher fetcher;
 
     @Inject
     public HelixBasedDeploymentManager(@Named("s4.cluster.name") String clusterName,
@@ -20,23 +20,22 @@ public class HelixBasedDeploymentManager implements DeploymentManager {
             @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, Server server, ArchiveFetcher fetcher) {
         this.clusterName = clusterName;
         this.server = server;
-		this.fetcher = fetcher;
+        this.fetcher = fetcher;
 
     }
 
     @Override
     public void start() {
-        
     }
 
-	@Override
-	public void deploy(AppConfig appConfig) throws DeploymentFailedException {
-		DeploymentUtils.deploy(server, fetcher, clusterName, appConfig);
-	}
+    @Override
+    public void deploy(AppConfig appConfig) throws DeploymentFailedException {
+        DeploymentUtils.deploy(server, fetcher, clusterName, appConfig);
+    }
 
-	@Override
-	public void undeploy(AppConfig appConfig) {
-		
-	}
+    @Override
+    public void undeploy(AppConfig appConfig) {
+
+    }
 
 }

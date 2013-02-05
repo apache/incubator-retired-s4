@@ -7,6 +7,8 @@ import java.util.Map;
 
 import org.apache.s4.comm.topology.ZNRecord;
 
+import com.beust.jcommander.internal.Maps;
+
 public class AppConfig {
 
     public static final String NAMED_PARAMETERS = "namedParams";
@@ -70,6 +72,10 @@ public class AppConfig {
         return namedParameters;
     }
 
+    public boolean isValid() {
+        return (appClassName != null || appURI != null) && appName != null;
+    }
+
     public String getNamedParametersAsString() {
         if (namedParameters == null || namedParameters.isEmpty()) {
             return "";
@@ -102,6 +108,24 @@ public class AppConfig {
             record.putMapField(NAMED_PARAMETERS, namedParameters);
         }
         return record;
+    }
+
+    public Map<String, String> asMap() {
+        Map<String, String> result = Maps.newHashMap();
+        result.put(APP_NAME, appName);
+        result.put(APP_URI, appURI);
+        StringBuilder sb = new StringBuilder();
+        for (String customModuleName : customModulesNames) {
+            sb.append(customModuleName + ",");
+        }
+        result.put(MODULES_CLASSES, sb.toString());
+        sb = new StringBuilder();
+        for (String customModulesURI : customModulesURIs) {
+            sb.append(customModulesURI + ",");
+        }
+        result.put(MODULES_URIS, sb.toString());
+        result.put(NAMED_PARAMETERS, getNamedParametersAsString());
+        return result;
     }
 
     @Override

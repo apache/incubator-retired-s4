@@ -3,7 +3,6 @@ package org.apache.s4.core;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 
-import org.apache.s4.comm.util.ArchiveFetchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +50,11 @@ public class S4Node {
 
         Injector injector = Guice.createInjector(new Module[] { new BaseModule(Resources.getResource(
                 "default.s4.base.properties").openStream(), nodeArgs.clusterName, nodeArgs.instanceName) });
-        S4Bootstrap bootstrap = injector.getInstance(S4Bootstrap.class);
+        Bootstrap bootstrap = injector.getInstance(Bootstrap.class);
         try {
             bootstrap.start(injector);
-        } catch (ArchiveFetchException e1) {
-            logger.error("Cannot fetch module dependencies.", e1);
+        } catch (Exception e1) {
+            logger.error("Cannot start node ", e1);
         }
     }
 
@@ -74,7 +73,7 @@ public class S4Node {
 
         @Parameter(names = "-zk", description = "Zookeeper connection string", required = false)
         String zkConnectionString;
-        
+
         @Parameter(names = { "-id", "-nodeId" }, description = "Node/Instance id that uniquely identifies a node", required = false)
         String instanceName = null;
     }

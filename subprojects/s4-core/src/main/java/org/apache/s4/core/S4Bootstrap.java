@@ -24,6 +24,7 @@ import org.apache.s4.comm.util.ArchiveFetchException;
 import org.apache.s4.comm.util.ArchiveFetcher;
 import org.apache.s4.core.util.AppConfig;
 import org.apache.s4.core.util.ParametersInjectionModule;
+import org.apache.s4.deploy.DeploymentManager;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,7 @@ import com.google.inject.util.Modules.OverriddenModuleBuilder;
  * 
  * 
  */
-public class S4Bootstrap implements Bootstrap{
+public class S4Bootstrap implements Bootstrap {
     private static Logger logger = LoggerFactory.getLogger(S4Bootstrap.class);
 
     private final ZkClient zkClient;
@@ -90,6 +91,7 @@ public class S4Bootstrap implements Bootstrap{
         zkClient.subscribeDataChanges(appPath, new AppChangeListener());
     }
 
+    @Override
     public void start(Injector parentInjector) throws InterruptedException, ArchiveFetchException {
         this.parentInjector = parentInjector;
         if (zkClient.exists(appPath)) {
@@ -112,7 +114,7 @@ public class S4Bootstrap implements Bootstrap{
         List<File> modulesLocalCopies = new ArrayList<File>();
 
         for (String uriString : appConfig.getCustomModulesURIs()) {
-            modulesLocalCopies.add(fetchModuleAndCopyToLocalFile(appName, uriString));
+            modulesLocalCopies.add(fetchModuleAndCopyToLocalFile(appName, uriString, fetcher));
         }
         final ModulesLoader modulesLoader = new ModulesLoaderFactory().createModulesLoader(modulesLocalCopies);
 
@@ -129,7 +131,8 @@ public class S4Bootstrap implements Bootstrap{
 
     }
 
-    private File fetchModuleAndCopyToLocalFile(String appName, String uriString) throws ArchiveFetchException {
+    public static File fetchModuleAndCopyToLocalFile(String appName, String uriString, ArchiveFetcher fetcher)
+            throws ArchiveFetchException {
 
         URI uri;
         try {
@@ -208,7 +211,10 @@ public class S4Bootstrap implements Bootstrap{
                     logger.info("S4 node in standby until app class or app URI is specified");
                 }
                 Server server = injector.getInstance(Server.class);
-                server.start(injector);
+                server.setInjector(injector);
+                DeploymentManager deploymentManager = injector.getInstance(DeploymentManager.class);
+                deploymentManager.deploy(appConfig);
+                // server.start(injector);
             }
         } catch (Exception e) {
             logger.error("Cannot start S4 node", e);

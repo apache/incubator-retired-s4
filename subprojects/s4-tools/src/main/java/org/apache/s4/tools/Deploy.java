@@ -135,7 +135,7 @@ public class Deploy extends S4ArgsBase {
 
     }
 
-    private static Map<String, String> convertListArgsToMap(List<String> args) {
+    public static Map<String, String> convertListArgsToMap(List<String> args) {
         Map<String, String> result = Maps.newHashMap();
         for (String arg : args) {
             String[] split = arg.split("[=]");
