@@ -26,6 +26,7 @@ import junit.framework.Assert;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
+import org.apache.s4.comm.tcp.TCPDestination;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.core.util.AppConfig;
 import org.apache.s4.deploy.DeploymentUtils;
@@ -125,7 +126,7 @@ public class FTWordCountTest extends ZkBasedTest {
         event.setStreamId("inputStream");
         event.put("sentence", String.class, sentence);
         emitter.send(
-                0,
+                new TCPDestination(0, 1300, "localhost", "Task-0"),
                 injector.getInstance(SerializerDeserializerFactory.class)
                         .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
     }

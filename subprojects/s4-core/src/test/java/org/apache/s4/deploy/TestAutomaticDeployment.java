@@ -31,6 +31,7 @@ import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.s4.base.Event;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
+import org.apache.s4.comm.tcp.TCPDestination;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.core.util.AppConfig;
@@ -127,7 +128,7 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         event.setStreamId("inputStream");
         event.put("line", String.class, time1);
         emitter.send(
-                0,
+                new TCPDestination(0, 1300, "localhost", "Task-0"),
                 injector.getInstance(SerializerDeserializerFactory.class)
                         .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
 

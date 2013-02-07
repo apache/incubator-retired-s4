@@ -9,6 +9,7 @@ import org.apache.s4.comm.tcp.TCPListener;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 
 public class AppModule extends AbstractModule {
 
@@ -27,11 +28,11 @@ public class AppModule extends AbstractModule {
     protected void configure() {
         // bind(S4Metrics.class);
 
-        bind(Receiver.class).to(ReceiverImpl.class);
-        bind(Sender.class).to(SenderImpl.class);
+        bind(Receiver.class).to(ReceiverImpl.class).in(Scopes.SINGLETON);
+        bind(Sender.class).to(SenderImpl.class).in(Scopes.SINGLETON);
 
         // TODO allow pluggable transport implementation
-        bind(Listener.class).to(TCPListener.class);
+        bind(Listener.class).to(TCPListener.class).in(Scopes.SINGLETON);
 
     }
 

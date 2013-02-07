@@ -28,6 +28,7 @@ import junit.framework.Assert;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.apache.s4.base.Event;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
+import org.apache.s4.comm.tcp.TCPDestination;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.core.util.AppConfig;
@@ -90,9 +91,9 @@ public class RecoveryTest extends ZkBasedTest {
         event.setStreamId("inputStream");
         event.put("command", String.class, "checkpoint");
         emitter.send(
-                0,
-                injector.getInstance(SerializerDeserializerFactory.class)
-                        .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
+
+        new TCPDestination(0, 1300, "localhost", "Task-0"), injector.getInstance(SerializerDeserializerFactory.class)
+                .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
     }
 
     private void testCheckpointingConfiguration(Class<?> appClass, Class<?> backendModuleClass,
@@ -136,7 +137,7 @@ public class RecoveryTest extends ZkBasedTest {
         event.put("value", String.class, "message1");
         event.setStreamId("inputStream");
         emitter.send(
-                0,
+                new TCPDestination(0, 1300, "localhost", "Task-0"),
                 injector.getInstance(SerializerDeserializerFactory.class)
                         .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
 
@@ -172,11 +173,11 @@ public class RecoveryTest extends ZkBasedTest {
         event.put("command", String.class, "setValue2");
         event.put("value", String.class, "message2");
         emitter.send(
-                0,
+                new TCPDestination(new TCPDestination(0, 1300, "localhost", "Task-0")),
                 injector.getInstance(SerializerDeserializerFactory.class)
                         .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
 
-        Assert.assertTrue(signalValue2Set.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(signalValue2Set.await(20, TimeUnit.SECONDS));
 
         Assert.assertEquals(expectedFinalResult, new String(zk.getData("/data", false, null)));
     }

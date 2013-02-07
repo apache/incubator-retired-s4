@@ -30,8 +30,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.IZkStateListener;
-import org.apache.helix.model.InstanceConfig;
 import org.apache.s4.base.Destination;
+import org.apache.s4.comm.tcp.TCPDestination;
+import org.apache.s4.comm.udp.UDPDestination;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,14 +211,28 @@ public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener
         doProcess();
 
     }
+
     @Override
     public Destination getDestination(String streamName, int partitionId, String type) {
+        List<ClusterNode> nodes = clusterRef.get().getNodes();
+        for (ClusterNode node : nodes) {
+            if (node.getPartition() == partitionId) {
+                if ("tcp".equalsIgnoreCase(type)) {
+                    return new TCPDestination(node);
+                } else if ("udp".equalsIgnoreCase(type)) {
+                    return new UDPDestination(node);
+                } else {
+                    logger.error("Unsupported destination type {}", type);
+                    break;
+                }
+            }
+        }
         return null;
     }
 
     @Override
     public Integer getPartitionCount(String streamName) {
-        return null;
+        return clusterRef.get().getPartitionCount(streamName);
     }
 
 }

@@ -7,6 +7,7 @@ import junit.framework.Assert;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Listener;
 import org.apache.s4.base.SerializerDeserializer;
+import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.MockReceiverModule;
 import org.apache.s4.fixtures.NoOpReceiverModule;
@@ -45,7 +46,8 @@ public class TCPBasicTest extends ZkBasedTest {
         injector2.getInstance(Listener.class);
 
         // send to the other node
-        emitter.send(1, injector1.getInstance(SerializerDeserializer.class).serialize(CommTestUtils.MESSAGE));
+        emitter.send(new TCPDestination(injector2.getInstance(Assignment.class).assignClusterNode()), injector1
+                .getInstance(SerializerDeserializer.class).serialize(CommTestUtils.MESSAGE));
 
         // check receiver got the message
         Assert.assertTrue(CommTestUtils.SIGNAL_MESSAGE_RECEIVED.await(5, TimeUnit.SECONDS));

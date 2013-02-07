@@ -5,11 +5,14 @@ import java.io.InputStream;
 import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromZK;
+import org.apache.s4.comm.topology.Cluster;
+import org.apache.s4.comm.topology.ClusterFromZK;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.comm.util.ArchiveFetcher;
 import org.apache.s4.comm.util.RemoteFileFetcher;
 
+import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 
 /**
@@ -39,5 +42,8 @@ public class TestCommModule extends DefaultCommModule {
         ZkClient zkClient = new ZkClient(CommTestUtils.ZK_STRING);
         zkClient.setZkSerializer(new ZNRecordSerializer());
         bind(ZkClient.class).toInstance(zkClient);
+
+        bind(Cluster.class).to(ClusterFromZK.class).in(Scopes.SINGLETON);
+
     }
 }

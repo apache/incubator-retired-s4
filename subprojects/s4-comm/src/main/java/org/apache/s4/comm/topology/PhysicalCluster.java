@@ -90,19 +90,20 @@ public class PhysicalCluster {
         }
     }
 
-//    /**
-//     * 
-//     * @return Number of partitions in the cluster.
-//     */
-//    public int getPartitionCount() {
-//        return numPartitions;
-//    }
-    
+    // /**
+    // *
+    // * @return Number of partitions in the cluster.
+    // */
+    // public int getPartitionCount() {
+    // return numPartitions;
+    // }
+
     /**
      * 
      * @return Number of partitions in the cluster per stream
      */
     public int getPartitionCount(String streamName) {
+        // TODO regardless of stream name ?
         return numPartitions;
     }
 
@@ -140,6 +141,7 @@ public class PhysicalCluster {
         this.name = name;
     }
 
+    @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append("{ nbNodes=").append(nodes.size()).append(",name=").append(name).append(",mode=").append(mode)

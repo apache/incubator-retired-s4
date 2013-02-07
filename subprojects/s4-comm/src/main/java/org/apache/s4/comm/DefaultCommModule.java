@@ -1,5 +1,5 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
+ok * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
@@ -104,7 +104,6 @@ public class DefaultCommModule extends AbstractModule {
                     .getString("s4.comm.emitter.remote.class"));
             install(new FactoryModuleBuilder().implement(RemoteEmitter.class, remoteEmitterClass).build(
                     RemoteEmitterFactory.class));
-            bind(RemoteEmitters.class).to(DefaultRemoteEmitters.class).in(Scopes.SINGLETON);
 
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find class implementation ", e);

@@ -34,7 +34,6 @@ import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterChangeListener;
-import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.util.EmitterMetrics;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -87,7 +86,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     /*
      * Channel used to send messages to each destination
      */
-    private final BiMap<Destination, Channel> partitionChannelMap;
+    private final BiMap<Destination, Channel> destinationChannelMap;
 
     // lock for synchronizing between cluster updates callbacks and other code
     private final Lock lock;
@@ -95,7 +94,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     @Inject
     SerializerDeserializerFactory serDeserFactory;
     SerializerDeserializer serDeser;
-    Map<Integer, Semaphore> writePermits = Maps.newHashMap();
+    Map<Destination, Semaphore> writePermits = Maps.newHashMap();
 
     EmitterMetrics metrics;
 
@@ -122,7 +121,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
         // Initialize data structures
         int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
-        partitionChannelMap = HashBiMap.create(clusterSize);
+        destinationChannelMap = HashBiMap.create(clusterSize);
 
         // Initialize netty related structures
         ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
@@ -147,7 +146,6 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     @Inject
     private void init() {
-        refreshCluster();
         this.topology.addListener(this);
         serDeser = serDeserFactory.createSerializerDeserializer(Thread.currentThread().getContextClassLoader());
         metrics = new EmitterMetrics(topology);
@@ -166,7 +164,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
             connectFuture.await();
             if (connectFuture.isSuccess()) {
                 channels.add(connectFuture.getChannel());
-                partitionChannelMap.forcePut(destination, connectFuture.getChannel());
+                destinationChannelMap.forcePut(destination, connectFuture.getChannel());
+                writePermits.put(destination, new Semaphore(maxPendingWrites));
                 return true;
             }
         } catch (InterruptedException ie) {
@@ -176,12 +175,12 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         }
         return false;
     }
-    
+
     @Override
     public boolean send(Destination destination, ByteBuffer message) throws InterruptedException {
         ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(message);
 
-        if (!partitionChannelMap.containsKey(destination)) {
+        if (!destinationChannelMap.containsKey(destination)) {
             if (!connectTo((TCPDestination) destination)) {
                 logger.warn("Could not connect to partition {}, discarding message", destination);
                 // Couldn't connect, discard message
@@ -191,7 +190,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
         writePermits.get(destination).acquire();
 
-        Channel c = partitionChannelMap.get(destination);
+        Channel c = destinationChannelMap.get(destination);
         if (c == null) {
             logger.warn("Could not find channel for destination {}", destination);
             return false;
@@ -201,10 +200,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         return true;
     }
 
-    
-
-    protected void removeChannel(int partition) {
-        Channel c = partitionChannelMap.remove(partition);
+    protected void removeChannel(Destination destination) {
+        Channel c = destinationChannelMap.remove(destination);
         if (c == null) {
             return;
         }
@@ -239,34 +236,35 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     private void refreshCluster() {
         lock.lock();
         try {
-            /*
-            for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
-                Integer partition = clusterNode.getPartition();
-                if (partition == null) {
-                    logger.error("Illegal partition for clusterNode - " + clusterNode);
-                    return;
-                }
-
-                ClusterNode oldNode = partitionNodeMap.remove(partition);
-                if (oldNode != null && !oldNode.equals(clusterNode)) {
-                    removeChannel(partition);
-                }
-                partitionNodeMap.forcePut(partition, clusterNode);
-                if (!writePermits.containsKey(partition)) {
-                    writePermits.put(partition, new Semaphore(maxPendingWrites));
-                }
-                
-            }*/
+            // // dropped destinations are those in local map but not in updated cluster config
+            // SetView<Destination> droppedDestinations = Sets.difference(destinationChannelMap.keySet(), Sets
+            // .newHashSet(Collections2.transform(topology.getPhysicalCluster().getNodes(),
+            // new Function<ClusterNode, Destination>() {
+            //
+            // @Override
+            // public Destination apply(ClusterNode clusterNode) {
+            // return new TCPDestination(clusterNode);
+            // }
+            // })));
+            // for (Destination dropped : droppedDestinations) {
+            // destinationChannelMap.remove(dropped);
+            // writePermits.remove(dropped);
+            // removeChannel(dropped);
+            // }
+            //
+            // for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
+            // Destination destination = new TCPDestination(clusterNode);
+            // if (!destinationChannelMap.containsKey(destination)) {
+            // destinationChannelMap.put(new TCPDestination(clusterNode), null);
+            // writePermits.put(destination, new Semaphore(maxPendingWrites));
+            // }
+            //
+            // }
         } finally {
             lock.unlock();
         }
     }
 
-//    @Override
-//    public int getPartitionCount() {
-//        return topology.getPhysicalCluster().getPartitionCount();
-//    }
-    
     @Override
     public int getPartitionCount(String streamName) {
         return topology.getPhysicalCluster().getPartitionCount(streamName);
@@ -277,10 +275,10 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
             Throwable t = e.getCause();
             if (t instanceof ClosedChannelException) {
-                partitionChannelMap.inverse().remove(e.getChannel());
+                destinationChannelMap.inverse().remove(e.getChannel());
                 return;
             } else if (t instanceof ConnectException) {
-                partitionChannelMap.inverse().remove(e.getChannel());
+                destinationChannelMap.inverse().remove(e.getChannel());
                 return;
             } else {
                 logger.error("Unexpected exception", t);

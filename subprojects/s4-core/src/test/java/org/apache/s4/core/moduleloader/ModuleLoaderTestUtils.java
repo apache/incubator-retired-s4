@@ -12,6 +12,7 @@ import org.apache.s4.base.Event;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
+import org.apache.s4.comm.tcp.TCPDestination;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.core.BaseModule;
@@ -68,8 +69,8 @@ public class ModuleLoaderTestUtils {
         }
 
         Injector injector = Guice.createInjector(new BaseModule(Resources.getResource("default.s4.base.properties")
-                .openStream(), "cluster1",null), new DefaultCommModule(Resources.getResource("default.s4.comm.properties")
-                .openStream()));
+                .openStream(), "cluster1", null),
+                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream()));
 
         Emitter emitter = injector.getInstance(TCPEmitter.class);
         List<Long> messages = Lists.newArrayList();
@@ -93,11 +94,11 @@ public class ModuleLoaderTestUtils {
             Event event = new Event();
             event.put("message", long.class, message);
             event.setStreamId("inputStream");
-            emitter.send(0, serDeser.serialize(event));
+            emitter.send(new TCPDestination(0, 1300, "localhost", "Task-0"), serDeser.serialize(event));
         }
 
         // check sequential nodes in zk with correct data
-        Assert.assertTrue(signalMessagesReceived.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(signalMessagesReceived.await(20, TimeUnit.SECONDS));
         List<String> children = zkClient.getChildren("/test");
         for (String child : children) {
             Long data = zkClient.readData("/test/" + child);

@@ -27,6 +27,7 @@ import junit.framework.Assert;
 import org.apache.s4.base.Event;
 import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
+import org.apache.s4.comm.tcp.TCPDestination;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.core.BaseModule;
 import org.apache.s4.core.DefaultCoreModule;
@@ -59,9 +60,9 @@ public class WordCountTest extends ZkBasedTest {
 
     public void createEmitter() throws IOException {
         injector = Guice.createInjector(new BaseModule(
-                Resources.getResource("default.s4.base.properties").openStream(), "cluster1", null), new DefaultCommModule(
-                Resources.getResource("default.s4.comm.properties").openStream()), new DefaultCoreModule(Resources
-                .getResource("default.s4.core.properties").openStream()));
+                Resources.getResource("default.s4.base.properties").openStream(), "cluster1", null),
+                new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream()),
+                new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream()));
 
         emitter = injector.getInstance(TCPEmitter.class);
 
@@ -113,9 +114,8 @@ public class WordCountTest extends ZkBasedTest {
 
         // NOTE: we send to partition 0 since partition 1 hosts the emitter
         emitter.send(
-                0,
+                new TCPDestination(0, 1300, "localhost", "Task-0"),
                 injector.getInstance(SerializerDeserializerFactory.class)
                         .createSerializerDeserializer(Thread.currentThread().getContextClassLoader()).serialize(event));
     }
-
 }

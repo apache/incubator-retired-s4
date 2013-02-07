@@ -34,7 +34,6 @@ public class ProducerApp extends App {
     @Override
     protected void onInit() {
         System.out.println("Initing CounterApp...");
-
         producerPE = createPE(ProducerPE.class, "producer");
         producerPE.setStreams(createOutputStream("tickStream"));
 

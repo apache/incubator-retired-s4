@@ -9,8 +9,10 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.comm.helix.TaskStateModelFactory;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromHelix;
+import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterFromHelix;
+import org.apache.s4.comm.topology.ClusterFromZK;
 import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.comm.util.ArchiveFetcher;
 import org.apache.s4.comm.util.RemoteFileFetcher;
@@ -45,32 +47,30 @@ public class BaseModule extends AbstractModule {
         if (config == null) {
             loadProperties(binder());
         }
-        if (useHelix) {
-            bind(ZkClient.class).toProvider(ZkClientProvider.class).in(Scopes.SINGLETON);
+        bind(ZkClient.class).toProvider(ZkClientProvider.class).in(Scopes.SINGLETON);
+        bind(ArchiveFetcher.class).to(RemoteFileFetcher.class);
+        if (config.containsKey("s4.helix") && config.getBoolean("s4.helix")) {
             bind(Assignment.class).to(AssignmentFromHelix.class).asEagerSingleton();
             bind(Cluster.class).to(ClusterFromHelix.class);
             bind(TaskStateModelFactory.class);
             bind(AppStateModelFactory.class).in(Scopes.SINGLETON);
             // bind(DeploymentManager.class).to(HelixBasedDeploymentManager.class).in(Scopes.SINGLETON);
 
-            bind(ArchiveFetcher.class).to(RemoteFileFetcher.class);
             bind(Bootstrap.class).to(S4HelixBootstrap.class);
 
             // share the Zookeeper connection
             return;
+        } else {
+            // a node holds a single partition assignment
+            // ==> Assignment is a singleton so it shared between base, comm and app
+            // layers.
+            // it is eager so that the node is able to join a cluster immediately
+            bind(Assignment.class).to(AssignmentFromZK.class).asEagerSingleton();
+            bind(Cluster.class).to(ClusterFromZK.class);
+
+            bind(Bootstrap.class).to(S4Bootstrap.class);
+
         }
-        // a node holds a single partition assignment
-        // ==> Assignment is a singleton so it shared between base, comm and app
-        // layers.
-        // it is eager so that the node is able to join a cluster immediately
-        // bind(Assignment.class).to(AssignmentFromZK.class).asEagerSingleton();
-        // bind(Cluster.class).to(ClusterFromZK.class);
-
-        bind(ArchiveFetcher.class).to(RemoteFileFetcher.class);
-        bind(Bootstrap.class).to(S4Bootstrap.class);
-
-        // share the Zookeeper connection
-        bind(ZkClient.class).toProvider(ZkClientProvider.class).in(Scopes.SINGLETON);
 
     }
 

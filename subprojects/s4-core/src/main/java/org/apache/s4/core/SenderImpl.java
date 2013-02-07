@@ -61,7 +61,7 @@ public class SenderImpl implements Sender {
     @Inject
     S4Metrics metrics;
 
-    private Cluster cluster;
+    private final Cluster cluster;
 
     /**
      * 
@@ -137,7 +137,7 @@ public class SenderImpl implements Sender {
         public void run() {
             ByteBuffer serializedEvent = serDeser.serialize(event);
             try {
-                //TODO: where can we get the type ?
+                // TODO: where can we get the type ?
                 Destination destination = cluster.getDestination(event.getStreamName(), remotePartitionId, "tcp");
                 emitter.send(destination, serializedEvent);
             } catch (InterruptedException e) {
@@ -167,7 +167,7 @@ public class SenderImpl implements Sender {
                 /* Don't use the comm layer when we send to the same partition. */
                 if (localPartitionId != i) {
                     try {
-                        //TODO: where to get the mode from
+                        // TODO: where to get the mode from
                         Destination destination = cluster.getDestination(event.getStreamName(), i, "tcp");
                         emitter.send(destination, serializedEvent);
                         metrics.sentEvent(i);

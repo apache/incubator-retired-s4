@@ -20,13 +20,13 @@ package org.apache.s4.comm.topology;
 
 /**
  * Represents an node.
- *
+ * 
  */
 public class ClusterNode {
-    private int partition;
-    private int port;
-    private String machineName;
-    private String taskId;
+    private final int partition;
+    private final int port;
+    private final String machineName;
+    private final String taskId;
 
     public ClusterNode(int partition, int port, String machineName, String taskId) {
         this.partition = partition;
@@ -51,10 +51,49 @@ public class ClusterNode {
         return taskId;
     }
 
+    @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append("{").append("partition=").append(partition).append(",port=").append(port).append(",machineName=")
                 .append(machineName).append(",taskId=").append(taskId).append("}");
         return sb.toString();
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((machineName == null) ? 0 : machineName.hashCode());
+        result = prime * result + partition;
+        result = prime * result + port;
+        result = prime * result + ((taskId == null) ? 0 : taskId.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        ClusterNode other = (ClusterNode) obj;
+        if (machineName == null) {
+            if (other.machineName != null)
+                return false;
+        } else if (!machineName.equals(other.machineName))
+            return false;
+        if (partition != other.partition)
+            return false;
+        if (port != other.port)
+            return false;
+        if (taskId == null) {
+            if (other.taskId != null)
+                return false;
+        } else if (!taskId.equals(other.taskId))
+            return false;
+        return true;
+    }
+
 }
