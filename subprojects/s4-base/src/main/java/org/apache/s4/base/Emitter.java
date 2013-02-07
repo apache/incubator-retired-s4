@@ -37,11 +37,13 @@ public interface Emitter {
      * @throws InterruptedException
      *             if interrupted during blocking send operation
      */
-    boolean send(int partitionId, ByteBuffer message) throws InterruptedException;
+    boolean send(Destination destination , ByteBuffer message) throws InterruptedException;
 
-    int getPartitionCount();
+    //int getPartitionCount();
     
     int getPartitionCount(String stream);
-
+    
+    String getType();
+    
     void close();
 }

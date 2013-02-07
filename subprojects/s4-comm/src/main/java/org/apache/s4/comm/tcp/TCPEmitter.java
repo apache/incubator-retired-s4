@@ -28,6 +28,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.s4.base.Destination;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
@@ -84,14 +85,9 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     private final ChannelGroup channels = new DefaultChannelGroup();
 
     /*
-     * Channel used to send messages to each partition
+     * Channel used to send messages to each destination
      */
-    private final BiMap<Integer, Channel> partitionChannelMap;
-
-    /*
-     * Node hosting each partition
-     */
-    private final BiMap<Integer, ClusterNode> partitionNodeMap;
+    private final BiMap<Destination, Channel> partitionChannelMap;
 
     // lock for synchronizing between cluster updates callbacks and other code
     private final Lock lock;
@@ -127,7 +123,6 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         // Initialize data structures
         int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
         partitionChannelMap = HashBiMap.create(clusterSize);
-        partitionNodeMap = HashBiMap.create(clusterSize);
 
         // Initialize netty related structures
         ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
@@ -159,62 +154,54 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     }
 
-    private boolean connectTo(Integer partitionId) throws InterruptedException {
-        ClusterNode clusterNode = partitionNodeMap.get(partitionId);
+    private boolean connectTo(TCPDestination destination) throws InterruptedException {
 
-        if (clusterNode == null) {
-
-            logger.error("No ClusterNode exists for partitionId " + partitionId);
-            refreshCluster();
+        if (destination == null) {
             return false;
         }
 
         try {
-            ChannelFuture connectFuture = this.bootstrap.connect(new InetSocketAddress(clusterNode.getMachineName(),
-                    clusterNode.getPort()));
+            ChannelFuture connectFuture = this.bootstrap.connect(new InetSocketAddress(destination.getMachineName(),
+                    destination.getPort()));
             connectFuture.await();
             if (connectFuture.isSuccess()) {
                 channels.add(connectFuture.getChannel());
-                partitionChannelMap.forcePut(partitionId, connectFuture.getChannel());
+                partitionChannelMap.forcePut(destination, connectFuture.getChannel());
                 return true;
             }
         } catch (InterruptedException ie) {
-            logger.error(String.format("Interrupted while connecting to %s:%d", clusterNode.getMachineName(),
-                    clusterNode.getPort()));
+            logger.error(String.format("Interrupted while connecting to %s:%d", destination.getMachineName(),
+                    destination.getPort()));
             throw ie;
         }
         return false;
     }
-
-    private void sendMessage(int partitionId, ByteBuffer message) throws InterruptedException {
+    
+    @Override
+    public boolean send(Destination destination, ByteBuffer message) throws InterruptedException {
         ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(message);
 
-        if (!partitionChannelMap.containsKey(partitionId)) {
-            if (!connectTo(partitionId)) {
-                logger.warn("Could not connect to partition {}, discarding message", partitionId);
+        if (!partitionChannelMap.containsKey(destination)) {
+            if (!connectTo((TCPDestination) destination)) {
+                logger.warn("Could not connect to partition {}, discarding message", destination);
                 // Couldn't connect, discard message
-                return;
+                return false;
             }
         }
 
-        writePermits.get(partitionId).acquire();
+        writePermits.get(destination).acquire();
 
-        Channel c = partitionChannelMap.get(partitionId);
+        Channel c = partitionChannelMap.get(destination);
         if (c == null) {
-            logger.warn("Could not find channel for partition {}", partitionId);
-            return;
+            logger.warn("Could not find channel for destination {}", destination);
+            return false;
         }
 
-        c.write(buffer).addListener(new MessageSendingListener(partitionId));
-    }
-
-    @Override
-    public boolean send(int partitionId, ByteBuffer message) throws InterruptedException {
-        // TODO a possible optimization would be to buffer messages per partition, with a small timeout. This will limit
-        // the number of writes and therefore system calls.
-        sendMessage(partitionId, message);
+        c.write(buffer).addListener(new MessageSendingListener(destination));
         return true;
     }
+
+    
 
     protected void removeChannel(int partition) {
         Channel c = partitionChannelMap.remove(partition);
@@ -252,6 +239,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
     private void refreshCluster() {
         lock.lock();
         try {
+            /*
             for (ClusterNode clusterNode : topology.getPhysicalCluster().getNodes()) {
                 Integer partition = clusterNode.getPartition();
                 if (partition == null) {
@@ -267,16 +255,17 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
                 if (!writePermits.containsKey(partition)) {
                     writePermits.put(partition, new Semaphore(maxPendingWrites));
                 }
-            }
+                
+            }*/
         } finally {
             lock.unlock();
         }
     }
 
-    @Override
-    public int getPartitionCount() {
-        return topology.getPhysicalCluster().getPartitionCount();
-    }
+//    @Override
+//    public int getPartitionCount() {
+//        return topology.getPhysicalCluster().getPartitionCount();
+//    }
     
     @Override
     public int getPartitionCount(String streamName) {
@@ -301,30 +290,35 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     class MessageSendingListener implements ChannelFutureListener {
 
-        int partitionId = -1;
+        Destination destination = null;
 
-        public MessageSendingListener(int partitionId) {
+        public MessageSendingListener(Destination destination) {
             super();
-            this.partitionId = partitionId;
+            this.destination = destination;
         }
 
         @Override
         public void operationComplete(ChannelFuture future) throws Exception {
-            writePermits.get(partitionId).release();
+            writePermits.get(destination).release();
             if (!future.isSuccess()) {
                 try {
                     // TODO handle possible cluster reconfiguration between send and failure callback
                     logger.warn("Failed to send message to node {} (according to current cluster information)",
-                            topology.getPhysicalCluster().getNodes().get(partitionId));
+                            destination);
                 } catch (IndexOutOfBoundsException ignored) {
-                    logger.error("Failed to send message to partition {}", partitionId);
+                    logger.error("Failed to send message to partition {}", destination);
                     // cluster was changed
                 }
             } else {
-                metrics.sentMessage(partitionId);
+                metrics.sentMessage(destination);
 
             }
 
         }
+    }
+
+    @Override
+    public String getType() {
+        return "tcp";
     }
 }

@@ -18,7 +18,8 @@
 
 package org.apache.s4.comm.topology;
 
-import org.apache.helix.model.InstanceConfig;
+import org.apache.s4.base.Destination;
+
 
 /**
  * Represents a logical cluster
@@ -37,7 +38,7 @@ public interface Cluster {
      * @param partitionId
      * @return
      */
-    InstanceConfig getDestination(String streamName, int partitionId);
+    Destination getDestination(String streamName, int partitionId, String type);
 
     Integer getPartitionCount(String streamName);
 }

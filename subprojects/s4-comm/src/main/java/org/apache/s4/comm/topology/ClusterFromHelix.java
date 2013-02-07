@@ -37,26 +37,31 @@ import org.apache.helix.model.ExternalView;
 import org.apache.helix.model.IdealState;
 import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.spectator.RoutingTableProvider;
+import org.apache.s4.base.Destination;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.sun.org.apache.bcel.internal.generic.NEW;
 
 /**
- * Represents a logical cluster definition fetched from Zookeeper. Notifies listeners of runtime changes in the
- * configuration.
+ * Represents a logical cluster definition fetched from Zookeeper. Notifies
+ * listeners of runtime changes in the configuration.
  * 
  */
 public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
 
-    private static Logger logger = LoggerFactory.getLogger(ClusterFromHelix.class);
+    private static Logger logger = LoggerFactory
+            .getLogger(ClusterFromHelix.class);
 
     private final String clusterName;
     private final AtomicReference<PhysicalCluster> clusterRef;
     private final List<ClusterChangeListener> listeners;
     private final Lock lock;
     private final AtomicReference<Map<String, Integer>> partitionCountMapRef;
+    // Map of destination type to streamName to partitionId to Destination
+    private final AtomicReference<Map<String, Map<String, Map<String, Destination>>>> destinationInfoMapRef;
 
     /**
      * only the local topology
@@ -65,12 +70,17 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
     public ClusterFromHelix(@Named("s4.cluster.name") String clusterName,
             @Named("s4.cluster.zk_address") String zookeeperAddress,
             @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout) throws Exception {
+            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout)
+            throws Exception {
         this.clusterName = clusterName;
         Map<String, Integer> map = Collections.emptyMap();
         partitionCountMapRef = new AtomicReference<Map<String, Integer>>(map);
         this.clusterRef = new AtomicReference<PhysicalCluster>();
         this.listeners = new ArrayList<ClusterChangeListener>();
+        Map<String, Map<String, Map<String, Destination>>> destinationMap = Collections
+                .emptyMap();
+        destinationInfoMapRef = new AtomicReference<Map<String, Map<String, Map<String, Destination>>>>(
+                destinationMap);
         lock = new ReentrantLock();
 
     }
@@ -78,36 +88,50 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
     /**
      * any topology
      */
-    public ClusterFromHelix(String clusterName, ZkClient zkClient, String machineId) {
+    public ClusterFromHelix(String clusterName, ZkClient zkClient,
+            String machineId) {
         this.clusterName = clusterName;
         Map<String, Integer> map = Collections.emptyMap();
         partitionCountMapRef = new AtomicReference<Map<String, Integer>>(map);
         this.clusterRef = new AtomicReference<PhysicalCluster>();
         this.listeners = new ArrayList<ClusterChangeListener>();
+        Map<String, Map<String, Map<String, Destination>>> destinationMap = Collections
+                .emptyMap();
+        destinationInfoMapRef = new AtomicReference<Map<String, Map<String, Map<String, Destination>>>>(
+                destinationMap);
         lock = new ReentrantLock();
 
     }
 
     @Override
-    public void onExternalViewChange(List<ExternalView> externalViewList, NotificationContext changeContext) {
+    public void onExternalViewChange(List<ExternalView> externalViewList,
+            NotificationContext changeContext) {
         lock.lock();
         try {
             logger.info("Start:Processing change in cluster topology");
             super.onExternalViewChange(externalViewList, changeContext);
             HelixManager manager = changeContext.getManager();
-            HelixDataAccessor helixDataAccessor = manager.getHelixDataAccessor();
+            HelixDataAccessor helixDataAccessor = manager
+                    .getHelixDataAccessor();
             ConfigAccessor configAccessor = manager.getConfigAccessor();
             ConfigScopeBuilder builder = new ConfigScopeBuilder();
             Builder keyBuilder = helixDataAccessor.keyBuilder();
-            List<String> resources = helixDataAccessor.getChildNames(keyBuilder.idealStates());
+            List<String> resources = helixDataAccessor.getChildNames(keyBuilder
+                    .idealStates());
             Map<String, Integer> map = new HashMap<String, Integer>();
+            Map<String, Map<String, Map<String, Destination>>> destinationRoutingMap;
+            destinationRoutingMap = new HashMap<String, Map<String,Map<String,Destination>>>();
             for (String resource : resources) {
-                String resourceType = configAccessor.get(builder.forCluster(clusterName).forResource(resource).build(),
-                        "type");
+                String resourceType = configAccessor.get(
+                        builder.forCluster(clusterName).forResource(resource)
+                                .build(), "type");
                 if ("Task".equalsIgnoreCase(resourceType)) {
-                    String streamName = configAccessor.get(builder.forCluster(clusterName).forResource(resource)
-                            .build(), "streamName");
-                    IdealState idealstate = helixDataAccessor.getProperty(keyBuilder.idealStates(resource));
+                    String streamName = configAccessor.get(
+                            builder.forCluster(clusterName)
+                                    .forResource(resource).build(),
+                            "streamName");
+                    IdealState idealstate = helixDataAccessor
+                            .getProperty(keyBuilder.idealStates(resource));
                     map.put(streamName, idealstate.getNumPartitions());
                 }
             }
@@ -146,7 +170,8 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((clusterName == null) ? 0 : clusterName.hashCode());
+        result = prime * result
+                + ((clusterName == null) ? 0 : clusterName.hashCode());
         return result;
     }
 
@@ -168,13 +193,18 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
     }
 
     @Override
-    public InstanceConfig getDestination(String streamName, int partitionId) {
-        List<InstanceConfig> instances = getInstances(streamName, streamName + "_" + partitionId, "LEADER");
-        if (instances.size() == 1) {
-            return instances.get(0);
-        } else {
+    public Destination getDestination(String streamName, int partitionId,
+            String destinationType) {
+
+        Map<String, Map<String, Destination>> typeMap = destinationInfoMapRef.get().get(destinationType);
+        if (typeMap == null)
             return null;
-        }
+
+        Map<String, Destination> streamMap = typeMap.get(streamName);
+        if (streamMap == null)
+            return null;
+
+        return streamMap.get(partitionId);
     }
 
     @Override

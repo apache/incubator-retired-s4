@@ -21,12 +21,14 @@ package org.apache.s4.core;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.s4.base.Destination;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Event;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.topology.Assignment;
+import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.util.S4Metrics;
@@ -59,6 +61,8 @@ public class SenderImpl implements Sender {
     @Inject
     S4Metrics metrics;
 
+    private Cluster cluster;
+
     /**
      * 
      * @param emitter
@@ -70,11 +74,12 @@ public class SenderImpl implements Sender {
      */
     @Inject
     public SenderImpl(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment,
-            SenderExecutorServiceFactory senderExecutorServiceFactory) {
+            SenderExecutorServiceFactory senderExecutorServiceFactory, Cluster cluster) {
         this.emitter = emitter;
         this.serDeser = serDeser;
         this.hasher = hasher;
         this.assignment = assignment;
+        this.cluster = cluster;
         this.tpe = senderExecutorServiceFactory.create();
     }
 
@@ -93,7 +98,7 @@ public class SenderImpl implements Sender {
      */
     @Override
     public boolean checkAndSendIfNotLocal(String hashKey, Event event) {
-        int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
+        int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount(event.getStreamName()));
         if (partition == localPartitionId) {
             metrics.sentLocal();
             /* Hey we are in the same JVM, don't use the network. */
@@ -132,7 +137,9 @@ public class SenderImpl implements Sender {
         public void run() {
             ByteBuffer serializedEvent = serDeser.serialize(event);
             try {
-                emitter.send(remotePartitionId, serializedEvent);
+                //TODO: where can we get the type ?
+                Destination destination = cluster.getDestination(event.getStreamName(), remotePartitionId, "tcp");
+                emitter.send(destination, serializedEvent);
             } catch (InterruptedException e) {
                 logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);
                 Thread.currentThread().interrupt();
@@ -154,13 +161,15 @@ public class SenderImpl implements Sender {
         @Override
         public void run() {
             ByteBuffer serializedEvent = serDeser.serialize(event);
-
-            for (int i = 0; i < emitter.getPartitionCount(); i++) {
+            Integer partitionCount = cluster.getPartitionCount(event.getStreamName());
+            for (int i = 0; i < partitionCount; i++) {
 
                 /* Don't use the comm layer when we send to the same partition. */
                 if (localPartitionId != i) {
                     try {
-                        emitter.send(i, serializedEvent);
+                        //TODO: where to get the mode from
+                        Destination destination = cluster.getDestination(event.getStreamName(), i, "tcp");
+                        emitter.send(destination, serializedEvent);
                         metrics.sentEvent(i);
                     } catch (InterruptedException e) {
                         logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);

@@ -59,7 +59,8 @@ public class S4Metrics {
 
     @Inject
     private void init() {
-        senderMeters = new Meter[emitter.getPartitionCount()];
+        //TODO: FIX METER
+        senderMeters = new Meter[100];
         // int localPartitionId = assignment.assignClusterNode().getPartition();
         for (int i = 0; i < senderMeters.length; i++) {
             senderMeters[i] = Metrics.newMeter(SenderImpl.class, "sender", "sent-to-" + (i), TimeUnit.SECONDS);

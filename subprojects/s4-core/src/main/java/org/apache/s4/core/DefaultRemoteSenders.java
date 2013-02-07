@@ -28,6 +28,7 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.RemoteEmitters;
+import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.Clusters;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.comm.topology.StreamConsumer;
@@ -83,8 +84,9 @@ public class DefaultRemoteSenders implements RemoteSenders {
             // represented by a single stream consumer
             RemoteSender sender = sendersByTopology.get(consumer.getClusterName());
             if (sender == null) {
-                RemoteSender newSender = new RemoteSender(remoteEmitters.getEmitter(remoteClusters.getCluster(consumer
-                        .getClusterName())), hasher, consumer.getClusterName());
+                Cluster cluster = remoteClusters.getCluster(consumer
+                        .getClusterName());
+                RemoteSender newSender = new RemoteSender(cluster,remoteEmitters.getEmitter(cluster), hasher, consumer.getClusterName());
                 // TODO cleanup when remote topologies die
                 sender = sendersByTopology.putIfAbsent(consumer.getClusterName(), newSender);
                 if (sender == null) {
@@ -112,7 +114,7 @@ public class DefaultRemoteSenders implements RemoteSenders {
         @Override
         public void run() {
             try {
-                sender.send(hashKey, serDeser.serialize(event));
+                sender.send(event.getStreamName(),hashKey, serDeser.serialize(event));
             } catch (InterruptedException e) {
                 logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);
                 Thread.currentThread().interrupt();

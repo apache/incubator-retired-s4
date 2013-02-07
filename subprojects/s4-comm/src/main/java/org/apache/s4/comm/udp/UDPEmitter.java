@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.s4.base.Destination;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
@@ -45,7 +46,7 @@ import com.google.inject.Inject;
 public class UDPEmitter implements Emitter, ClusterChangeListener {
     private DatagramSocket socket;
     private final HashBiMap<Integer, ClusterNode> nodes;
-    private final Map<Integer, InetAddress> inetCache = new HashMap<Integer, InetAddress>();
+    private final Map<Destination, InetAddress> inetCache = new HashMap<Destination, InetAddress>();
     private final long messageDropInQueueCount = 0;
     private final Cluster topology;
 
@@ -80,23 +81,17 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
     }
 
     @Override
-    public boolean send(int partitionId, ByteBuffer message) {
-        try {
-            ClusterNode node = nodes.get(partitionId);
-            if (node == null) {
-                LoggerFactory.getLogger(getClass()).error(
-                        "Cannot send message to partition {} because this partition is not visible to this emitter",
-                        partitionId);
-                return false;
-            }
+    public boolean send(Destination destination, ByteBuffer message) throws InterruptedException {
+        try{
+            UDPDestination udpDestination = (UDPDestination) destination;
             byte[] byteBuffer = new byte[message.array().length];
             System.arraycopy(message.array(), 0, byteBuffer, 0, message.array().length);
-            InetAddress inetAddress = inetCache.get(partitionId);
+            InetAddress inetAddress = inetCache.get(destination);
             if (inetAddress == null) {
-                inetAddress = InetAddress.getByName(node.getMachineName());
-                inetCache.put(partitionId, inetAddress);
+                inetAddress = InetAddress.getByName(udpDestination.getMachineName());
+                inetCache.put(destination, inetAddress);
             }
-            DatagramPacket dp = new DatagramPacket(byteBuffer, byteBuffer.length, inetAddress, node.getPort());
+            DatagramPacket dp = new DatagramPacket(byteBuffer, byteBuffer.length, inetAddress, udpDestination.getPort());
             socket.send(dp);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -105,10 +100,10 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
         return true;
     }
 
-    @Override
-    public int getPartitionCount() {
-        return topology.getPhysicalCluster().getPartitionCount();
-    }
+//    @Override
+//    public int getPartitionCount() {
+//        return topology.getPhysicalCluster().getPartitionCount();
+//    }
     
     @Override
     public int getPartitionCount(String streamName) {
@@ -135,5 +130,10 @@ public class UDPEmitter implements Emitter, ClusterChangeListener {
     public void close() {
         // TODO Auto-generated method stub
 
+    }
+
+    @Override
+    public String getType() {
+        return "udp";
     }
 }

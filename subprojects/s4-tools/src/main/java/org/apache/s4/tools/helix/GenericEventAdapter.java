@@ -9,6 +9,7 @@ import org.apache.helix.HelixManagerFactory;
 import org.apache.helix.InstanceType;
 import org.apache.helix.PropertyKey.Builder;
 import org.apache.helix.model.IdealState;
+import org.apache.s4.base.Destination;
 import org.apache.s4.base.Event;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.tcp.TCPEmitter;
@@ -46,7 +47,8 @@ public class GenericEventAdapter {
                 KryoSerDeser serializer = new KryoSerDeser(classLoader);
 //                EventMessage message = new EventMessage("-1", adapterArgs.streamName, serializer.serialize(event));
                 System.out.println("Sending event to partition:" + partitionId);
-                emitter.send(partitionId, serializer.serialize(event));
+                Destination destination = cluster.getDestination(adapterArgs.streamName, partitionId, emitter.getType());
+                emitter.send(destination, serializer.serialize(event));
                 Thread.sleep(1000);
             }
         } catch (Exception e) {

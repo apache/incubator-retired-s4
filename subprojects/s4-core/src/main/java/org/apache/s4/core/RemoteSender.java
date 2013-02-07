@@ -21,8 +21,10 @@ package org.apache.s4.core;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.s4.base.Destination;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Hasher;
+import org.apache.s4.comm.topology.Cluster;
 
 /**
  * Sends events to a remote cluster.
@@ -34,23 +36,27 @@ public class RemoteSender {
     final private Hasher hasher;
     AtomicInteger targetPartition = new AtomicInteger();
     final private String remoteClusterName;
+    private Cluster cluster;
 
-    public RemoteSender(Emitter emitter, Hasher hasher, String clusterName) {
+    public RemoteSender(Cluster cluster, Emitter emitter, Hasher hasher, String clusterName) {
         super();
+        this.cluster = cluster;
         this.emitter = emitter;
         this.hasher = hasher;
         this.remoteClusterName = clusterName;
 
     }
 
-    public void send(String hashKey, ByteBuffer message) throws InterruptedException {
+    public void send(String streamName,String hashKey, ByteBuffer message) throws InterruptedException {
         int partition;
         if (hashKey == null) {
             // round robin by default
-            partition = Math.abs(targetPartition.incrementAndGet() % emitter.getPartitionCount());
+            partition = Math.abs(targetPartition.incrementAndGet() % emitter.getPartitionCount(streamName));
         } else {
-            partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
+            partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount(streamName));
         }
-        emitter.send(partition, message);
+        //TODO: where do we get the mode
+        Destination destination = cluster.getDestination(streamName, partition, emitter.getType());
+        emitter.send(destination, message);
     }
 }
