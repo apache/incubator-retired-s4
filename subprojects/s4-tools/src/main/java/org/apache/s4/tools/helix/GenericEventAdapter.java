@@ -43,6 +43,7 @@ public class GenericEventAdapter {
                 int partitionId = ((int) (Math.random() * 1000)) % idealstate.getNumPartitions();
                 Event event = new Event();
                 event.put("name", String.class, "Hello world to partition:" + partitionId);
+                event.setStreamId("names");
                 ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
                 KryoSerDeser serializer = new KryoSerDeser(classLoader);
 //                EventMessage message = new EventMessage("-1", adapterArgs.streamName, serializer.serialize(event));

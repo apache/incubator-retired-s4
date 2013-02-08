@@ -28,6 +28,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.helix.ConfigAccessor;
+import org.apache.helix.ConfigScope;
 import org.apache.helix.ConfigScopeBuilder;
 import org.apache.helix.HelixDataAccessor;
 import org.apache.helix.HelixManager;
@@ -38,12 +39,12 @@ import org.apache.helix.model.IdealState;
 import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.spectator.RoutingTableProvider;
 import org.apache.s4.base.Destination;
+import org.apache.s4.comm.tcp.TCPDestination;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.sun.org.apache.bcel.internal.generic.NEW;
 
 /**
  * Represents a logical cluster definition fetched from Zookeeper. Notifies
@@ -61,7 +62,7 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
     private final Lock lock;
     private final AtomicReference<Map<String, Integer>> partitionCountMapRef;
     // Map of destination type to streamName to partitionId to Destination
-    private final AtomicReference<Map<String, Map<String, Map<String, Destination>>>> destinationInfoMapRef;
+    private final AtomicReference<Map<String, Map<String, Map<Integer, Destination>>>> destinationInfoMapRef;
 
     /**
      * only the local topology
@@ -77,9 +78,9 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
         partitionCountMapRef = new AtomicReference<Map<String, Integer>>(map);
         this.clusterRef = new AtomicReference<PhysicalCluster>();
         this.listeners = new ArrayList<ClusterChangeListener>();
-        Map<String, Map<String, Map<String, Destination>>> destinationMap = Collections
+        Map<String, Map<String, Map<Integer, Destination>>> destinationMap = Collections
                 .emptyMap();
-        destinationInfoMapRef = new AtomicReference<Map<String, Map<String, Map<String, Destination>>>>(
+        destinationInfoMapRef = new AtomicReference<Map<String, Map<String, Map<Integer, Destination>>>>(
                 destinationMap);
         lock = new ReentrantLock();
 
@@ -95,9 +96,9 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
         partitionCountMapRef = new AtomicReference<Map<String, Integer>>(map);
         this.clusterRef = new AtomicReference<PhysicalCluster>();
         this.listeners = new ArrayList<ClusterChangeListener>();
-        Map<String, Map<String, Map<String, Destination>>> destinationMap = Collections
+        Map<String, Map<String, Map<Integer, Destination>>> destinationMap = Collections
                 .emptyMap();
-        destinationInfoMapRef = new AtomicReference<Map<String, Map<String, Map<String, Destination>>>>(
+        destinationInfoMapRef = new AtomicReference<Map<String, Map<String, Map<Integer, Destination>>>>(
                 destinationMap);
         lock = new ReentrantLock();
 
@@ -118,24 +119,78 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
             Builder keyBuilder = helixDataAccessor.keyBuilder();
             List<String> resources = helixDataAccessor.getChildNames(keyBuilder
                     .idealStates());
-            Map<String, Integer> map = new HashMap<String, Integer>();
-            Map<String, Map<String, Map<String, Destination>>> destinationRoutingMap;
-            destinationRoutingMap = new HashMap<String, Map<String,Map<String,Destination>>>();
-            for (String resource : resources) {
-                String resourceType = configAccessor.get(
-                        builder.forCluster(clusterName).forResource(resource)
-                                .build(), "type");
-                if ("Task".equalsIgnoreCase(resourceType)) {
-                    String streamName = configAccessor.get(
-                            builder.forCluster(clusterName)
-                                    .forResource(resource).build(),
+            Map<String, Integer> partitionCountMap = new HashMap<String, Integer>();
+
+            // populate the destinationRoutingMap
+            Map<String, Map<String, Map<Integer, Destination>>> destinationRoutingMap;
+            destinationRoutingMap = new HashMap<String, Map<String, Map<Integer, Destination>>>();
+
+            List<InstanceConfig> configList = helixDataAccessor
+                    .getChildValues(keyBuilder.instanceConfigs());
+            Map<String, InstanceConfig> instanceConfigMap = new HashMap<String, InstanceConfig>();
+            Map<String, Destination> tcpDestinationMap = new HashMap<String, Destination>();
+
+            Map<String, Destination> udpDestinationMap = new HashMap<String, Destination>();
+
+            for (InstanceConfig config : configList) {
+                instanceConfigMap.put(config.getId(), config);
+                try {
+                    int port = Integer.parseInt(config.getPort());
+                    Destination destination = new TCPDestination(-1, port,
+                            config.getHostName(), config.getId());
+                    tcpDestinationMap.put(config.getId(), destination);
+                    udpDestinationMap.put(config.getId(), destination);
+                } catch (NumberFormatException e) {
+                    logger.error("Invalid port:" + config, e);
+                }
+            }
+            if (externalViewList != null) {
+                for (ExternalView extView : externalViewList) {
+                    String resource = extView.getId();
+                    ConfigScope resourceScope = builder.forCluster(clusterName)
+                            .forResource(resource).build();
+                    String resourceType = configAccessor.get(resourceScope,
+                            "type");
+                    if (!"Task".equalsIgnoreCase(resourceType)) {
+                        continue;
+                    }
+                    String streamName = configAccessor.get(resourceScope,
                             "streamName");
                     IdealState idealstate = helixDataAccessor
                             .getProperty(keyBuilder.idealStates(resource));
-                    map.put(streamName, idealstate.getNumPartitions());
+                    partitionCountMap.put(streamName,
+                            idealstate.getNumPartitions());
+                    for (String partitionName : extView.getPartitionSet()) {
+                        Map<String, String> stateMap = extView
+                                .getStateMap(partitionName);
+                        for (String instanceName : stateMap.keySet()) {
+                            String currentState = stateMap.get(instanceName);
+                            if (!currentState.equals("LEADER")) {
+                                continue;
+                            }
+                            if (instanceConfigMap.containsKey(instanceName)) {
+                                InstanceConfig instanceConfig = instanceConfigMap
+                                        .get(instanceName);
+                                String destinationType = "tcp";
+                                addDestination(destinationRoutingMap,
+                                        streamName, partitionName,
+                                        "tcp", tcpDestinationMap
+                                        .get(instanceConfig.getId()));
+                                addDestination(destinationRoutingMap,
+                                        streamName, partitionName,
+                                        "tcp", udpDestinationMap
+                                        .get(instanceConfig.getId()));
+                            } else {
+                                logger.error("Invalid instance name."
+                                        + instanceName
+                                        + " .Not found in /cluster/configs/. instanceName: ");
+                            }
+                        }
+                    }
                 }
             }
-            partitionCountMapRef.set(map);
+            destinationInfoMapRef.set(destinationRoutingMap);
+            partitionCountMapRef.set(partitionCountMap);
 
             for (ClusterChangeListener listener : listeners) {
                 listener.onChange();
@@ -146,6 +201,36 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
             logger.error("", e);
         } finally {
             lock.unlock();
+        }
+    }
+
+    private void addDestination(
+            Map<String, Map<String, Map<Integer, Destination>>> destinationRoutingMap,
+            String streamName, String partitionName, String destinationType,
+            Destination destination) {
+        if (!destinationRoutingMap
+                .containsKey(destinationType)) {
+            destinationRoutingMap
+                    .put(destinationType,
+                            new HashMap<String, Map<Integer, Destination>>());
+        }
+        Map<String, Map<Integer, Destination>> typeMap = destinationRoutingMap
+                .get(destinationType);
+        if (!typeMap.containsKey(streamName)) {
+            typeMap.put(streamName,
+                    new HashMap<Integer, Destination>());
+        }
+        Map<Integer, Destination> streamMap = typeMap
+                .get(streamName);
+        String[] split = partitionName.split("_");
+        if (split.length == 2) {
+            try {
+                int partitionId = Integer
+                        .parseInt(split[1]);
+                streamMap.put(partitionId, destination);
+            } catch (NumberFormatException e) {
+
+            }
         }
     }
 
@@ -196,11 +281,12 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
     public Destination getDestination(String streamName, int partitionId,
             String destinationType) {
 
-        Map<String, Map<String, Destination>> typeMap = destinationInfoMapRef.get().get(destinationType);
+        Map<String, Map<Integer, Destination>> typeMap = destinationInfoMapRef
+                .get().get(destinationType);
         if (typeMap == null)
             return null;
 
-        Map<String, Destination> streamMap = typeMap.get(streamName);
+        Map<Integer, Destination> streamMap = typeMap.get(streamName);
         if (streamMap == null)
             return null;
 

@@ -120,8 +120,8 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         this.lock = new ReentrantLock();
 
         // Initialize data structures
-        int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
-        destinationChannelMap = HashBiMap.create(clusterSize);
+       // int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
+        destinationChannelMap = HashBiMap.create();
 
         // Initialize netty related structures
         ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
@@ -182,7 +182,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
         if (!destinationChannelMap.containsKey(destination)) {
             if (!connectTo((TCPDestination) destination)) {
-                logger.warn("Could not connect to partition {}, discarding message", destination);
+                logger.warn("Could not connect to destination {}, discarding message", destination);
                 // Couldn't connect, discard message
                 return false;
             }
@@ -308,10 +308,9 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
                     // cluster was changed
                 }
             } else {
-                metrics.sentMessage(destination);
-
+                //TODO:
+                //metrics.sentMessage(destination);
             }
-
         }
     }
 

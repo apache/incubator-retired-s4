@@ -77,6 +77,7 @@ public class TCPListener implements Listener {
     public TCPListener(Assignment assignment, @Named("s4.comm.timeout") int timeout, final Receiver receiver,
             final DeserializerExecutorFactory deserializerExecutorFactory) {
         // wait for an assignment
+        logger.info("Initializing tcplistener");
         node = assignment.assignClusterNode();
         nettyTimeout = timeout;
         ChannelFactory factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
@@ -104,6 +105,8 @@ public class TCPListener implements Listener {
 
         Channel c = bootstrap.bind(new InetSocketAddress(node.getPort()));
         channels.add(c);
+        logger.info("Initialized tcplistener at "+  node);
+
     }
 
     @Override
@@ -155,6 +158,6 @@ public class TCPListener implements Listener {
         public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
             super.channelClosed(ctx, e);
         }
-
     }
+    
 }

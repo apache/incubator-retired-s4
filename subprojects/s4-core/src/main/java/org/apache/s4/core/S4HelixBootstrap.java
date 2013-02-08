@@ -1,7 +1,12 @@
 package org.apache.s4.core;
 
+import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -13,17 +18,28 @@ import org.apache.helix.HelixManagerFactory;
 import org.apache.helix.InstanceType;
 import org.apache.helix.controller.HelixControllerMain;
 import org.apache.helix.spectator.RoutingTableProvider;
+import org.apache.s4.comm.DefaultCommModule;
+import org.apache.s4.comm.HelixBasedCommModule;
 import org.apache.s4.comm.helix.TaskStateModelFactory;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.util.ArchiveFetchException;
 import org.apache.s4.comm.util.ArchiveFetcher;
+import org.apache.s4.core.util.AppConfig;
+import org.apache.s4.core.util.ParametersInjectionModule;
 import org.apache.s4.deploy.AppStateModelFactory;
+import org.apache.s4.deploy.DeploymentManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
+import com.google.common.io.Resources;
+import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.google.inject.name.Named;
+import com.google.inject.util.Modules;
+import com.google.inject.util.Modules.OverriddenModuleBuilder;
 
 /**
  * This is the bootstrap for S4 nodes.
@@ -114,5 +130,63 @@ public class S4HelixBootstrap implements Bootstrap {
             e.printStackTrace();
         }
     }
+    public static void startS4App(AppConfig appConfig, Injector parentInjector, ClassLoader modulesLoader) {
+        try {
+            Injector injector;
+            InputStream commConfigFileInputStream = Resources.getResource("default.s4.comm.properties").openStream();
+            InputStream coreConfigFileInputStream = Resources.getResource("default.s4.core.properties").openStream();
 
+            logger.info("Initializing S4 app with : {}", appConfig.toString());
+
+            AbstractModule commModule = new HelixBasedCommModule(commConfigFileInputStream);
+            AbstractModule coreModule = new HelixBasedCoreModule(coreConfigFileInputStream);
+
+            List<com.google.inject.Module> extraModules = new ArrayList<com.google.inject.Module>();
+            for (String moduleClass : appConfig.getCustomModulesNames()) {
+                extraModules.add((Module) Class.forName(moduleClass, true, modulesLoader).newInstance());
+            }
+            Module combinedModule = Modules.combine(commModule, coreModule);
+            if (extraModules.size() > 0) {
+                OverriddenModuleBuilder overridenModuleBuilder = Modules.override(combinedModule);
+                combinedModule = overridenModuleBuilder.with(extraModules);
+            }
+
+            if (appConfig.getNamedParameters() != null && !appConfig.getNamedParameters().isEmpty()) {
+
+                logger.debug("Adding named parameters for injection : {}", appConfig.getNamedParametersAsString());
+                Map<String, String> namedParameters = new HashMap<String, String>();
+
+                namedParameters.putAll(appConfig.getNamedParameters());
+                combinedModule = Modules.override(combinedModule).with(new ParametersInjectionModule(namedParameters));
+            }
+
+            if (appConfig.getAppClassName() != null && Strings.isNullOrEmpty(appConfig.getAppURI())) {
+                // In that case we won't be using an S4R classloader, app classes are available from the current
+                // classloader
+                // The app module provides bindings specific to the app class loader, in this case the current thread's
+                // class loader.
+                AppModule appModule = new AppModule(Thread.currentThread().getContextClassLoader());
+                // NOTE: because the app module can be overriden
+                combinedModule = Modules.override(appModule).with(combinedModule);
+                injector = parentInjector.createChildInjector(combinedModule);
+                logger.info("Starting S4 app with application class [{}]", appConfig.getAppClassName());
+                App app = (App) injector.getInstance(Class.forName(appConfig.getAppClassName(), true, modulesLoader));
+                app.init();
+                app.start();
+            } else {
+                injector = parentInjector.createChildInjector(combinedModule);
+                if (Strings.isNullOrEmpty(appConfig.getAppURI())) {
+                    logger.info("S4 node in standby until app class or app URI is specified");
+                }
+                Server server = injector.getInstance(Server.class);
+                server.setInjector(injector);
+                DeploymentManager deploymentManager = injector.getInstance(DeploymentManager.class);
+                deploymentManager.deploy(appConfig);
+                // server.start(injector);
+            }
+        } catch (Exception e) {
+            logger.error("Cannot start S4 node", e);
+            System.exit(1);
+        }
+    }
 }
