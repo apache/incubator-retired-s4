@@ -31,9 +31,8 @@ import org.apache.s4.core.DefaultCoreModule;
 import org.apache.s4.core.S4Node;
 import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.ProgressListener;
 import org.gradle.tooling.ProjectConnection;
-
-import sun.net.ProgressListener;
 
 import com.google.common.io.PatternFilenameFilter;
 import com.google.common.io.Resources;

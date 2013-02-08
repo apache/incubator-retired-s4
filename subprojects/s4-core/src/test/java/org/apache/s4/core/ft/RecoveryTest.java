@@ -19,6 +19,7 @@
 package org.apache.s4.core.ft;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -168,10 +169,16 @@ public class RecoveryTest extends ZkBasedTest {
         CountDownLatch signalValue2Set = new CountDownLatch(1);
         CoreTestUtils.watchAndSignalCreation("/value2Set", signalValue2Set, zk);
 
+        // when a node dies, the communication channel still exists
+        // and we need to send a message to detect it is broken and create a new one
+        emitter.send(new TCPDestination(new TCPDestination(0, 1300, "localhost", "Task-0")),
+                ByteBuffer.wrap(new byte[0]));
+
         event = new Event();
         event.setStreamId("inputStream");
         event.put("command", String.class, "setValue2");
         event.put("value", String.class, "message2");
+
         emitter.send(
                 new TCPDestination(new TCPDestination(0, 1300, "localhost", "Task-0")),
                 injector.getInstance(SerializerDeserializerFactory.class)

@@ -47,9 +47,10 @@ public class BaseModule extends AbstractModule {
         if (config == null) {
             loadProperties(binder());
         }
+        // share the Zookeeper connection
         bind(ZkClient.class).toProvider(ZkClientProvider.class).in(Scopes.SINGLETON);
         bind(ArchiveFetcher.class).to(RemoteFileFetcher.class);
-        if (config.containsKey("s4.helix") && config.getBoolean("s4.helix")) {
+        if (config.getBoolean("s4.helix")) {
             bind(Assignment.class).to(AssignmentFromHelix.class).asEagerSingleton();
             bind(Cluster.class).to(ClusterFromHelix.class);
             bind(TaskStateModelFactory.class);
@@ -58,8 +59,6 @@ public class BaseModule extends AbstractModule {
 
             bind(Bootstrap.class).to(S4HelixBootstrap.class);
 
-            // share the Zookeeper connection
-            return;
         } else {
             // a node holds a single partition assignment
             // ==> Assignment is a singleton so it shared between base, comm and app

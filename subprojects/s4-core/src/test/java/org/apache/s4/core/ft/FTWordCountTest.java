@@ -19,6 +19,7 @@
 package org.apache.s4.core.ft;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -97,6 +98,10 @@ public class FTWordCountTest extends ZkBasedTest {
                 .watchAndSignalCreation("/classifierIteration_"
                         + (WordCountTest.SENTENCE_1_TOTAL_WORDS + WordCountTest.SENTENCE_2_TOTAL_WORDS),
                         sentence2Processed, zk);
+        // when a node dies, the communication channel still exists
+        // and we need to send a message to detect it is broken and create a new one
+        emitter.send(new TCPDestination(new TCPDestination(0, 1300, "localhost", "Task-0")),
+                ByteBuffer.wrap(new byte[0]));
 
         injectSentence(injector, emitter, WordCountTest.SENTENCE_2);
 
@@ -107,6 +112,10 @@ public class FTWordCountTest extends ZkBasedTest {
         // crash the app
         forkedS4App.destroy();
         restartNode();
+        // when a node dies, the communication channel still exists
+        // and we need to send a message to detect it is broken and create a new one
+        emitter.send(new TCPDestination(new TCPDestination(0, 1300, "localhost", "Task-0")),
+                ByteBuffer.wrap(new byte[0]));
 
         // add authorizations for continuing processing. Without these, the
         // WordClassifier processed keeps waiting

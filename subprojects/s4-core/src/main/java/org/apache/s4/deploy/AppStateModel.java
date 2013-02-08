@@ -99,7 +99,7 @@ public class AppStateModel extends StateModel {
             @Override
             public void run() {
                 // load app class through modules classloader and start it
-                S4HelixBootstrap.startS4App(appConfig, parentInjector, modulesLoader);
+                S4Bootstrap.startS4App(appConfig, parentInjector, modulesLoader);
                 // signalOneAppLoaded.countDown();
             }
         }, "S4 platform loader");

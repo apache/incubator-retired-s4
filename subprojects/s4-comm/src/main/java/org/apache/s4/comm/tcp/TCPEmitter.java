@@ -75,7 +75,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
 
     private final int nettyTimeout;
 
-    private Cluster topology;
+    private final Cluster topology;
     private final ClientBootstrap bootstrap;
 
     /*
@@ -120,7 +120,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
         this.lock = new ReentrantLock();
 
         // Initialize data structures
-       // int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
+        // int clusterSize = this.topology.getPhysicalCluster().getNodes().size();
         destinationChannelMap = HashBiMap.create();
 
         // Initialize netty related structures
@@ -128,6 +128,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
                 Executors.newCachedThreadPool());
         bootstrap = new ClientBootstrap(factory);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+
             @Override
             public ChannelPipeline getPipeline() {
                 ChannelPipeline p = Channels.pipeline();
@@ -188,13 +189,13 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
             }
         }
 
-        writePermits.get(destination).acquire();
-
         Channel c = destinationChannelMap.get(destination);
         if (c == null) {
             logger.warn("Could not find channel for destination {}", destination);
             return false;
         }
+
+        writePermits.get(destination).acquire();
 
         c.write(buffer).addListener(new MessageSendingListener(destination));
         return true;
@@ -303,12 +304,17 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
                     // TODO handle possible cluster reconfiguration between send and failure callback
                     logger.warn("Failed to send message to node {} (according to current cluster information)",
                             destination);
+                    future.getChannel().close();
+                    destinationChannelMap.inverse().remove(future.getChannel());
                 } catch (IndexOutOfBoundsException ignored) {
                     logger.error("Failed to send message to partition {}", destination);
                     // cluster was changed
                 }
             } else {
-                metrics.sentMessage(destination);
+                // TODO fix metrics initialization for helix
+                if (metrics != null) {
+                    metrics.sentMessage(destination);
+                }
             }
         }
     }

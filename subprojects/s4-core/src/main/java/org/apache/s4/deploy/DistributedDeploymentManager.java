@@ -18,25 +18,17 @@
 
 package org.apache.s4.deploy;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.comm.util.ArchiveFetcher;
-import org.apache.s4.core.App;
 import org.apache.s4.core.Server;
 import org.apache.s4.core.util.AppConfig;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Files;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
@@ -67,7 +59,6 @@ import com.google.inject.name.Named;
  * </p>
  */
 public class DistributedDeploymentManager implements DeploymentManager {
-
 
     private static Logger logger = LoggerFactory.getLogger(DistributedDeploymentManager.class);
 
@@ -102,13 +93,8 @@ public class DistributedDeploymentManager implements DeploymentManager {
 
     public void deployApplication() throws DeploymentFailedException {
         ZNRecord appData = zkClient.readData(appPath);
-		AppConfig appConfig = new AppConfig(appData);
-        deploy(appConfig);
-        DeploymentUtils.deploy(server, fetcher, clusterName, appConfig);
-        deployed = true;
+        AppConfig appConfig = new AppConfig(appData);
     }
-
-
 
     // NOTE: in theory, we could support any protocol by implementing a chained visitor scheme,
     // but that's probably not that useful, and we can simply provide whichever protocol is needed
@@ -142,15 +128,15 @@ public class DistributedDeploymentManager implements DeploymentManager {
         }
     }
 
-	@Override
-	public void deploy(AppConfig appConfig) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void deploy(AppConfig appConfig) throws DeploymentFailedException {
+        DeploymentUtils.deploy(server, fetcher, clusterName, appConfig);
+        deployed = true;
+    }
 
-	@Override
-	public void undeploy(AppConfig appConfig) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void undeploy(AppConfig appConfig) {
+        // TODO Auto-generated method stub
+
+    }
 }
