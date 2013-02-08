@@ -308,8 +308,7 @@ public class TCPEmitter implements Emitter, ClusterChangeListener {
                     // cluster was changed
                 }
             } else {
-                //TODO:
-                //metrics.sentMessage(destination);
+                metrics.sentMessage(destination);
             }
         }
     }
