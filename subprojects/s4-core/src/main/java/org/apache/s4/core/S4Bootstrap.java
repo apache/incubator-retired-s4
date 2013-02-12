@@ -210,7 +210,7 @@ public class S4Bootstrap implements Bootstrap {
                 if (Strings.isNullOrEmpty(appConfig.getAppURI())) {
                     logger.info("S4 node in standby until app class or app URI is specified");
                 }
-                Server server = injector.getInstance(Server.class);
+                Server server = injector.getInstance(Server .class);
                 server.setInjector(injector);
                 DeploymentManager deploymentManager = injector.getInstance(DeploymentManager.class);
                 deploymentManager.deploy(appConfig);

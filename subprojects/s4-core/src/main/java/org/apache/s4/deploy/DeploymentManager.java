@@ -26,7 +26,6 @@ import org.apache.s4.core.util.AppConfig;
  * 
  */
 public interface DeploymentManager {
-    public static final String S4R_URI = "s4r_uri";
     
     void start();
     

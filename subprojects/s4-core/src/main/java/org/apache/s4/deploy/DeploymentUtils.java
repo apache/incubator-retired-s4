@@ -57,7 +57,7 @@ public class DeploymentUtils {
                     return;
                 }
             }
-            logger.info("{} value not set for {} : no application code will be downloaded", DeploymentManager.S4R_URI, appConfig.getAppName());
+            logger.info("{} value not set for {} : no application code will be downloaded", AppConfig.APP_URI, appConfig.getAppName());
             return;
         }
         try {

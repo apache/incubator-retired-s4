@@ -17,6 +17,9 @@ import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.comm.util.ArchiveFetcher;
 import org.apache.s4.comm.util.RemoteFileFetcher;
 import org.apache.s4.deploy.AppStateModelFactory;
+import org.apache.s4.deploy.DeploymentManager;
+import org.apache.s4.deploy.DistributedDeploymentManager;
+import org.apache.s4.deploy.HelixBasedDeploymentManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,12 +53,13 @@ public class BaseModule extends AbstractModule {
         // share the Zookeeper connection
         bind(ZkClient.class).toProvider(ZkClientProvider.class).in(Scopes.SINGLETON);
         bind(ArchiveFetcher.class).to(RemoteFileFetcher.class);
-        if (config.getBoolean("s4.helix")) {
+        String clusterManager = System.getenv("S4_CLUSTER_MANAGER");
+        if (config.getBoolean("s4.helix") || "HELIX".equalsIgnoreCase(clusterManager)) {
             bind(Assignment.class).to(AssignmentFromHelix.class).asEagerSingleton();
             bind(Cluster.class).to(ClusterFromHelix.class);
             bind(TaskStateModelFactory.class);
             bind(AppStateModelFactory.class).in(Scopes.SINGLETON);
-            // bind(DeploymentManager.class).to(HelixBasedDeploymentManager.class).in(Scopes.SINGLETON);
+            bind(DeploymentManager.class).to(HelixBasedDeploymentManager.class).in(Scopes.SINGLETON);
 
             bind(Bootstrap.class).to(S4HelixBootstrap.class);
 
@@ -66,6 +70,7 @@ public class BaseModule extends AbstractModule {
             // it is eager so that the node is able to join a cluster immediately
             bind(Assignment.class).to(AssignmentFromZK.class).asEagerSingleton();
             bind(Cluster.class).to(ClusterFromZK.class);
+            bind(DeploymentManager.class).to(DistributedDeploymentManager.class).in(Scopes.SINGLETON);
 
             bind(Bootstrap.class).to(S4Bootstrap.class);
 

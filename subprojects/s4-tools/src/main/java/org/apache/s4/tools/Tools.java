@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
@@ -32,7 +33,7 @@ import org.apache.s4.tools.helix.CreateTask;
 import org.apache.s4.tools.helix.DeployApp;
 import org.apache.s4.tools.helix.GenericEventAdapter;
 import org.apache.s4.tools.helix.RebalanceTask;
-import org.apache.s4.tools.helix.S4Status;
+import org.apache.s4.tools.helix.ClusterStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,24 +47,43 @@ public class Tools {
     static Logger logger = LoggerFactory.getLogger(Tools.class);
 
     enum Task {
-        //deploy(Deploy.class), node(S4Node.class), zkServer(ZKServer.class), newCluster(DefineCluster.class), adapter(
-          //      null), newApp(CreateApp.class), s4r(Package.class), status(Status.class);
-
-        deployApp(DeployApp.class), node(S4Node.class), zkServer(ZKServer.class), newCluster(CreateCluster.class), genericAdapter(
-                GenericEventAdapter.class), newApp(CreateApp.class), s4r(Package.class), status(S4Status.class),
-                addNodes(AddNodes.class),createTask(
-                        CreateTask.class), rebalanceTask(RebalanceTask.class);
+        //formatter:off
+        zkServer(ZKServer.class), 
+        newApp(CreateApp.class), 
+        node(S4Node.class), 
+        s4r(Package.class), 
+        status(Status.class, ClusterStatus.class),
+        deploy(Deploy.class, DeployApp.class), 
+        newCluster(DefineCluster.class, CreateCluster.class), 
+        adapter(null), 
+        genericAdapter(null,GenericEventAdapter.class), 
+        addNodes(null,AddNodes.class),
+        createTask(null,CreateTask.class), 
+        rebalanceTask(null,RebalanceTask.class);
+      //formatter:on
         
-        Class<?> target;
-
+        Class<?> zkTarget;
+        private Class<?> helixTarget;
+        
         Task(Class<?> target) {
-            this.target = target;
+            this(target,target); 
+        }
+        Task(Class<?> zkTarget, Class<?> helixTarget) {
+            this.zkTarget = zkTarget;
+            this.helixTarget = helixTarget;
         }
 
         public void dispatch(String[] args) {
             try {
+                String clusterManager = System.getenv("S4_CLUSTER_MANAGER");
+                Class<?> target = zkTarget;
+                if("HELIX".equalsIgnoreCase(clusterManager)){
+                    target= helixTarget;
+                }
+                
                 Method main = target.getMethod("main", String[].class);
                 main.invoke(null, new Object[] { args });
+
             } catch (Exception e) {
                 e.printStackTrace();
                 logger.error("Cannot dispatch to task [{}]: wrong arguments [{}]", this.name(), Arrays.toString(args));
@@ -71,11 +91,12 @@ public class Tools {
         }
 
     }
-
+   
     public static void main(String[] args) {
 
         // configure log4j for Zookeeper
         BasicConfigurator.configure();
+        org.apache.log4j.Logger.getLogger("org.apache.helix").setLevel(Level.ERROR);
         org.apache.log4j.Logger.getLogger("org.apache.zookeeper").setLevel(Level.ERROR);
         org.apache.log4j.Logger.getLogger("org.I0Itec").setLevel(Level.ERROR);
 

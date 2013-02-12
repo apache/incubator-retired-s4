@@ -87,8 +87,6 @@ public class DefaultCoreModule extends AbstractModule {
         /* The hashing function to map keys top partitions. */
         bind(Hasher.class).to(DefaultHasher.class);
         
-        bind(DeploymentManager.class).to(DistributedDeploymentManager.class).in(Scopes.SINGLETON);
-
         bind(S4RLoaderFactory.class);
 
         // For enabling checkpointing, one needs to use a custom module, such as

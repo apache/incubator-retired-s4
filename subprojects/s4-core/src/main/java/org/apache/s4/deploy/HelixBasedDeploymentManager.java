@@ -30,7 +30,7 @@ public class HelixBasedDeploymentManager implements DeploymentManager {
 
     @Override
     public void deploy(AppConfig appConfig) throws DeploymentFailedException {
-        DeploymentUtils.deploy(server, fetcher, clusterName, appConfig);
+        //DeploymentUtils.deploy(server, fetcher, clusterName, appConfig);
     }
 
     @Override

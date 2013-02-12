@@ -46,6 +46,8 @@ import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.ZNRecord;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.comm.topology.ZkClient;
+import org.apache.s4.core.util.AppConfig;
+import org.apache.s4.deploy.DeploymentManager;
 import org.apache.s4.tools.S4ArgsBase;
 import org.apache.s4.tools.Tools;
 import org.apache.s4.tools.S4ArgsBase.GradleOptsConverter;
@@ -56,8 +58,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.common.collect.Maps;
 
-public class S4Status extends S4ArgsBase {
-    static Logger logger = LoggerFactory.getLogger(S4Status.class);
+public class ClusterStatus extends S4ArgsBase {
+    static Logger logger = LoggerFactory.getLogger(ClusterStatus.class);
 
     private static String NONE = "--";
 
@@ -160,7 +162,7 @@ public class S4Status extends S4ArgsBase {
         ConfigAccessor configAccessor = manager.getConfigAccessor();
         ConfigScopeBuilder builder = new ConfigScopeBuilder();
         ConfigScope scope = builder.forCluster(cluster).forResource(app).build();
-        String uri = configAccessor.get(scope, "s4r_uri");
+        String uri = configAccessor.get(scope, AppConfig.APP_URI);
 
         System.out.println("App Status");
         System.out.println(generateEdge(130));
