@@ -195,7 +195,7 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
             for (ClusterChangeListener listener : listeners) {
                 listener.onChange();
             }
-            logger.info("End:Processing change in cluster topology");
+            logger.info("End:Processing change in cluster topology:"+partitionCountMapRef);
 
         } catch (Exception e) {
             logger.error("", e);

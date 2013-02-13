@@ -47,6 +47,29 @@ public class AppConfig {
         this.customModulesURIs = customModulesURIs;
         this.namedParameters = namedParameters;
     }
+    public AppConfig(String appName, String appClassName, String appURI, List<String> customModulesNames,
+            List<String> customModulesURIs, String namedParametersAsString) {
+        super();
+        this.appName = appName;
+        this.appClassName = appClassName;
+        this.appURI = appURI;
+        this.customModulesNames = customModulesNames;
+        this.customModulesURIs = customModulesURIs;
+        this.namedParameters = convertStringToMap(namedParametersAsString);
+    }
+
+    final private static Map<String, String> convertStringToMap(
+            String namedParametersAsString) {
+        Map<String, String> map = Maps.newHashMap();
+        String[] kvs = namedParametersAsString.split(",");
+        for(String kv:kvs){
+            String[] split = kv.split("[=]");
+            if(split.length==2){
+                map.put(split[0], split[1]);
+            }
+        }
+        return map;
+    }
 
     public String getAppName() {
         return appName;
@@ -81,8 +104,10 @@ public class AppConfig {
             return "";
         }
         StringBuilder sb = new StringBuilder();
+        String delim = "";
         for (Map.Entry<String, String> param : namedParameters.entrySet()) {
-            sb.append(param.getKey() + "=" + param.getValue() + ",");
+            sb.append(param.getKey() + "=" + param.getValue() ).append(delim);
+            delim=",";
         }
         return sb.toString();
     }
@@ -176,6 +201,13 @@ public class AppConfig {
 
         public Builder namedParameters(Map<String, String> namedParameters) {
             if (namedParameters != null) {
+                config.namedParameters = namedParameters;
+            }
+            return this;
+        }
+        public Builder namedParameters(String namedParametersAsString) {
+            if(namedParametersAsString!=null){
+                Map<String, String> namedParameters = convertStringToMap(namedParametersAsString);
                 config.namedParameters = namedParameters;
             }
             return this;

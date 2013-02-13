@@ -1,8 +1,5 @@
 package org.apache.s4.tools.helix;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.helix.HelixDataAccessor;
 import org.apache.helix.HelixManager;
 import org.apache.helix.HelixManagerFactory;

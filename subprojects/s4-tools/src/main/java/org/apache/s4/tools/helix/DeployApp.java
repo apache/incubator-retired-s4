@@ -41,7 +41,6 @@ public class DeployApp extends S4ArgsBase {
 
         HelixAdmin admin = new ZKHelixAdmin(deployArgs.zkConnectionString);
         ConfigScopeBuilder builder = new ConfigScopeBuilder();
-        // ConfigScope scope = builder.forCluster(deployArgs.clusterName).forResource(deployArgs.appName).build();
         ConfigScope scope = builder.forCluster(deployArgs.clusterName).forResource(deployArgs.appName).build();
         Map<String, String> properties = new HashMap<String, String>();
 

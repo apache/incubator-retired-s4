@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Fetches modules jar files and application S4R files from a file system, possibly distributed.
@@ -37,5 +38,10 @@ public class FileSystemArchiveFetcher implements ArchiveFetcher {
         } catch (FileNotFoundException e) {
             throw new ArchiveFetchException("Cannot retrieve file from uri [" + uri.toString() + "]");
         }
+    }
+    public static void main(String[] args) throws ArchiveFetchException, URISyntaxException {
+        FileSystemArchiveFetcher fetcher = new FileSystemArchiveFetcher();
+        fetcher.fetch(new URI("file:///home/kgopalak/projects/incubator-s4/test-apps/twitter-adapter/build/libs/twitter-adapter.s4r"));
+        
     }
 }

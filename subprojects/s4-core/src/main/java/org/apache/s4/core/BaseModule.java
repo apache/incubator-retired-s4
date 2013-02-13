@@ -56,7 +56,7 @@ public class BaseModule extends AbstractModule {
         String clusterManager = System.getenv("S4_CLUSTER_MANAGER");
         if (config.getBoolean("s4.helix") || "HELIX".equalsIgnoreCase(clusterManager)) {
             bind(Assignment.class).to(AssignmentFromHelix.class).asEagerSingleton();
-            bind(Cluster.class).to(ClusterFromHelix.class);
+            bind(Cluster.class).to(ClusterFromHelix.class).in(Scopes.SINGLETON);
             bind(TaskStateModelFactory.class);
             bind(AppStateModelFactory.class).in(Scopes.SINGLETON);
             bind(DeploymentManager.class).to(HelixBasedDeploymentManager.class).in(Scopes.SINGLETON);

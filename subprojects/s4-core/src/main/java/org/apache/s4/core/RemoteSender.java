@@ -25,12 +25,15 @@ import org.apache.s4.base.Destination;
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Hasher;
 import org.apache.s4.comm.topology.Cluster;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sends events to a remote cluster.
  * 
  */
 public class RemoteSender {
+    private static final Logger logger = LoggerFactory.getLogger(RemoteSender.class);
 
     final private Emitter emitter;
     final private Hasher hasher;
@@ -48,6 +51,7 @@ public class RemoteSender {
     }
 
     public void send(String streamName,String hashKey, ByteBuffer message) throws InterruptedException {
+        
         int partition;
         if (hashKey == null) {
             // round robin by default
@@ -56,7 +60,10 @@ public class RemoteSender {
             partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount(streamName));
         }
         //TODO: where do we get the mode
+        
         Destination destination = cluster.getDestination(streamName, partition, emitter.getType());
+        logger.info("Sending event to partition:"+ partition + " stream: "+streamName);
+        
         emitter.send(destination, message);
     }
 }

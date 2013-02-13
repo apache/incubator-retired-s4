@@ -48,10 +48,10 @@ public class HelixBasedCoreModule extends AbstractModule {
     @Override
     protected void configure() {
 
-        bind(DeploymentManager.class).to(HelixBasedDeploymentManager.class).in(Scopes.SINGLETON);
+        //bind(DeploymentManager.class).to(HelixBasedDeploymentManager.class).in(Scopes.SINGLETON);
 
         bind(RemoteStreams.class).to(HelixRemoteStreams.class).in(Scopes.SINGLETON);
-        bind(RemoteSenders.class).to(DefaultRemoteSenders.class).in(Scopes.SINGLETON);
+        bind(RemoteSenders.class).to(HelixRemoteSenders.class).in(Scopes.SINGLETON);
 
     }
 

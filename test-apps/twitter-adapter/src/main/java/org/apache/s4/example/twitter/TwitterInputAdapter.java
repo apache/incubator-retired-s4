@@ -89,6 +89,7 @@ public class TwitterInputAdapter extends AdapterApp {
 
             @Override
             public void onStatus(Status status) {
+                logger.info("Adding status "+ status.getText());
                 messageQueue.add(status);
 
             }
@@ -125,6 +126,7 @@ public class TwitterInputAdapter extends AdapterApp {
             while (true) {
                 try {
                     Status status = messageQueue.take();
+                    logger.info("Sending status "+ status.getText());
                     Event event = new Event();
                     event.put("statusText", String.class, status.getText());
                     getRemoteStream().put(event);

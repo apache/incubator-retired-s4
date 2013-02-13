@@ -39,7 +39,8 @@ public class AppStateModel extends StateModel {
     }
 
     @Transition(from = "OFFLINE", to = "ONLINE")
-    public void deploy(Message message, NotificationContext context) throws Exception {
+    public void deploy(Message message, NotificationContext context)
+            throws Exception {
         logger.info("Deploying app:" + appName);
         HelixManager manager = context.getManager();
         ConfigAccessor configAccessor = manager.getConfigAccessor();
@@ -58,7 +59,8 @@ public class AppStateModel extends StateModel {
                 .customModulesNames(
                         getListFromCommaSeparatedValues(configAccessor.get(scope, AppConfig.MODULES_CLASSES)))
                 .customModulesURIs(getListFromCommaSeparatedValues(configAccessor.get(scope, AppConfig.MODULES_URIS)))
-                .appURI(configAccessor.get(scope, AppConfig.APP_URI)).build();
+                .appURI(configAccessor.get(scope, AppConfig.APP_URI))
+                .namedParameters(configAccessor.get(scope, AppConfig.NAMED_PARAMETERS)).build();
 
         return appConfig;
     }
@@ -72,7 +74,8 @@ public class AppStateModel extends StateModel {
     }
 
     @Transition(from = "ONLINE", to = "OFFLINE")
-    public void undeploy(Message message, NotificationContext context) throws Exception {
+    public void undeploy(Message message, NotificationContext context)
+            throws Exception {
         logger.info("Undeploying app:" + appName);
         HelixManager manager = context.getManager();
         ConfigAccessor configAccessor = manager.getConfigAccessor();
@@ -82,17 +85,19 @@ public class AppStateModel extends StateModel {
 
     }
 
-    private void loadModulesAndStartNode(final Injector parentInjector, final AppConfig appConfig)
-            throws ArchiveFetchException {
+    private void loadModulesAndStartNode(final Injector parentInjector,
+            final AppConfig appConfig) throws ArchiveFetchException {
 
         String appName = appConfig.getAppName();
 
         List<File> modulesLocalCopies = new ArrayList<File>();
 
         for (String uriString : appConfig.getCustomModulesURIs()) {
-            modulesLocalCopies.add(S4Bootstrap.fetchModuleAndCopyToLocalFile(appName, uriString, fetcher));
+            modulesLocalCopies.add(S4Bootstrap.fetchModuleAndCopyToLocalFile(
+                    appName, uriString, fetcher));
         }
-        final ModulesLoader modulesLoader = new ModulesLoaderFactory().createModulesLoader(modulesLocalCopies);
+        final ModulesLoader modulesLoader = new ModulesLoaderFactory()
+                .createModulesLoader(modulesLocalCopies);
 
         Thread t = new Thread(new Runnable() {
 
