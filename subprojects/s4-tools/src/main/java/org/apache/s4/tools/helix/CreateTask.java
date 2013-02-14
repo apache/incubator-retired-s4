@@ -30,16 +30,16 @@ public class CreateTask extends S4ArgsBase {
 
         Tools.parseArgs(taskArgs, args);
         String msg = String.format(
-                "Setting up new task [{}] of type:[{}] for stream(s) on nodes belonging to node group {}",
-                taskArgs.taskId, taskArgs.taskType, taskArgs.streamName, taskArgs.nodeGroup);
+                "Setting up new pe [{}] for stream(s) on nodes belonging to node group {}",
+                taskArgs.taskId, taskArgs.streamName, taskArgs.nodeGroup);
         logger.info(msg);
         HelixAdmin admin = new ZKHelixAdmin(taskArgs.zkConnectionString);
         ConfigScopeBuilder builder = new ConfigScopeBuilder();
         ConfigScope scope = builder.forCluster(taskArgs.clusterName).forResource(taskArgs.taskId).build();
         Map<String, String> properties = new HashMap<String, String>();
+        properties.put("GROUP", taskArgs.nodeGroup);
         properties.put("type", "Task");
         properties.put("streamName", taskArgs.streamName);
-        properties.put("taskType", taskArgs.taskType);
         admin.setConfig(scope, properties);
         // A task is modeled as a resource in Helix
         admin.addResource(taskArgs.clusterName, taskArgs.taskId, taskArgs.numPartitions, "LeaderStandby",
@@ -56,7 +56,7 @@ public class CreateTask extends S4ArgsBase {
                 instancesInGroup.add(instanceName);
             }
         }
-        admin.rebalance(taskArgs.clusterName, taskArgs.taskId, taskArgs.numStandBys + 1);
+        admin.rebalance(taskArgs.clusterName, taskArgs.taskId, taskArgs.numStandBys + 1,instancesInGroup);
         logger.info("Finished setting up task:" + taskArgs.taskId + "on nodes " + instancesInGroup);
     }
 
@@ -69,11 +69,8 @@ public class CreateTask extends S4ArgsBase {
         @Parameter(names = { "-c", "-cluster" }, description = "Logical name of the S4 cluster", required = true)
         String clusterName;
 
-        @Parameter(names = { "-id", "-taskId" }, description = "id of the task that produces/consumes a stream", required = true, arity = 1)
+        @Parameter(names = { "-id", "-taskName" }, description = "name of the Task. Must be unique", required = true, arity = 1)
         String taskId;
-
-        @Parameter(names = { "-t", "-type" }, description = "producer/consumer", required = true, arity = 1)
-        String taskType;
 
         @Parameter(names = { "-p", "-partitions" }, description = "Parallelism/Number of Partition for the task", required = true, arity = 1)
         Integer numPartitions;
@@ -81,7 +78,7 @@ public class CreateTask extends S4ArgsBase {
         @Parameter(names = { "-r", "standbys for each partition" }, description = "Number of Standby processors for each active processor", required = false, arity = 1)
         Integer numStandBys = 1;
 
-        @Parameter(names = { "-s", "-streams" }, description = "name of the stream(s) it produces/consumes.", required = true, arity = 1)
+        @Parameter(names = { "-s", "-stream" }, description = "name of the stream the pe listens to", required = true, arity = 1)
         String streamName;
 
         @Parameter(names = { "-ng", "-nodeGroup" }, description = "Node group name where the task needs to be run", required = false, arity = 1)

@@ -34,6 +34,7 @@ import org.apache.s4.tools.helix.DeployApp;
 import org.apache.s4.tools.helix.GenericEventAdapter;
 import org.apache.s4.tools.helix.RebalanceTask;
 import org.apache.s4.tools.helix.ClusterStatus;
+import org.apache.s4.tools.helix.RemoveTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +60,7 @@ public class Tools {
         genericAdapter(null,GenericEventAdapter.class), 
         addNodes(null,AddNodes.class),
         createTask(null,CreateTask.class), 
+        removeTask(null,RemoveTask.class), 
         rebalanceTask(null,RebalanceTask.class);
       //formatter:on
         
