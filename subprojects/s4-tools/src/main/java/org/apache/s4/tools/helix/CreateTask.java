@@ -57,7 +57,7 @@ public class CreateTask extends S4ArgsBase {
             }
         }
         admin.rebalance(taskArgs.clusterName, taskArgs.taskId, taskArgs.numStandBys + 1,instancesInGroup);
-        logger.info("Finished setting up task:" + taskArgs.taskId + "on nodes " + instancesInGroup);
+        logger.info("Finished setting up task:" + taskArgs.taskId + " on nodes " + instancesInGroup);
     }
 
     @Parameters(commandNames = "newStreamProcessor", separators = "=", commandDescription = "Create a new stream processor")

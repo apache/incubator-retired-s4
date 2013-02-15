@@ -129,7 +129,7 @@ public class ClusterStatus extends S4ArgsBase {
         System.out.format("%-20s%-20s%-90s%n", inMiddle("Task Id", 20), inMiddle("Cluster", 20),
                 inMiddle("Description", 90));
         System.out.println(generateEdge(130));
-        System.out.format("%-20s%-20s%-90s%n", inMiddle(taskId, 20), inMiddle(cluster, 20),
+        System.out.format("%-20s%-40s%-90s%n", inMiddle(taskId, 40), inMiddle(cluster, 20),
                 inMiddle(streamName + " " + taskType, 90));
         System.out.println(generateEdge(130));
         HelixDataAccessor helixDataAccessor = manager.getHelixDataAccessor();

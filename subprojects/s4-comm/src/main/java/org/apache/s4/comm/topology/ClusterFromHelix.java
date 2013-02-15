@@ -285,8 +285,11 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
                 .get().get(destinationType);
         if (typeMap == null)
             return null;
-
-        Map<Integer, Destination> streamMap = typeMap.get(streamName);
+        
+        Map<Integer, Destination> streamMap =typeMap.get("TASK");
+        if(streamMap==null){
+            streamMap = typeMap.get(streamName);
+        }
         if (streamMap == null)
             return null;
 
@@ -295,7 +298,12 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
 
     @Override
     public Integer getPartitionCount(String streamName) {
-        Integer numPartitions = partitionCountMapRef.get().get(streamName);
+        
+        Integer numPartitions;
+        numPartitions = partitionCountMapRef.get().get("TASK");
+        if(numPartitions==null){
+            numPartitions = partitionCountMapRef.get().get(streamName);
+        }
         if (numPartitions == null) {
             return -1;
         }
