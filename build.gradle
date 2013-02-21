@@ -62,7 +62,7 @@ project.ext["libraries"] = [
     kryo:               'com.esotericsoftware.kryo:kryo:2.20',
     minlog:             'com.googlecode:minlog:1.2',
     // NOTE shaded jar is not resolved correctly, we include it in /lib directory
-    reflectasm:         'com.esotericsoftware.reflectasm:reflectasm:1.07-shaded',
+    reflectasm:         'com.esotericsoftware.reflectasm:reflectasm:1.07:shaded',
     netty:              'io.netty:netty:3.5.11.Final',
     mockito_core:       'org.mockito:mockito-core:1.9.0',
     commons_config:     'commons-configuration:commons-configuration:1.6',
@@ -77,7 +77,7 @@ project.ext["libraries"] = [
     restlet_neo:        'com.noelios.restlet:com.noelios.restlet:1.1.10',
     restlet:            'org.restlet:org.restlet:1.1.10',
     objenesis:          'org.objenesis:objenesis:1.2',
-    slf4j:              'org.slf4j:slf4j-api:1.6.1',
+    slf4j:              'org.slf4j:slf4j-api:1.6.4',
     log4j:              'log4j:log4j:1.2.15',
     logback_core:       'ch.qos.logback:logback-core:0.9.29',
     logback_classic:    'ch.qos.logback:logback-classic:0.9.29',
