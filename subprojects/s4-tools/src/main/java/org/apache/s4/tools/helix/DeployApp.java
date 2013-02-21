@@ -67,8 +67,13 @@ public class DeployApp extends S4ArgsBase {
                 HelixBasedCoreModule.class.getName());
         // TODO merge with custom modules
 
-        AppConfig appConfig = new AppConfig.Builder().appClassName(deployArgs.appClass).appName(deployArgs.appName)
-                .appURI(deployArgs.s4rPath).customModulesNames(helixModules).customModulesURIs(null)
+        AppConfig appConfig = new AppConfig.Builder()
+                .appClassName(deployArgs.appClass)
+                .appName(deployArgs.appName)
+                .appURI(deployArgs.s4rPath)
+                .customModulesNames(
+                        new ImmutableList.Builder<String>().addAll(helixModules).addAll(deployArgs.modulesClassesNames)
+                                .build()).customModulesURIs(deployArgs.modulesURIs)
                 .namedParameters(Deploy.convertListArgsToMap(deployArgs.extraNamedParameters)).build();
         // properties.put("appConfig", appConfig.asMap());
         // properties.put(DistributedDeploymentManager.S4R_URI, new File(deployArgs.s4rPath).toURI().toString());
@@ -100,7 +105,7 @@ public class DeployApp extends S4ArgsBase {
     }
 
     @Parameters(commandNames = "newStreamProcessor", separators = "=", commandDescription = "Create a new stream processor")
-    static class DeployAppArgs extends S4ArgsBase {
+    static class DeployAppArgs extends HelixS4ArgsBase {
 
         @Parameter(names = "-zk", description = "ZooKeeper connection string")
         String zkConnectionString = "localhost:2181";
@@ -125,6 +130,12 @@ public class DeployApp extends S4ArgsBase {
 
         @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = InlineConfigParameterConverter.class)
         List<String> extraNamedParameters = new ArrayList<String>();
+
+        @Parameter(names = { "-modulesURIs", "-mu" }, description = "URIs for fetching code of custom modules")
+        List<String> modulesURIs = new ArrayList<String>();
+
+        @Parameter(names = { "-modulesClasses", "-emc", "-mc" }, description = "Fully qualified class names of custom modules")
+        List<String> modulesClassesNames = new ArrayList<String>();
 
     }
 }

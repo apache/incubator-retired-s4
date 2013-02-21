@@ -11,7 +11,6 @@ import org.apache.s4.base.Event;
 import org.apache.s4.comm.serialize.KryoSerDeser;
 import org.apache.s4.comm.tcp.TCPEmitter;
 import org.apache.s4.comm.topology.ClusterFromHelix;
-import org.apache.s4.tools.S4ArgsBase;
 import org.apache.s4.tools.Tools;
 
 import com.beust.jcommander.Parameter;
@@ -30,7 +29,7 @@ public class GenericEventAdapter {
             ClusterFromHelix cluster = new ClusterFromHelix(adapterArgs.clusterName, adapterArgs.zkConnectionString,
                     30, 60);
             manager.connect();
-            manager.addExternalViewChangeListener(cluster);	
+            manager.addExternalViewChangeListener(cluster);
 
             HelixDataAccessor helixDataAccessor = manager.getHelixDataAccessor();
             Builder keyBuilder = helixDataAccessor.keyBuilder();
@@ -43,9 +42,10 @@ public class GenericEventAdapter {
                 event.setStreamId("names");
                 ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
                 KryoSerDeser serializer = new KryoSerDeser(classLoader);
-//                EventMessage message = new EventMessage("-1", adapterArgs.streamName, serializer.serialize(event));
+                // EventMessage message = new EventMessage("-1", adapterArgs.streamName, serializer.serialize(event));
                 System.out.println("Sending event to partition:" + partitionId);
-                Destination destination = cluster.getDestination(adapterArgs.streamName, partitionId, emitter.getType());
+                Destination destination = cluster
+                        .getDestination(adapterArgs.streamName, partitionId, emitter.getType());
                 emitter.send(destination, serializer.serialize(event));
                 Thread.sleep(1000);
             }
@@ -56,7 +56,7 @@ public class GenericEventAdapter {
     }
 
     @Parameters(commandNames = "newStreamProcessor", separators = "=", commandDescription = "Create a new stream processor")
-    static class AdapterArgs extends S4ArgsBase {
+    static class AdapterArgs extends HelixS4ArgsBase {
 
         @Parameter(names = "-zk", description = "ZooKeeper connection string")
         String zkConnectionString = "localhost:2181";

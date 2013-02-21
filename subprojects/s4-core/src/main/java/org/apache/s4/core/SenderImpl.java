@@ -39,14 +39,12 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 
 /**
- * The {@link SenderImpl} and its counterpart {@link ReceiverImpl} are the top
- * level classes of the communication layer.
+ * The {@link SenderImpl} and its counterpart {@link ReceiverImpl} are the top level classes of the communication layer.
  * <p>
- * {@link SenderImpl} is responsible for sending an event to a
- * {@link ProcessingElement} instance using a hashKey.
+ * {@link SenderImpl} is responsible for sending an event to a {@link ProcessingElement} instance using a hashKey.
  * <p>
- * Details on how the cluster is partitioned and how events are serialized and
- * transmitted to its destination are hidden from the application developer.
+ * Details on how the cluster is partitioned and how events are serialized and transmitted to its destination are hidden
+ * from the application developer.
  */
 public class SenderImpl implements Sender {
 
@@ -76,10 +74,8 @@ public class SenderImpl implements Sender {
      *            a hashing function to map keys to partition IDs.
      */
     @Inject
-    public SenderImpl(Emitter emitter, SerializerDeserializer serDeser,
-            Hasher hasher, Assignment assignment,
-            SenderExecutorServiceFactory senderExecutorServiceFactory,
-            Cluster cluster) {
+    public SenderImpl(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment,
+            SenderExecutorServiceFactory senderExecutorServiceFactory, Cluster cluster) {
         this.emitter = emitter;
         this.serDeser = serDeser;
         this.hasher = hasher;
@@ -99,15 +95,12 @@ public class SenderImpl implements Sender {
     /*
      * (non-Javadoc)
      * 
-     * @see org.apache.s4.core.Sender#checkAndSendIfNotLocal(java.lang.String,
-     * org.apache.s4.base.Event)
+     * @see org.apache.s4.core.Sender#checkAndSendIfNotLocal(java.lang.String, org.apache.s4.base.Event)
      */
     @Override
     public boolean checkAndSendIfNotLocal(String hashKey, Event event) {
-        int partition = (int) (hasher.hash(hashKey) % emitter
-                .getPartitionCount(event.getStreamName()));
-        Destination destination = cluster.getDestination(event.getStreamName(),
-                partition, emitter.getType());
+        int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount(event.getStreamName()));
+        Destination destination = cluster.getDestination(event.getStreamName(), partition, emitter.getType());
         if (isDestinationLocal(destination)) {
             metrics.sentLocal();
             /* Hey we are in the same JVM, don't use the network. */
@@ -119,11 +112,9 @@ public class SenderImpl implements Sender {
     }
 
     private boolean isDestinationLocal(Destination destination) {
-         if (emitter.getType().equals("tcp")) {
+        if (emitter.getType().equals("tcp")) {
             TCPDestination tcpDestination = ((TCPDestination) destination);
-            if (localNode != null
-                    && localNode.getMachineName().equalsIgnoreCase(
-                            tcpDestination.getMachineName())
+            if (localNode != null && tcpDestination.getMachineName().equalsIgnoreCase(localNode.getMachineName())
                     && localNode.getPort() == tcpDestination.getPort()) {
                 return true;
             }
@@ -139,9 +130,7 @@ public class SenderImpl implements Sender {
     /*
      * (non-Javadoc)
      * 
-     * @see
-     * org.apache.s4.core.Sender#sendToRemotePartitions(org.apache.s4.base.Event
-     * )
+     * @see org.apache.s4.core.Sender#sendToRemotePartitions(org.apache.s4.base.Event )
      */
     @Override
     public void sendToAllRemotePartitions(Event event) {
@@ -153,8 +142,7 @@ public class SenderImpl implements Sender {
         Event event;
         int remotePartitionId;
 
-        public SerializeAndSendToRemotePartitionTask(Event event,
-                int remotePartitionId) {
+        public SerializeAndSendToRemotePartitionTask(Event event, int remotePartitionId) {
             this.event = event;
             this.remotePartitionId = remotePartitionId;
         }
@@ -164,14 +152,11 @@ public class SenderImpl implements Sender {
             ByteBuffer serializedEvent = serDeser.serialize(event);
             try {
                 // TODO: where can we get the type ?
-                Destination destination = cluster.getDestination(
-                        event.getStreamName(), remotePartitionId,
+                Destination destination = cluster.getDestination(event.getStreamName(), remotePartitionId,
                         emitter.getType());
                 emitter.send(destination, serializedEvent);
             } catch (InterruptedException e) {
-                logger.error(
-                        "Interrupted blocking send operation for event {}. Event is lost.",
-                        event);
+                logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);
                 Thread.currentThread().interrupt();
             }
 
@@ -191,23 +176,19 @@ public class SenderImpl implements Sender {
         @Override
         public void run() {
             ByteBuffer serializedEvent = serDeser.serialize(event);
-            Integer partitionCount = cluster.getPartitionCount(event
-                    .getStreamName());
+            Integer partitionCount = cluster.getPartitionCount(event.getStreamName());
             for (int i = 0; i < partitionCount; i++) {
 
                 /* Don't use the comm layer when we send to the same partition. */
                 try {
                     // TODO: where to get the mode from
-                    Destination destination = cluster.getDestination(
-                            event.getStreamName(), i, "tcp");
+                    Destination destination = cluster.getDestination(event.getStreamName(), i, "tcp");
                     if (!isDestinationLocal(destination)) {
                         emitter.send(destination, serializedEvent);
                         metrics.sentEvent(i);
                     }
                 } catch (InterruptedException e) {
-                    logger.error(
-                            "Interrupted blocking send operation for event {}. Event is lost.",
-                            event);
+                    logger.error("Interrupted blocking send operation for event {}. Event is lost.", event);
                     // no reason to continue: we were interrupted, so we reset
                     // the interrupt status and leave
                     Thread.currentThread().interrupt();

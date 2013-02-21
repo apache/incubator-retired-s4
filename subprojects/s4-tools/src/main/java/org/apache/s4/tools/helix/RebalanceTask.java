@@ -1,18 +1,12 @@
 package org.apache.s4.tools.helix;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.apache.helix.ConfigScope;
-import org.apache.helix.ConfigScopeBuilder;
 import org.apache.helix.HelixAdmin;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
 import org.apache.helix.model.IdealState;
 import org.apache.helix.model.InstanceConfig;
-import org.apache.helix.model.IdealState.IdealStateModeProperty;
 import org.apache.s4.tools.S4ArgsBase;
 import org.apache.s4.tools.Tools;
 
@@ -43,7 +37,7 @@ public class RebalanceTask extends S4ArgsBase {
     }
 
     @Parameters(commandNames = "newStreamProcessor", separators = "=", commandDescription = "Create a new stream processor")
-    static class RebalanceTaskArgs extends S4ArgsBase {
+    static class RebalanceTaskArgs extends HelixS4ArgsBase {
 
         @Parameter(names = "-zk", description = "ZooKeeper connection string")
         String zkConnectionString = "localhost:2181";

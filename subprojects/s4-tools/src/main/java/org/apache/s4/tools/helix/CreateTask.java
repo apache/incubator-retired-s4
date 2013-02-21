@@ -1,7 +1,6 @@
 package org.apache.s4.tools.helix;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,9 +9,8 @@ import org.apache.helix.ConfigScope;
 import org.apache.helix.ConfigScopeBuilder;
 import org.apache.helix.HelixAdmin;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
-import org.apache.helix.model.IdealState;
-import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.model.IdealState.IdealStateModeProperty;
+import org.apache.helix.model.InstanceConfig;
 import org.apache.s4.tools.S4ArgsBase;
 import org.apache.s4.tools.Tools;
 import org.slf4j.Logger;
@@ -29,8 +27,7 @@ public class CreateTask extends S4ArgsBase {
         CreateTaskArgs taskArgs = new CreateTaskArgs();
 
         Tools.parseArgs(taskArgs, args);
-        String msg = String.format(
-                "Setting up new pe [{}] for stream(s) on nodes belonging to node group {}",
+        String msg = String.format("Setting up new pe [{}] for stream(s) on nodes belonging to node group {}",
                 taskArgs.taskId, taskArgs.streamName, taskArgs.nodeGroup);
         logger.info(msg);
         HelixAdmin admin = new ZKHelixAdmin(taskArgs.zkConnectionString);
@@ -56,12 +53,12 @@ public class CreateTask extends S4ArgsBase {
                 instancesInGroup.add(instanceName);
             }
         }
-        admin.rebalance(taskArgs.clusterName, taskArgs.taskId, taskArgs.numStandBys + 1,instancesInGroup);
+        admin.rebalance(taskArgs.clusterName, taskArgs.taskId, taskArgs.numStandBys + 1, instancesInGroup);
         logger.info("Finished setting up task:" + taskArgs.taskId + " on nodes " + instancesInGroup);
     }
 
     @Parameters(commandNames = "newStreamProcessor", separators = "=", commandDescription = "Create a new stream processor")
-    static class CreateTaskArgs extends S4ArgsBase {
+    static class CreateTaskArgs extends HelixS4ArgsBase {
 
         @Parameter(names = "-zk", description = "ZooKeeper connection string")
         String zkConnectionString = "localhost:2181";

@@ -19,7 +19,6 @@
 package org.apache.s4.tools;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +39,6 @@ import com.google.common.collect.Maps;
 
 public class Status extends S4ArgsBase {
     static Logger logger = LoggerFactory.getLogger(Status.class);
-
-    private static String NONE = "--";
 
     public static void main(String[] args) {
 
@@ -146,33 +143,33 @@ public class Status extends S4ArgsBase {
 
     private static void showAppsStatus(List<Cluster> clusters) {
         System.out.println("App Status");
-        System.out.println(generateEdge(130));
-        System.out.format("%-20s%-20s%-90s%n", inMiddle("Name", 20), inMiddle("Cluster", 20), inMiddle("URI", 90));
-        System.out.println(generateEdge(130));
+        System.out.println(StatusUtils.generateEdge(130));
+        System.out.format("%-20s%-20s%-90s%n", StatusUtils.inMiddle("Name", 20), StatusUtils.inMiddle("Cluster", 20), StatusUtils.inMiddle("URI", 90));
+        System.out.println(StatusUtils.generateEdge(130));
         for (Cluster cluster : clusters) {
-            if (!NONE.equals(cluster.app.name)) {
-                System.out.format("%-20s%-20s%-90s%n", inMiddle(cluster.app.name, 20),
-                        inMiddle(cluster.app.cluster, 20), cluster.app.uri);
+            if (!StatusUtils.NONE.equals(cluster.app.name)) {
+                System.out.format("%-20s%-20s%-90s%n", StatusUtils.inMiddle(cluster.app.name, 20),
+                        StatusUtils.inMiddle(cluster.app.cluster, 20), cluster.app.uri);
             }
         }
-        System.out.println(generateEdge(130));
+        System.out.println(StatusUtils.generateEdge(130));
 
     }
 
     private static void showClustersStatus(List<Cluster> clusters) {
         System.out.println("Cluster Status");
-        System.out.println(generateEdge(130));
-        System.out.format("%-50s%-80s%n", " ", inMiddle("Active nodes", 80));
-        System.out.format("%-20s%-20s%-10s%s%n", inMiddle("Name", 20), inMiddle("App", 20), inMiddle("Tasks", 10),
-                generateEdge(80));
-        System.out.format("%-50s%-10s%-10s%-50s%-10s%n", " ", inMiddle("Number", 8), inMiddle("Task id", 10),
-                inMiddle("Host", 50), inMiddle("Port", 8));
-        System.out.println(generateEdge(130));
+        System.out.println(StatusUtils.generateEdge(130));
+        System.out.format("%-50s%-80s%n", " ", StatusUtils.inMiddle("Active nodes", 80));
+        System.out.format("%-20s%-20s%-10s%s%n", StatusUtils.inMiddle("Name", 20), StatusUtils.inMiddle("App", 20), StatusUtils.inMiddle("Tasks", 10),
+                StatusUtils.generateEdge(80));
+        System.out.format("%-50s%-10s%-10s%-50s%-10s%n", " ", StatusUtils.inMiddle("Number", 8), StatusUtils.inMiddle("Task id", 10),
+                StatusUtils.inMiddle("Host", 50), StatusUtils.inMiddle("Port", 8));
+        System.out.println(StatusUtils.generateEdge(130));
 
         for (Cluster cluster : clusters) {
-            System.out.format("%-20s%-20s%-10s%-10s", inMiddle(cluster.clusterName, 20),
-                    inMiddle(cluster.app.name, 20), inMiddle("" + cluster.taskNumber, 8),
-                    inMiddle("" + cluster.nodes.size(), 8));
+            System.out.format("%-20s%-20s%-10s%-10s", StatusUtils.inMiddle(cluster.clusterName, 20),
+                    StatusUtils.inMiddle(cluster.app.name, 20), StatusUtils.inMiddle("" + cluster.taskNumber, 8),
+                    StatusUtils.inMiddle("" + cluster.nodes.size(), 8));
             boolean first = true;
             for (ClusterNode node : cluster.nodes) {
                 if (first) {
@@ -180,68 +177,28 @@ public class Status extends S4ArgsBase {
                 } else {
                     System.out.format("%n%-60s", " ");
                 }
-                System.out.format("%-10s%-50s%-10s", inMiddle("" + node.getTaskId(), 10),
-                        inMiddle(node.getMachineName(), 50), inMiddle(node.getPort() + "", 10));
+                System.out.format("%-10s%-50s%-10s", StatusUtils.inMiddle("" + node.getTaskId(), 10),
+                        StatusUtils.inMiddle(node.getMachineName(), 50), StatusUtils.inMiddle(node.getPort() + "", 10));
             }
             System.out.println();
         }
-        System.out.println(generateEdge(130));
+        System.out.println(StatusUtils.generateEdge(130));
     }
 
     private static void showStreamsStatus(List<Stream> streams) {
         System.out.println("Stream Status");
-        System.out.println(generateEdge(130));
-        System.out.format("%-20s%-55s%-55s%n", inMiddle("Name", 20), inMiddle("Producers", 55),
-                inMiddle("Consumers", 55));
-        System.out.println(generateEdge(130));
+        System.out.println(StatusUtils.generateEdge(130));
+        System.out.format("%-20s%-55s%-55s%n", StatusUtils.inMiddle("Name", 20), StatusUtils.inMiddle("Producers", 55),
+                StatusUtils.inMiddle("Consumers", 55));
+        System.out.println(StatusUtils.generateEdge(130));
 
         for (Stream stream : streams) {
-            System.out.format("%-20s%-55s%-55s%n", inMiddle(stream.streamName, 20),
-                    inMiddle(getFormatString(stream.producers, stream.clusterAppMap), 55),
-                    inMiddle(getFormatString(stream.consumers, stream.clusterAppMap), 55));
+            System.out.format("%-20s%-55s%-55s%n", StatusUtils.inMiddle(stream.streamName, 20),
+                    StatusUtils.inMiddle(StatusUtils.getFormatString(stream.producers, stream.clusterAppMap), 55),
+                    StatusUtils.inMiddle(StatusUtils.getFormatString(stream.consumers, stream.clusterAppMap), 55));
         }
-        System.out.println(generateEdge(130));
+        System.out.println(StatusUtils.generateEdge(130));
 
-    }
-
-    private static String inMiddle(String content, int width) {
-        int i = (width - content.length()) / 2;
-        return String.format("%" + i + "s%s", " ", content);
-    }
-
-    private static String generateEdge(int length) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            sb.append("-");
-        }
-        return sb.toString();
-    }
-
-    /**
-     * show as cluster1(app1), cluster2(app2)
-     * 
-     * @param clusters
-     *            cluster list
-     * @param clusterAppMap
-     *            <cluster,app>
-     * @return
-     */
-    private static String getFormatString(Collection<String> clusters, Map<String, String> clusterAppMap) {
-        if (clusters == null || clusters.size() == 0) {
-            return NONE;
-        } else {
-            // show as: cluster1(app1), cluster2(app2)
-            StringBuilder sb = new StringBuilder();
-            for (String cluster : clusters) {
-                String app = clusterAppMap.get(cluster);
-                sb.append(cluster);
-                if (!NONE.equals(app)) {
-                    sb.append("(").append(app).append(")");
-                }
-                sb.append(" ");
-            }
-            return sb.toString();
-        }
     }
 
     static class Stream {
@@ -302,14 +259,14 @@ public class Status extends S4ArgsBase {
                         + "/app/s4App"));
                 return appConfig.getAppName();
             }
-            return NONE;
+            return StatusUtils.NONE;
         }
     }
 
     static class App {
-        private String name = NONE;
+        private String name = StatusUtils.NONE;
         private String cluster;
-        private String uri = NONE;
+        private String uri = StatusUtils.NONE;
     }
 
     static class Cluster {

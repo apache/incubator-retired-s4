@@ -36,13 +36,14 @@ public class BaseModule extends AbstractModule {
     InputStream baseConfigInputStream;
     String clusterName;
     private final String instanceName;
-    boolean useHelix = true;
+    boolean useHelix = false;
 
-    public BaseModule(InputStream baseConfigInputStream, String clusterName, String instanceName) {
+    public BaseModule(InputStream baseConfigInputStream, String clusterName, String instanceName, boolean useHelix) {
         super();
         this.baseConfigInputStream = baseConfigInputStream;
         this.clusterName = clusterName;
         this.instanceName = instanceName;
+        this.useHelix = useHelix;
     }
 
     @Override
@@ -53,8 +54,7 @@ public class BaseModule extends AbstractModule {
         // share the Zookeeper connection
         bind(ZkClient.class).toProvider(ZkClientProvider.class).in(Scopes.SINGLETON);
         bind(ArchiveFetcher.class).to(RemoteFileFetcher.class);
-        String clusterManager = System.getenv("S4_CLUSTER_MANAGER");
-        if (config.getBoolean("s4.helix") || "HELIX".equalsIgnoreCase(clusterManager)) {
+        if (useHelix) {
             bind(Assignment.class).to(AssignmentFromHelix.class).asEagerSingleton();
             bind(Cluster.class).to(ClusterFromHelix.class).in(Scopes.SINGLETON);
             bind(TaskStateModelFactory.class);

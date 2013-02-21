@@ -22,8 +22,6 @@ import org.apache.helix.manager.zk.ZKHelixAdmin;
 import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.model.StateModelDefinition;
 import org.apache.helix.tools.StateModelConfigGenerator;
-import org.apache.s4.comm.tools.TaskSetup;
-import org.apache.s4.tools.S4ArgsBase;
 import org.apache.s4.tools.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +72,7 @@ public class CreateCluster {
     }
 
     @Parameters(commandNames = "s4 newCluster", separators = "=", commandDescription = "Setup new S4 logical cluster")
-    static class ZKServerArgs extends S4ArgsBase {
+    static class ZKServerArgs extends HelixS4ArgsBase {
 
         @Parameter(names = { "-c", "-cluster" }, description = "S4 cluster name", required = true)
         String clusterName = "s4-test-cluster";

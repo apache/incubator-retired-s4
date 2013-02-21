@@ -39,7 +39,7 @@ public class RemoteSender {
     final private Hasher hasher;
     AtomicInteger targetPartition = new AtomicInteger();
     final private String remoteClusterName;
-    private Cluster cluster;
+    private final Cluster cluster;
 
     public RemoteSender(Cluster cluster, Emitter emitter, Hasher hasher, String clusterName) {
         super();
@@ -50,8 +50,8 @@ public class RemoteSender {
 
     }
 
-    public void send(String streamName,String hashKey, ByteBuffer message) throws InterruptedException {
-        
+    public void send(String streamName, String hashKey, ByteBuffer message) throws InterruptedException {
+
         int partition;
         if (hashKey == null) {
             // round robin by default
@@ -59,11 +59,13 @@ public class RemoteSender {
         } else {
             partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount(streamName));
         }
-        //TODO: where do we get the mode
-        
+        // TODO: where do we get the mode
+
         Destination destination = cluster.getDestination(streamName, partition, emitter.getType());
-        logger.info("Sending event to partition:"+ partition + " stream: "+streamName);
-        
+
+        // TODO log the name of the partition
+        logger.trace("Sending event to partition [{}] through stream [{}]", String.valueOf(partition), streamName);
+
         emitter.send(destination, message);
     }
 }

@@ -21,8 +21,6 @@ package org.apache.s4.tools.helix;
 import org.apache.helix.HelixAdmin;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
 import org.apache.helix.model.InstanceConfig;
-import org.apache.s4.comm.tools.TaskSetup;
-import org.apache.s4.tools.S4ArgsBase;
 import org.apache.s4.tools.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +44,11 @@ public class AddNodes {
             if (clusterArgs.nbNodes > 0) {
                 String[] split = clusterArgs.nodes.split(",");
                 for (int i = 0; i < clusterArgs.nbNodes; i++) {
-                    InstanceConfig instanceConfig = new InstanceConfig("localhost_" + initialPort);
                     String host = "localhost";
                     if (split.length > 0 && split.length == clusterArgs.nbNodes) {
                         host = split[i].trim();
                     }
+                    InstanceConfig instanceConfig = new InstanceConfig("node_" + host + "_" + initialPort);
                     instanceConfig.setHostName(host);
                     instanceConfig.setPort("" + initialPort);
                     instanceConfig.getRecord().setSimpleField("GROUP", clusterArgs.nodeGroup);
@@ -66,7 +64,7 @@ public class AddNodes {
     }
 
     @Parameters(commandNames = "s4 addNodes", separators = "=", commandDescription = "Setup new S4 logical cluster")
-    static class ZKServerArgs extends S4ArgsBase {
+    static class ZKServerArgs extends HelixS4ArgsBase {
 
         @Parameter(names = { "-c", "-cluster" }, description = "S4 cluster name", required = true)
         String clusterName = "s4-test-cluster";
@@ -85,6 +83,7 @@ public class AddNodes {
 
         @Parameter(names = { "-ng", "-nodeGroup" }, description = "Assign the nodes to one or more groups. This will be useful when you create task", required = false)
         String nodeGroup = "default";
+
     }
 
 }

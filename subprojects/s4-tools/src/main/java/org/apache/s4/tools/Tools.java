@@ -22,18 +22,17 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.s4.core.S4Node;
 import org.apache.s4.tools.helix.AddNodes;
+import org.apache.s4.tools.helix.ClusterStatus;
 import org.apache.s4.tools.helix.CreateCluster;
 import org.apache.s4.tools.helix.CreateTask;
 import org.apache.s4.tools.helix.DeployApp;
 import org.apache.s4.tools.helix.GenericEventAdapter;
 import org.apache.s4.tools.helix.RebalanceTask;
-import org.apache.s4.tools.helix.ClusterStatus;
 import org.apache.s4.tools.helix.RemoveTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,14 +61,15 @@ public class Tools {
         createTask(null,CreateTask.class), 
         removeTask(null,RemoveTask.class), 
         rebalanceTask(null,RebalanceTask.class);
-      //formatter:on
-        
-        Class<?> zkTarget;
-        private Class<?> helixTarget;
-        
+        //formatter:on
+
+        private final Class<?> zkTarget;
+        private final Class<?> helixTarget;
+
         Task(Class<?> target) {
-            this(target,target); 
+            this(target, target);
         }
+
         Task(Class<?> zkTarget, Class<?> helixTarget) {
             this.zkTarget = zkTarget;
             this.helixTarget = helixTarget;
@@ -77,12 +77,20 @@ public class Tools {
 
         public void dispatch(String[] args) {
             try {
-                String clusterManager = System.getenv("S4_CLUSTER_MANAGER");
                 Class<?> target = zkTarget;
-                if("HELIX".equalsIgnoreCase(clusterManager)){
-                    target= helixTarget;
+                if (Sets.newHashSet(args).contains("-helix")) {
+                    target = helixTarget;
+                    if (target == null) {
+                        logger.error("{} is not a Helix related task", this.name());
+                        System.exit(1);
+                    }
+                } else {
+                    if (target == null && helixTarget != null) {
+                        logger.error("{} is a Helix related task, please specify -helix", this.name());
+                        System.exit(1);
+                    }
                 }
-                
+
                 Method main = target.getMethod("main", String[].class);
                 main.invoke(null, new Object[] { args });
 
@@ -91,9 +99,8 @@ public class Tools {
                 logger.error("Cannot dispatch to task [{}]: wrong arguments [{}]", this.name(), Arrays.toString(args));
             }
         }
-
     }
-   
+
     public static void main(String[] args) {
 
         // configure log4j for Zookeeper
