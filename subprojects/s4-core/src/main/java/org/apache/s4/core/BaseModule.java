@@ -6,6 +6,7 @@ import java.util.HashMap;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.helix.HelixManager;
 import org.apache.s4.comm.helix.TaskStateModelFactory;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromHelix;
@@ -35,14 +36,12 @@ public class BaseModule extends AbstractModule {
     private PropertiesConfiguration config;
     InputStream baseConfigInputStream;
     String clusterName;
-    private final String instanceName;
     boolean useHelix = false;
 
-    public BaseModule(InputStream baseConfigInputStream, String clusterName, String instanceName, boolean useHelix) {
+    public BaseModule(InputStream baseConfigInputStream, String clusterName, boolean useHelix) {
         super();
         this.baseConfigInputStream = baseConfigInputStream;
         this.clusterName = clusterName;
-        this.instanceName = instanceName;
         this.useHelix = useHelix;
     }
 
@@ -98,19 +97,6 @@ public class BaseModule extends AbstractModule {
                     Names.bindProperties(binder, new HashMap<String, String>() {
                         {
                             put("s4.cluster.name", clusterName);
-                        }
-                    });
-                }
-            }
-            if (instanceName != null) {
-                if (config.containsKey("s4.instance.name")) {
-                    logger.warn(
-                            "instanceName [{}] passed as a parameter will not be used because an existing s4.instance.name parameter of value [{}] was found in the configuration file and will be used",
-                            instanceName, config.getProperty("s4.instance.name"));
-                } else {
-                    Names.bindProperties(binder, new HashMap<String, String>() {
-                        {
-                            put("s4.instance.name", instanceName);
                         }
                     });
                 }

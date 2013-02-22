@@ -2,19 +2,26 @@ package org.apache.s4.core;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.helix.HelixDataAccessor;
 import org.apache.helix.HelixManager;
 import org.apache.helix.HelixManagerFactory;
 import org.apache.helix.InstanceType;
+import org.apache.helix.PropertyKey.Builder;
 import org.apache.helix.controller.HelixControllerMain;
+import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.spectator.RoutingTableProvider;
 import org.apache.s4.comm.helix.S4HelixConstants;
 import org.apache.s4.comm.helix.TaskStateModelFactory;
+import org.apache.s4.comm.topology.AssignmentFromHelix;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.util.ArchiveFetchException;
 import org.apache.s4.comm.util.ArchiveFetcher;
@@ -57,33 +64,30 @@ public class S4HelixBootstrap implements Bootstrap {
 
     private final String clusterName;
 
-    private final String instanceName;
+    private String instanceName;
 
     private final String zookeeperAddress;
-    private final TaskStateModelFactory taskStateModelFactory;
 
     private final AppStateModelFactory appStateModelFactory;
+    private final AssignmentFromHelix assignmentFromHelix;
 
     private final Cluster cluster;
-
-    private final Lock startingNode = new ReentrantLock();
 
     public static Injector rootInjector;
 
     @Inject
     public S4HelixBootstrap(@Named("s4.cluster.name") String clusterName,
-            @Named("s4.instance.name") String instanceName, @Named("s4.cluster.zk_address") String zookeeperAddress,
+            @Named("s4.cluster.zk_address") String zookeeperAddress,
             @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
             @Named("s4.cluster.zk_connection_timeout") int connectionTimeout,
-            AppStateModelFactory appStateModelFactory, TaskStateModelFactory taskStateModelFactory,
+            AppStateModelFactory appStateModelFactory, AssignmentFromHelix assignmentFromHelix,
             ArchiveFetcher fetcher, Cluster cluster) {
         this.clusterName = clusterName;
-        this.instanceName = instanceName;
         this.zookeeperAddress = zookeeperAddress;
-        this.taskStateModelFactory = taskStateModelFactory;
         this.appStateModelFactory = appStateModelFactory;
         this.fetcher = fetcher;
         this.cluster = cluster;
+        this.assignmentFromHelix = assignmentFromHelix;
     }
 
     @Override
@@ -96,19 +100,16 @@ public class S4HelixBootstrap implements Bootstrap {
                 HelixControllerMain.STANDALONE);
         // this.parentInjector = parentInjector;
         S4HelixBootstrap.rootInjector = parentInjector;
+        
         registerWithHelix();
 
         signalOneAppLoaded.await();
     }
 
     private void registerWithHelix() {
-        HelixManager helixManager;
+        HelixManager helixManager = assignmentFromHelix.getHelixManager();
         try {
-            helixManager = HelixManagerFactory.getZKHelixManager(S4HelixConstants.HELIX_CLUSTER_NAME, instanceName,
-                    InstanceType.PARTICIPANT, zookeeperAddress);
-            helixManager.getStateMachineEngine().registerStateModelFactory("LeaderStandby", taskStateModelFactory);
             helixManager.getStateMachineEngine().registerStateModelFactory("OnlineOffline", appStateModelFactory);
-            helixManager.connect();
             helixManager.addExternalViewChangeListener((RoutingTableProvider) cluster);
         } catch (Exception e) {
             // TODO Auto-generated catch block

@@ -115,8 +115,7 @@ public class CoreTestUtils extends CommTestUtils {
 
     public static Injector createInjectorWithNonFailFastZKClients() throws IOException {
         return Guice.createInjector(Modules.override(
-                new BaseModule(Resources.getResource("default.s4.base.properties").openStream(), "cluster1", null,
-                        false),
+                new BaseModule(Resources.getResource("default.s4.base.properties").openStream(), "cluster1", false),
                 new DefaultCommModule(Resources.getResource("default.s4.comm.properties").openStream()),
                 new DefaultCoreModule(Resources.getResource("default.s4.core.properties").openStream())).with(
                 new NonFailFastZookeeperClientsModule()));

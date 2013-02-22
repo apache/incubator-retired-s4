@@ -50,7 +50,7 @@ public class S4Node {
 
         Injector injector = Guice
                 .createInjector(new Module[] { new BaseModule(Resources.getResource("default.s4.base.properties")
-                        .openStream(), nodeArgs.clusterName, nodeArgs.instanceName, nodeArgs.useHelix) });
+                        .openStream(), nodeArgs.clusterName, nodeArgs.useHelix) });
         Bootstrap bootstrap = injector.getInstance(Bootstrap.class);
         try {
             bootstrap.start(injector);
@@ -74,9 +74,6 @@ public class S4Node {
 
         @Parameter(names = "-zk", description = "Zookeeper connection string", required = false)
         String zkConnectionString;
-
-        @Parameter(names = { "-id", "-nodeId" }, description = "Node/Instance id that uniquely identifies a node", required = false)
-        String instanceName = null;
 
         @Parameter(names = "-helix", description = "Required flag when using a Helix based cluster manager", required = false, arity = 0)
         boolean useHelix = false;
