@@ -7,6 +7,7 @@ import org.apache.helix.HelixAdmin;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
 import org.apache.helix.model.IdealState;
 import org.apache.helix.model.InstanceConfig;
+import org.apache.s4.comm.helix.S4HelixConstants;
 import org.apache.s4.tools.S4ArgsBase;
 import org.apache.s4.tools.Tools;
 
@@ -23,17 +24,17 @@ public class RebalanceTask extends S4ArgsBase {
         // This does the assignment of partition to nodes. It uses a modified
         // version of consistent hashing to distribute active partitions and standbys
         // equally among nodes.
-        IdealState currentAssignment = admin.getResourceIdealState(taskArgs.clusterName, taskArgs.taskId);
+        IdealState currentAssignment = admin.getResourceIdealState(S4HelixConstants.HELIX_CLUSTER_NAME, taskArgs.taskId);
         List<String> instancesInGroup = new ArrayList<String>();
-        List<String> instancesInCluster = admin.getInstancesInCluster(taskArgs.clusterName);
+        List<String> instancesInCluster = admin.getInstancesInCluster(S4HelixConstants.HELIX_CLUSTER_NAME);
         for (String instanceName : instancesInCluster) {
-            InstanceConfig instanceConfig = admin.getInstanceConfig(taskArgs.clusterName, instanceName);
+            InstanceConfig instanceConfig = admin.getInstanceConfig(S4HelixConstants.HELIX_CLUSTER_NAME, instanceName);
             String nodeGroup = instanceConfig.getRecord().getSimpleField("GROUP");
-            if (nodeGroup.equals(taskArgs.nodeGroup)) {
+            if (nodeGroup.equals(taskArgs.clusterName)) {
                 instancesInGroup.add(instanceName);
             }
         }
-        admin.rebalance(taskArgs.clusterName, currentAssignment, instancesInGroup);
+        admin.rebalance(S4HelixConstants.HELIX_CLUSTER_NAME, currentAssignment, instancesInGroup);
     }
 
     @Parameters(commandNames = "newStreamProcessor", separators = "=", commandDescription = "Create a new stream processor")
@@ -47,9 +48,6 @@ public class RebalanceTask extends S4ArgsBase {
 
         @Parameter(names = { "-id", "-taskId" }, description = "id of the task that produces/consumes a stream", required = true, arity = 1)
         String taskId;
-
-        @Parameter(names = { "-ng", "-nodeGroup" }, description = "Node group name where the task needs to be run", required = true, arity = 1)
-        String nodeGroup = "default";
 
     }
 }

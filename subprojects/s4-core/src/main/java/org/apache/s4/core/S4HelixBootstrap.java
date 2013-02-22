@@ -13,6 +13,7 @@ import org.apache.helix.HelixManagerFactory;
 import org.apache.helix.InstanceType;
 import org.apache.helix.controller.HelixControllerMain;
 import org.apache.helix.spectator.RoutingTableProvider;
+import org.apache.s4.comm.helix.S4HelixConstants;
 import org.apache.s4.comm.helix.TaskStateModelFactory;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.util.ArchiveFetchException;
@@ -91,7 +92,7 @@ public class S4HelixBootstrap implements Bootstrap {
         // start a HelixController to manage the cluster
         // TODO set this as optional (small clusters only)
         String controllerName = Inet4Address.getLocalHost().getCanonicalHostName() + UUID.randomUUID().toString();
-        HelixControllerMain.startHelixController(zookeeperAddress, clusterName, controllerName,
+        HelixControllerMain.startHelixController(zookeeperAddress, S4HelixConstants.HELIX_CLUSTER_NAME, controllerName,
                 HelixControllerMain.STANDALONE);
         // this.parentInjector = parentInjector;
         S4HelixBootstrap.rootInjector = parentInjector;
@@ -103,8 +104,8 @@ public class S4HelixBootstrap implements Bootstrap {
     private void registerWithHelix() {
         HelixManager helixManager;
         try {
-            helixManager = HelixManagerFactory.getZKHelixManager(clusterName, instanceName, InstanceType.PARTICIPANT,
-                    zookeeperAddress);
+            helixManager = HelixManagerFactory.getZKHelixManager(S4HelixConstants.HELIX_CLUSTER_NAME, instanceName,
+                    InstanceType.PARTICIPANT, zookeeperAddress);
             helixManager.getStateMachineEngine().registerStateModelFactory("LeaderStandby", taskStateModelFactory);
             helixManager.getStateMachineEngine().registerStateModelFactory("OnlineOffline", appStateModelFactory);
             helixManager.connect();

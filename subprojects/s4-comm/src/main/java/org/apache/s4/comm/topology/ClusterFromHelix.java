@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.helix.ConfigAccessor;
 import org.apache.helix.ConfigScope;
 import org.apache.helix.ConfigScopeBuilder;
+import org.apache.helix.HelixConstants;
 import org.apache.helix.HelixDataAccessor;
 import org.apache.helix.HelixManager;
 import org.apache.helix.NotificationContext;
@@ -39,6 +40,7 @@ import org.apache.helix.model.IdealState;
 import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.spectator.RoutingTableProvider;
 import org.apache.s4.base.Destination;
+import org.apache.s4.comm.helix.S4HelixConstants;
 import org.apache.s4.comm.tcp.TCPDestination;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,7 +149,7 @@ public class ClusterFromHelix extends RoutingTableProvider implements Cluster {
             if (externalViewList != null) {
                 for (ExternalView extView : externalViewList) {
                     String resource = extView.getId();
-                    ConfigScope resourceScope = builder.forCluster(clusterName)
+                    ConfigScope resourceScope = builder.forCluster(S4HelixConstants.HELIX_CLUSTER_NAME)
                             .forResource(resource).build();
                     String resourceType = configAccessor.get(resourceScope,
                             "type");

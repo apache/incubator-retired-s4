@@ -21,6 +21,7 @@ package org.apache.s4.tools.helix;
 import org.apache.helix.HelixAdmin;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
 import org.apache.helix.model.InstanceConfig;
+import org.apache.s4.comm.helix.S4HelixConstants;
 import org.apache.s4.tools.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,13 +47,16 @@ public class AddNodes {
                 for (int i = 0; i < clusterArgs.nbNodes; i++) {
                     String host = "localhost";
                     if (split.length > 0 && split.length == clusterArgs.nbNodes) {
-                        host = split[i].trim();
+                        String node = split[i].trim();
+                        if (!node.isEmpty()) {
+                            host = node;
+                        }
                     }
-                    InstanceConfig instanceConfig = new InstanceConfig("node_" + host + "_" + initialPort);
+                    InstanceConfig instanceConfig = new InstanceConfig(host + "_" + initialPort);
                     instanceConfig.setHostName(host);
                     instanceConfig.setPort("" + initialPort);
-                    instanceConfig.getRecord().setSimpleField("GROUP", clusterArgs.nodeGroup);
-                    helixAdmin.addInstance(clusterArgs.clusterName, instanceConfig);
+                    instanceConfig.getRecord().setSimpleField("GROUP", clusterArgs.clusterName);
+                    helixAdmin.addInstance(S4HelixConstants.HELIX_CLUSTER_NAME, instanceConfig);
                     initialPort = initialPort + 1;
                 }
             }
@@ -80,10 +84,6 @@ public class AddNodes {
 
         @Parameter(names = { "-flp", "-firstListeningPort" }, description = "Initial listening port for nodes in this cluster. First node listens on the specified port, other nodes listen on port initial + nodeIndex", required = true)
         int firstListeningPort = -1;
-
-        @Parameter(names = { "-ng", "-nodeGroup" }, description = "Assign the nodes to one or more groups. This will be useful when you create task", required = false)
-        String nodeGroup = "default";
-
     }
 
 }

@@ -16,6 +16,7 @@ import org.apache.helix.model.IdealState;
 import org.apache.helix.model.IdealState.IdealStateModeProperty;
 import org.apache.helix.model.InstanceConfig;
 import org.apache.s4.comm.HelixBasedCommModule;
+import org.apache.s4.comm.helix.S4HelixConstants;
 import org.apache.s4.core.HelixBasedCoreModule;
 import org.apache.s4.core.util.AppConfig;
 import org.apache.s4.tools.Deploy;
@@ -41,7 +42,7 @@ public class DeployApp extends S4ArgsBase {
 
         HelixAdmin admin = new ZKHelixAdmin(deployArgs.zkConnectionString);
         ConfigScopeBuilder builder = new ConfigScopeBuilder();
-        ConfigScope scope = builder.forCluster(deployArgs.clusterName).forResource(deployArgs.appName).build();
+        ConfigScope scope = builder.forCluster(S4HelixConstants.HELIX_CLUSTER_NAME).forResource(deployArgs.appName).build();
         Map<String, String> properties = new HashMap<String, String>();
 
         URI s4rURI = null;
@@ -81,7 +82,7 @@ public class DeployApp extends S4ArgsBase {
         properties.putAll(appConfig.asMap());
         admin.setConfig(scope, properties);
 
-        IdealState is = admin.getResourceIdealState(deployArgs.clusterName, deployArgs.appName);
+        IdealState is = admin.getResourceIdealState(S4HelixConstants.HELIX_CLUSTER_NAME, deployArgs.appName);
         if (is == null) {
             is = new IdealState(deployArgs.appName);
         }
@@ -89,11 +90,11 @@ public class DeployApp extends S4ArgsBase {
         is.setIdealStateMode(IdealStateModeProperty.CUSTOMIZED.toString());
         is.setStateModelDefRef("OnlineOffline");
         List<String> instancesInGroup = new ArrayList<String>();
-        List<String> instancesInCluster = admin.getInstancesInCluster(deployArgs.clusterName);
+        List<String> instancesInCluster = admin.getInstancesInCluster(S4HelixConstants.HELIX_CLUSTER_NAME);
         for (String instanceName : instancesInCluster) {
-            InstanceConfig instanceConfig = admin.getInstanceConfig(deployArgs.clusterName, instanceName);
+            InstanceConfig instanceConfig = admin.getInstanceConfig(S4HelixConstants.HELIX_CLUSTER_NAME, instanceName);
             String nodeGroup = instanceConfig.getRecord().getSimpleField("GROUP");
-            if (nodeGroup.equals(deployArgs.nodeGroup)) {
+            if (nodeGroup.equals(deployArgs.clusterName)) {
                 instancesInGroup.add(instanceName);
             }
         }
@@ -101,7 +102,7 @@ public class DeployApp extends S4ArgsBase {
             is.setPartitionState(deployArgs.appName, instanceName, "ONLINE");
         }
 
-        admin.setResourceIdealState(deployArgs.clusterName, deployArgs.appName, is);
+        admin.setResourceIdealState(S4HelixConstants.HELIX_CLUSTER_NAME, deployArgs.appName, is);
     }
 
     @Parameters(commandNames = "newStreamProcessor", separators = "=", commandDescription = "Create a new stream processor")
@@ -124,9 +125,6 @@ public class DeployApp extends S4ArgsBase {
 
         @Parameter(names = { "-a", "-appClass" }, description = "Full class name of the application class (extending App or AdapterApp)", required = false)
         String appClass = "";
-
-        @Parameter(names = { "-ng", "-nodeGroup" }, description = "Node group name where the App needs to be deployed", required = false, arity = 1)
-        String nodeGroup = "default";
 
         @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = InlineConfigParameterConverter.class)
         List<String> extraNamedParameters = new ArrayList<String>();

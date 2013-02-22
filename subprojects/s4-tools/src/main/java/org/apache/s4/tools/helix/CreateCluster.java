@@ -18,10 +18,12 @@
 
 package org.apache.s4.tools.helix;
 
+import org.apache.helix.HelixException;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
 import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.model.StateModelDefinition;
 import org.apache.helix.tools.StateModelConfigGenerator;
+import org.apache.s4.comm.helix.S4HelixConstants;
 import org.apache.s4.tools.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,14 +42,19 @@ public class CreateCluster {
         try {
             logger.info("preparing new cluster [{}] with [{}] node(s)", clusterArgs.clusterName, clusterArgs.nbNodes);
             ZKHelixAdmin helixAdmin = new ZKHelixAdmin(clusterArgs.zkConnectionString);
-            helixAdmin.addCluster(clusterArgs.clusterName, false);
-            StateModelDefinition onlineofflinemodel = new StateModelDefinition(
-                    new StateModelConfigGenerator().generateConfigForOnlineOffline());
-            StateModelDefinition leaderstandbymodel = new StateModelDefinition(
-                    new StateModelConfigGenerator().generateConfigForLeaderStandby());
+            try {
+                helixAdmin.addCluster(S4HelixConstants.HELIX_CLUSTER_NAME, false);
+                StateModelDefinition onlineofflinemodel = new StateModelDefinition(
+                        new StateModelConfigGenerator().generateConfigForOnlineOffline());
+                StateModelDefinition leaderstandbymodel = new StateModelDefinition(
+                        new StateModelConfigGenerator().generateConfigForLeaderStandby());
 
-            helixAdmin.addStateModelDef(clusterArgs.clusterName, "OnlineOffline", onlineofflinemodel);
-            helixAdmin.addStateModelDef(clusterArgs.clusterName, "LeaderStandby", leaderstandbymodel);
+                helixAdmin.addStateModelDef(S4HelixConstants.HELIX_CLUSTER_NAME, "OnlineOffline", onlineofflinemodel);
+                helixAdmin.addStateModelDef(S4HelixConstants.HELIX_CLUSTER_NAME, "LeaderStandby", leaderstandbymodel);
+            } catch (HelixException he) {
+                // S4 configuration already exists, ignore
+            }
+
             if (clusterArgs.nbNodes > 0) {
                 String[] split = clusterArgs.nodes.split(",");
                 int initialPort = clusterArgs.firstListeningPort;
@@ -59,8 +66,8 @@ public class CreateCluster {
                     }
                     instanceConfig.setHostName(host);
                     instanceConfig.setPort("" + initialPort);
-                    instanceConfig.getRecord().setSimpleField("GROUP", clusterArgs.nodeGroup);
-                    helixAdmin.addInstance(clusterArgs.clusterName, instanceConfig);
+                    instanceConfig.getRecord().setSimpleField("GROUP", clusterArgs.clusterName);
+                    helixAdmin.addInstance(S4HelixConstants.HELIX_CLUSTER_NAME, instanceConfig);
                     initialPort = initialPort + 1;
                 }
             }
@@ -88,10 +95,6 @@ public class CreateCluster {
 
         @Parameter(names = { "-flp", "-firstListeningPort" }, description = "Initial listening port for nodes in this cluster. First node listens on the specified port, other nodes listen on port initial + nodeIndex", required = true)
         int firstListeningPort = -1;
-
-        @Parameter(names = { "-ng", "-nodeGroup" }, description = "Name of the App", required = false, arity = 1)
-        String nodeGroup = "default";
-
     }
 
 }

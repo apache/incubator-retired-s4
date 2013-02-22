@@ -118,7 +118,7 @@ public class ClusterStatus extends S4ArgsBase {
         System.out.format("%-20s%-20s%-90s%n", StatusUtils.inMiddle("Task Id", 20),
                 StatusUtils.inMiddle("Cluster", 20), StatusUtils.inMiddle("Description", 90));
         System.out.println(StatusUtils.generateEdge(130));
-        System.out.format("%-20s%-20s%-90s%n", StatusUtils.inMiddle(taskId, 20), StatusUtils.inMiddle(cluster, 20),
+        System.out.format("%-30s%-20s%-90s%n", StatusUtils.inMiddle(taskId, 30), StatusUtils.inMiddle(cluster, 20),
                 StatusUtils.inMiddle(streamName + " " + ((taskType == null) ? "(untyped)" : taskType), 90));
         System.out.println(StatusUtils.generateEdge(130));
         HelixDataAccessor helixDataAccessor = manager.getHelixDataAccessor();
@@ -230,7 +230,7 @@ public class ClusterStatus extends S4ArgsBase {
             } else {
                 System.out.format("%n%-50s", " ");
             }
-            System.out.format("%-10s%-46s%-10s%-10s", StatusUtils.inMiddle("" + config.getId(), 10),
+            System.out.format("%-30s%-46s%-10s%-10s", StatusUtils.inMiddle("" + config.getId(), 30),
                     StatusUtils.inMiddle(config.getHostName(), 50), StatusUtils.inMiddle(config.getPort() + "", 10),
                     StatusUtils.inMiddle(liveInstances.contains(config.getInstanceName()) ? "Y" : "N", 10));
         }
