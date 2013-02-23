@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+# A few helpful tips about the Rules file:
+#
+# * The order of rules is important: for each item, only the first matching
+#   rule is applied.
+#
+# * Item identifiers start and end with a slash (e.g. “/about/” for the file
+#   “content/about.html”). To select all children, grandchildren, … of an
+#   item, use the pattern “/about/*/”; “/about/*” will also select the parent,
+#   because “*” matches zero or more characters.
+
+require 'compass'
+
+Compass.add_project_configuration 'compass/config.rb' # when using Compass 0.10
+
+compile '/style/*/' do
+  filter :sass, Compass.sass_engine_options.merge(:syntax => :scss)
+end
+
+compile '/images/*/' do
+  # do nothing
+end
+
+compile '/doc/*' do
+  if item.binary?
+  # don’t filter binary items
+  else
+    filter :kramdown
+    layout 'default'
+  end
+end
+
+compile '*' do
+  if item[:extension] == "haml"
+    filter :haml
+    layout 'default'
+  end
+  filter :relativize_paths, :type => :html
+end
+
+route '/style/partials/*/' do
+  # don't output partials, so return nil
+  nil
+end
+
+route '/style/*/' do
+  # don't generate a directory like we do for HTML files
+  item.identifier.chop + '.css'
+end
+
+route '/images/*/' do
+  # don't generate a directory like we do for HTML files
+  item.identifier.chop + '.' + item[:extension]
+end
+
+route '*' do
+  item.identifier + 'index.html'
+end
+
+layout '*', :haml

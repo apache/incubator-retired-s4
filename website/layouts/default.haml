@@ -1,0 +1,26 @@
+!!!
+%html
+  %head
+    %title= "S4: #{@item[:title]}"
+    %meta{"http-equiv" => "Content-Type", :content=>"text/html; charset=utf-8"}
+    %meta{:name=>"description", :content=>"A general-purpose distributed stream computing platform"}
+    %link{:rel=>"stylesheet", :type=>"text/css", :href=>"/style/screen.css", :media=>"screen" }
+    %link{:rel=>"stylesheet", :type=>"text/css", :href=>"/style/print.css", :media=>"print" }
+    /[if lt IE 9]
+      %link{:rel=>"stylesheet", :type=>"text/css", :href=>"/style/ie.css", :media=>"screen" }
+    %link{:rel=>"stylesheet", :type=>"text/css", :href=>"/style/style.css"}
+    %link{:rel=>"stylesheet", :type=>"text/css", :href=>"/style/nav.css"}
+    = google_analytics(@config[:google_analytics_account_id], @config[:google_analytics_domain])
+  %body
+    #header
+      .container
+        #logo
+          %a{:href=>'/'}
+            %img{:src=>'/images/s4_test.png'}
+        #navbar= render 'nav'
+    #wrapper
+      #container{:class=>"container"}= yield
+    #footer
+      .container
+        %span{:class=>'copyright'}= "Apache S4 - Copyright 2013 The Apache Software Foundation"
+

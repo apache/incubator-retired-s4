@@ -1,0 +1,78 @@
+---
+title: Distributed Stream Computing Platform
+---
+#main{:class=>"span-18 colborder"}
+  #about{:class=>"span-18 last"}
+
+    #notice{:class=>"span-17 last"}
+      #notice_text= "August 2012: <b>S4 0.5.0 has been released!</b> Get it <a href='/download'>here</a>!."
+    
+    #notice{:class=>"span-17 last"}
+      #notice_text= "S4 0.5.0 \"Piper\" is a complete refactoring of the previous version of S4. It provides a clearer API and a more robust implementation. It features TCP based communications, state recovery, and a new set of tools. More information is available in an <a href='https://cwiki.apache.org/confluence/display/S4/S4+0.5.0+Overview'>overview</a> and you may also check the <a href='http://www.apache.org/dist/incubator/s4/s4-0.5.0-incubating/RELEASE_NOTES.html'>release notes</a>."
+        
+    %p{:class=>'large'}= "S4 is a <span class='high'>general-purpose</span>, <span class='high'>distributed</span>, <span class='high'>scalable</span>, <span class='high'>fault-tolerant</span>, <span class='high'>pluggable</span> platform that allows programmers to easily develop applications for processing continuous unbounded streams of data."
+
+    .horrule
+
+    #sec_motivation{:class=>"span-9"}
+      %h2{:class=>"secheader"}= "motivation"
+      %p= "S4 fills the gap between complex proprietary systems and batch-oriented open source computing platforms. We aim to develop a high performance computing platform that hides the complexity inherent in parallel processing system from the application programmer."
+    #sec_implementation{:class=>"span-9 last"}
+      %h2{:class=>"secheader"}= "implementation"
+      %p= "The core platform is written in <span class='high'>Java</span>. The implementation is modular and pluggable, and S4 applications can be easily and dynamically combined for creating more sophisticated stream processing systems."
+
+    .horrule
+    
+    #sec_osi{:class=>"span-18 last"}
+      %h2{:class=>"secheader"}= "open source"
+      #os_logo{:class=>"span-2"}
+        %img{:src=>"http://incubator.apache.org/images/apache-incubator-logo.png"}
+      #os_desc{:class=>"span-14 last"}
+        %p{:style=>"padding-top:10px; padding-left:170px;"}= "S4 was initially released by Yahoo! Inc. in October 2010 and is an Apache Incubator project since September 2011. It is licensed under the Apache 2.0 license."
+
+    .horrule
+
+    #sec_overview{:class=>"span-18 last"}
+
+      %h2{:class=>"secheader"}= "overview"
+      #ov_1{:class=>"span-6"}
+        %h4{:class=>"subsecheader"}= "proven"
+        %p= "S4 has been deployed in production systems at Yahoo! to process thousands of search queries per second."
+      #ov_2{:class=>"span-6"}
+        %h4{:class=>"subsecheader"}= "decentralized"
+        %p= "All nodes are symmetric with no centralized service and no single point of failure. This greatly simplifies deployments and cluster configuration changes."
+      #ov_3{:class=>"span-6 last"}
+        %h4{:class=>"subsecheader"}= "scalable"
+        %p= "Throughput increases linearly as additional nodes are added to the cluster. There is no predefined limit on the number of nodes that can be supported."
+
+      #ov_4{:class=>"span-6"}
+        %h4{:class=>"subsecheader"}= "extensible"
+        %p= "Applications can easily be written and deployed using a simple API. Many basic applications for stream processing are available out of the box and more are being written."
+      #ov_5{:class=>"span-6"}
+        %h4{:class=>"subsecheader"}= "cluster management"
+        %p= "S4 hides all cluster management tasks using a communication layer built on top of  <a href='http://hadoop.apache.org/zookeeper'>ZooKeeper</a>, a distributed, open-source coordination service for distributed applications."
+      #ov_6{:class=>"span-6 last"}
+        %h4{:class=>"subsecheader"}= "fault-tolerance"
+        %p= "When a server in the cluster fails, a stand-by server is automatically activated to take over the tasks. Checkpointing and recovery minimize state loss."
+
+#sidebar{:class=>"span-5 last"}
+  #download
+    #latest_head
+      %span= "S4 Piper release"
+      %br
+      %span{:style=>"font-size: small;"}= "v0.5.0"
+    #latest_link
+      %a{:href=>"https://cwiki.apache.org/confluence/display/S4/S4+piper+walkthrough", :style=>"border: none;"}= "Get Started"
+    #disclaimer
+      %p= "This is an alpha version. There's no guarantee of backwards-compatibility until the 1.0 release."
+  #participate
+    %h2{:class=>"secheader"}= "participate"
+    %ul{:class=>'large greybar'}
+      %li= "<a href='/contrib'>Contribute</a>"
+      %li= "Join the <a href='https://cwiki.apache.org/confluence/display/S4/S4+Apache+mailing+lists' onClick=\"#{google_analytics_event("External", "Forum", "Index - https://cwiki.apache.org/confluence/display/S4/S4+Apache+mailing+lists")}\">forum</a>"
+      
+  %h2{:class=>"secheader"}= "recent tweets"
+  #twitter_widget= twitter_widget()
+/  #twitter_follow{:style=>"position: absolute; bottom: 0px;"}
+/    %a{:href=>"http://www.twitter.com/s4project", :onClick=> google_analytics_event("External", "Twitter", "Index - http://www.twitter.com/s4project")}
+/      %img{:src=>"http://twitter-badges.s3.amazonaws.com/follow_bird_us-c.png", :alt=>"Follow s4project on Twitter"}

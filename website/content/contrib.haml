@@ -1,0 +1,74 @@
+---
+title: Contribute
+---
+#main{:class=>"span-18 colborder"}
+  / collaboration
+  %h2{:class=>"secheader"}= "collaboration model"
+  %p= "The project is maintain by volunteers and is open to anybody interested in contributing to the project. To contribute, you can write code, review code, report bugs, suggest ideas, propose design changes, write documentation, answer questions in the mailing list, and much more. The more you contribute the more you can make a difference."
+
+  / version control
+  %h2{:class=>"secheader"}= "version control"
+
+  %p= "S4 sources are available through <b>git</b>. Most development is done on the <i>piper</i> branch"
+
+  %p= "See a summary <a href='https://git-wip-us.apache.org/repos/asf?p=incubator-s4.git;a=summary'>here.</a>"
+
+
+  / access to the repository
+  %h2{:class=>"secheader"}= "access to the repository"
+  %ul
+    %li= "as a committer: <pre>git clone https://user_name@git-wip-us.apache.org/repos/asf/incubator-s4.git</pre>"
+    %li= "as a user or contributor: <pre>git clone http://git-wip-us.apache.org/repos/asf/incubator-s4.git</pre> (though since June 2012, you may have to try with <b>https</b> :<pre>git clone https://git-wip-us.apache.org/repos/asf/incubator-s4.git</pre> , even though this is not reflected yet on the Apache git documentation)."
+  %ul
+
+  %p= "For more information, have a look there: <a href='https://git-wip-us.apache.org/'>https://git-wip-us.apache.org/</a>"
+  
+
+  / eclipse project
+  %h2{:class=>"secheader"}= "creating an eclipse project"
+  %p= "type: <pre>./gradlew eclipse</pre> You can now import the project into Eclipse. To learn more, visit the <b><a href='http://www.gradle.org'>Gradle website</a></b>."
+
+  / submission guidelines
+  %h2{:class=>"secheader"}= "submission guidelines"
+
+  %p="Before you start, send a message to the S4 developer <b><a href='https://cwiki.apache.org/confluence/display/S4/S4+Apache+mailing+lists'>mailing list</a></b>, or file a bug report in <b><a href='https://issues.apache.org/jira/browse/S4'>Jira</a></b>. Describe your proposed changes and check that they fit in with what others are doing and have planned for the project." 
+
+  / modifying the source code
+  %h2{:class=>"secheader"}= "modifying the source code"
+
+  %p="Here are a few things to keep in mind:"
+  %ol
+    %li="All public classes, interfaces, and methods should have informative <b><a href='http://www.oracle.com/technetwork/java/javase/documentation/index-137868.html'>Javadoc comments</a></b>."
+    %ul
+      %li= "BAD: <span class='high'>getCondensedLength()</span>: Gets condensed length."
+      %li= "BETTER: <span class='high'>getCondensedLength()</span>: Number of characters in the string, excluding non alpha-numeric characters."
+    %li="Do not use @author tags."
+    %li="Code should be written according to <b><a href='http://www.oracle.com/technetwork/java/codeconv-138413.html'>Java\'s conventions</a></b>."
+    %li="Formatting: (from S4 0.5, see \"automatic formatting\" below)"
+    %ul
+      %li="Indent four spaces per level, not two or six or eight, etc... four."
+      %li="No tabs for indentation, spaces only."
+    %li="Contributions should pass existing unit tests."
+    %li="New unit tests should be provided to demonstrate bugs and fixes. <b><a href='http://www.junit.org'>Junit</a></b> is our test framework."
+
+  / automatic source code formatting
+  %h2{:class=>"secheader"}= "automatic source code formatting"
+
+  %p="You must configure your IDE to follow the formatting guidelines. This is needed to get clean diffs."
+
+  %p="To automatically format code in Eclipse:"
+  %ol
+    %li="preferences --> Java --> Code style --> Formatter , then import s4/config/eclipse/s4-eclipse-format.xml"
+    %li="preferences --> Java --> Editor --> Save actions --> format source code,  format all lines"
+
+  %p="If you don't use Eclipse, you may still use Eclipse's code formatter in a <a href='http://www.peterfriese.de/formatting-your-code-using-the-eclipse-code-formatter/'>standalone mode.</a>"
+
+#contrib_sidebar{:class=>"span-5 last"}
+  #participate
+    %h2{:class=>"secheader"}= "participate"
+    %ul{:class=>'large greybar'}
+      %li= "Join the <a href='https://cwiki.apache.org/confluence/display/S4/S4+Apache+mailing+lists' onClick=\"#{google_analytics_event("External", "Forum", "Contrib 2 - https://cwiki.apache.org/confluence/display/S4/S4+Apache+mailing+lists")}\">forum</a>"
+    
+  #twitter_follow
+    %a{:href=>"http://www.twitter.com/s4project", :onClick=> google_analytics_event("External", "Twitter", "Contrib - http://www.twitter.com/s4project")}
+      %img{:src=>"http://twitter-badges.s3.amazonaws.com/follow_us-b.png", :alt=>"Follow s4project on Twitter"}

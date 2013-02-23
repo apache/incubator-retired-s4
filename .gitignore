@@ -28,3 +28,9 @@ pepe/
 
 # apache RAT
 .rat-excludes
+
+# website output
+website/output
+website/tmp
+website/.sass-cache
+website/crash.log
