@@ -27,6 +27,9 @@ compile '/doc/*' do
   # don’t filter binary items
   else
     filter :kramdown
+	filter :colorize_syntax,
+       :default_colorizer => :pygmentize,
+       :pygmentize => { :linenos => 'inline', :options => { :startinline => 'True' } }
     layout 'default'
   end
 end

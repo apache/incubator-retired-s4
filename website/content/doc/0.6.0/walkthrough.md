@@ -57,45 +57,55 @@ S4 provides some scripts in order to simplify development and testing of applica
 The src/main/java/hello directory contains 3 files:
 
 * HelloPE.java : a very simple PE that simply prints the name contained in incoming events
-	// ProcessingElement provides integration with the S4 platform
-	public class HelloPE extends ProcessingElement {
-	
-	    // you should define downstream streams here and inject them in the app definition
-	
-	    // PEs can maintain some state
-	    boolean seen = false;
-	
-	    // This method is called upon a new Event on an incoming stream.
-	    // You may overload it for handling instances of your own specialized subclasses of Event
-	    public void onEvent(Event event) {
-	        System.out.println("Hello " + (seen ? "again " : "") + event.get("name") + "!");
-	        seen = true;
-	    }
-		// skipped remaining methods
+
+~~~
+
+#!java	
+
+// ProcessingElement provides integration with the S4 platform
+public class HelloPE extends ProcessingElement {
+ // you should define downstream streams here and inject them in the app definition
+
+ // PEs can maintain some state
+ boolean seen = false;
+
+ // This method is called upon a new Event on an incoming stream.
+ // You may overload it for handling instances of your own specialized subclasses of Event
+ public void onEvent(Event event) {
+     System.out.println("Hello " + (seen ? "again " : "") + event.get("name") + "!");
+     seen = true;
+ }
+// skipped remaining methods
+~~~
 
 * HelloApp.java: defines a simple application: exposes an input stream ("names"), connected to the HelloPE. See [the event dispatch configuration page](event_dispatch) for more information about how events are dispatched.
 	// App parent class provides integration with the S4 platform
 	public class HelloApp extends App {
 	
-	    @Override
-	    protected void onStart() {
-	    }
-	
-	    @Override
-	    protected void onInit() {
-	        // That's where we define PEs and streams
-	        // create a prototype
-	        HelloPE helloPE = createPE(HelloPE.class);
-	        // Create a stream that listens to the "lines" stream and passes events to the helloPE instance.
-	        createInputStream("names", new KeyFinder<Event>() {
-	                // the KeyFinder is used to identify keys
-	            @Override
-	            public List<String> get(Event event) {
-	                return Arrays.asList(new String[] { event.get("name") });
-	            }
-	        }, helloPE);
-	    }
-	// skipped remaining methods
+~~~
+
+#!java
+		
+@Override
+protected void onStart() {
+}
+
+@Override
+protected void onInit() {
+    // That's where we define PEs and streams
+    // create a prototype
+    HelloPE helloPE = createPE(HelloPE.class);
+    // Create a stream that listens to the "lines" stream and passes events to the helloPE instance.
+    createInputStream("names", new KeyFinder<Event>() {
+            // the KeyFinder is used to identify keys
+        @Override
+        public List<String> get(Event event) {
+            return Arrays.asList(new String[] { event.get("name") });
+        }
+    }, helloPE);
+}
+// skipped remaining methods
+~~~
 
 * HelloInputAdapter is a simple adapter that reads character lines from a socket, converts them into events, and sends the events to interested S4 apps, through the "names" stream
 
@@ -112,37 +122,51 @@ In order to run an S4 application, you need :
 * In 2 steps:
 
 	1. Start a Zookeeper server instance (-clean option removes previous ZooKeeper data, if any):
+
+
 	
 			S4:incubator-s4$ ./s4 zkServer - clean
 			S4:myApp$ calling referenced s4 script : /Users/S4/tmp/incubator-s4/s4
 			[main] INFO  org.apache.s4.tools.ZKServer - Starting zookeeper server on port [2181]
 			[main] INFO  org.apache.s4.tools.ZKServer - cleaning existing data in [/var/folders/8V/8VdgKWU3HCiy2yV4dzFpDk+++TI/-Tmp-/tmp/zookeeper/data] and [/var/folders/8V/8VdgKWU3HCiy2yV4dzFpDk+++TI/-Tmp-/tmp/zookeeper/log]
 
-	1. Define a new cluster. Say a cluster named "cluster1" with 2 partitions, nodes listening to ports starting from 12000:
 
-			S4:myApp$ ./s4 newCluster -c=cluster1 -nbTasks=2 -flp=12000
-			calling referenced s4 script : /Users/S4/tmp/incubator-s4/s4
-			[main] INFO  org.apache.s4.tools.DefineCluster - preparing new cluster [cluster1] with [2] node(s)
-			[main] INFO  org.apache.s4.tools.DefineCluster - New cluster configuration uploaded into zookeeper
+
+1. Define a new cluster. Say a cluster named "cluster1" with 2 partitions, nodes listening to ports starting from 12000:
+
+		S4:myApp$ ./s4 newCluster -c=cluster1 -nbTasks=2 -flp=12000
+		calling referenced s4 script : /Users/S4/tmp/incubator-s4/s4
+		[main] INFO  org.apache.s4.tools.DefineCluster - preparing new cluster [cluster1] with [2] node(s)
+		[main] INFO  org.apache.s4.tools.DefineCluster - New cluster configuration uploaded into zookeeper
 
 * Alternatively you may combine these two steps into a single one, by passing the cluster configuration inline with the `zkServer` command:
+
+~~~
+#!bash
 			
-		S4:incubator-s4$ ./s4 zkServer -clusters=c=cluster1:flp=12000:nbTasks=2 -clean
+S4:incubator-s4$ ./s4 zkServer -clusters=c=cluster1:flp=12000:nbTasks=2 -clean
+~~~
 
 * Start 2 S4 nodes with the default configuration, and attach them to cluster "cluster1" :
 
-		S4:myApp$ ./s4 node -c=cluster1
-		calling referenced s4 script : /Users/S4/tmp/incubator-s4/s4
-		15:50:18.996 [main] INFO  org.apache.s4.core.Main - Initializing S4 node with :
-		- comm module class [org.apache.s4.comm.DefaultCommModule]
-		- comm configuration file [default.s4.comm.properties from classpath]
-		- core module class [org.apache.s4.core.DefaultCoreModule]
-		- core configuration file[default.s4.core.properties from classpath]
-		-extra modules: []
-		[main] INFO  org.apache.s4.core.Main - Starting S4 node. This node will automatically download applications published for the cluster it belongs to
+~~~
+#!bash
+
+S4:myApp$ ./s4 node -c=cluster1
+calling referenced s4 script : /Users/S4/tmp/incubator-s4/s4
+15:50:18.996 [main] INFO  org.apache.s4.core.Main - Initializing S4 node with :
+- comm module class [org.apache.s4.comm.DefaultCommModule]
+- comm configuration file [default.s4.comm.properties from classpath]
+- core module class [org.apache.s4.core.DefaultCoreModule]
+- core configuration file[default.s4.core.properties from classpath]
+-extra modules: []
+[main] INFO  org.apache.s4.core.Main - Starting S4 node. 
+~~~
+
+This node will automatically download applications published for the cluster it belongs to
 and again (maybe in another shell):
 		
-		S4:myApp$ ./s4 node -c=cluster1
+	S4:myApp$ ./s4 node -c=cluster1
 
 * Build, package and publish the app to cluster1:
 	* This is done in 2 separate steps:
@@ -250,9 +274,9 @@ Have a look at the code in these directories. You'll note that:
 
 > Note: You need a twitter4j.properties file in your home directory with the following content (debug is optional):
 
-		debug=true
-		user=<a twitter username>
-		password=<matching password>
+	debug=true
+	user=<a twitter username>
+	password=<matching password>
 
 * Start a Zookeeper instance. From the S4 base directory, do:
 	
