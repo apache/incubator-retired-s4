@@ -13,9 +13,9 @@ S4 0.5 focused on providing a functional complete refactoring.
 
 S4 0.6 builds on this basis and brings plenty of exciting features, in particular:
 
-* *performance improvements*: stream throughput improved by 1000 % (~200k messages / s / stream)
+* **performance improvements**: stream throughput improved by 1000 % (~200k messages / s / stream)
 * improved [configurability](S4:Configuration - 0.6.0], for both the S4 platform and deployed applications
-* *elasticity* and fine partition tuning, through an integration with Apache Helix
+* **elasticity** and fine partition tuning, through an integration with Apache Helix
 
 
 # What are the cool features?
@@ -23,30 +23,30 @@ S4 0.6 builds on this basis and brings plenty of exciting features, in particula
 **Flexible deployment**:
 
 * By default keys are homogeneously sparsed over the cluster: helps balance the load, especially for fine grained partitioning
-* S4 also provides fine control over the partitioning
+* S4 also provides fine control over the partitioning (with Apache Helix)
 * Features automatic rebalancing
 
 **Modular design**:
 
 * both the platform and the applications are built by dependency injection, and configured through independent modules.
-* makes it easy to customize the system according to specific requirements
-* pluggable event serving policies: load shedding, throttling, blocking
+* makes it **easy to customize** the system according to specific requirements
+* pluggable event serving policies: **load shedding, throttling, blocking**
 
 **Dynamic and loose coupling of S4 applications**:
 
 * through a pub-sub mechanism
 * makes it easy to:
-** assemble subsystems into larger systems
-** reuse applications
-** separate pre-processing
-** provision, control and update subsystems independently
+	* assemble subsystems into larger systems
+	* reuse applications
+	* separate pre-processing
+	* provision, control and update subsystems independently
 
 
 **[Fault tolerant](fault_tolerance)**
 
 
-* *Fail-over* mechanism for high availability
-* *Checkpointing and recovery* mechanism for minimizing state loss
+* **Fail-over** mechanism for high availability
+* **Checkpointing and recovery** mechanism for minimizing state loss
 
 **Pure Java**: statically typed, easy to understand, to refactor, and to extend
 
@@ -68,18 +68,14 @@ S4 0.6 builds on this basis and brings plenty of exciting features, in particula
 **Applications**
 
 
-
 * Users develop applications and deploy them on S4 clusters
 * Applications are built from:
-** *Processing elements* (PEs)
-** *Streams* that interconnect PEs
-
-* PEs communicate asynchronously by sending *events* on streams.
+	* **Processing elements** (PEs)
+	* **Streams** that interconnect PEs
+* PEs communicate asynchronously by sending **events** on streams.
 * Events are dispatched to nodes according to their key
 
 **External streams** are a special kind of stream that:
-
-
 
 * send events outside of the application
 * receive events from external sources
