@@ -2,6 +2,8 @@
 title: Event dispatch
 ---
 
+> Exploring how events are dispatched to, from and within S4 nodes
+
 Events are dispatched according to their key.
 
 The key is identified in an `Event` through a `KeyFinder`.
@@ -97,10 +99,10 @@ S4 follows a staged event driven architecture and uses a pipeline of executors t
 An executor is an object that executes tasks. It usually keeps a bounded queue of task items and schedules their execution through a pool of threads.
 
 When processing queues are full, executors may adopt various possible behaviours, in particular, in S4:
-	* **blocking**: the current thread simply waits until the queue is not full
-	* **shedding**: the current event is dropped
 
-**Throttling**, i.e. placing an upper bound on the maximum processing rate, is a convenient way to avoid sending too many messages too fast.
+* **blocking**: the current thread simply waits until the queue is not full
+* **shedding**: the current event is dropped
+* **throttling**, i.e. placing an upper bound on the processing rate, is a convenient way to avoid sending too many messages too fast.
 
 S4 provides various default implementations of these behaviours and you can also define your own custom executors as appropriate.
 
@@ -116,7 +118,7 @@ The following picture illustrates the pipeline of executors.
 1. the message is passed to a deserializer executor
 	* this executor is loaded with the application, and therefore has access to application classes, so that application specific messages can be deserialized
 	* by default it uses 1 thread and **blocks** if the processing queue is full
-1. the event (deserialized message) is dispatched to a stream executor 
+1. the event (the deserialized message) is dispatched to a stream executor 
 	* the stream executor is selected according to the stream information contained in the event
 	* by default it **blocks** if the processing queue is full
 1. the event is processed in the PE instance that matches the key of the event

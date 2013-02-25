@@ -2,6 +2,8 @@
 title: Configuration
 ---
 
+> How to configure S4 clusters and applications
+
 # Toolset
 
 S4 provides a set of tools to:
@@ -13,15 +15,8 @@ S4 provides a set of tools to:
 * start a Zookeeper server for easy testing: `s4 zkServer`
 	* `s4 zkServer -t` will start a Zookeeper server and automatically configure 2 clusters
 * view the status of S4 clusters coordinated by a given Zookeeper ensemble: `s4 status`
-
-
-		./s4
-
-will  give you a list of available commands.
-
-	./s4 <command> -help
-
-will provide detailed documentation for each of these commands.
+* `s4` will  give you a list of available commands.
+* `./s4 <command> -help` will provide detailed documentation for each of these commands.
 
 
 # Cluster configuration
@@ -38,6 +33,7 @@ Before starting S4 nodes, you must define a logical cluster by specifying:
 The cluster configuration is maintained in Zookeeper, and can be set using S4 tools:
 
 	./s4 newCluster -c=cluster1 -nbTasks=2 -flp=12000
+
 See tool documentation by typing:
 	
 	./s4 newCluster -help
@@ -45,16 +41,16 @@ See tool documentation by typing:
 
 # Node configuration
 
-*Platform* *code and* *application* *code are fully configurable,* *at deployment time{*}*.*
+**Platform code and application code are fully configurable, at deployment time.**
 
-S4 nodes start as simple *bootstrap* processes whose initial role is merely to connect the cluster manager:
+S4 nodes start as simple **bootstrap** processes whose initial role is merely to connect the cluster manager:
 
-* the bootstrap code connects to the cluster manager
-* when an application is available on the cluster, the node gets notified
-* it downloads the platform configuration and code, as specified in the configuration of the deployed application.
-* the communication and core components are loaded, bound and initialized
-* the application configuration and code, as specified in the configuration of the deployed applciation, is downloaded
-* the application is initialized and started
+1. the bootstrap code connects to the cluster manager
+1. when an application is available on the cluster, the node gets notified
+1. it downloads the platform configuration and code, as specified in the configuration of the deployed application.
+1. the communication and core components are loaded, bound and initialized
+1. the application configuration and code, as specified in the configuration of the deployed applciation, is downloaded
+1. the application is initialized and started
 
 This figure illustrates the separation between the bootstrap code, the S4 platform code, and application code in an S4 node:
 
@@ -73,9 +69,9 @@ Example:
 
 # Application configuration
 
-Deploying applications is easier when we can define both the parameters of the application *and* the target environment.
+Deploying applications is easier when we can define both the parameters of the application **and** the target environment.
 
-In S4, we achieve this by specifying *both* application parameters and S4 platform parameters in the deployment phase :
+In S4, we achieve this by specifying **both** application parameters and S4 platform parameters in the deployment phase :
 
 * which application class to use
 * where to fetch application code
@@ -87,7 +83,7 @@ In S4, we achieve this by specifying *both* application parameters and S4 platfo
 
 ## Modules configuration
 
-S4 follows a modular design and uses[Guice](http://code.google.com/p/google-guice/) for defining modules and injecting dependencies.
+S4 follows a modular design and uses [Guice](http://code.google.com/p/google-guice/) for defining modules and injecting dependencies.
 
 As illustrated above, an S4 node is composed of:
 * a base module that specifies how to connect to the cluster manager and how to download code
@@ -105,30 +101,36 @@ For the core module, there is no default parameters.
 
 We provide default modules, but you may directly specify others through the command line, and it is also possible to override them with new modules and even specify new ones (custom modules classes must provide an empty no-args constructor).
 
-Custom overriding modules can be specified when deploying the application, through the`deploy` command, through the _emc_ or _modulesClasses_ option.
+Custom overriding modules can be specified when deploying the application, through the`deploy` command, through the `emc` or `modulesClasses` option.
 
 For instance, in order to enable file system based checkpointing, pass the corresponding checkpointing module class :
 
 	./s4 deploy -s4r=uri/to/app.s4r -c=cluster1 -appName=myApp \
 	-emc=org.apache.s4.core.ft.FileSystemBackendCheckpointingModule 
 
-You can also write your own custom modules. In that case, just package them into a jar file, and specify how to fetch that file when deploying the application, with the _mu_ or _modulesURIs_  option.
+You can also write your own custom modules. In that case, just package them into a jar file, and specify how to fetch that file when deploying the application, with the `mu` or `modulesURIs`  option.
 
 For instance, if you checkpoint through a specific key value store, you can write you own checkpointing implementation and module, package that into fancyKeyValueStoreCheckpointingModule.jar , and then:
 
-	./s4 node -c=cluster1 -emc=my.project.FancyKeyValueStoreBackendCheckpointingModule \
+	./s4 deploy -c=cluster1 -emc=my.project.FancyKeyValueStoreBackendCheckpointingModule \
 	-mu=uri/to/fancyKeyValueStoreCheckpointingModule.jar
 
 ### overriding parameters
 
 A simple way to pass parameters to your application code is by:
 
-* injecting them in the application class:
+* injecting them in the application class (primitive types, enums and class literals are automatically converted), for instance:
 
-		@Inject
-		@Named('myParam')
-		param
-* specifying the parameter value at node startup (using -p inline with the node command, or with the '@' syntax)
+~~~
+#!java
+
+@Inject
+@Named("thePortNumber")
+int port
+
+~~~
+
+* specifying the parameter value at node startup (using `-p` inline with the node command, or with the '`@`' syntax)
 
 S4 uses an internal Guice module that automatically injects configuration parameters passed through the deploy command to matching `@Named` parameters.
 
@@ -141,7 +143,7 @@ Both application and platform parameters can be overriden. For instance, specify
 ## File-based configuration
 
 Instead of specifying node parameters inline, you may refer to a file with the '@' notation:
-./s4 deploy @/path/to/config/file
+`./s4 deploy @/path/to/config/file`
 With contents of the referenced file like:
 
 	-s4r=uri/to/app.s4r
