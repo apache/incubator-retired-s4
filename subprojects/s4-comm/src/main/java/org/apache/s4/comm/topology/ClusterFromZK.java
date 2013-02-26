@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
 /**
@@ -42,6 +43,7 @@ import com.google.inject.name.Named;
  * configuration.
  * 
  */
+@Singleton
 public class ClusterFromZK implements Cluster, IZkChildListener, IZkDataListener, IZkStateListener {
 
     private static Logger logger = LoggerFactory.getLogger(ClusterFromZK.class);

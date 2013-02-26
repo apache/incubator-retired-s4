@@ -28,18 +28,19 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.I0Itec.zkclient.IZkStateListener;
-import org.I0Itec.zkclient.serialize.ZkSerializer;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
 /**
  * Monitors all clusters
  * 
  */
+@Singleton
 public class ClustersFromZK implements Clusters, IZkStateListener {
     private static final Logger logger = LoggerFactory.getLogger(ClustersFromZK.class);
     private KeeperState state;

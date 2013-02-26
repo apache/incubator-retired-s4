@@ -33,21 +33,23 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * 
  * Implementation of a simple UDP listener.
  * 
  */
+@Singleton
 public class UDPListener implements Listener, Runnable {
 
     private DatagramSocket socket;
-    private DatagramPacket datagram;
-    private byte[] bs;
+    private final DatagramPacket datagram;
+    private final byte[] bs;
     static int BUFFER_LENGTH = 65507;
-    private BlockingQueue<ByteBuffer> handoffQueue = new SynchronousQueue<ByteBuffer>();
-    private ClusterNode node;
-    private Receiver receiver;
+    private final BlockingQueue<ByteBuffer> handoffQueue = new SynchronousQueue<ByteBuffer>();
+    private final ClusterNode node;
+    private final Receiver receiver;
 
     @Inject
     public UDPListener(Assignment assignment, final Receiver receiver) {
@@ -76,6 +78,7 @@ public class UDPListener implements Listener, Runnable {
         (new Thread(this)).start();
     }
 
+    @Override
     public void run() {
         try {
             while (!Thread.interrupted()) {
@@ -104,6 +107,7 @@ public class UDPListener implements Listener, Runnable {
         }
     }
 
+    @Override
     public int getPartitionId() {
         return node.getPartition();
     }

@@ -59,6 +59,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
 /**
@@ -69,7 +70,7 @@ import com.google.inject.name.Named;
  * A throttling mechanism is also provided, so that back pressure can be applied if consumers are too slow.
  * 
  */
-
+@Singleton
 public class TCPEmitter implements Emitter, ClusterChangeListener {
     private static final Logger logger = LoggerFactory.getLogger(TCPEmitter.class);
 

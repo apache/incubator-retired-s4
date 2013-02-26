@@ -37,11 +37,13 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * UDP based emitter.
  * 
  */
+@Singleton
 public class UDPEmitter implements Emitter, ClusterChangeListener {
     private DatagramSocket socket;
     private final HashBiMap<Integer, ClusterNode> nodes;

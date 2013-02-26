@@ -90,25 +90,26 @@ public class DefaultCommModule extends AbstractModule {
         install(new FactoryModuleBuilder().implement(SerializerDeserializer.class, KryoSerDeser.class).build(
                 SerializerDeserializerFactory.class));
 
-        bind(Cluster.class).to(ClusterFromZK.class).in(Scopes.SINGLETON);
+        bind(Cluster.class).to(ClusterFromZK.class);
 
-        bind(Clusters.class).to(ClustersFromZK.class).in(Scopes.SINGLETON);
+        bind(Clusters.class).to(ClustersFromZK.class);
 
-        bind(RemoteEmitters.class).to(DefaultRemoteEmitters.class).in(Scopes.SINGLETON);
+        bind(RemoteEmitters.class).to(DefaultRemoteEmitters.class);
 
         bind(DeserializerExecutorFactory.class).to(BlockingDeserializerExecutorFactory.class);
 
         try {
             Class<? extends Emitter> emitterClass = (Class<? extends Emitter>) Class.forName(config
                     .getString("s4.comm.emitter.class"));
-            bind(Emitter.class).to(emitterClass);
+
+            bind(Emitter.class).to(emitterClass).in(Scopes.SINGLETON);
 
             // RemoteEmitter instances are created through a factory, depending on the topology. We inject the factory
             Class<? extends RemoteEmitter> remoteEmitterClass = (Class<? extends RemoteEmitter>) Class.forName(config
                     .getString("s4.comm.emitter.remote.class"));
             install(new FactoryModuleBuilder().implement(RemoteEmitter.class, remoteEmitterClass).build(
                     RemoteEmitterFactory.class));
-            bind(RemoteEmitters.class).to(DefaultRemoteEmitters.class).in(Scopes.SINGLETON);
+            bind(RemoteEmitters.class).to(DefaultRemoteEmitters.class);
 
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find class implementation ", e);

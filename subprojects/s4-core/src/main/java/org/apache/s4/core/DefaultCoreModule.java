@@ -90,7 +90,7 @@ public class DefaultCoreModule extends AbstractModule {
 
         // For enabling checkpointing, one needs to use a custom module, such as
         // org.apache.s4.core.ft.FileSytemBasedCheckpointingModule
-        bind(CheckpointingFramework.class).to(NoOpCheckpointingFramework.class);
+        bind(CheckpointingFramework.class).to(NoOpCheckpointingFramework.class).in(Scopes.SINGLETON);
 
         // shed load in local sender only by default
         bind(SenderExecutorServiceFactory.class).to(ThrottlingSenderExecutorServiceFactory.class);
