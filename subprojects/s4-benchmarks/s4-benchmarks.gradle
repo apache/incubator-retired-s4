@@ -18,11 +18,8 @@
 
 
 
-project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
-
 project.ext["s4Version"] = '0.5.0-incubating'
 description = 'Apache S4 App'
-//defaultTasks 'installS4R'
 project.ext["archivesBaseName"] = "$project.name"
 project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 

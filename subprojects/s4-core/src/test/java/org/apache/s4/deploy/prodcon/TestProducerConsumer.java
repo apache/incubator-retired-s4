@@ -45,7 +45,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.sun.net.httpserver.HttpServer;
 
@@ -58,22 +57,37 @@ public class TestProducerConsumer {
     private final static String PRODUCER_CLUSTER = "producerCluster";
     private final static String CONSUMER_CLUSTER = "consumerCluster";
     private HttpServer httpServer;
-    private static File tmpAppsDir;
+    private static File producerS4rDir;
+    private static File consumerS4rDir;
 
     @BeforeClass
     public static void createS4RFiles() throws Exception {
-        tmpAppsDir = Files.createTempDir();
-
-        Assert.assertTrue(tmpAppsDir.exists());
         File gradlewFile = CoreTestUtils.findGradlewInRootDir();
 
-        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
-                + "/test-apps/producer-app/build.gradle"), "installS4R",
-                new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
+        producerS4rDir = new File(gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/producer-app/build/libs");
+        consumerS4rDir = new File(gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/consumer-app/build/libs");
 
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
-                + "/test-apps/consumer-app/build.gradle"), "installS4R",
-                new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
+                + "/test-apps/producer-app/build.gradle"), "clean", new String[] { "-buildFile="
+                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/producer-app/build.gradle" });
+        Assert.assertFalse(producerS4rDir.exists());
+
+        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
+                + "/test-apps/producer-app/build.gradle"), "s4r", new String[] { "-buildFile="
+                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/producer-app/build.gradle" });
+
+        Assert.assertTrue(new File(producerS4rDir, "producer-app-0.0.0-SNAPSHOT.s4r").exists());
+
+        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
+                + "/test-apps/consumer-app/build.gradle"), "clean", new String[] { "-buildFile="
+                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/consumer-app/build.gradle" });
+        Assert.assertFalse(consumerS4rDir.exists());
+
+        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
+                + "/test-apps/consumer-app/build.gradle"), "s4r", new String[] { "-buildFile="
+                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/consumer-app/build.gradle" });
+
+        Assert.assertTrue(new File(consumerS4rDir, "consumer-app-0.0.0-SNAPSHOT.s4r").exists());
     }
 
     @Before
@@ -106,10 +120,10 @@ public class TestProducerConsumer {
     @Test
     public void testInitialDeploymentFromFileSystem() throws Exception {
 
-        File producerS4R = new File(tmpAppsDir, "producer-app-0.0.0-SNAPSHOT.s4r");
+        File producerS4R = new File(producerS4rDir, "producer-app-0.0.0-SNAPSHOT.s4r");
         String uriProducer = producerS4R.toURI().toString();
 
-        File consumerS4R = new File(tmpAppsDir, "consumer-app-0.0.0-SNAPSHOT.s4r");
+        File consumerS4R = new File(consumerS4rDir, "consumer-app-0.0.0-SNAPSHOT.s4r");
         String uriConsumer = consumerS4R.toURI().toString();
 
         initializeS4Node();

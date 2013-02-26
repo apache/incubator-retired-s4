@@ -40,7 +40,7 @@ public class Package extends S4ArgsBase {
             // prepare gradle -P parameters, including passed gradle opts
             params.add("appClass=" + packageArgs.appClass);
             params.add("appName=" + packageArgs.appName.get(0));
-            ExecGradle.exec(packageArgs.gradleBuildFile, "installS4R", params.toArray(new String[] {}));
+            ExecGradle.exec(packageArgs.gradleBuildFile, "s4r", params.toArray(new String[] {}));
 
             // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
             System.exit(0);

@@ -34,14 +34,8 @@
 *
 */
 
-/* Set the destination where we want to install the apps. */
-//s4AppInstallDir = "/tmp/s4Apps" // TODO: decide how to standarize dirs, use env var?
-
-project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
-
 project.ext["s4Version"] = '0.5.0-SNAPSHOT'
 description = 'Apache S4 App'
-//defaultTasks 'installS4R'
 archivesBaseName = "$project.name"
 distRootFolder = "$archivesBaseName-${-> version}"
 
@@ -188,15 +182,6 @@ s4r << {
    //sourceSets.main.compileClasspath.each { File file -> println 'compileClasspath: ' + file.name }
 
 }
-
-/* Install the S4 archive to the install directory. */
-task installS4R (type: Copy) {
-   dependsOn s4r
-   from s4r.archivePath
-   into s4AppInstallDir
-}
-
-
 
 
 /* Parse source file to get the app classname so we can use it in the manifest.

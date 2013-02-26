@@ -62,18 +62,24 @@ public class TestAutomaticDeployment extends ZkBasedTest {
     private Process forkedNode;
     private ZkClient zkClient;
     private S4RHttpServer s4rHttpServer;
-    public static File tmpAppsDir;
+    public static File s4rDir;
 
     @BeforeClass
     public static void createS4RFiles() throws Exception {
-        tmpAppsDir = Files.createTempDir();
 
         File gradlewFile = CoreTestUtils.findGradlewInRootDir();
 
+        s4rDir = new File(gradlewFile.getParentFile().getAbsolutePath()
+                + "/test-apps/simple-deployable-app-1/build/libs");
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
-                + "/test-apps/simple-deployable-app-1/build.gradle"), "installS4R", new String[] { "appsDir="
-                + tmpAppsDir.getAbsolutePath() });
+                + "/test-apps/simple-deployable-app-1/build.gradle"), "clean", new String[] { "-buildFile="
+                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/simple-deployable-app-1/build.gradle" });
+        Assert.assertFalse(s4rDir.exists());
 
+        CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
+                + "/test-apps/simple-deployable-app-1/build.gradle"), "s4r", new String[] { "-buildFile="
+                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/simple-deployable-app-1/build.gradle" });
+        Assert.assertTrue(new File(s4rDir, "simple-deployable-app-1-0.0.0-SNAPSHOT.s4r").exists());
     }
 
     @Test
@@ -83,13 +89,7 @@ public class TestAutomaticDeployment extends ZkBasedTest {
 
         Assert.assertFalse(zkClient.exists(AppConstants.INITIALIZED_ZNODE_1));
 
-        File s4rToDeploy = File.createTempFile("testapp" + System.currentTimeMillis(), "s4r");
-
-        Assert.assertTrue(ByteStreams.copy(
-                Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-                        + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
-
-        final String uri = s4rToDeploy.toURI().toString();
+        final String uri = new File(s4rDir, "simple-deployable-app-1-0.0.0-SNAPSHOT.s4r").toURI().toString();
 
         assertDeployment(uri, zkClient, true);
 
@@ -146,8 +146,8 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         File s4rToDeploy = new File(tmpDir, String.valueOf(System.currentTimeMillis()));
 
         Assert.assertTrue(ByteStreams.copy(
-                Files.newInputStreamSupplier(new File(tmpAppsDir.getAbsolutePath()
-                        + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
+                Files.newInputStreamSupplier(new File(s4rDir, "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")),
+                Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
 
         // we start a
         s4rHttpServer = new S4RHttpServer(8080, tmpDir);

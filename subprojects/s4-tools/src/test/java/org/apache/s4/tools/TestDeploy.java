@@ -80,9 +80,8 @@ public class TestDeploy extends ZkBasedTest {
 
         File s4rToDeploy = new File(tmpDir, String.valueOf(System.currentTimeMillis()));
 
-        Assert.assertTrue(ByteStreams.copy(
-                Files.newInputStreamSupplier(new File(TestAutomaticDeployment.tmpAppsDir.getAbsolutePath()
-                        + "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
+        Assert.assertTrue(ByteStreams.copy(Files.newInputStreamSupplier(new File(TestAutomaticDeployment.s4rDir,
+                "simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")), Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
 
         s4rHttpServer = new S4RHttpServer(8080, tmpDir);
         s4rHttpServer.start();

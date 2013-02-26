@@ -17,11 +17,8 @@
  */
 
 
-project.ext["s4AppInstallDir"] = hasProperty('appsDir') ? "$appsDir" : "/tmp/appsDir"
-
 project.ext["s4Version"] = '0.5.0-incubating'
 description = 'Apache S4 App'
-//defaultTasks 'installS4R'
 project.ext["archivesBaseName"] = "$project.name"
 project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
@@ -160,13 +157,6 @@ s4r << {
 task cp << {
     description='Dumps the classpath for running a class from this project, into a \'classpath.txt\' file in the current directory'
     new File("classpath.txt").write(sourceSets.main.output.classesDir.path + File.pathSeparator + <s4_install_dir> + '/lib/*' + File.pathSeparator + <s4_install_dir> + '/subprojects/s4-tools/build/install/s4-tools/lib/*')
-}
-
-/* Install the S4 archive to the install directory. */
-task installS4R (type: Copy) {
-   dependsOn s4r
-   from s4r.archivePath
-   into s4AppInstallDir
 }
 
 /* Parse source file to get the app classname so we can use it in the manifest.
