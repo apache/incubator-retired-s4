@@ -64,11 +64,6 @@ public class Deploy extends S4ArgsBase {
 
             tmpAppsDir = Files.createTempDir();
 
-            if (!Strings.isNullOrEmpty(deployArgs.s4rPath) && !Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
-                logger.error("-s4r and -generatedS4R options are mutually exclusive");
-                System.exit(1);
-            }
-
             URI s4rURI = null;
 
             if (deployArgs.s4rPath != null) {
@@ -77,9 +72,7 @@ public class Deploy extends S4ArgsBase {
                     // default is file
                     s4rURI = new File(deployArgs.s4rPath).toURI();
                 }
-                logger.info(
-                        "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
-                        s4rURI.toString());
+                logger.info("Using specified S4R [{}]", s4rURI.toString());
             } else {
                 if (!Strings.isNullOrEmpty(deployArgs.appClass)) {
                     // 3. otherwise if there is at least an app class specified (e.g. for running "s4 adapter"), we use
@@ -124,11 +117,8 @@ public class Deploy extends S4ArgsBase {
     @Parameters(commandNames = "s4 deploy", commandDescription = "Package and deploy application to S4 cluster", separators = "=")
     static class DeployAppArgs extends S4ArgsBase {
 
-        @Parameter(names = "-s4r", description = "Path to existing s4r file", required = false)
+        @Parameter(names = "-s4r", description = "URI to existing s4r file", required = false)
         String s4rPath;
-
-        @Parameter(names = { "-generatedS4R", "-g" }, description = "Location of generated s4r (incompatible with -s4r option). By default, s4r is generated in a temporary directory on the local file system. In a distributed environment, you probably want to specify a location accessible through a distributed file system like NFS. That's the purpose of this option.", required = false)
-        String generatedS4R;
 
         @Parameter(names = { "-a", "-appClass" }, description = "Full class name of the application class (extending App or AdapterApp)", required = false)
         String appClass = "";
