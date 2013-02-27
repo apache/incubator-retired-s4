@@ -40,10 +40,8 @@ import org.slf4j.LoggerFactory;
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-import com.beust.jcommander.converters.FileConverter;
 import com.beust.jcommander.internal.Maps;
 import com.google.common.base.Strings;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
 public class Deploy extends S4ArgsBase {
@@ -82,30 +80,6 @@ public class Deploy extends S4ArgsBase {
                 logger.info(
                         "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
                         s4rURI.toString());
-            } else if (deployArgs.gradleBuildFile != null) {
-
-                // 2. otherwise if there is a build file, we create the S4R archive from that
-
-                List<String> params = new ArrayList<String>();
-                // prepare gradle -P parameters, including passed gradle opts
-                params.addAll(deployArgs.gradleOpts);
-                params.add("appClass=" + deployArgs.appClass);
-                params.add("appsDir=" + tmpAppsDir.getAbsolutePath());
-                params.add("appName=" + deployArgs.appName);
-                ExecGradle.exec(deployArgs.gradleBuildFile, "installS4R", params.toArray(new String[] {}));
-                File tmpS4R = new File(tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r");
-                if (!Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
-                    logger.info("Copying generated S4R to [{}]", deployArgs.generatedS4R);
-                    s4rURI = new URI(deployArgs.generatedS4R);
-                    if (!(ByteStreams.copy(Files.newInputStreamSupplier(tmpS4R),
-                            Files.newOutputStreamSupplier(new File(s4rURI))) > 0)) {
-                        logger.error("Cannot copy generated s4r from {} to {}", tmpS4R.getAbsolutePath(),
-                                s4rURI.toString());
-                        System.exit(1);
-                    }
-                } else {
-                    s4rURI = tmpS4R.toURI();
-                }
             } else {
                 if (!Strings.isNullOrEmpty(deployArgs.appClass)) {
                     // 3. otherwise if there is at least an app class specified (e.g. for running "s4 adapter"), we use
@@ -149,9 +123,6 @@ public class Deploy extends S4ArgsBase {
 
     @Parameters(commandNames = "s4 deploy", commandDescription = "Package and deploy application to S4 cluster", separators = "=")
     static class DeployAppArgs extends S4ArgsBase {
-
-        @Parameter(names = { "-b", "-buildFile" }, description = "Full path to gradle build file for the S4 application", required = false, converter = FileConverter.class, validateWith = FileExistsValidator.class)
-        File gradleBuildFile;
 
         @Parameter(names = "-s4r", description = "Path to existing s4r file", required = false)
         String s4rPath;

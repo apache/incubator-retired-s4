@@ -58,7 +58,7 @@ public class Package extends S4ArgsBase {
         @Parameter(names = { "-b", "-buildFile" }, description = "Path to gradle build file for the S4 application", required = true, converter = FileConverter.class, validateWith = FileExistsValidator.class)
         File gradleBuildFile;
 
-        @Parameter(names = { "-a", "-appClass" }, description = "Full class name of the application class (extending App or AdapterApp)", required = false)
+        @Parameter(names = { "-a", "-appClass" }, description = "Full class name of the application class (extending App or AdapterApp)", required = true)
         String appClass = "";
 
     }

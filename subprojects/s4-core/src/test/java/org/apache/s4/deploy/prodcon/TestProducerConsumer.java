@@ -69,11 +69,11 @@ public class TestProducerConsumer {
 
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/producer-app/build.gradle"), "installS4R",
-                new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
+                new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath(), "appClass=s4app.ProducerApp" });
 
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/consumer-app/build.gradle"), "installS4R",
-                new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath() });
+                new String[] { "appsDir=" + tmpAppsDir.getAbsolutePath(), "appClass=s4app.ConsumerApp" });
     }
 
     @Before
