@@ -94,8 +94,6 @@ public class DefaultCommModule extends AbstractModule {
 
         bind(Clusters.class).to(ClustersFromZK.class);
 
-        bind(RemoteEmitters.class).to(DefaultRemoteEmitters.class);
-
         bind(DeserializerExecutorFactory.class).to(BlockingDeserializerExecutorFactory.class);
 
         try {
