@@ -31,7 +31,7 @@ Documentation
 
 For the latest information about S4, please visit our website at:
 
-   http://inbubator.apache.org/s4
+   http://incubator.apache.org/s4
 
 and our wiki, at:
 

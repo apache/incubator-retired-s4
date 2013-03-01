@@ -20,15 +20,11 @@ package org.apache.s4.tools;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
-import org.I0Itec.zkclient.IZkChildListener;
-import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
+import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.deploy.AppConstants;
 import org.apache.s4.deploy.TestAutomaticDeployment;
 import org.apache.s4.fixtures.CommTestUtils;
@@ -53,24 +49,9 @@ public class TestDeploy extends ZkBasedTest {
         ZkClient zkClient = new ZkClient("localhost:" + CommTestUtils.ZK_PORT);
         zkClient.setZkSerializer(new ZNRecordSerializer());
 
-        final CountDownLatch signalNodeReady = new CountDownLatch(1);
-
-        zkClient.subscribeChildChanges("/s4/clusters/cluster1/process", new IZkChildListener() {
-
-            @Override
-            public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
-                if (currentChilds.size() == 1) {
-                    signalNodeReady.countDown();
-                }
-
-            }
-        });
-
         TestAutomaticDeployment.checkNoAppAlreadyDeployed(zkClient);
 
-        forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=cluster1" });
-
-        Assert.assertTrue(signalNodeReady.await(10, TimeUnit.SECONDS));
+        forkedNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=cluster1" }, zkClient, 10, "cluster1");
 
         // deploy app
 

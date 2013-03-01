@@ -46,7 +46,7 @@ import com.google.inject.Injector;
 
 public class RecoveryTest extends ZkBasedTest {
 
-    private Process forkedS4App = null;
+    Process forkedS4App = null;
 
     @After
     public void cleanup() throws Exception {
@@ -118,7 +118,8 @@ public class RecoveryTest extends ZkBasedTest {
 
         // 1. instantiate remote S4 app
 
-        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" });
+        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" }, new ZkClient("localhost:2181"), 10,
+                "cluster1");
 
         Assert.assertTrue(signalConsumerReady.await(20, TimeUnit.SECONDS));
 
@@ -160,7 +161,8 @@ public class RecoveryTest extends ZkBasedTest {
                         .customModulesNames(ImmutableList.of(backendModuleClass.getName())).build(), "cluster1", true,
                 "localhost:2181");
 
-        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" });
+        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" }, new ZkClient("localhost:2181"), 10,
+                "cluster1");
 
         Assert.assertTrue(signalConsumerReady.await(20, TimeUnit.SECONDS));
         // // trigger recovery by sending application event to set value 2

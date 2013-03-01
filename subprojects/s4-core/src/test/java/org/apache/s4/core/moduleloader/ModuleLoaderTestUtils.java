@@ -62,7 +62,8 @@ public class ModuleLoaderTestUtils {
                         .customModulesNames(ImmutableList.of("org.apache.s4.TestListenerModule")).build(), "cluster1",
                 true, "localhost:2181");
         if (fork) {
-            forkedS4Node = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" });
+            forkedS4Node = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" }, new ZkClient("localhost:2181"),
+                    10, "cluster1");
         } else {
             S4Node.main(new String[] { "-c", "cluster1" });
         }

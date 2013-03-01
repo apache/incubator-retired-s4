@@ -27,6 +27,7 @@ import junit.framework.Assert;
 import org.apache.s4.base.Event;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.tcp.TCPEmitter;
+import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.core.util.AppConfig;
 import org.apache.s4.deploy.DeploymentUtils;
 import org.apache.s4.fixtures.CommTestUtils;
@@ -143,7 +144,8 @@ public class FTWordCountTest extends ZkBasedTest {
                         .customModulesNames(ImmutableList.of(FileSystemBackendCheckpointingModule.class.getName()))
                         .build(), "cluster1", false, "localhost:2181");
         // recovering and making sure checkpointing still works
-        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" });
+        forkedS4App = CoreTestUtils.forkS4Node(new String[] { "-c", "cluster1" }, new ZkClient("localhost:2181"), 10,
+                "cluster1");
         Assert.assertTrue(signalConsumerReady.await(20, TimeUnit.SECONDS));
     }
 }
