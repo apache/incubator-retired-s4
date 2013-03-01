@@ -17,17 +17,27 @@ import java.util.Set;
 
 public interface RemoteStreams {
 
+    /**
+     * Lists consumers of a given stream
+     */
     public abstract Set<StreamConsumer> getConsumers(String streamName);
 
-    public abstract void addOutputStream(String appId, String clusterName, String streamName);
+    /**
+     * Publishes availability of an output stream
+     * 
+     * @param clusterName
+     *            originating cluster
+     * @param streamName
+     *            name of stream
+     */
+    public abstract void addOutputStream(String clusterName, String streamName);
 
     /**
-     * Publishes interest in a stream from an application.
+     * Publishes interest in a stream, by a given cluster
      * 
-     * @param appId
      * @param clusterName
      * @param streamName
      */
-    public abstract void addInputStream(int appId, String clusterName, String streamName);
+    public abstract void addInputStream(String clusterName, String streamName);
 
 }
