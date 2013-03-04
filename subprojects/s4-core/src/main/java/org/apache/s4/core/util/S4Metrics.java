@@ -83,7 +83,6 @@ public class S4Metrics {
                         "Invalid metrics configuration [{}]. Metrics configuration must match the pattern [{}]. Metrics reporting disabled.",
                         metricsConfig, METRICS_CONFIG_PATTERN);
             } else {
-                matcher.find();
                 String group1 = matcher.group(1);
 
                 if ("csv".equals(group1)) {
