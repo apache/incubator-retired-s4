@@ -48,7 +48,6 @@ import com.google.common.io.Files;
 
 public class Deploy extends S4ArgsBase {
 
-    private static File tmpAppsDir;
     static org.slf4j.Logger logger = LoggerFactory.getLogger(Deploy.class);
 
     /**
@@ -63,8 +62,6 @@ public class Deploy extends S4ArgsBase {
         try {
             ZkClient zkClient = new ZkClient(deployArgs.zkConnectionString, deployArgs.timeout);
             zkClient.setZkSerializer(new ZNRecordSerializer());
-
-            tmpAppsDir = Files.createTempDir();
 
             if (!Strings.isNullOrEmpty(deployArgs.s4rPath) && !Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
                 logger.error("-s4r and -generatedS4R options are mutually exclusive");
@@ -89,23 +86,24 @@ public class Deploy extends S4ArgsBase {
                 List<String> params = new ArrayList<String>();
                 // prepare gradle -P parameters, including passed gradle opts
                 params.addAll(deployArgs.gradleOpts);
-                params.add("appClass=" + deployArgs.appClass);
-                params.add("appsDir=" + tmpAppsDir.getAbsolutePath());
-                params.add("appName=" + deployArgs.appName);
-                ExecGradle.exec(deployArgs.gradleBuildFile, "installS4R", params.toArray(new String[] {}),
+                params.add("-appClass=" + deployArgs.appClass);
+                params.add("-appName=" + deployArgs.appName);
+                params.add(deployArgs.appName);
+                ExecGradle.exec(deployArgs.gradleBuildFile, "s4r", params.toArray(new String[] {}),
                         deployArgs.debug);
-                File tmpS4R = new File(tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r");
+                File s4rFile = new File(deployArgs.gradleBuildFile.getParentFile(), "/build/libs/" + deployArgs.appName
+                        + ".s4r");
                 if (!Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
                     logger.info("Copying generated S4R to [{}]", deployArgs.generatedS4R);
                     s4rURI = new URI(deployArgs.generatedS4R);
-                    if (!(ByteStreams.copy(Files.newInputStreamSupplier(tmpS4R),
+                    if (!(ByteStreams.copy(Files.newInputStreamSupplier(s4rFile),
                             Files.newOutputStreamSupplier(new File(s4rURI))) > 0)) {
-                        logger.error("Cannot copy generated s4r from {} to {}", tmpS4R.getAbsolutePath(),
+                        logger.error("Cannot copy generated s4r from {} to {}", s4rFile.getAbsolutePath(),
                                 s4rURI.toString());
                         System.exit(1);
                     }
                 } else {
-                    s4rURI = tmpS4R.toURI();
+                    s4rURI = s4rFile.toURI();
                 }
             } else {
                 if (!Strings.isNullOrEmpty(deployArgs.appClass)) {
