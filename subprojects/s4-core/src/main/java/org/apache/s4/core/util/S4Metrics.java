@@ -1,8 +1,11 @@
 package org.apache.s4.core.util;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.comm.topology.Assignment;
@@ -16,23 +19,34 @@ import org.slf4j.LoggerFactory;
 
 import com.beust.jcommander.internal.Lists;
 import com.beust.jcommander.internal.Maps;
+import com.google.common.base.Strings;
 import com.google.common.cache.LoadingCache;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.core.Meter;
+import com.yammer.metrics.reporting.ConsoleReporter;
+import com.yammer.metrics.reporting.CsvReporter;
 
 @Singleton
 public class S4Metrics {
 
     private static Logger logger = LoggerFactory.getLogger(S4Metrics.class);
 
+    static final Pattern METRICS_CONFIG_PATTERN = Pattern
+            .compile("(csv:.+|console):(\\d+):(DAYS|HOURS|MICROSECONDS|MILLISECONDS|MINUTES|NANOSECONDS|SECONDS)");
+
     @Inject
     Emitter emitter;
 
     @Inject
     Assignment assignment;
+
+    @Inject(optional = true)
+    @Named("s4.metrics.config")
+    String metricsConfig;
 
     static List<Meter> partitionSenderMeters = Lists.newArrayList();
 
@@ -59,6 +73,35 @@ public class S4Metrics {
 
     @Inject
     private void init() {
+
+        if (Strings.isNullOrEmpty(metricsConfig)) {
+            logger.info("Metrics reporting not configured");
+        } else {
+            Matcher matcher = METRICS_CONFIG_PATTERN.matcher(metricsConfig);
+            if (!matcher.matches()) {
+                logger.error(
+                        "Invalid metrics configuration [{}]. Metrics configuration must match the pattern [{}]. Metrics reporting disabled.",
+                        metricsConfig, METRICS_CONFIG_PATTERN);
+            } else {
+                String group1 = matcher.group(1);
+
+                if ("csv".equals(group1)) {
+                    String outputDir = matcher.group(2);
+                    long period = Long.valueOf(matcher.group(3));
+                    TimeUnit timeUnit = TimeUnit.valueOf(matcher.group(4));
+                    logger.info("Reporting metrics through csv files in directory [{}] with frequency of [{}] [{}]",
+                            new String[] { outputDir, String.valueOf(period), timeUnit.name() });
+                    CsvReporter.enable(new File(outputDir), period, timeUnit);
+                } else {
+                    long period = Long.valueOf(matcher.group(2));
+                    TimeUnit timeUnit = TimeUnit.valueOf(matcher.group(3));
+                    logger.info("Reporting metrics on the console with frequency of [{}] [{}]",
+                            new String[] { String.valueOf(period), timeUnit.name() });
+                    ConsoleReporter.enable(period, timeUnit);
+                }
+            }
+        }
+
         senderMeters = new Meter[emitter.getPartitionCount()];
         // int localPartitionId = assignment.assignClusterNode().getPartition();
         for (int i = 0; i < senderMeters.length; i++) {

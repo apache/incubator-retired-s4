@@ -71,17 +71,21 @@ public abstract class App {
     private ReceiverImpl receiver;
 
     @Inject
-    RemoteSenders remoteSenders;
+    private RemoteSenders remoteSenders;
 
     @Inject
-    Hasher hasher;
+    private Hasher hasher;
 
     @Inject
-    RemoteStreams remoteStreams;
+    private RemoteStreams remoteStreams;
 
     @Inject
     @Named("s4.cluster.name")
-    String clusterName;
+    private String clusterName;
+
+    @Inject(optional = true)
+    @Named("s4.metrics.peProcessingTime")
+    boolean measurePEProcessingTime = true;
 
     // default is NoOpCheckpointingFramework
     @Inject

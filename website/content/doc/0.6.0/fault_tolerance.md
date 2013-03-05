@@ -4,7 +4,7 @@ title: Fault tolerance
 Stream processing applications are typically long running applications, and they may accumulate state over extended periods of time.
 
 
-Running a distributed system over a long period of time implies there will be:
+When running a distributed system over a long period of time, expect:
 
 
 - failures
@@ -138,21 +138,25 @@ We provide a default module (FileSystemBackendCheckpointingModule) that uses a f
 
 ##### Customizing the checkpointing backend
 
-It is quite straightforward to implement backends for other kinds of storage (key value stores, datagrid, cache, RDBMS). Using an alternative backend is as simple as providing a new module to the S4 node. Here is an example of a module using a 'Cool' backend implementation:
+It is quite straightforward to implement backends for other kinds of storage (key value stores, datagrid, cache, RDBMS). Writing a checkpointing backend consists of implementing a simple interface (`StateStorage`) matching your infrastructure or system.
 
+ Using an alternative backend is as simple as providing a new module to the S4 node. Here is an example of a module using a 'Cool' backend implementation:
 
-	public class CoolBackendCheckpointingModule extends AbstractModule {
-		@Override
-		protected void configure() {
-	    	bind(StateStorage.class).to(CoolStateStorage.class);
-	    	bind(CheckpointingFramework.class).to(SafeKeeper.class);
-		}
+~~~
+#!java
+
+public class CoolBackendCheckpointingModule extends AbstractModule {
+	@Override
+	protected void configure() {
+	    bind(StateStorage.class).to(CoolStateStorage.class);
+	    bind(CheckpointingFramework.class).to(SafeKeeper.class);
 	}
-
+}
+~~~
 
 ##### Overriding checkpointing and recovery operations
 
-By default, S4 uses [kryo](http://code.google.com/p/kryo) to serialize and deserialize checkpoints, but it is possible to use a different mechanism, by overriding the `checkpoint()`, `serializeState()` and `restoreState()` methods of the `ProcessingElement` class.
+By default, S4 keeps all non transient fields as part of the state, and uses [kryo](http://code.google.com/p/kryo) to serialize and deserialize checkpoints, but it is possible to use a different mechanism, by overriding the `checkpoint()`, `serializeState()` and `restoreState()` methods of the `ProcessingElement` class.
 
 
 PEs are eligible for checkpointing when their state is 'dirty'. The dirty flag is checked through the `isDirty()` method, and cleared by calling the `clearDirty()` method. In some cases, dependent on the application code, only some of the events may actually change the state of the PE. You should override these methods in order to avoid unjustified checkpointing operations.
