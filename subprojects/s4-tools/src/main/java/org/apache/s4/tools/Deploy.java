@@ -92,7 +92,8 @@ public class Deploy extends S4ArgsBase {
                 params.add("appClass=" + deployArgs.appClass);
                 params.add("appsDir=" + tmpAppsDir.getAbsolutePath());
                 params.add("appName=" + deployArgs.appName);
-                ExecGradle.exec(deployArgs.gradleBuildFile, "installS4R", params.toArray(new String[] {}));
+                ExecGradle.exec(deployArgs.gradleBuildFile, "installS4R", params.toArray(new String[] {}),
+                        deployArgs.debug);
                 File tmpS4R = new File(tmpAppsDir.getAbsolutePath() + "/" + deployArgs.appName + ".s4r");
                 if (!Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
                     logger.info("Copying generated S4R to [{}]", deployArgs.generatedS4R);
@@ -185,6 +186,9 @@ public class Deploy extends S4ArgsBase {
 
         @Parameter(names = "-testMode", description = "Special mode for regression testing", hidden = true)
         boolean testMode = false;
+
+        @Parameter(names = "-debug", description = "Display debug information from the build system", arity = 0)
+        boolean debug = false;
     }
 
     /**
@@ -207,7 +211,7 @@ public class Deploy extends S4ArgsBase {
 
     static class ExecGradle {
 
-        public static void exec(File buildFile, String taskName, String[] params) throws Exception {
+        public static void exec(File buildFile, String taskName, String[] params, boolean debug) throws Exception {
 
             ProjectConnection connection = GradleConnector.newConnector()
                     .forProjectDirectory(buildFile.getParentFile()).connect();
@@ -222,7 +226,9 @@ public class Deploy extends S4ArgsBase {
                 // buildArgs.add("-b");
                 // buildArgs.add(buildFilePath);
                 buildArgs.add("-stacktrace");
-                buildArgs.add("-info");
+                if (debug) {
+                    buildArgs.add("-debug");
+                }
                 if (params.length > 0) {
                     for (int i = 0; i < params.length; i++) {
                         buildArgs.add("-P" + params[i]);
