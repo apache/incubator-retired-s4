@@ -292,6 +292,13 @@ task srcDist(dependsOn: ["javadoc"], type: Zip) {
     into (baseName+'-'+version+'-'+classifier)
 }
 
+task rat(type: JavaExec) {
+	print("Runs Apache RAT. Exclusions are defined in .rat-excludes file") 
+    main = 'org.apache.rat.Report'
+    classpath = files ('lib/apache-rat-0.8.jar')
+    args = ['-E', '.rat-excludes', '--dir', '.']
+    
+}
 
 task clean << {
     delete buildDir
