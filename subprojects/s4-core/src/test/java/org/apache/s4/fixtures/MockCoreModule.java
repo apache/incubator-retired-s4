@@ -26,8 +26,6 @@ import org.apache.s4.core.staging.BlockingSenderExecutorServiceFactory;
 import org.apache.s4.core.staging.BlockingStreamExecutorServiceFactory;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
-import org.apache.s4.deploy.DeploymentManager;
-import org.apache.s4.deploy.NoOpDeploymentManager;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +47,6 @@ public class MockCoreModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(DeploymentManager.class).to(NoOpDeploymentManager.class);
-
         // Although we want to mock as much as possible, most tests still require the machinery for routing events
         // within a stream/node, therefore sender and stream executors are not mocked
 

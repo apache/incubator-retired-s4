@@ -205,6 +205,9 @@ public class Status extends S4ArgsBase {
     }
 
     private static String inMiddle(String content, int width) {
+        if (content == null) {
+            content = "UNDEFINED";
+        }
         int i = (width - content.length()) / 2;
         return String.format("%" + i + "s%s", " ", content);
     }

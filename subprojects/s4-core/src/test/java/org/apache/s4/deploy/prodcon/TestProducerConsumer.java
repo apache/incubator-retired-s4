@@ -27,12 +27,12 @@ import java.util.concurrent.TimeUnit;
 import junit.framework.Assert;
 
 import org.I0Itec.zkclient.IZkChildListener;
-import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkNoNodeException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.comm.tools.TaskSetup;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
+import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.core.util.AppConfig;
 import org.apache.s4.deploy.DeploymentUtils;
 import org.apache.s4.fixtures.CommTestUtils;
@@ -202,8 +202,10 @@ public class TestProducerConsumer {
             }
         });
 
-        forkedProducerNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + PRODUCER_CLUSTER });
-        forkedConsumerNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + CONSUMER_CLUSTER });
+        forkedProducerNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + PRODUCER_CLUSTER }, zkClient, 20,
+                PRODUCER_CLUSTER);
+        forkedConsumerNode = CoreTestUtils.forkS4Node(new String[] { "-cluster=" + CONSUMER_CLUSTER }, zkClient, 20,
+                CONSUMER_CLUSTER);
 
         Assert.assertTrue(signalProcessesReady.await(20, TimeUnit.SECONDS));
 

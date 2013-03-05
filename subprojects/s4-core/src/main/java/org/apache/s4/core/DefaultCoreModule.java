@@ -38,8 +38,6 @@ import org.apache.s4.core.staging.RemoteSendersExecutorServiceFactory;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
 import org.apache.s4.core.staging.ThrottlingSenderExecutorServiceFactory;
-import org.apache.s4.deploy.DeploymentManager;
-import org.apache.s4.deploy.DistributedDeploymentManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,8 +81,6 @@ public class DefaultCoreModule extends AbstractModule {
 
         /* The hashing function to map keys top partitions. */
         bind(Hasher.class).to(DefaultHasher.class);
-
-        bind(DeploymentManager.class).to(DistributedDeploymentManager.class).in(Scopes.SINGLETON);
 
         bind(S4RLoaderFactory.class);
 
