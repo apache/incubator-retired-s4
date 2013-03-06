@@ -29,6 +29,7 @@ import org.apache.s4.base.KeyFinder;
 import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
+import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.RemoteStreams;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
@@ -78,6 +79,9 @@ public abstract class App {
 
     @Inject
     private RemoteStreams remoteStreams;
+
+    @Inject
+    private Cluster topology;
 
     @Inject
     @Named("s4.cluster.name")
@@ -189,6 +193,8 @@ public abstract class App {
     public final void init() {
 
         onInit();
+
+        schedule();
     }
 
     /**
@@ -200,6 +206,104 @@ public abstract class App {
 
         onClose();
         removeAll();
+    }
+
+    /**
+     * check if the app's resource requirement can be met
+     * 
+     * @param topology
+     */
+    void validatePartition(Cluster topology) {
+        int number = 0;
+        for (ProcessingElement pe : getPePrototypes()) {
+            if (pe.isExclusive()) {
+                number += pe.getPartitionCount();
+            }
+        }
+
+        int clusterSize = topology.getPhysicalCluster().getPartitionCount();
+
+        logger.debug("cluster size: {}, total exclusive PE number: {}", clusterSize, number);
+
+        if (clusterSize <= number) {
+            String errorInfo = "Cluster " + topology.getPhysicalCluster().getName()
+                    + " doesn't meet the app resource requirement!";
+            logger.error(errorInfo);
+            throw new RuntimeException(errorInfo);
+        }
+    }
+
+    public void schedule() {
+        schedule(topology);
+    }
+
+    /**
+     * assign tasks to PEs.
+     * 
+     * @param topology
+     */
+    public void schedule(Cluster topology) {
+
+        logger.info("Start schedule......");
+
+        validatePartition(topology);
+
+        int clusterSize = topology.getPhysicalCluster().getPartitionCount();
+
+        List<ProcessingElement> exclusivePEList = new ArrayList<ProcessingElement>();
+        List<ProcessingElement> nonExclusivePEList = new ArrayList<ProcessingElement>();
+
+        int partition = 0;
+        for (ProcessingElement pe : getPePrototypes()) {
+            if (pe.isExclusive()) {
+                exclusivePEList.add(pe);
+                partition += pe.getPartitionCount();
+            } else {
+                nonExclusivePEList.add(pe);
+            }
+        }
+
+        // assign partition to non-exclusive PE
+        partition = clusterSize - partition;
+        for (ProcessingElement pe : nonExclusivePEList) {
+            pe.setPartitionCount(partition);
+        }
+
+        // assign partition to exclusive PE
+        for (ProcessingElement pe : exclusivePEList) {
+            for (int i = 0; i < pe.getPartitionCount(); i++) {
+                pe.setGlobalPartitionId(i, partition++);
+            }
+        }
+
+        logger.info("Finished schedule !");
+
+        showPartitionInfo();
+    };
+
+    private void showPartitionInfo() {
+        StringBuilder sb = new StringBuilder("\n");
+        String line = "---------------------------------------------------------------------------\n";
+        sb.append(line);
+        sb.append("Partition Information\n");
+        sb.append(line);
+
+        sb.append(String.format("%-20s%-20s%-15s%-10s%-20s%n", "PE Class", "PE Name", "Exclusive", "Count",
+                "Partition"));
+        for (ProcessingElement pe : getPePrototypes()) {
+            sb.append(String.format("%-20s%-20s%-15s%-10d", pe.getClass().getSimpleName(), pe.getName(),
+                    pe.isExclusive(), pe.getPartitionCount()));
+            StringBuilder partition = new StringBuilder();
+            if (pe.isExclusive()) {
+                int count = pe.getPartitionCount() - 1;
+                partition.append("[" + pe.getGlobalPartitionId(0) + " ~ " + pe.getGlobalPartitionId(count) + "]");
+            } else {
+                partition.append("[0 ~ " + (pe.getPartitionCount() - 1) + "]");
+            }
+            sb.append(String.format("%-20s%n", partition.toString()));
+        }
+        sb.append(line);
+        logger.debug(sb.toString());
     }
 
     private void removeAll() {
@@ -292,6 +396,10 @@ public abstract class App {
 
     public SerializerDeserializer getSerDeser() {
         return serDeser;
+    }
+
+    public Hasher getHasher() {
+        return hasher;
     }
 
     public CheckpointingFramework getCheckpointingFramework() {

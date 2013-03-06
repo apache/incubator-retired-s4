@@ -18,7 +18,8 @@ public interface Sender {
      * @return true if the event was sent because the destination is <b>not</b> local.
      * 
      */
-    boolean checkAndSendIfNotLocal(String hashKey, Event event);
+    // boolean checkAndSendIfNotLocal(String hashKey, Event event);
+    boolean checkAndSendIfNotLocal(int partition, Event event);
 
     /**
      * Send an event to all the remote partitions in the cluster. The caller is expected to also put the event in a

@@ -172,11 +172,14 @@ public class Event {
 
         Map<String, String> amap = Maps.newHashMap();
 
-        for (Map.Entry<String, Data<?>> entry : map.entrySet()) {
-            String key = entry.getKey();
-            String value = String.valueOf(entry.getValue().value);
-            amap.put(key, value);
+        if (map != null) {
+            for (Map.Entry<String, Data<?>> entry : map.entrySet()) {
+                String key = entry.getKey();
+                String value = String.valueOf(entry.getValue().value);
+                amap.put(key, value);
+            }
         }
+
         return amap;
     }
 

@@ -59,11 +59,11 @@ public class CoreTestUtils extends CommTestUtils {
 
     public static Process forkS4Node(String[] args, ZkClient zkClient, int waitTimeInSeconds, String clusterName)
             throws IOException, InterruptedException {
-        return forkS4Node(-1, args, zkClient, waitTimeInSeconds, clusterName);
+        return forkS4Node(-1, args, zkClient, waitTimeInSeconds, clusterName, 1);
     }
 
-    public static Process forkS4Node(int debugPort, String[] args, ZkClient zkClient, int waitTimeInSeconds,
-            String clusterName) throws IOException, InterruptedException {
+    private static Process forkS4Node(int debugPort, String[] args, ZkClient zkClient, int waitTimeInSeconds,
+            String clusterName, final int expectedSize) throws IOException, InterruptedException {
 
         final CountDownLatch signalNodeReady = new CountDownLatch(1);
 
@@ -71,7 +71,7 @@ public class CoreTestUtils extends CommTestUtils {
 
             @Override
             public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
-                if (currentChilds.size() == 1) {
+                if (currentChilds.size() == expectedSize) {
                     signalNodeReady.countDown();
                 }
 
@@ -87,6 +87,15 @@ public class CoreTestUtils extends CommTestUtils {
         Thread.sleep(1000);
 
         return forked;
+    }
+    
+    public static Process[] forkS4Nodes(String[] args, ZkClient zkClient, int waitTimeInSeconds, String clusterName,
+            int clusterSize) throws IOException, InterruptedException {
+        Process[] processes = new Process[clusterSize];
+        for (int i = 0; i < clusterSize; ++i) {
+            processes[i] = forkS4Node(-1, args, zkClient, waitTimeInSeconds, clusterName, i + 1);
+        }
+        return processes;
     }
 
     public static File findGradlewInRootDir() {

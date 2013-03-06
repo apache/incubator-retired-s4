@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 
 import org.apache.s4.base.Event;
 import org.apache.s4.base.GenericKeyFinder;
+import org.apache.s4.base.Hasher;
 import org.apache.s4.base.Key;
 import org.apache.s4.base.KeyFinder;
 import org.apache.s4.base.Receiver;
@@ -53,6 +54,7 @@ public class Stream<T extends Event> implements Streamable {
     private Executor eventProcessingExecutor;
     final private Sender sender;
     final private ReceiverImpl receiver;
+    final private Hasher hasher;
     // final private int id;
     final private App app;
     private Class<T> eventType = null;
@@ -71,6 +73,7 @@ public class Stream<T extends Event> implements Streamable {
         this.app = app;
         this.sender = app.getSender();
         this.receiver = app.getReceiver();
+        this.hasher = app.getHasher();
     }
 
     @Override
@@ -155,6 +158,26 @@ public class Stream<T extends Event> implements Streamable {
     }
 
     /**
+     * check if need send to local
+     * 
+     * @param event
+     * @return
+     */
+    private boolean checkAndSendIfNotLocal(Event event) {
+        String hashKey = key.get((T) event);
+        boolean notLocal = true;
+        for (ProcessingElement pe : targetPEs) {
+            int partition = Math.abs((int) hasher.hash(hashKey) % pe.getPartitionCount());
+            if (pe.isExclusive()) {
+                partition = pe.getGlobalPartitionId(partition);
+            }
+            notLocal = notLocal && sender.checkAndSendIfNotLocal(partition, event);
+        }
+
+        return notLocal;
+    }
+
+    /**
      * Sends an event.
      * 
      * @param event
@@ -174,7 +197,8 @@ public class Stream<T extends Event> implements Streamable {
              * We send to a specific PE instance using the key but we don't know if the target partition is remote or
              * local. We need to ask the sender.
              */
-            if (!sender.checkAndSendIfNotLocal(key.get((T) event), event)) {
+            // if (!sender.checkAndSendIfNotLocal(key.get((T) event), event)) {
+            if (!checkAndSendIfNotLocal(event)) {
 
                 /*
                  * Sender checked and decided that the target is local so we simply put the event in the queue and we

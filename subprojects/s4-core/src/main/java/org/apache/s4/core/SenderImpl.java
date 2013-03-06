@@ -92,8 +92,9 @@ public class SenderImpl implements Sender {
      * @see org.apache.s4.core.Sender#checkAndSendIfNotLocal(java.lang.String, org.apache.s4.base.Event)
      */
     @Override
-    public boolean checkAndSendIfNotLocal(String hashKey, Event event) {
-        int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
+    public boolean checkAndSendIfNotLocal(int partition, Event event) {
+        // public boolean checkAndSendIfNotLocal(String hashKey, Event event) {
+        // int partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
         if (partition == localPartitionId) {
             metrics.sentLocal();
             /* Hey we are in the same JVM, don't use the network. */

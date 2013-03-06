@@ -57,6 +57,14 @@ public class WordCountTest extends ZkBasedTest {
     private TCPEmitter emitter;
     Injector injector;
 
+    public WordCountTest() {
+        super();
+    }
+
+    protected WordCountTest(int numberTasks) {
+        super(numberTasks);
+    }
+
     public void createEmitter() throws IOException {
         injector = Guice.createInjector(new BaseModule(
                 Resources.getResource("default.s4.base.properties").openStream(), "cluster1"), new DefaultCommModule(
@@ -64,7 +72,7 @@ public class WordCountTest extends ZkBasedTest {
                 .getResource("default.s4.core.properties").openStream()));
 
         emitter = injector.getInstance(TCPEmitter.class);
-
+        
     }
 
     /**

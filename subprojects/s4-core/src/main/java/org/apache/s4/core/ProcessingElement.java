@@ -147,6 +147,11 @@ public abstract class ProcessingElement implements Cloneable {
 
     transient private Timer processingTimer;
 
+    transient private boolean isExclusive = false;
+    transient private int partitionCount = -1;
+    /* This map holds the mapping of PE partition id and glocal partition id */
+    transient private Map<Integer, Integer> globalPartitionMap;
+
     transient private CheckpointingConfig checkpointingConfig = new CheckpointingConfig.Builder(CheckpointingMode.NONE)
             .build();
 
@@ -166,12 +171,21 @@ public abstract class ProcessingElement implements Cloneable {
         });
         triggers = new MapMaker().makeMap();
 
+        globalPartitionMap = new MapMaker().makeMap();
         /*
          * Only the PE Prototype uses the constructor. The PEPrototype field will be cloned by the instances and point
          * to the prototype.
          */
         this.pePrototype = this;
 
+    }
+
+    public void setGlobalPartitionId(int partitionId, int nodeId) {
+        globalPartitionMap.put(partitionId, nodeId);
+    }
+
+    public int getGlobalPartitionId(int partitionId) {
+        return globalPartitionMap.get(partitionId);
     }
 
     /**
@@ -486,6 +500,29 @@ public abstract class ProcessingElement implements Cloneable {
     public void checkpoint() {
         getApp().getCheckpointingFramework().saveState(this);
         clearDirty();
+    }
+
+    public boolean isExclusive() {
+        return isExclusive;
+    }
+
+    /**
+     * If set a PE to be exclusive, user need give the partition count of this PE
+     * 
+     * @param isExclusive
+     * @param partitionCount
+     */
+    public void setExclusive(int partitionCount) {
+        this.isExclusive = true;
+        this.partitionCount = partitionCount;
+    }
+
+    public void setPartitionCount(int partitionCount) {
+        this.partitionCount = partitionCount;
+    }
+
+    public int getPartitionCount() {
+        return partitionCount;
     }
 
     private boolean isTrigger(Event event) {
@@ -909,5 +946,4 @@ public abstract class ProcessingElement implements Cloneable {
         return sb.toString();
 
     }
-
 }
