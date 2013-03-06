@@ -18,7 +18,11 @@
 
 package s4app;
 
+import org.apache.s4.comm.topology.ZNRecord;
+import org.apache.s4.comm.topology.ZNRecordSerializer;
+import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.core.App;
+import org.apache.zookeeper.CreateMode;
 
 public class ProducerApp extends App {
 
@@ -34,6 +38,12 @@ public class ProducerApp extends App {
     @Override
     protected void onInit() {
         System.out.println("Initing CounterApp...");
+
+        ZkClient zkClient = new ZkClient("localhost:2181");
+
+        zkClient.setZkSerializer(new ZNRecordSerializer());
+        ZNRecord record = new ZNRecord(Thread.currentThread().getContextClassLoader().getClass().getName());
+        zkClient.create("/s4/classLoader", record, CreateMode.PERSISTENT);
 
         producerPE = createPE(ProducerPE.class, "producer");
         producerPE.setStreams(createOutputStream("tickStream"));

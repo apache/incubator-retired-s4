@@ -130,6 +130,10 @@ public class S4Bootstrap {
     private void startS4App(AppConfig appConfig, Injector parentInjector, ClassLoader modulesLoader) {
         try {
             App app = loadApp(appConfig, modulesLoader);
+
+            // use correct classLoader for running the app initialization
+            Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
+
             app.init();
             app.start();
 
