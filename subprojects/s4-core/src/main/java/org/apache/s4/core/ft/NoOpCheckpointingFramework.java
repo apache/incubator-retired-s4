@@ -20,10 +20,13 @@ package org.apache.s4.core.ft;
 
 import org.apache.s4.core.ProcessingElement;
 
+import com.google.inject.Singleton;
+
 /**
  * Implementation of {@link CheckpointingFramework} that does NO checkpointing.
- *
+ * 
  */
+@Singleton
 public final class NoOpCheckpointingFramework implements CheckpointingFramework {
 
     @Override

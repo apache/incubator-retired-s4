@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
-import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 
 public class BaseModule extends AbstractModule {
@@ -47,8 +46,8 @@ public class BaseModule extends AbstractModule {
         bind(ArchiveFetcher.class).to(RemoteFileFetcher.class);
         bind(S4Bootstrap.class);
 
-        // share the Zookeeper connection
-        bind(ZkClient.class).toProvider(ZkClientProvider.class).in(Scopes.SINGLETON);
+        // ZkClientProvider singleton shares the Zookeeper connection
+        bind(ZkClient.class).toProvider(ZkClientProvider.class);
 
     }
 

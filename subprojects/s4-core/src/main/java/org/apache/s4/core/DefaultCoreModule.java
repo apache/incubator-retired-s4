@@ -45,7 +45,6 @@ import com.google.common.io.Files;
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 
@@ -93,8 +92,8 @@ public class DefaultCoreModule extends AbstractModule {
 
         bind(StreamExecutorServiceFactory.class).to(BlockingStreamExecutorServiceFactory.class);
 
-        bind(RemoteStreams.class).to(ZkRemoteStreams.class).in(Scopes.SINGLETON);
-        bind(RemoteSenders.class).to(DefaultRemoteSenders.class).in(Scopes.SINGLETON);
+        bind(RemoteStreams.class).to(ZkRemoteStreams.class);
+        bind(RemoteSenders.class).to(DefaultRemoteSenders.class);
 
     }
 
