@@ -63,6 +63,5 @@ public class MockCoreModule extends AbstractModule {
         bind(Integer.class).annotatedWith(Names.named("s4.sender.workQueueSize")).toInstance(10000);
 
         bind(Integer.class).annotatedWith(Names.named("s4.stream.workQueueSize")).toInstance(10000);
-
     }
 }

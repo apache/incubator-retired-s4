@@ -50,8 +50,7 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 
 /**
- * Temporary module allowing assignment from ZK, communication through Netty, and distributed deployment management,
- * until we have a better way to customize node configuration
+ * Default module allowing assignment from ZK, communication through Netty, and distributed deployment management
  * 
  */
 public class DefaultCoreModule extends AbstractModule {

@@ -86,7 +86,7 @@ public class TwitterCounterApp extends App {
     }
 
     private void prepareMetricsOutputs() throws IOException {
-        File metricsDirForPartition = new File("metrics/" + getReceiver().getPartitionId());
+        File metricsDirForPartition = new File("metrics/" + getPartitionId());
         if (metricsDirForPartition.exists()) {
             FileUtils.deleteDirectory(metricsDirForPartition);
         }

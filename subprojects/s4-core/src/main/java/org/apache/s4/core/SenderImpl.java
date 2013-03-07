@@ -27,6 +27,8 @@ import org.apache.s4.base.Hasher;
 import org.apache.s4.base.Sender;
 import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.topology.Assignment;
+import org.apache.s4.comm.topology.Cluster;
+import org.apache.s4.comm.topology.ClusterChangeListener;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.core.staging.SenderExecutorServiceFactory;
 import org.apache.s4.core.util.S4Metrics;
@@ -43,13 +45,14 @@ import com.google.inject.Inject;
  * Details on how the cluster is partitioned and how events are serialized and transmitted to its destination are hidden
  * from the application developer.
  */
-public class SenderImpl implements Sender {
+public class SenderImpl implements Sender, ClusterChangeListener {
 
     private static Logger logger = LoggerFactory.getLogger(SenderImpl.class);
 
     final private Emitter emitter;
     final private SerializerDeserializer serDeser;
     final private Hasher hasher;
+    private Cluster cluster;
 
     Assignment assignment;
     private int localPartitionId = -1;
@@ -70,15 +73,21 @@ public class SenderImpl implements Sender {
      */
     @Inject
     public SenderImpl(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment,
-            SenderExecutorServiceFactory senderExecutorServiceFactory) {
+            SenderExecutorServiceFactory senderExecutorServiceFactory, Cluster cluster) {
         this.emitter = emitter;
         this.serDeser = serDeser;
         this.hasher = hasher;
         this.assignment = assignment;
         this.tpe = senderExecutorServiceFactory.create();
+        this.cluster = cluster;
     }
 
     @Inject
+    private void init() {
+        cluster.addListener(this);
+        resolveLocalPartitionId();
+    }
+
     private void resolveLocalPartitionId() {
         ClusterNode node = assignment.assignClusterNode();
         if (node != null) {
@@ -173,6 +182,11 @@ public class SenderImpl implements Sender {
 
         }
 
+    }
+
+    @Override
+    public void onChange() {
+        resolveLocalPartitionId();
     }
 
 }
