@@ -79,7 +79,7 @@ public class Deploy extends S4ArgsBase {
                     // it and won't use an S4R
                     logger.info("No S4R path specified, nor build file specified: this assumes the app is in the classpath");
                 } else {
-                    logger.error("You must specify an S4R file, a build file to create an S4R from, or an appClass that will be in the classpath");
+                    logger.error("You must specify an S4R file or an appClass that will be in the classpath");
                     System.exit(1);
                 }
 

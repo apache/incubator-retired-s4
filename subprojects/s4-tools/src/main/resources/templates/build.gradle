@@ -58,8 +58,8 @@ project.ext["libraries"] = [
 
             // you always need the s4 libraries for building your app
            s4_base:            'org.apache.s4:s4-base:'+ s4Version,
-           s4_comm:            'org.apache.s4:s4-comm:'+s4Version,
-           s4_core:            'org.apache.s4:s4-core:'+s4Version
+           s4_comm:            'org.apache.s4:s4-comm:'+ s4Version,
+           s4_core:            'org.apache.s4:s4-core:'+ s4Version
        ]
 
 
@@ -122,6 +122,7 @@ s4r << {
    appDependencies.each { File file -> println 'Adding to s4 archive: ' + file.name }
    configurations.archives.allArtifacts.files.each { println 'Adding to s4 archive: ' + it.name }
 
+   checkAppClass()
 }
 
 task cp << {
@@ -136,27 +137,26 @@ task installS4R (type: Copy) {
    into s4AppInstallDir
 }
 
-/* Parse source file to get the app classname so we can use it in the manifest.
-* TODO: Use a real Java parser. (This is not skipping comments for example.)
-*/
-def getAppClassname(file) {
-   def classname = "UNKNOWN"
-   def lines= file.readLines()
-   def packageName = ""
-   for(line in lines) {
+/*Check whether the defined appClass exists and extends App*/
+void checkAppClass() {
 
-       def pn = line =~ /.*package\s+([\w\.]+)\s*;.*/
-       if(pn) {
-           packageName = pn[0][1] + "."
-       }
-       def an = line =~ /.*public\s+class\s+(\w+)\s+extends.+App.*\{/
+   def loader = this.getClass().getClassLoader()
 
-       if (an) {
-           classname = packageName + an[0][1]
-           println "Found app class name: " + classname
-           break
-       }
-
+   def jardir = new File( project.libsDir.path,'lib' )
+   def jars = jardir.listFiles().findAll { it.name.endsWith('.jar') }
+   jars.each {
+      loader.addURL(it.toURI().toURL())
    }
-   classname
+
+   def appJar = project.libsDir.path+"/app/"+"$project.name"+".jar"
+   loader.addURL(new URL("file://"+appJar))
+
+   def instance = Class.forName(appClassName, true, this.getClass().getClassLoader()).newInstance()
+
+   if (!(instance.getClass().getSuperclass().getName() == 'org.apache.s4.core.App') ){
+      println "App class " + appClassName + " does not extend org.apache.s4.core.App!"
+      System.exit(1)
+   }
+
 }
+
