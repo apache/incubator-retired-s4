@@ -76,8 +76,7 @@ public class DefaultRemoteSenders implements RemoteSenders {
     @Override
     public void send(String hashKey, Event event) {
 
-        Set<StreamConsumer> consumers = remoteStreams.getConsumers(event.getStreamName());
-        event.setAppId(-1);
+        Set<StreamConsumer> consumers = remoteStreams.getConsumers(event.getStreamId());
         for (StreamConsumer consumer : consumers) {
             // NOTE: even though there might be several ephemeral znodes for the same app and topology, they are
             // represented by a single stream consumer

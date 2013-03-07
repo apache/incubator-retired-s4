@@ -163,7 +163,6 @@ public class Stream<T extends Event> implements Streamable {
     @SuppressWarnings("unchecked")
     public void put(Event event) {
         event.setStreamId(getName());
-        event.setAppId(app.getId());
 
         /*
          * Events may be sent to local or remote partitions or both. The following code implements the logic.

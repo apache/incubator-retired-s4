@@ -64,7 +64,6 @@ public abstract class App {
     final Map<String, ProcessingElement> peByName = Maps.newHashMap();
 
     private ClockType clockType = ClockType.WALL_CLOCK;
-    private int id = -1;
 
     @Inject
     private Sender sender;
@@ -119,21 +118,6 @@ public abstract class App {
     public enum ClockType {
         WALL_CLOCK, EVENT_CLOCK
     };
-
-    /**
-     * @return the unique app id
-     */
-    public int getId() {
-        return id;
-    }
-
-    /**
-     * @param id
-     *            the unique id for this app
-     */
-    public void setId(int id) {
-        this.id = id;
-    }
 
     /* Should only be used within the core package. */
     void addPEPrototype(ProcessingElement pePrototype) {
@@ -406,7 +390,7 @@ public abstract class App {
      */
     protected <T extends Event> Stream<T> createInputStream(String streamName, KeyFinder<T> finder,
             ProcessingElement... processingElements) {
-        remoteStreams.addInputStream(getId(), clusterName, streamName);
+        remoteStreams.addInputStream(clusterName, streamName);
         return createStream(streamName, finder, processingElements);
 
     }

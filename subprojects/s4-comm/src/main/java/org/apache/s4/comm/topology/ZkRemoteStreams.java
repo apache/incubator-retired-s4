@@ -164,8 +164,7 @@ public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, Remo
         for (String element : elements) {
             ZNRecord producerData = zkClient.readData(type.getPath(streamName) + "/" + element, true);
             if (producerData != null) {
-                StreamConsumer consumer = new StreamConsumer(Integer.valueOf(producerData.getSimpleField("appId")),
-                        producerData.getSimpleField("clusterName"));
+                StreamConsumer consumer = new StreamConsumer(producerData.getSimpleField("clusterName"));
                 consumers.add(consumer);
             }
         }
@@ -179,20 +178,18 @@ public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, Remo
      * java.lang.String)
      */
     @Override
-    public void addOutputStream(String appId, String clusterName, String streamName) {
+    public void addOutputStream(String clusterName, String streamName) {
         lock.lock();
         try {
-            logger.debug("Adding output stream [{}] for app [{}] in cluster [{}]", new String[] { streamName, appId,
-                    clusterName });
+            logger.debug("Adding output stream [{}] in cluster [{}]", new String[] { streamName, clusterName });
             createStreamPaths(streamName);
-            ZNRecord producer = new ZNRecord(streamName + "/" + clusterName + "/" + appId);
-            producer.putSimpleField("appId", appId);
+            ZNRecord producer = new ZNRecord(streamName + "/" + clusterName);
             producer.putSimpleField("clusterName", clusterName);
             try {
                 zkClient.createEphemeralSequential(StreamType.PRODUCER.getPath(streamName) + "/producer-", producer);
             } catch (Throwable e) {
                 logger.error("Exception trying to create producer stream [{}] for app [{}] and cluster [{}] : [{}] :",
-                        new String[] { streamName, appId, clusterName, e.getMessage() });
+                        new String[] { streamName, clusterName, e.getMessage() });
             }
             refreshStreams();
         } finally {
@@ -214,21 +211,19 @@ public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, Remo
      * @see org.apache.s4.comm.topology.RemoteStreams#addInputStream(int, java.lang.String, java.lang.String)
      */
     @Override
-    public void addInputStream(int appId, String clusterName, String streamName) {
+    public void addInputStream(String clusterName, String streamName) {
         lock.lock();
         try {
-            logger.debug("Adding input stream [{}] for app [{}] in cluster [{}]",
-                    new String[] { streamName, String.valueOf(appId), clusterName });
+            logger.debug("Adding input stream [{}] in cluster [{}]", new String[] { streamName, clusterName });
             createStreamPaths(streamName);
-            ZNRecord consumer = new ZNRecord(streamName + "/" + clusterName + "/" + appId);
-            consumer.putSimpleField("appId", String.valueOf(appId));
+            ZNRecord consumer = new ZNRecord(streamName + "/" + clusterName);
             consumer.putSimpleField("clusterName", clusterName);
             try {
                 // NOTE: We create 1 sequential znode per consumer node instance
                 zkClient.createEphemeralSequential(StreamType.CONSUMER.getPath(streamName) + "/consumer-", consumer);
             } catch (Throwable e) {
                 logger.error("Exception trying to create consumer stream [{}] for app [{}] and cluster [{}] : [{}] :",
-                        new String[] { streamName, String.valueOf(appId), clusterName, e.getMessage() });
+                        new String[] { streamName, clusterName, e.getMessage() });
             }
             refreshStreams();
         } finally {

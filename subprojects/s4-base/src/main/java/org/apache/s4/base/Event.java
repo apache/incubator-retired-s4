@@ -38,8 +38,7 @@ public class Event {
     private static final Logger logger = LoggerFactory.getLogger(Event.class);
 
     final private long time;
-    private String streamName;
-    private int appId;
+    private String streamId;
     private Map<String, Data<?>> map;
 
     /** Default constructor sets time using system time. */
@@ -67,8 +66,8 @@ public class Event {
      * 
      * @return the target stream id
      */
-    public String getStreamName() {
-        return streamName;
+    public String getStreamId() {
+        return streamId;
     }
 
     /**
@@ -78,31 +77,7 @@ public class Event {
      *            mode.
      */
     public void setStreamId(String streamName) {
-        this.streamName = streamName;
-    }
-
-    /**
-     * All events must be assigned the unique App ID of the App that owns the stream to which this event is injected.
-     * The assignment must be done automatically by the stream that receives the event. Each application has a unique
-     * ID. We use the app ID in combination with the stream ID to identify stream instances in a cluster.
-     * 
-     * 
-     * @return the unique application ID.
-     */
-    public int getAppId() {
-        return appId;
-    }
-
-    /**
-     * All events must be assigned the unique App ID of the App that owns the stream to which this event is injected.
-     * The assignment must be done automatically by the stream that receives the event. Each application has a unique
-     * ID. We use the app ID in combination with the stream ID to identify stream instances in a cluster.
-     * 
-     * @param appId
-     *            a unique application identifier, typically assigned by the deployment system.
-     */
-    public void setAppId(int appId) {
-        this.appId = appId;
+        this.streamId = streamName;
     }
 
     /**

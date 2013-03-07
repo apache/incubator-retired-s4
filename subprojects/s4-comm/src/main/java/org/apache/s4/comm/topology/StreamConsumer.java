@@ -25,17 +25,11 @@ package org.apache.s4.comm.topology;
  */
 public class StreamConsumer {
 
-    int appId;
     String clusterName;
 
-    public StreamConsumer(int appId, String clusterName) {
+    public StreamConsumer(String clusterName) {
         super();
-        this.appId = appId;
         this.clusterName = clusterName;
-    }
-
-    public int getAppId() {
-        return appId;
     }
 
     public String getClusterName() {
@@ -46,7 +40,6 @@ public class StreamConsumer {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + appId;
         result = prime * result + ((clusterName == null) ? 0 : clusterName.hashCode());
         return result;
     }
@@ -60,8 +53,6 @@ public class StreamConsumer {
         if (getClass() != obj.getClass())
             return false;
         StreamConsumer other = (StreamConsumer) obj;
-        if (appId != other.appId)
-            return false;
         if (clusterName == null) {
             if (other.clusterName != null)
                 return false;

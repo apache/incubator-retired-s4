@@ -54,7 +54,7 @@ public class ReceiverImpl implements Receiver {
 
     final private Listener listener;
     final private SerializerDeserializer serDeser;
-    private final Map<Integer, Map<String, Stream<? extends Event>>> streams;
+    private final Map<String, Stream<? extends Event>> streams;
 
     @Inject
     S4Metrics metrics;
@@ -74,24 +74,12 @@ public class ReceiverImpl implements Receiver {
 
     /** Save stream keyed by app id and stream id. */
     void addStream(Stream<? extends Event> stream) {
-        int appId = stream.getApp().getId();
-        Map<String, Stream<? extends Event>> appMap = streams.get(appId);
-        if (appMap == null) {
-            appMap = new MapMaker().makeMap();
-            streams.put(appId, appMap);
-        }
-        appMap.put(stream.getName(), stream);
+        streams.put(stream.getName(), stream);
     }
 
     /** Remove stream when it is no longer needed. */
     void removeStream(Stream<? extends Event> stream) {
-        int appId = stream.getApp().getId();
-        Map<String, Stream<? extends Event>> appMap = streams.get(appId);
-        if (appMap == null) {
-            logger.error("Tried to remove a stream that is not registered in the receiver.");
-            return;
-        }
-        appMap.remove(stream.getName());
+        streams.remove(stream.getName());
     }
 
     @Override
@@ -99,15 +87,14 @@ public class ReceiverImpl implements Receiver {
         metrics.receivedEventFromCommLayer(message.array().length);
         Event event = (Event) serDeser.deserialize(message);
 
-        String streamId = event.getStreamName();
+        String streamId = event.getStreamId();
 
         /*
-         * Match appId and streamId in event to the target stream and pass the event to the target stream. TODO: make
-         * this more efficient for the case in which we send the same event to multiple PEs.
+         * Match streamId in event to the target stream and pass the event to the target stream. TODO: make this more
+         * efficient for the case in which we send the same event to multiple PEs.
          */
         try {
-            Map<String, Stream<? extends Event>> map = streams.get(-1);
-            map.get(streamId).receiveEvent(event);
+            streams.get(streamId).receiveEvent(event);
         } catch (NullPointerException e) {
             logger.error("Could not find target stream for event with streamId={}", streamId);
         }

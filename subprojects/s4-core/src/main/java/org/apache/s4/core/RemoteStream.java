@@ -55,14 +55,13 @@ public class RemoteStream implements Streamable<Event> {
         } else {
             this.key = new Key<Event>(finder, DEFAULT_SEPARATOR);
         }
-        remoteStreams.addOutputStream(String.valueOf(app.getId()), clusterName, name);
+        remoteStreams.addOutputStream(clusterName, name);
 
     }
 
     @Override
     public void put(Event event) {
         event.setStreamId(getName());
-        event.setAppId(app.getId());
 
         if (key != null) {
             remoteSenders.send(key.get(event), event);
