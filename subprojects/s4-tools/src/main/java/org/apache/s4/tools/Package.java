@@ -42,11 +42,11 @@ public class Package extends S4ArgsBase {
             params.add("appName=" + packageArgs.appName.get(0));
             ExecGradle.exec(packageArgs.gradleBuildFile, "installS4R", params.toArray(new String[] {}));
 
-            // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
-            System.exit(0);
         } catch (Exception e) {
             LoggerFactory.getLogger(Package.class).error("Cannot deploy app", e);
         }
+        // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
+        System.exit(0);
     }
 
     @Parameters(commandNames = "package", separators = "=", commandDescription = "Create s4r")

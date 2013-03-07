@@ -151,11 +151,11 @@ void checkAppClass() {
    def appJar = project.libsDir.path+"/app/"+"$project.name"+".jar"
    loader.addURL(new URL("file://"+appJar))
 
-   def instance = Class.forName(appClassName, true, this.getClass().getClassLoader()).newInstance()
+   def userClass = Class.forName(appClassName, true, this.getClass().getClassLoader())
+   def appClass = Class.forName('org.apache.s4.core.App', true, this.getClass().getClassLoader())
 
-   if (!(instance.getClass().getSuperclass().getName() == 'org.apache.s4.core.App') ){
-      println "App class " + appClassName + " does not extend org.apache.s4.core.App!"
-      System.exit(1)
+   if (!(appClass.isAssignableFrom(userClass))){
+      throw new InvalidUserDataException("App class " + appClassName + " does not extend org.apache.s4.core.App")
    }
 
 }
