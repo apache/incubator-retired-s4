@@ -121,14 +121,12 @@ public class CreateApp extends S4ArgsBase {
             });
         } catch (Exception e) {
             logger.error("Could not create project due to [{}]. Please check your configuration.", e.getMessage());
-            logger.error("Could not create project due to [{}]. Please check your configuration.", e.getMessage());
         }
     }
 
     private static void createDir(CreateAppArgs appArgs, String dirName) throws Exception {
         String filePath = appArgs.getAppDir() + dirName;
         if (!new File(filePath).mkdirs()) {
-            logger.error("Cannot create directory [{}], exiting.", filePath);
             throw new Exception("Cannot create directory [" + filePath + "]");
         }
     }
