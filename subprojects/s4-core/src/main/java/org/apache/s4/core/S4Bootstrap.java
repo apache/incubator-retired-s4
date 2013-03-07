@@ -13,12 +13,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.I0Itec.zkclient.IZkDataListener;
-import org.I0Itec.zkclient.serialize.ZkSerializer;
 import org.apache.s4.base.util.ModulesLoader;
 import org.apache.s4.comm.DefaultCommModule;
 import org.apache.s4.comm.ModulesLoaderFactory;
 import org.apache.s4.comm.topology.ZNRecord;
-import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.comm.util.ArchiveFetchException;
 import org.apache.s4.comm.util.ArchiveFetcher;
@@ -72,15 +70,10 @@ public class S4Bootstrap {
     CountDownLatch signalOneAppLoaded = new CountDownLatch(1);
 
     @Inject
-    public S4Bootstrap(@Named("s4.cluster.name") String clusterName,
-            @Named("s4.cluster.zk_address") String zookeeperAddress,
-            @Named("s4.cluster.zk_session_timeout") int sessionTimeout,
-            @Named("s4.cluster.zk_connection_timeout") int connectionTimeout, ArchiveFetcher fetcher) {
+    public S4Bootstrap(@Named("s4.cluster.name") String clusterName, ZkClient zkClient, ArchiveFetcher fetcher) {
 
         this.fetcher = fetcher;
-        zkClient = new ZkClient(zookeeperAddress, sessionTimeout, connectionTimeout);
-        ZkSerializer serializer = new ZNRecordSerializer();
-        zkClient.setZkSerializer(serializer);
+        this.zkClient = zkClient;
 
         String appDir = "/s4/clusters/" + clusterName + "/app";
         if (!zkClient.exists(appDir)) {

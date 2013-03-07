@@ -6,17 +6,18 @@ import org.apache.s4.comm.topology.ZkClient;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 
 /**
  * 
  * Provides a connection to ZooKeeper through the {@link ZkClient} class.
- * <p>
- * This connection can easily be shared by specifying singleton scope at binding time (i.e. when binding the ZkClient
- * class, see {@link BaseModule}).
  * 
+ * As an application singleton, it provides a single shared connection for an S4 node.
  * 
  */
+@Singleton
+// injected only once per node
 public class ZkClientProvider implements Provider<ZkClient> {
 
     private final ZkClient zkClient;
@@ -32,6 +33,8 @@ public class ZkClientProvider implements Provider<ZkClient> {
 
     @Override
     public ZkClient get() {
+        // reuses initialized instance
         return zkClient;
+
     }
 }

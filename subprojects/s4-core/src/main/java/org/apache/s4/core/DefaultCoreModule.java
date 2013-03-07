@@ -47,7 +47,6 @@ import com.google.common.io.Files;
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 
@@ -84,13 +83,13 @@ public class DefaultCoreModule extends AbstractModule {
         /* The hashing function to map keys top partitions. */
         bind(Hasher.class).to(DefaultHasher.class);
 
-        bind(DeploymentManager.class).to(DistributedDeploymentManager.class).in(Scopes.SINGLETON);
+        bind(DeploymentManager.class).to(DistributedDeploymentManager.class);
 
         bind(S4RLoaderFactory.class);
 
         // For enabling checkpointing, one needs to use a custom module, such as
         // org.apache.s4.core.ft.FileSytemBasedCheckpointingModule
-        bind(CheckpointingFramework.class).to(NoOpCheckpointingFramework.class).in(Scopes.SINGLETON);
+        bind(CheckpointingFramework.class).to(NoOpCheckpointingFramework.class);
 
         // shed load in local sender only by default
         bind(SenderExecutorServiceFactory.class).to(ThrottlingSenderExecutorServiceFactory.class);
@@ -98,8 +97,8 @@ public class DefaultCoreModule extends AbstractModule {
 
         bind(StreamExecutorServiceFactory.class).to(BlockingStreamExecutorServiceFactory.class);
 
-        bind(RemoteStreams.class).to(ZkRemoteStreams.class).in(Scopes.SINGLETON);
-        bind(RemoteSenders.class).to(DefaultRemoteSenders.class).in(Scopes.SINGLETON);
+        bind(RemoteStreams.class).to(ZkRemoteStreams.class);
+        bind(RemoteSenders.class).to(DefaultRemoteSenders.class);
 
     }
 
