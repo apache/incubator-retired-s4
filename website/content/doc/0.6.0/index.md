@@ -20,6 +20,7 @@ S4 (Simple Scalable Streaming System) is a general-purpose, distributed, scalabl
 * [Customize the platform and pass configuration parameters](configuration)
 * Add [application dependencies](application_dependencies)
 * [Dispatch events ](event_dispatch) within an application and between applications
+* [Inject events](event_injection) into S4 applications
 
 ## Running S4
 * [Commands](tools) for creating, running and managing applications
