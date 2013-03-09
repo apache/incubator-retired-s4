@@ -11,7 +11,9 @@ public class TestStatus {
     @Test
     public void testStringFormatting() {
 
-        Status.inMiddle(Strings.repeat("A", 20), 20);
+        String repeat = Strings.repeat("A", 20);
+        String middle = Status.inMiddle(repeat, 20);
+        Assert.assertTrue(middle.contains(repeat));
         Assert.assertTrue("Failed to parse correctly", true);
 
     }
