@@ -27,8 +27,10 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 
 /**
- * Use introspection on the target Event to create the key finder. The search for the key is as follows:
  * 
+ * Implementation of {@link KeyFinder} that uses introspection on the target Event to create the key finder.
+ * <p>
+ * The search for the key is as follows:
  * <p>
  * <ul>
  * <li>If the event object class extends {@link Event}, find a field that matches the key name.
@@ -44,8 +46,8 @@ public class GenericKeyFinder<T extends Event> implements KeyFinder<T> {
     private static final Logger logger = LoggerFactory.getLogger(GenericKeyFinder.class);
 
     final private String keyName;
-    private Class<T> eventType;
-    private Field field;
+    private final Class<T> eventType;
+    private final Field field;
 
     public GenericKeyFinder(String keyName, Class<T> eventType) throws SecurityException {
         this.keyName = keyName;

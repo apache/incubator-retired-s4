@@ -18,7 +18,10 @@
 
 package org.apache.s4.core.window;
 
-public class OHCLSlot implements Slot<Double> {
+/**
+ * Open - high - low -close slot as typically used in financial data and useful for summarizing data.
+ */
+public class OHLCSlot implements Slot<Double> {
 
     double open = -1;
     double high = -1;
@@ -67,11 +70,11 @@ public class OHCLSlot implements Slot<Double> {
         return ticks;
     }
 
-    public static class OHCLSlotFactory implements SlotFactory<OHCLSlot> {
+    public static class OHLCSlotFactory implements SlotFactory<OHLCSlot> {
 
         @Override
-        public OHCLSlot createSlot() {
-            return new OHCLSlot();
+        public OHLCSlot createSlot() {
+            return new OHLCSlot();
         }
 
     }

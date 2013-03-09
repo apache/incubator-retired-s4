@@ -33,6 +33,9 @@ import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 import com.google.common.io.Resources;
 
+/**
+ * Creates a template S4 project
+ */
 public class CreateApp extends S4ArgsBase {
 
     static Logger logger = LoggerFactory.getLogger(CreateApp.class);

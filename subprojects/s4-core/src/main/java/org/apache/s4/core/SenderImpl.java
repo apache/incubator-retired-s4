@@ -52,7 +52,7 @@ public class SenderImpl implements Sender, ClusterChangeListener {
     final private Emitter emitter;
     final private SerializerDeserializer serDeser;
     final private Hasher hasher;
-    private Cluster cluster;
+    private final Cluster cluster;
 
     Assignment assignment;
     private int localPartitionId = -1;
@@ -70,6 +70,12 @@ public class SenderImpl implements Sender, ClusterChangeListener {
      *            a serialization mechanism.
      * @param hasher
      *            a hashing function to map keys to partition IDs.
+     * @param assignment
+     *            partition assignment from the cluster manager
+     * @param senderExecutorServiceFactory
+     *            factory for creating sender executors
+     * @param cluster
+     *            cluster information
      */
     @Inject
     public SenderImpl(Emitter emitter, SerializerDeserializer serDeser, Hasher hasher, Assignment assignment,

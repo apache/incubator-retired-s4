@@ -31,6 +31,9 @@ import com.google.common.primitives.Primitives;
  * for inter-application communication. For greater efficiency and type safety, extend this class to create custom event
  * types.
  * 
+ * <p>
+ * <b>NOTE: Events are conceptually immutable but this is not currently enforced, therefore one must take care to ensure
+ * that events are not modified and reused after creation.
  * 
  */
 public class Event {

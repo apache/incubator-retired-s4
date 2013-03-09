@@ -46,13 +46,13 @@ import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
+/**
+ * Deploys and S4 application configuration into the cluster manager
+ */
 public class Deploy extends S4ArgsBase {
 
     static org.slf4j.Logger logger = LoggerFactory.getLogger(Deploy.class);
 
-    /**
-     * @param args
-     */
     public static void main(String[] args) {
 
         DeployAppArgs deployArgs = new DeployAppArgs();
@@ -89,8 +89,7 @@ public class Deploy extends S4ArgsBase {
                 params.add("-appClass=" + deployArgs.appClass);
                 params.add("-appName=" + deployArgs.appName);
                 params.add(deployArgs.appName);
-                ExecGradle.exec(deployArgs.gradleBuildFile, "s4r", params.toArray(new String[] {}),
-                        deployArgs.debug);
+                ExecGradle.exec(deployArgs.gradleBuildFile, "s4r", params.toArray(new String[] {}), deployArgs.debug);
                 File s4rFile = new File(deployArgs.gradleBuildFile.getParentFile(), "/build/libs/" + deployArgs.appName
                         + ".s4r");
                 if (!Strings.isNullOrEmpty(deployArgs.generatedS4R)) {

@@ -23,6 +23,9 @@ import java.io.File;
 import com.beust.jcommander.IParameterValidator;
 import com.beust.jcommander.ParameterException;
 
+/**
+ * Utility class for validating file arguments
+ */
 public class FileExistsValidator implements IParameterValidator {
 
     @Override

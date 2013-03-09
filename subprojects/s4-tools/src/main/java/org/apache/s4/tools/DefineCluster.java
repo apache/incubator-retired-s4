@@ -25,6 +25,9 @@ import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
+/**
+ * Defines an S4 cluster in the cluster manager.
+ */
 public class DefineCluster {
 
     static Logger logger = LoggerFactory.getLogger(DefineCluster.class);

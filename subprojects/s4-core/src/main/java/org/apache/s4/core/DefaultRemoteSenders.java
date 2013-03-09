@@ -38,6 +38,9 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
+/**
+ * Default {@link RemoteSenders} implementation for sending events to nodes of a remote cluster.
+ */
 @Singleton
 public class DefaultRemoteSenders implements RemoteSenders {
 

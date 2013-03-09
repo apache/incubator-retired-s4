@@ -49,7 +49,8 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 
 /**
- * Default module allowing assignment from ZK, communication through Netty, and distributed deployment management
+ * This module binds the different services required by an app, except for the connectivity to the cluster manager and
+ * the communication layer.
  * 
  */
 public class DefaultCoreModule extends AbstractModule {

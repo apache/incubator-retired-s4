@@ -24,6 +24,9 @@ import java.util.List;
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 
+/**
+ * Common parameters for S4 commands
+ */
 public abstract class S4ArgsBase {
 
     @Parameter(names = "-help", description = "usage")

@@ -9,10 +9,25 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Utility class for facilitating deployment and configuration operations.
+ */
 public class DeploymentUtils {
 
     private static Logger logger = LoggerFactory.getLogger(DeploymentUtils.class);
 
+    /**
+     * Uploads an application configuration to the cluster manager
+     * 
+     * @param appConfig
+     *            application configuration
+     * @param clusterName
+     *            name of the S4 cluster
+     * @param deleteIfExists
+     *            deletes previous configuration if it existed
+     * @param zkString
+     *            ZooKeeper connection string (connection to the cluster manager)
+     */
     public static void initAppConfig(AppConfig appConfig, String clusterName, boolean deleteIfExists, String zkString) {
         ZkClient zk = new ZkClient(zkString);
         ZkSerializer serializer = new ZNRecordSerializer();

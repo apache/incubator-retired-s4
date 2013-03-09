@@ -18,6 +18,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.name.Names;
 
+/**
+ * This module binds the minimum set of classes required for a node to "bootstrap", i.e. connect to the cluster manager
+ * and be able to read and fetch configuration data.
+ */
 public class BaseModule extends AbstractModule {
 
     private static Logger logger = LoggerFactory.getLogger(BaseModule.class);

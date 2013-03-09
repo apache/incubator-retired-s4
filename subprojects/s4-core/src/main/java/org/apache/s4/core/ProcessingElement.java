@@ -97,8 +97,8 @@ import com.yammer.metrics.core.TimerContext;
  *           ...
  * 
  *           onCreate() {
- *           wordCount = new HashMap<String, Integer>;
- *           logger.trace("Created a map for instance PE with id {}, getId());
+ *               wordCount = new HashMap<String, Integer>;
+ *               logger.trace("Created a map for instance PE with id {}, getId());
  *           }
  *         }
  *         </pre>
