@@ -40,10 +40,8 @@ import org.slf4j.LoggerFactory;
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-import com.beust.jcommander.converters.FileConverter;
 import com.beust.jcommander.internal.Maps;
 import com.google.common.base.Strings;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 
 public class Deploy extends S4ArgsBase {
@@ -63,11 +61,6 @@ public class Deploy extends S4ArgsBase {
             ZkClient zkClient = new ZkClient(deployArgs.zkConnectionString, deployArgs.timeout);
             zkClient.setZkSerializer(new ZNRecordSerializer());
 
-            if (!Strings.isNullOrEmpty(deployArgs.s4rPath) && !Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
-                logger.error("-s4r and -generatedS4R options are mutually exclusive");
-                System.exit(1);
-            }
-
             URI s4rURI = null;
 
             if (deployArgs.s4rPath != null) {
@@ -76,42 +69,14 @@ public class Deploy extends S4ArgsBase {
                     // default is file
                     s4rURI = new File(deployArgs.s4rPath).toURI();
                 }
-                logger.info(
-                        "Using specified S4R [{}], the S4R archive will not be built from source (and corresponding parameters are ignored)",
-                        s4rURI.toString());
-            } else if (deployArgs.gradleBuildFile != null) {
-
-                // 2. otherwise if there is a build file, we create the S4R archive from that
-
-                List<String> params = new ArrayList<String>();
-                // prepare gradle -P parameters, including passed gradle opts
-                params.addAll(deployArgs.gradleOpts);
-                params.add("-appClass=" + deployArgs.appClass);
-                params.add("-appName=" + deployArgs.appName);
-                params.add(deployArgs.appName);
-                ExecGradle.exec(deployArgs.gradleBuildFile, "s4r", params.toArray(new String[] {}),
-                        deployArgs.debug);
-                File s4rFile = new File(deployArgs.gradleBuildFile.getParentFile(), "/build/libs/" + deployArgs.appName
-                        + ".s4r");
-                if (!Strings.isNullOrEmpty(deployArgs.generatedS4R)) {
-                    logger.info("Copying generated S4R to [{}]", deployArgs.generatedS4R);
-                    s4rURI = new URI(deployArgs.generatedS4R);
-                    if (!(ByteStreams.copy(Files.newInputStreamSupplier(s4rFile),
-                            Files.newOutputStreamSupplier(new File(s4rURI))) > 0)) {
-                        logger.error("Cannot copy generated s4r from {} to {}", s4rFile.getAbsolutePath(),
-                                s4rURI.toString());
-                        System.exit(1);
-                    }
-                } else {
-                    s4rURI = s4rFile.toURI();
-                }
+                logger.info("Using specified S4R [{}]", s4rURI.toString());
             } else {
                 if (!Strings.isNullOrEmpty(deployArgs.appClass)) {
                     // 3. otherwise if there is at least an app class specified (e.g. for running "s4 adapter"), we use
                     // it and won't use an S4R
                     logger.info("No S4R path specified, nor build file specified: this assumes the app is in the classpath");
                 } else {
-                    logger.error("You must specify an S4R file, a build file to create an S4R from, or an appClass that will be in the classpath");
+                    logger.error("You must specify an S4R file or an appClass that will be in the classpath");
                     System.exit(1);
                 }
 
@@ -149,14 +114,8 @@ public class Deploy extends S4ArgsBase {
     @Parameters(commandNames = "s4 deploy", commandDescription = "Package and deploy application to S4 cluster", separators = "=")
     static class DeployAppArgs extends S4ArgsBase {
 
-        @Parameter(names = { "-b", "-buildFile" }, description = "Full path to gradle build file for the S4 application", required = false, converter = FileConverter.class, validateWith = FileExistsValidator.class)
-        File gradleBuildFile;
-
-        @Parameter(names = "-s4r", description = "Path to existing s4r file", required = false)
+        @Parameter(names = "-s4r", description = "URI to existing s4r file", required = false)
         String s4rPath;
-
-        @Parameter(names = { "-generatedS4R", "-g" }, description = "Location of generated s4r (incompatible with -s4r option). By default, s4r is generated in a temporary directory on the local file system. In a distributed environment, you probably want to specify a location accessible through a distributed file system like NFS. That's the purpose of this option.", required = false)
-        String generatedS4R;
 
         @Parameter(names = { "-a", "-appClass" }, description = "Full class name of the application class (extending App or AdapterApp)", required = false)
         String appClass = "";

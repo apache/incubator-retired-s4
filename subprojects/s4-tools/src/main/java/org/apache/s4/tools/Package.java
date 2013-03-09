@@ -43,11 +43,11 @@ public class Package extends S4ArgsBase {
             ExecGradle.exec(packageArgs.gradleBuildFile, "s4r", params.toArray(new String[] {}),
                     packageArgs.debug);
 
-            // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
-            System.exit(0);
         } catch (Exception e) {
             LoggerFactory.getLogger(Package.class).error("Cannot deploy app", e);
         }
+        // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
+        System.exit(0);
     }
 
     @Parameters(commandNames = "package", separators = "=", commandDescription = "Create s4r")
@@ -59,7 +59,7 @@ public class Package extends S4ArgsBase {
         @Parameter(names = { "-b", "-buildFile" }, description = "Path to gradle build file for the S4 application", required = true, converter = FileConverter.class, validateWith = FileExistsValidator.class)
         File gradleBuildFile;
 
-        @Parameter(names = { "-a", "-appClass" }, description = "Full class name of the application class (extending App or AdapterApp)", required = false)
+        @Parameter(names = { "-a", "-appClass" }, description = "Full class name of the application class (extending App or AdapterApp)", required = true)
         String appClass = "";
 
         @Parameter(names = "-debug", description = "Display debug information from the build system", arity = 0)

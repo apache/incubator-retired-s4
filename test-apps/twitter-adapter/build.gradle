@@ -34,6 +34,11 @@
 *
 */
 
+/* Set the destination where we want to install the apps. */
+//s4AppInstallDir = "/tmp/s4Apps" // TODO: decide how to standarize dirs, use env var?
+
+project.ext["appClassName"] = hasProperty('appClass')? "$appClass": "UNDEFINED"
+
 project.ext["s4Version"] = '0.5.0-incubating'
 description = 'Apache S4 App'
 project.ext["archivesBaseName"] = "$project.name"
@@ -50,9 +55,6 @@ apply plugin: 'idea'
 apply plugin:'application'
 
 mainClassName = "org.apache.s4.core.S4Node"
-
-/* The app classname is set automatically from the source files. */
-def appClassname = ''
 
 /* Set Java version. */
 sourceCompatibility = 1.6
@@ -95,16 +97,14 @@ dependencies {
 
 }
 
-/* Set the manifest attributes for the S4 archive here.
-*  TODO: separate custom properties from std ones and set custom properties at the top of the build script.
-*/
+// Set the manifest attributes for the S4 archive here. ('S4-App-Class':  gets set by the s4r task)
 manifest.mainAttributes(
        provider: 'gradle',
        'Implementation-Url': 'http://incubator.apache.org/projects/s4.html',
        'Implementation-Version': version,
        'Implementation-Vendor': 'Apache S4',
        'Implementation-Vendor-Id': 's4app',
-       'S4-App-Class': appClassname, // gets set by the s4r task.
+       'S4-App-Class':'',
        'S4-Version': s4Version
        )
 
@@ -124,8 +124,6 @@ task buildProjectJar() {
 	}
 }
 
-
-
 /* This task will extract all the class files and create a fat jar. We set the manifest and the extension to make it an S4 archive file. */
 // TODO: exclude schema files as needed (not critical) see: http://forums.gradle.org/gradle/topics/using_gradle_to_fat_jar_a_spring_project
 // TODO: exclude s4 platform jars
@@ -135,25 +133,7 @@ task s4r(type: Jar) {
    manifest = project.manifest
    extension = 's4r'
    exclude '*.s4r'
-
-   /* Set class name in manifest. Parse source files until we find a class that extends App.
-    * Get fully qualified Java class name and set attribute in Manifest.
-    */
-   sourceSets.main.allSource.files.each {  File file ->
-       if (appClassname =="" || appClassname == "UNKNOWN") {
-           // only execute the closure for this file if we haven't already found the app class name
-           appClassname = getAppClassname(file)
-           if(appClassname != "") {
-               manifest.mainAttributes('S4-App-Class': appClassname)
-           }
-       }
-   }
-
-   if (appClassname == "UNKNOWN") {
-
-       println "Couldn't find App class in source files...aborting."
-       exit(1)
-   }
+   manifest.mainAttributes('S4-App-Class': appClassName)
 }
 
 /* List the artifacts that will br added to the s4 archive (and explode if needed). */
@@ -180,30 +160,6 @@ task cp << {
 }
 
 
-/* Parse source file to get the app classname so we can use it in the manifest.
-* TODO: Use a real Java parser. (This is not skippong comments for example.)
-*/
-def getAppClassname(file) {
-   def classname = "UNKNOWN"
-   def lines= file.readLines()
-   def packageName = ""
-   for(line in lines) {
-
-       def pn = line =~ /.*package\s+([\w\.]+)\s*;.*/
-       if(pn) {
-           packageName = pn[0][1] + "."
-       }
-
-       def an = line =~ /.*public\s+class\s+(\w+)\s+extends.+App.*\{/
-       if (an) {
-           classname = packageName + an[0][1]
-           println "Found app class name: " + classname
-           break
-       }
-
-   }
-   classname
-}
 
 class Version {
    int major

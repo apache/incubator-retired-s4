@@ -17,11 +17,12 @@
  */
 
 
+project.ext["appClassName"] = hasProperty('appClass')? "$appClass": "UNDEFINED"
+
 project.ext["s4Version"] = '0.5.0-incubating'
 description = 'Apache S4 App'
 project.ext["archivesBaseName"] = "$project.name"
 project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
-
 
 // Append the suffix 'SNAPSHOT' when the build is not for release.
 //version = new Version(major: 0, minor: 0, bugfix: 0, isRelease: false)
@@ -31,9 +32,6 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin:'application'
-
-/* The app classname is set automatically from the source files. */
-def appClassname = ''
 
 /* Set Java version. */
 sourceCompatibility = 1.6
@@ -58,8 +56,8 @@ project.ext["libraries"] = [
 
             // you always need the s4 libraries for building your app
            s4_base:            'org.apache.s4:s4-base:'+ s4Version,
-           s4_comm:            'org.apache.s4:s4-comm:'+s4Version,
-           s4_core:            'org.apache.s4:s4-core:'+s4Version
+           s4_comm:            'org.apache.s4:s4-comm:'+ s4Version,
+           s4_core:            'org.apache.s4:s4-core:'+ s4Version
        ]
 
 
@@ -77,16 +75,14 @@ dependencies {
 
 }
 
-/* Set the manifest attributes for the S4 archive here.
-*  TODO: separate custom properties from std ones and set custom properties at the top of the build script.
-*/
+// Set the manifest attributes for the S4 archive here. ('S4-App-Class':  gets set by the s4r task)
 manifest.mainAttributes(
        provider: 'gradle',
        'Implementation-Url': 'http://incubator.apache.org/projects/s4.html',
        'Implementation-Version': version,
        'Implementation-Vendor': 'Apache S4',
        'Implementation-Vendor-Id': 's4app',
-       'S4-App-Class': appClassname, // gets set by the s4r task.
+       'S4-App-Class':'',
        'S4-Version': s4Version
        )
 
@@ -106,44 +102,16 @@ task buildProjectJar() {
 	}
 }
 
-
-
 /* This task will extract all the class files and create a fat jar. We set the manifest and the extension to make it an S4 archive file. */
 // TODO: exclude schema files as needed (not critical) see: http://forums.gradle.org/gradle/topics/using_gradle_to_fat_jar_a_spring_project
 // TODO: exclude s4 platform jars
 task s4r(type: Jar) {
-	if (rootProject.hasProperty("appName")) {
-       archiveName= "$appName"+".s4r"
-   }
    dependsOn cleanCopyDependenciesToLib, copyDependenciesToLib, cleanBuildProjectJar, buildProjectJar
    from { project.libsDir }
    manifest = project.manifest
    extension = 's4r'
    exclude '*.s4r'
-
-   // check -PappClassName, need to refer to rootProject to check property, see http://issues.gradle.org/browse/GRADLE-1826
-    if (!rootProject.hasProperty('appClass') || !"$appClass") {
-        /* Set class name in manifest. Parse source files until we find a class that extends App.
-         * Get fully qualified Java class name and set attribute in Manifest.
-         */
-        sourceSets.main.allSource.files.each {  File file ->
-            if (appClassname =="" || appClassname == "UNKNOWN") {
-                // only execute the closure for this file if we haven't already found the app class name
-                appClassname = getAppClassname(file)
-                if(appClassname != "") {
-                    manifest.mainAttributes('S4-App-Class': appClassname)
-                }
-            }
-        }
-    } else {
-        manifest.mainAttributes('S4-App-Class': "$appClass")
-    }
-
-   if (appClassname == "UNKNOWN") {
-
-       println "Couldn't find App class in source files...aborting."
-       System.exit(1)
-   }
+   manifest.mainAttributes('S4-App-Class': appClassName)
 }
 
 
@@ -152,6 +120,7 @@ s4r << {
    appDependencies.each { File file -> println 'Adding to s4 archive: ' + file.name }
    configurations.archives.allArtifacts.files.each { println 'Adding to s4 archive: ' + it.name }
 
+   checkAppClass()
 }
 
 task cp << {
@@ -159,27 +128,26 @@ task cp << {
     new File("classpath.txt").write(sourceSets.main.output.classesDir.path + File.pathSeparator + <s4_install_dir> + '/lib/*' + File.pathSeparator + <s4_install_dir> + '/subprojects/s4-tools/build/install/s4-tools/lib/*')
 }
 
-/* Parse source file to get the app classname so we can use it in the manifest.
-* TODO: Use a real Java parser. (This is not skipping comments for example.)
-*/
-def getAppClassname(file) {
-   def classname = "UNKNOWN"
-   def lines= file.readLines()
-   def packageName = ""
-   for(line in lines) {
+/*Check whether the defined appClass exists and extends App*/
+void checkAppClass() {
 
-       def pn = line =~ /.*package\s+([\w\.]+)\s*;.*/
-       if(pn) {
-           packageName = pn[0][1] + "."
-       }
-       def an = line =~ /.*public\s+class\s+(\w+)\s+extends.+App.*\{/
+   def loader = this.getClass().getClassLoader()
 
-       if (an) {
-           classname = packageName + an[0][1]
-           println "Found app class name: " + classname
-           break
-       }
-
+   def jardir = new File( project.libsDir.path,'lib' )
+   def jars = jardir.listFiles().findAll { it.name.endsWith('.jar') }
+   jars.each {
+      loader.addURL(it.toURI().toURL())
    }
-   classname
+
+   def appJar = project.libsDir.path+"/app/"+"$project.name"+".jar"
+   loader.addURL(new URL("file://"+appJar))
+
+   def userClass = Class.forName(appClassName, true, this.getClass().getClassLoader())
+   def appClass = Class.forName('org.apache.s4.core.App', true, this.getClass().getClassLoader())
+
+   if (!(appClass.isAssignableFrom(userClass))){
+      throw new InvalidUserDataException("App class " + appClassName + " does not extend org.apache.s4.core.App")
+   }
+
 }
+

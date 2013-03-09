@@ -78,7 +78,8 @@ public class TestAutomaticDeployment extends ZkBasedTest {
 
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/simple-deployable-app-1/build.gradle"), "s4r", new String[] { "-buildFile="
-                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/simple-deployable-app-1/build.gradle" });
+                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/simple-deployable-app-1/build.gradle", 
+                "appClass=org.apache.s4.deploy.TestApp" });
         Assert.assertTrue(new File(s4rDir, "simple-deployable-app-1-0.0.0-SNAPSHOT.s4r").exists());
     }
 

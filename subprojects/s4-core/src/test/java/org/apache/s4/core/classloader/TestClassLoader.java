@@ -67,12 +67,13 @@ public class TestClassLoader {
 
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/producer-app/build.gradle"), "clean", new String[] { "-buildFile="
-                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/producer-app/build.gradle" });
+                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/producer-app/build.gradle"});
         Assert.assertFalse(producerS4rDir.exists());
 
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/producer-app/build.gradle"), "s4r", new String[] { "-buildFile="
-                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/producer-app/build.gradle" });
+                + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/producer-app/build.gradle",
+                "appClass=s4app.ProducerApp"});
 
         Assert.assertTrue(new File(producerS4rDir, "producer-app-0.0.0-SNAPSHOT.s4r").exists());
     }
