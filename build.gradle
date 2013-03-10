@@ -61,7 +61,7 @@ project.ext["libraries"] = [
     kryo:               'com.esotericsoftware.kryo:kryo:2.20',
     minlog:             'com.googlecode:minlog:1.2',
     // NOTE shaded jar is not resolved correctly, we include it in /lib directory
-    reflectasm:         'com.esotericsoftware.reflectasm:reflectasm:1.07-shaded',
+    reflectasm:         'com.esotericsoftware.reflectasm:reflectasm:1.07:shaded',
     netty:              'io.netty:netty:3.5.11.Final',
     mockito_core:       'org.mockito:mockito-core:1.9.0',
     commons_config:     'commons-configuration:commons-configuration:1.6',
@@ -85,7 +85,7 @@ project.ext["libraries"] = [
     asm:                'org.ow2.asm:asm:4.0',
     javax_inject:       'javax.inject:javax.inject:1',
     gradle_base_services: 'org.gradle:gradle-base-services:1.0',
-    gradle_core: 'org.gradle:gradle-core:1.0',
+    gradle_core:        'org.gradle:gradle-core:1.0',
     gradle_tooling_api: 'org.gradle:gradle-tooling-api:1.0',
     gradle_wrapper:     'gradle-wrapper:gradle-wrapper:1.0',
     metrics:            'com.yammer.metrics:metrics-core:2.1.3'
