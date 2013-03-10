@@ -16,27 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.s4.comm.util;
-
-import java.io.InputStream;
-import java.net.URI;
-
 /**
- * This interface defines methods to fetch archive files from a URI (S4R or modules jars). Various protocols can be
- * supported in the implementation classes (e.g. file system, HTTP etc...)
- * 
+ * Simple example application
  */
-public interface ArchiveFetcher {
-
-    /**
-     * Returns a stream to an archive file
-     * 
-     * @param uri
-     *            archive identifier
-     * @return an input stream for accessing the content of the archive file
-     * @throws ArchiveFetchException
-     *             when fetching fails
-     */
-    InputStream fetch(URI uri) throws ArchiveFetchException;
-
-}
+package org.apache.s4.benchmark.prodcon;

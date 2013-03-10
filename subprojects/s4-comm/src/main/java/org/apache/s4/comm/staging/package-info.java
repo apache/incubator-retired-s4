@@ -16,18 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.s4.base;
-
-import java.util.List;
-
 /**
- * The KeyFinder returns a list with one or more String values (One value for single keys, and more than one value for
- * composite keys.)
- * <p>
- * It is used to identify keys within {@link Event}s. See {@link Key} for more information.
- * 
- * */
-public interface KeyFinder<T extends Event> {
-
-    public List<String> get(T event);
-}
+ * S4 follows a staged event driven architecture and this package defines executors for handling events.
+ */
+package org.apache.s4.comm.staging;

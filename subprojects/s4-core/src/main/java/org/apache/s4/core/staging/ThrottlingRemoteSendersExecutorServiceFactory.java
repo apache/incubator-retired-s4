@@ -5,8 +5,9 @@ import com.google.inject.name.Named;
 
 /**
  * 
+ * Throttling implementation of the remote senders executor factory. It clones the implementation of the
+ * {@link ThrottlingSenderExecutorServiceFactory} class.
  * 
- *
  */
 public class ThrottlingRemoteSendersExecutorServiceFactory extends ThrottlingSenderExecutorServiceFactory implements
         RemoteSendersExecutorServiceFactory {

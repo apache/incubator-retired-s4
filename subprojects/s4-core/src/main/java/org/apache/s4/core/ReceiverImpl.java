@@ -39,8 +39,8 @@ import com.google.inject.Singleton;
  * {@link ReceiverImpl} is responsible for receiving an event to a {@link ProcessingElement} instance using a hashKey.
  * <p>
  * A Listener implementation receives data from the network and passes an event as a byte array to the
- * {@link ReceiverImpl}. The byte array is de-serialized and converted into an {@link Event}. Finally the event is
- * passed to the matching streams.
+ * {@link ReceiverImpl}. The byte array is deserialized and converted into an {@link Event}. Finally the event is passed
+ * to the matching streams.
  * </p>
  * There is a single {@link ReceiverImpl} instance per node.
  * 

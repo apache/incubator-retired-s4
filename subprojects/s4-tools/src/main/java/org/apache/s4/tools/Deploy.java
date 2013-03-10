@@ -42,15 +42,14 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.internal.Maps;
 import com.google.common.base.Strings;
-import com.google.common.io.Files;
 
+/**
+ * Deploys and S4 application configuration into the cluster manager
+ */
 public class Deploy extends S4ArgsBase {
 
     static org.slf4j.Logger logger = LoggerFactory.getLogger(Deploy.class);
 
-    /**
-     * @param args
-     */
     public static void main(String[] args) {
 
         DeployAppArgs deployArgs = new DeployAppArgs();

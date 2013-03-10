@@ -18,8 +18,9 @@
 
 /**
  * Provides facilities for processing events as samples, through time or count-based windows. 
- * Currently we only provide a facility for sliding windows.
+ * <p>
+ * Currently we only provide a facility for sliding windows, however the available implementations 
+ * can be used as examples for implementing more sophisticated or customized windows. 
  * 
- * NOTE: we are still working on improving the API here.
  */
 package org.apache.s4.core.window;

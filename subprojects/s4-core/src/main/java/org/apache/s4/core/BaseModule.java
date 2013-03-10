@@ -9,8 +9,8 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.ZkClient;
-import org.apache.s4.comm.util.ArchiveFetcher;
-import org.apache.s4.comm.util.RemoteFileFetcher;
+import org.apache.s4.core.util.ArchiveFetcher;
+import org.apache.s4.core.util.RemoteFileFetcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +18,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.name.Names;
 
+/**
+ * This module binds the minimum set of classes required for a node to "bootstrap", i.e. connect to the cluster manager
+ * and be able to read and fetch configuration data.
+ */
 public class BaseModule extends AbstractModule {
 
     private static Logger logger = LoggerFactory.getLogger(BaseModule.class);

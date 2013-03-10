@@ -61,9 +61,6 @@ public class DefaultCommModule extends AbstractModule {
      * 
      * @param commConfigInputStream
      *            input stream from a configuration file
-     * @param clusterName
-     *            the name of the cluster to which the current node belongs. If specified in the configuration file,
-     *            this parameter will be ignored.
      */
     public DefaultCommModule(InputStream commConfigInputStream) {
         super();

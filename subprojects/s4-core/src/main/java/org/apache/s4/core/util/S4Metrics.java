@@ -30,6 +30,10 @@ import com.yammer.metrics.core.Meter;
 import com.yammer.metrics.reporting.ConsoleReporter;
 import com.yammer.metrics.reporting.CsvReporter;
 
+/**
+ * Utility class for centralizing system runtime metrics, such as information about event processing rates, cache
+ * eviction etc...
+ */
 @Singleton
 public class S4Metrics {
 

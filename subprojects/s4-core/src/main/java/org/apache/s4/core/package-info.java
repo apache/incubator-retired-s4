@@ -17,7 +17,9 @@
  */
 
 /**
- * Key classes of the S4 platform, implementing concepts such as Stream, Processing Element.
+ * Key classes of the S4 platform, implementing concepts such as Stream, 
+ * Processing Element, as well as modules defining the default injections for 
+ * building the platform.
  */
 package org.apache.s4.core;
 

@@ -52,6 +52,9 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  * 
  * @param <U>
  *            type of the values added to the window slots
+ * @param <V>
+ *            type of result of window evaluation (computed from the content of the slots in the window, can be of a
+ *            type different than the content of the slots)
  */
 public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends ProcessingElement {
 
@@ -77,6 +80,10 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
      *            the application
      * @param numSlots
      *            the number of slots to be stored
+     * @param slotCapacity
+     *            capacity of a slot
+     * @param slotFactory
+     *            factory class for creating slots
      */
     public AbstractSlidingWindowPE(App app, int numSlots, long slotCapacity, SlotFactory<T> slotFactory) {
         this(app, 0L, null, numSlots, slotFactory, slotCapacity);
@@ -93,6 +100,8 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
      *            the unit of time
      * @param numSlots
      *            the number of slots to be stored
+     * @param slotFactory
+     *            factory class for creating slots
      */
     public AbstractSlidingWindowPE(App app, long slotDuration, TimeUnit timeUnit, int numSlots,
             SlotFactory<T> slotFactory) {
@@ -148,12 +157,18 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
      * User provided function that evaluates the whole content of the window. It must iterate across all slots. Current
      * slots are passed as a parameter and the PE instance is expected to be locked so that iteration over the slots is
      * safe.
+     * 
+     * @return result of evaluation
      */
     abstract protected V evaluateWindow(Collection<T> slots);
 
     /**
      * Add a slot to the sliding window. Called automatically for periodic slots. Use it when the window is not
      * periodic.
+     * <p>
+     * This might also be a good place - by overriding this method - to compute something from the content of the
+     * previous slot or of the current window, before adding a new slot.
+     * 
      */
     protected final void addSlot() {
 
@@ -161,9 +176,10 @@ public abstract class AbstractSlidingWindowPE<T extends Slot<U>, U, V> extends P
             logger.error("Calling method addSlot() in a periodic window is not allowed.");
             return;
         }
-        addNewSlot((AbstractSlidingWindowPE<T, U, V>) this);
+        addNewSlot(this);
     }
 
+    @Override
     protected void onCreate() {
         eventCount = 0;
         circularBuffer = new CircularFifoBuffer<T>(numSlots);

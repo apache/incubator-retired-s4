@@ -38,6 +38,10 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.common.collect.Maps;
 
+/**
+ * A utility for visualizing information about S4 clusters: provides data about existing clusters, deployed
+ * applications, exported streams, live nodes
+ */
 public class Status extends S4ArgsBase {
     static Logger logger = LoggerFactory.getLogger(Status.class);
 
@@ -227,7 +231,7 @@ public class Status extends S4ArgsBase {
      *            cluster list
      * @param clusterAppMap
      *            <cluster,app>
-     * @return
+     * @return formatted string
      */
     private static String getFormatString(Collection<String> clusters, Map<String, String> clusterAppMap) {
         if (clusters == null || clusters.size() == 0) {

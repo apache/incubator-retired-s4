@@ -16,18 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.s4.base;
+package org.apache.s4.core.util;
 
-import java.util.List;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.net.URI;
 
 /**
- * The KeyFinder returns a list with one or more String values (One value for single keys, and more than one value for
- * composite keys.)
- * <p>
- * It is used to identify keys within {@link Event}s. See {@link Key} for more information.
+ * Fetches modules jar files and application S4R files from a file system, possibly distributed.
  * 
- * */
-public interface KeyFinder<T extends Event> {
+ */
+public class FileSystemArchiveFetcher implements ArchiveFetcher {
 
-    public List<String> get(T event);
+    @Override
+    public InputStream fetch(URI uri) throws ArchiveFetchException {
+        try {
+            return new FileInputStream(new File(uri));
+        } catch (FileNotFoundException e) {
+            throw new ArchiveFetchException("Cannot retrieve file from uri [" + uri.toString() + "]");
+        }
+    }
 }

@@ -16,18 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.s4.base;
+package org.apache.s4.core.util;
 
-import java.util.List;
+import java.io.InputStream;
+import java.net.URI;
 
 /**
- * The KeyFinder returns a list with one or more String values (One value for single keys, and more than one value for
- * composite keys.)
- * <p>
- * It is used to identify keys within {@link Event}s. See {@link Key} for more information.
+ * This interface defines methods to fetch archive files from a URI (S4R or modules jars). Various protocols can be
+ * supported in the implementation classes (e.g. file system, HTTP etc...)
  * 
- * */
-public interface KeyFinder<T extends Event> {
+ */
+public interface ArchiveFetcher {
 
-    public List<String> get(T event);
+    /**
+     * Returns a stream to an archive file
+     * 
+     * @param uri
+     *            archive identifier
+     * @return an input stream for accessing the content of the archive file
+     * @throws ArchiveFetchException
+     *             when fetching fails
+     */
+    InputStream fetch(URI uri) throws ArchiveFetchException;
+
 }

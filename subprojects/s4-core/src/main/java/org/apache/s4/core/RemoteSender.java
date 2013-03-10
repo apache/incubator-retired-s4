@@ -25,7 +25,7 @@ import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Hasher;
 
 /**
- * Sends events to a remote cluster.
+ * Sends events to a remote cluster (round-robin by default).
  * 
  */
 public class RemoteSender {

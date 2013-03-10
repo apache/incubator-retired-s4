@@ -1,6 +1,8 @@
-package org.apache.s4.comm.util;
+package org.apache.s4.core.util;
 
-
+/**
+ * Exception thrown when an archive cannot be fetched correctly
+ */
 public class ArchiveFetchException extends Exception {
 
     public ArchiveFetchException(String string) {

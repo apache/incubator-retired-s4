@@ -3,7 +3,7 @@ package org.apache.s4.core;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 
-import org.apache.s4.comm.util.ArchiveFetchException;
+import org.apache.s4.core.util.ArchiveFetchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

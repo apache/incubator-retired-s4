@@ -37,6 +37,10 @@ import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
+/**
+ * Utility for running a simple ZooKeeper server instance. Useful for testing and prototyping but not adequate for
+ * integration/production deployments.
+ */
 public class ZKServer {
 
     private static final String TEST_MODE_CLUSTER_CONF_2 = "c=testCluster2:flp=13000:nbTasks=1";

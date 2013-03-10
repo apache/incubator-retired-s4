@@ -16,26 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.s4.comm.util;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.net.URI;
-
 /**
- * Fetches modules jar files and application S4R files from a file system, possibly distributed.
- * 
+ * Simple example application
  */
-public class FileSystemArchiveFetcher implements ArchiveFetcher {
-
-    @Override
-    public InputStream fetch(URI uri) throws ArchiveFetchException {
-        try {
-            return new FileInputStream(new File(uri));
-        } catch (FileNotFoundException e) {
-            throw new ArchiveFetchException("Cannot retrieve file from uri [" + uri.toString() + "]");
-        }
-    }
-}
+package org.apache.s4.benchmark.dag;

@@ -1,4 +1,4 @@
-package org.apache.s4.comm.util;
+package org.apache.s4.core.util;
 
 import java.io.InputStream;
 import java.net.URI;

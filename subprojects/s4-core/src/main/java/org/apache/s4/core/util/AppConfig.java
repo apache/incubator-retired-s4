@@ -7,6 +7,11 @@ import java.util.Map;
 
 import org.apache.s4.comm.topology.ZNRecord;
 
+/**
+ * Container for application parameters, with facilities to write and read the configuration from ZooKeeper.
+ * <p>
+ * Can be constructed through a builder pattern.
+ */
 public class AppConfig {
 
     public static final String NAMED_PARAMETERS = "namedParams";

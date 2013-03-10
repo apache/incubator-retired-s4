@@ -28,6 +28,8 @@ import com.google.inject.name.Named;
 
 /**
  * Base class for adapters. For now, it provides facilities for automatically creating an output stream.
+ * <p>
+ * This class can be used for easing the injection of events into S4 applications.
  * 
  */
 public abstract class AdapterApp extends App {

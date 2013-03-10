@@ -34,6 +34,9 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.common.collect.Sets;
 
+/**
+ * Utility for dispatching commands to the matching implementation classes
+ */
 public class Tools {
 
     static Logger logger = LoggerFactory.getLogger(Tools.class);

@@ -187,15 +187,18 @@ dependencies {
 task javadoc (type: Javadoc) {
     destinationDir = new File(project.rootDir, 'doc/javadoc')
     destinationDir.deleteDir()
-
-    title = "Apache S4 " + version
-    source platformProjects.collect { project ->
-        project.sourceSets.main.allJava
+    excludes = ['org.apache.s4.benchmark']
+    project.ext["documentedProjects"] = new HashSet(platformProjects)
+    documentedProjects.remove(project(':s4-benchmarks'))
+	title = "Apache S4 " + version
+    source documentedProjects.collect { project ->
+        	project.sourceSets.main.allJava
     }
     // Might need a classpath
-    classpath = files(subprojects.collect { project ->
-        project.sourceSets.main.compileClasspath
+    classpath = files(documentedProjects.collect { project ->
+       	project.sourceSets.main.compileClasspath
     })
+    
 }
 
 // TODO parameterize

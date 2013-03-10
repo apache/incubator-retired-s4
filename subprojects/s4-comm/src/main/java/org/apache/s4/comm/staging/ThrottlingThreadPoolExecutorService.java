@@ -42,9 +42,6 @@ public class ThrottlingThreadPoolExecutorService extends ForwardingListeningExec
      * 
      * @param parallelism
      *            Maximum number of threads in the pool
-     * @param fairParallelism
-     *            If true, in case of contention, waiting threads will be scheduled in a first-in first-out manner. This
-     *            can help ensure ordering, though there is an associated performance cost (typically small).
      * @param threadName
      *            Naming scheme
      * @param workQueueSize

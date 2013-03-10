@@ -7,8 +7,6 @@ import org.apache.s4.comm.topology.Assignment;
 import org.apache.s4.comm.topology.AssignmentFromZK;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.comm.topology.ZkClient;
-import org.apache.s4.comm.util.ArchiveFetcher;
-import org.apache.s4.comm.util.RemoteFileFetcher;
 
 import com.google.inject.name.Names;
 
@@ -33,8 +31,6 @@ public class TestCommModule extends DefaultCommModule {
         bind(Integer.class).annotatedWith(Names.named("s4.cluster.zk_session_timeout")).toInstance(10000);
         bind(Integer.class).annotatedWith(Names.named("s4.cluster.zk_connection_timeout")).toInstance(10000);
         bind(Assignment.class).to(AssignmentFromZK.class).asEagerSingleton();
-
-        bind(ArchiveFetcher.class).to(RemoteFileFetcher.class);
 
         ZkClient zkClient = new ZkClient(CommTestUtils.ZK_STRING);
         zkClient.setZkSerializer(new ZNRecordSerializer());

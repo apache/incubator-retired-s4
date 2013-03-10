@@ -26,8 +26,8 @@ import java.net.URLClassLoader;
  * <ul>
  * <li>Application classes in an S4R archive</li>
  * <li>Application dependencies from an S4R archive</li>
- * <li>Classes dynamically generated
- * 
+ * <li>Classes dynamically generated (proxies)
+ * </ul>
  */
 public class S4RLoader extends URLClassLoader {
 

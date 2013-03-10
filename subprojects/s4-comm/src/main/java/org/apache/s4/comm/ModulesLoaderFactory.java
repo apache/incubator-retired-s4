@@ -38,8 +38,8 @@ public class ModulesLoaderFactory {
      * 
      * Inspired from Hadoop's application classloading implementation (RunJar class).
      * 
-     * @param modulesJarPath
-     *            path to s4r
+     * @param modulesFiles
+     *            files containing modules classes
      * @return classloader that loads resources from the archive in a predefined order
      */
     public ModulesLoader createModulesLoader(Iterable<File> modulesFiles) {
