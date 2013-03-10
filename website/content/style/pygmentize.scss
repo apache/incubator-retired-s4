@@ -63,14 +63,23 @@
 
 pre {
     counter-reset: line-numbering;
-    border: solid 3px #d9d9d9;
+/*     border: solid 3px #d9d9d9; */
     border-radius: 5px;
-    background: #fff;
+/*     background: #fff; */
     padding: 5px;
     line-height: 23px;
     margin-bottom: 30px;
     white-space: pre;
     overflow-x: auto;
+    word-break: inherit;
+    word-wrap: inherit;
+}
+
+code {
+    border-radius: 5px;
+    padding: 2px;
+    margin-bottom: 30px;
+    white-space: pre,post;
     word-break: inherit;
     word-wrap: inherit;
 }

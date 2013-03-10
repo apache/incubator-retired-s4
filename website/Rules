@@ -22,21 +22,16 @@ compile '/images/*/' do
   # do nothing
 end
 
-compile '/doc/*' do
-  if item.binary?
-  # don’t filter binary items
-  else
+compile '*' do
+  if item[:extension] == "haml"
+    filter :haml
+    layout 'default'
+  end
+  if item[:extension] == "md"
     filter :kramdown
 	filter :colorize_syntax,
        :default_colorizer => :pygmentize,
        :pygmentize => { :linenos => 'inline', :options => { :startinline => 'True' } }
-    layout 'default'
-  end
-end
-
-compile '*' do
-  if item[:extension] == "haml"
-    filter :haml
     layout 'default'
   end
   filter :relativize_paths, :type => :html

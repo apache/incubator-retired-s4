@@ -41,4 +41,4 @@ data_sources:
     layouts_root: /
 
 google_analytics_account_id: UA-19490961-1
-google_analytics_domain: .s4.io
+google_analytics_domain: incubator.apache.org

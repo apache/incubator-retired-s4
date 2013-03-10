@@ -9,11 +9,10 @@ for processing continuous unbounded streams of data.
 
 S4 0.5 focused on providing a functional complete refactoring.
 
-S4 0.6 builds on this basis and brings plenty of exciting features, in particular:
+S4 0.6 builds on this basis and brings several major improvements, in particular:
 
 - major performance improvements: stream throughput improved (measured up to ~200k messages per second and per stream)
 - major configurability improvements, for both the S4 platform and deployed applications
-
 
 
 Documentation
