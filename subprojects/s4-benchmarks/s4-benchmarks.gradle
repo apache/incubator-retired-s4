@@ -31,7 +31,6 @@ group = 'org.apache.s4'
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
-apply plugin:'application'
 
 /* Set Java version. */
 sourceCompatibility = 1.6

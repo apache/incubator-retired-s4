@@ -1,119 +1,114 @@
 
 <p>
-        Release Notes - Apache S4 - Version 0.5.0
+        Release Notes - Apache S4 - Version 0.6.0
 </p>
 <p>
-S4 is a general-purpose, distributed, scalable, partially fault-tolerant, pluggable platform 
+S4 is a general-purpose, distributed, scalable, fault-tolerant, pluggable platform 
 that allows programmers to easily develop applications for processing continuous unbounded streams of data.
 </p>
 <p>
-Apache S4 0.5.0 is the first release of S4 as an Apache Incubator project. 
-It is also a complete refactoring of the previous S4 codebase.
-</p>
-    
-<h2>        Sub-task
-</h2>
-<ul>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-24'>S4-24</a>] -         Dynamic deployment of S4 applications from a remote repository
-</li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-29'>S4-29</a>] -         Remove file-based configurations
-</li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-33'>S4-33</a>] -         TestUtils and modules should be split across s4-comm and s4-core
-</li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-36'>S4-36</a>] -         CommTests should use ZkBasedClusterManagement
-</li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-65'>S4-65</a>] -         Create s4 status command
-</li>
-</ul>
-            
+
+Apache S4 0.6 contains grounds on the same basis than 0.5 and brings major performance and usability improvements.
+                
 <h2>        Bug
 </h2>
 <ul>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-12'>S4-12</a>] -         Dynamic Method Dispatching
+<li>[<a href='https://issues.apache.org/jira/browse/S4-54'>S4-54</a>] -         script can&#39;t be executed on cygwin
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-14'>S4-14</a>] -         Listener.recv() behavior when interrupted
+<li>[<a href='https://issues.apache.org/jira/browse/S4-55'>S4-55</a>] -         s4-piper can‘t be executed success on cygwin
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-18'>S4-18</a>] -         gradle test fails
+<li>[<a href='https://issues.apache.org/jira/browse/S4-64'>S4-64</a>] -         S4-piper cannot be built on RHEL 5 Linux
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-23'>S4-23</a>] -         NettyEmitter -- 1. Infinitely waiting on connection, 2. numPartitions is same as numClusterNodes
+<li>[<a href='https://issues.apache.org/jira/browse/S4-68'>S4-68</a>] -         PE Prototypes are created from a Thread with the wrong ClassLoader
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-26'>S4-26</a>] -         standalone application build script fails when the source directory contains more than 1 class
+<li>[<a href='https://issues.apache.org/jira/browse/S4-90'>S4-90</a>] -         &quot;unchecked or unsafe operations&quot; warning
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-43'>S4-43</a>] -         Replace deprecated method in Gradle
+<li>[<a href='https://issues.apache.org/jira/browse/S4-98'>S4-98</a>] -         Remove duplicate Key class
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-56'>S4-56</a>] -         Prevent concurrent access to published s4r files
+<li>[<a href='https://issues.apache.org/jira/browse/S4-103'>S4-103</a>] -         Inconsistent Event API on streamName/streamId
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-61'>S4-61</a>] -         Threads running the PEs don&#39;t have a Context Class Loader
+<li>[<a href='https://issues.apache.org/jira/browse/S4-105'>S4-105</a>] -         Incorrect method implementation in org.apache.s4.core.Stream
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-63'>S4-63</a>] -         onTime() events are not synchronized correctly
+<li>[<a href='https://issues.apache.org/jira/browse/S4-106'>S4-106</a>] -         OverloadDispatcherGenerator generates a lot of files under the /tmp folder
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-70'>S4-70</a>] -         s4 node command ignores -zk parameter
+<li>[<a href='https://issues.apache.org/jira/browse/S4-107'>S4-107</a>] -         zkClient connect timeout when deploy application 
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-71'>S4-71</a>] -         s4 deploy mismanages s4r URI
+<li>[<a href='https://issues.apache.org/jira/browse/S4-109'>S4-109</a>] -         TCPEmitter#send() should return false when it doesn&#39;t send a packet across
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-74'>S4-74</a>] -         NullPointerException on TCPEmitter.onChange() 
+<li>[<a href='https://issues.apache.org/jira/browse/S4-111'>S4-111</a>] -         Deployment fails getting the .s4r file from the web
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-82'>S4-82</a>] -         Fix local communication optimization
+<li>[<a href='https://issues.apache.org/jira/browse/S4-112'>S4-112</a>] -         Gradle doesn&#39;t resolve dependencies when they are partially in the maven repository
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-87'>S4-87</a>] -         Checkpointing: recovery : avoid rejections upon fetching
+<li>[<a href='https://issues.apache.org/jira/browse/S4-116'>S4-116</a>] -         Multiple bindings of RemoteEmitters in DefaultCommModule
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-89'>S4-89</a>] -         Fix references to S4 libs when resolving classpath for adapter in new S4 application
+<li>[<a href='https://issues.apache.org/jira/browse/S4-120'>S4-120</a>] -         User singleton scope for injections that should have a unique instance
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/S4-123'>S4-123</a>] -         Fix incomplete javadoc in AbstractSlidingWindowPE + other javadoc updates
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/S4-126'>S4-126</a>] -         Log two times when error happens during create App
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/S4-127'>S4-127</a>] -         S4 status error due to invalid parsing
 </li>
 </ul>
-            
+                
 <h2>        Improvement
 </h2>
 <ul>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-6'>S4-6</a>] -         Netty initialization
+<li>[<a href='https://issues.apache.org/jira/browse/S4-8'>S4-8</a>] -         Blocking stream queues in cluster mode
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-17'>S4-17</a>] -         Put tmp dir under build
+<li>[<a href='https://issues.apache.org/jira/browse/S4-48'>S4-48</a>] -         When Emitter buffers fill up, enable App-specific behavior to drop/block/throttle input 
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-21'>S4-21</a>] -         Create standard PEs, and Event classes
+<li>[<a href='https://issues.apache.org/jira/browse/S4-59'>S4-59</a>] -         Resource loading from the S4 node classpath
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-22'>S4-22</a>] -         Adaptor + inter app communication
+<li>[<a href='https://issues.apache.org/jira/browse/S4-62'>S4-62</a>] -         Multithreaded Streams
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-27'>S4-27</a>] -         extensions to cluster configuration through Zookeeper
+<li>[<a href='https://issues.apache.org/jira/browse/S4-66'>S4-66</a>] -         S4R packaging: improve app class resolution
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-34'>S4-34</a>] -         Rename s4.comm.netty and constituents to s4.comm.tcp
+<li>[<a href='https://issues.apache.org/jira/browse/S4-73'>S4-73</a>] -         Remove appsDir concept
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-44'>S4-44</a>] -         optional backoff upon multiple consecutive failed checkpoint fetches
+<li>[<a href='https://issues.apache.org/jira/browse/S4-76'>S4-76</a>] -         Remove unused appId identifiers
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-57'>S4-57</a>] -         Document and improve the windowing PE
+<li>[<a href='https://issues.apache.org/jira/browse/S4-79'>S4-79</a>] -         Validate -appClass parameter of s4r command
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-60'>S4-60</a>] -         Development mode for rapid application development and testing
+<li>[<a href='https://issues.apache.org/jira/browse/S4-94'>S4-94</a>] -         Update kryo to version 2
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-67'>S4-67</a>] -         S4R packaging: improve packaging of dependencies
+<li>[<a href='https://issues.apache.org/jira/browse/S4-95'>S4-95</a>] -         Performance improvements
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-69'>S4-69</a>] -         Update gradle to 1.0
+<li>[<a href='https://issues.apache.org/jira/browse/S4-96'>S4-96</a>] -         Log uncaught exception in spawned threads
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-72'>S4-72</a>] -         Resource loading from S4R
+<li>[<a href='https://issues.apache.org/jira/browse/S4-99'>S4-99</a>] -         Provide injectable load shedding mechanism
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-75'>S4-75</a>] -         Code improvements in comm layer
+<li>[<a href='https://issues.apache.org/jira/browse/S4-102'>S4-102</a>] -         Add facilities for accessing partition information from the application
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-78'>S4-78</a>] -         Gradle tasks don&#39;t finish as soon as possible
+<li>[<a href='https://issues.apache.org/jira/browse/S4-108'>S4-108</a>] -         Share ZooKeeper client connections from S4 nodes
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-81'>S4-81</a>] -         S4 tools syntax: remove curly braces + expose custom modules config
+<li>[<a href='https://issues.apache.org/jira/browse/S4-117'>S4-117</a>] -         Improve initialization and bootstrapping
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-85'>S4-85</a>] -         Improve handling of ZK connection changes 
+<li>[<a href='https://issues.apache.org/jira/browse/S4-118'>S4-118</a>] -         Check whether the app class exists when build s4r file
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/S4-119'>S4-119</a>] -         Publish S4 maven artifacts on public maven repository
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/S4-122'>S4-122</a>] -         Add debug option for s4 tools
 </li>
 </ul>
     
 <h2>        New Feature
 </h2>
 <ul>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-4'>S4-4</a>] -         Dynamic App Loading
+<li>[<a href='https://issues.apache.org/jira/browse/S4-5'>S4-5</a>] -         Prototype app builder
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-11'>S4-11</a>] -         add checkpointing mechanism to s4-piper
+<li>[<a href='https://issues.apache.org/jira/browse/S4-83'>S4-83</a>] -         S4 command for preparing S4 projects for IDEs: eclipsify|idealize etc..
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-38'>S4-38</a>] -         S4 command line utility
+<li>[<a href='https://issues.apache.org/jira/browse/S4-86'>S4-86</a>] -         Metrics
 </li>
 </ul>
-                            
+                        
 <h2>        Task
 </h2>
 <ul>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-31'>S4-31</a>] -         Facilities for packaging example and test apps
+<li>[<a href='https://issues.apache.org/jira/browse/S4-97'>S4-97</a>] -         Add a build task for easily running Apache Creadur/Rat
 </li>
-<li>[<a href='https://issues.apache.org/jira/browse/S4-88'>S4-88</a>] -         Prepare 0.5.0 release
+<li>[<a href='https://issues.apache.org/jira/browse/S4-124'>S4-124</a>] -         Update documentation for 0.6.0 release
 </li>
 </ul>
+                    

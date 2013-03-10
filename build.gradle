@@ -292,6 +292,7 @@ task srcDist(dependsOn: ["javadoc"], type: Zip) {
     exclude ('**/build/**')
     exclude ('**/tmp/**')
     exclude ('**/bin/**')
+    exclude ('website/**')
     into (baseName+'-'+version+'-'+classifier)
 }
 
