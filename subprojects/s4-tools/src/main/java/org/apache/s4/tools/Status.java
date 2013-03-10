@@ -209,7 +209,7 @@ public class Status extends S4ArgsBase {
             content = "UNDEFINED";
         }
         int i = (width - content.length()) / 2;
-        return String.format("%" + (i == 0 ? "" : (i + "s")) + "%s", " ", content);
+        return String.format("%" + (i == 0 ? "s" : (i + "s")) + "%s", " ", content);
     }
 
     private static String generateEdge(int length) {
