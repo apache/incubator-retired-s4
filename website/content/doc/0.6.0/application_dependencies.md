@@ -16,9 +16,9 @@ Your application typically depends on various external libraries. Here is how to
 		project.ext["libraries"] = [
 		           twitter4j_core:     'org.twitter4j:twitter4j-core:2.2.5',
 		           twitter4j_stream:   'org.twitter4j:twitter4j-stream:2.2.5',
-		           s4_base:            'org.apache.s4:s4-base:0.5.0',
-		           s4_comm:            'org.apache.s4:s4-comm:0.5.0',
-		           s4_core:            'org.apache.s4:s4-core:0.5.0'
+		           s4_base:            'org.apache.s4:s4-base:0.6.0',
+		           s4_comm:            'org.apache.s4:s4-comm:0.6.0',
+		           s4_core:            'org.apache.s4:s4-core:0.6.0'
 		       ]
 
 * Add these dependencies as compile-time dependencies. For instance:

@@ -30,7 +30,7 @@ project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 allprojects {
 
     // Append the suffix 'SNAPSHOT' when the build is not for release.
-    version = new Version(major: 0, minor: 5, bugfix: 0, isRelease: true)
+    version = new Version(major: 0, minor: 6, bugfix: 0, isRelease: true)
     group = 'org.apache.s4'
 
     /* Search these repos to find artifacts. Gradle will download and cache. */

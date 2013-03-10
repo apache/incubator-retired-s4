@@ -34,7 +34,7 @@
 *
 */
 
-project.ext["s4Version"] = '0.5.0-incubating'
+project.ext["s4Version"] = '0.6.0-incubating'
 description = 'Apache S4 App'
 project.ext["archivesBaseName"] = "$project.name"
 project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
@@ -67,8 +67,8 @@ targetCompatibility = 1.6
 /* All project libraries must be defined here. */
 project.ext["libraries"] = [
 
-           s4_base:            'org.apache.s4:s4-base:0.5.0-incubating',
-           s4_comm:            'org.apache.s4:s4-comm:0.5.0-incubating',
+           s4_base:            'org.apache.s4:s4-base:0.6.0-incubating',
+           s4_comm:            'org.apache.s4:s4-comm:0.6.0-incubating',
        ]
 
 

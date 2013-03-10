@@ -39,7 +39,7 @@
 
 project.ext["appClassName"] = hasProperty('appClass')? "$appClass": "UNDEFINED"
 
-project.ext["s4Version"] = '0.5.0-SNAPSHOT'
+project.ext["s4Version"] = '0.6.0-SNAPSHOT'
 description = 'Apache S4 App'
 archivesBaseName = "$project.name"
 distRootFolder = "$archivesBaseName-${-> version}"
