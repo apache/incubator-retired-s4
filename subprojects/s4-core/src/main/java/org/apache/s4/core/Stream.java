@@ -154,6 +154,9 @@ public class Stream<T extends Event> implements Streamable {
      */
     public Stream<T> setPEs(ProcessingElement... pes) {
         this.targetPEs = pes;
+        for(ProcessingElement pe: pes){
+            pe.addInputStream(name);
+        }
         return this;
     }
 
@@ -262,6 +265,7 @@ public class Stream<T extends Event> implements Streamable {
     public ProcessingElement[] getTargetPEs() {
         return targetPEs;
     }
+
 
     /**
      * Stop and close this stream.

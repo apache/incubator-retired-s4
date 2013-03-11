@@ -85,6 +85,7 @@ public class DefaultRemoteSenders implements RemoteSenders {
             if (sender == null) {
                 RemoteSender newSender = new RemoteSender(remoteEmitters.getEmitter(remoteClusters.getCluster(consumer
                         .getClusterName())), hasher, consumer.getClusterName());
+                newSender.setPartitionDatas(consumer.getPePartitionInfo());
                 // TODO cleanup when remote topologies die
                 sender = sendersByTopology.putIfAbsent(consumer.getClusterName(), newSender);
                 if (sender == null) {

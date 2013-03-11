@@ -34,6 +34,7 @@ import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
@@ -166,10 +167,44 @@ public class ZkRemoteStreams implements IZkStateListener, IZkChildListener, Remo
             if (producerData != null) {
                 StreamConsumer consumer = new StreamConsumer(Integer.valueOf(producerData.getSimpleField("appId")),
                         producerData.getSimpleField("clusterName"));
+                consumer.setPePartitionInfo(readPePartitionData(producerData.getSimpleField("clusterName"), streamName));
                 consumers.add(consumer);
             }
         }
         streams.get(streamName).put(type.getCollectionName(), Collections.unmodifiableSet(consumers));
+    }
+
+    /**
+     * Read PE partition data from Zookeeper. Remote Stream need these to do the partition.
+     * 
+     * @param clusterName
+     * @param streamName
+     * @return
+     */
+    private Map<String, PartitionData> readPePartitionData(String clusterName, String streamName) {
+        String path = "/s4/clusters/" + clusterName + "/app/s4App";
+        List<String> pePrototypes = zkClient.getChildren(path);
+        Map<String, PartitionData> results = Maps.newHashMap();
+        for (String prototypeSeq : pePrototypes) {
+            ZNRecord data = zkClient.readData(path + "/" + prototypeSeq, true);
+            if (data != null && data.getListField("streams").contains(streamName)) {
+                String prototypeId = data.getSimpleField("prototypeId");
+                if (!results.keySet().contains(prototypeSeq)) {
+                    results.put(
+                            prototypeId,
+                            new PartitionData(Boolean.parseBoolean(data.getSimpleField("isExclusive")), Integer
+                                    .parseInt(data.getSimpleField("partitionCount"))));
+                    Map<String, String> map = data.getMapField("globalPartitionMap");
+                    for (String key : map.keySet()) {
+                        results.get(prototypeId).addPartitionMappingInfo(Integer.parseInt(key),
+                                Integer.parseInt(map.get(key)));
+                    }
+                    results.get(prototypeId).setStreams(data.getListField("streams"));
+                }
+            }
+        }
+
+        return results;
     }
 
     /*

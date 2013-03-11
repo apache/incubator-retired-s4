@@ -23,6 +23,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import net.jcip.annotations.ThreadSafe;
 
 import org.apache.s4.base.Event;
+import org.apache.s4.comm.topology.PartitionData;
 import org.apache.s4.core.ft.CheckpointId;
 import org.apache.s4.core.ft.CheckpointingConfig;
 import org.apache.s4.core.ft.CheckpointingConfig.CheckpointingMode;
@@ -147,10 +149,7 @@ public abstract class ProcessingElement implements Cloneable {
 
     transient private Timer processingTimer;
 
-    transient private boolean isExclusive = false;
-    transient private int partitionCount = -1;
-    /* This map holds the mapping of PE partition id and glocal partition id */
-    transient private Map<Integer, Integer> globalPartitionMap;
+    transient private PartitionData partitionData;
 
     transient private CheckpointingConfig checkpointingConfig = new CheckpointingConfig.Builder(CheckpointingMode.NONE)
             .build();
@@ -171,7 +170,8 @@ public abstract class ProcessingElement implements Cloneable {
         });
         triggers = new MapMaker().makeMap();
 
-        globalPartitionMap = new MapMaker().makeMap();
+        partitionData = new PartitionData();
+
         /*
          * Only the PE Prototype uses the constructor. The PEPrototype field will be cloned by the instances and point
          * to the prototype.
@@ -180,12 +180,20 @@ public abstract class ProcessingElement implements Cloneable {
 
     }
 
-    public void setGlobalPartitionId(int partitionId, int nodeId) {
-        globalPartitionMap.put(partitionId, nodeId);
+    public void addGlobalPartitionId(int partitionId, int nodeId) {
+        partitionData.addPartitionMappingInfo(partitionId, nodeId);
     }
 
     public int getGlobalPartitionId(int partitionId) {
-        return globalPartitionMap.get(partitionId);
+        return partitionData.getGlobalePartitionId(partitionId);
+    }
+
+    public void addInputStream(String stream) {
+        partitionData.addStream(stream);
+    }
+
+    public List<String> getInputStreams() {
+        return partitionData.getStreams();
     }
 
     /**
@@ -503,7 +511,7 @@ public abstract class ProcessingElement implements Cloneable {
     }
 
     public boolean isExclusive() {
-        return isExclusive;
+        return partitionData.isExclusive();
     }
 
     /**
@@ -513,16 +521,20 @@ public abstract class ProcessingElement implements Cloneable {
      * @param partitionCount
      */
     public void setExclusive(int partitionCount) {
-        this.isExclusive = true;
-        this.partitionCount = partitionCount;
+        this.partitionData.setExclusive(true);
+        this.partitionData.setPartitionCount(partitionCount);
     }
 
     public void setPartitionCount(int partitionCount) {
-        this.partitionCount = partitionCount;
+
+        this.partitionData.setPartitionCount(partitionCount);
+        for (int i = 0; i < partitionCount; i++) {
+            this.partitionData.addPartitionMappingInfo(i, i);
+        }
     }
 
     public int getPartitionCount() {
-        return partitionCount;
+        return partitionData.getPartitionCount();
     }
 
     private boolean isTrigger(Event event) {
@@ -946,4 +958,5 @@ public abstract class ProcessingElement implements Cloneable {
         return sb.toString();
 
     }
+
 }

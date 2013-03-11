@@ -20,7 +20,7 @@ public class DeploymentUtils {
 
         if (zk.exists("/s4/clusters/" + clusterName + "/app/s4App")) {
             if (deleteIfExists) {
-                zk.delete("/s4/clusters/" + clusterName + "/app/s4App");
+                zk.deleteRecursive("/s4/clusters/" + clusterName + "/app/s4App");
             }
         }
         try {

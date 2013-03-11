@@ -103,4 +103,8 @@ public class ZNRecord {
         }
         return false;
     }
+
+    public String toString() {
+        return "id: " + id + ", simpleFields:" + simpleFields.toString() + ", mapFields" + mapFields;
+    }
 }

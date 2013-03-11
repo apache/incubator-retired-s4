@@ -134,7 +134,9 @@ public class S4Bootstrap {
             // use correct classLoader for running the app initialization
             Thread.currentThread().setContextClassLoader(app.getClass().getClassLoader());
 
+            app.setZkClient(zkClient);
             app.init();
+            app.schedule();
             app.start();
 
         } catch (Exception e) {

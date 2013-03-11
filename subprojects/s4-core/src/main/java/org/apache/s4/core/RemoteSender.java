@@ -19,10 +19,17 @@
 package org.apache.s4.core;
 
 import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.s4.base.Emitter;
 import org.apache.s4.base.Hasher;
+import org.apache.s4.comm.topology.PartitionData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sends events to a remote cluster.
@@ -30,27 +37,40 @@ import org.apache.s4.base.Hasher;
  */
 public class RemoteSender {
 
+    private static final Logger logger = LoggerFactory.getLogger(RemoteSender.class);
+
     final private Emitter emitter;
     final private Hasher hasher;
     AtomicInteger targetPartition = new AtomicInteger();
     final private String remoteClusterName;
+    private Map<String, PartitionData> partitionDatas;
 
     public RemoteSender(Emitter emitter, Hasher hasher, String clusterName) {
         super();
         this.emitter = emitter;
         this.hasher = hasher;
         this.remoteClusterName = clusterName;
+    }
 
+    public void setPartitionDatas(Map<String, PartitionData> partitionDatas) {
+        this.partitionDatas = partitionDatas;
     }
 
     public void send(String hashKey, ByteBuffer message) throws InterruptedException {
-        int partition;
-        if (hashKey == null) {
-            // round robin by default
-            partition = Math.abs(targetPartition.incrementAndGet() % emitter.getPartitionCount());
-        } else {
-            partition = (int) (hasher.hash(hashKey) % emitter.getPartitionCount());
+        
+        Set<Integer> partitions = new HashSet<Integer>();
+
+        logger.warn("Remote sending with hash: " + hashKey);
+        int hashValue = (hashKey == null) ? targetPartition.incrementAndGet() : (int) hasher.hash(hashKey);
+
+        for (String prototype : partitionDatas.keySet()) {
+            PartitionData data = partitionDatas.get(prototype);
+            partitions.add(data.getGlobalePartitionId(hashValue % data.getPartitionCount()));
         }
-        emitter.send(partition, message);
+
+        for (Integer partition : partitions) {
+            logger.warn("Remote sending to partition: " + partition);
+            emitter.send(partition, message);
+        }
     }
 }

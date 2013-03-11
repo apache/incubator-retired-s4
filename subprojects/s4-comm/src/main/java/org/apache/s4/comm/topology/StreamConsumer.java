@@ -18,6 +18,8 @@
 
 package org.apache.s4.comm.topology;
 
+import java.util.Map;
+
 /**
  * A subscriber to a published stream. Identified through its cluster name (for dispatching to the remote cluster) and
  * application ID (for dispatching within a node (NOTE: this parameter is ignored)).
@@ -27,6 +29,11 @@ public class StreamConsumer {
 
     int appId;
     String clusterName;
+
+    /**
+     * The keys are PE prototype ids.
+     */
+    Map<String, PartitionData> pePartitionInfo;
 
     public StreamConsumer(int appId, String clusterName) {
         super();
@@ -40,6 +47,14 @@ public class StreamConsumer {
 
     public String getClusterName() {
         return clusterName;
+    }
+
+    public Map<String, PartitionData> getPePartitionInfo() {
+        return pePartitionInfo;
+    }
+
+    public void setPePartitionInfo(Map<String, PartitionData> pePartitionInfo) {
+        this.pePartitionInfo = pePartitionInfo;
     }
 
     @Override
@@ -68,6 +83,10 @@ public class StreamConsumer {
         } else if (!clusterName.equals(other.clusterName))
             return false;
         return true;
+    }
+
+    public String toString() {
+        return "appId: " + appId + ", clusterName: " + clusterName + ", pePartitionInfo: " + pePartitionInfo;
     }
 
 }

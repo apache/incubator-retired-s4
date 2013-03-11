@@ -31,6 +31,8 @@ import org.apache.s4.base.SerializerDeserializer;
 import org.apache.s4.comm.serialize.SerializerDeserializerFactory;
 import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.RemoteStreams;
+import org.apache.s4.comm.topology.ZNRecord;
+import org.apache.s4.comm.topology.ZkClient;
 import org.apache.s4.core.ft.CheckpointingFramework;
 import org.apache.s4.core.staging.StreamExecutorServiceFactory;
 import org.apache.s4.core.util.S4Metrics;
@@ -77,8 +79,14 @@ public abstract class App {
     @Inject
     private Hasher hasher;
 
+    private ZkClient zkClient;
+
     @Inject
     private RemoteStreams remoteStreams;
+
+    public void setZkClient(ZkClient zkClient) {
+        this.zkClient = zkClient;
+    }
 
     @Inject
     private Cluster topology;
@@ -141,7 +149,6 @@ public abstract class App {
     }
 
     public ProcessingElement getPE(String name) {
-
         return peByName.get(name);
     }
 
@@ -194,7 +201,6 @@ public abstract class App {
 
         onInit();
 
-        schedule();
     }
 
     /**
@@ -235,6 +241,31 @@ public abstract class App {
 
     public void schedule() {
         schedule(topology);
+        writeToZK();
+    }
+
+    /**
+     * 
+     * To non-exclusive PEs, only need to write one node; To exclusive PEs,
+     * 
+     * @param pes
+     */
+    private void writeToZK() {
+        List<String> streamsOfNEPE = new ArrayList<String>();
+        ProcessingElement NEPeInstance = null;
+        for (int i = 0; i < getPePrototypes().size(); i++) {
+            ProcessingElement pe = getPePrototypes().get(i);
+            if (pe.isExclusive()) {
+                createZKNodeForPartition("prototype-" + i, pe, null);
+            } else {
+                streamsOfNEPE.addAll(pe.getInputStreams());
+                NEPeInstance = pe;
+            }
+        }
+
+        if (streamsOfNEPE.size() != 0) {
+            createZKNodeForPartition("Non-exclusivePEs", NEPeInstance, streamsOfNEPE);
+        }
     }
 
     /**
@@ -272,26 +303,54 @@ public abstract class App {
         // assign partition to exclusive PE
         for (ProcessingElement pe : exclusivePEList) {
             for (int i = 0; i < pe.getPartitionCount(); i++) {
-                pe.setGlobalPartitionId(i, partition++);
+                pe.addGlobalPartitionId(i, partition++);
             }
         }
 
         logger.info("Finished schedule !");
 
         showPartitionInfo();
+
     };
+
+    /**
+     * Create Zk node for saving partition information of PEs
+     * 
+     * @param id
+     * @param pe
+     * @param stream
+     */
+    private void createZKNodeForPartition(String id, ProcessingElement pe, List<String> streams) {
+        String appPath = "/s4/clusters/" + clusterName + "/app/s4App";
+        ZNRecord record = new ZNRecord(id);
+        record.putSimpleField("prototypeId", id);
+        record.putSimpleField("isExclusive", String.valueOf(pe.isExclusive()));
+        record.putSimpleField("partitionCount", String.valueOf(pe.getPartitionCount()));
+        if (streams == null) {
+            record.putListField("streams", pe.getInputStreams());
+        } else {
+            record.putListField("streams", streams);
+        }
+        Map<String, String> map = Maps.newHashMap();
+        for (int j = 0; j < pe.getPartitionCount(); j++) {
+            map.put(String.valueOf(j), String.valueOf(pe.getGlobalPartitionId(j)));
+        }
+        record.putMapField("globalPartitionMap", map);
+        zkClient.createEphemeralSequential(appPath + "/prototype_", record);
+        logger.debug("write partition info to zk: " + record);
+    }
 
     private void showPartitionInfo() {
         StringBuilder sb = new StringBuilder("\n");
-        String line = "---------------------------------------------------------------------------\n";
+        String line = "------------------------------------------------------------------------------------------\n";
         sb.append(line);
         sb.append("Partition Information\n");
         sb.append(line);
 
-        sb.append(String.format("%-20s%-20s%-15s%-10s%-20s%n", "PE Class", "PE Name", "Exclusive", "Count",
-                "Partition"));
+        sb.append(String
+                .format("%-25s%-25s%-15s%-10s%-25s%n", "PE Class", "PE Name", "Exclusive", "Count", "Partition"));
         for (ProcessingElement pe : getPePrototypes()) {
-            sb.append(String.format("%-20s%-20s%-15s%-10d", pe.getClass().getSimpleName(), pe.getName(),
+            sb.append(String.format("%-25s%-25s%-15s%-10d", pe.getClass().getSimpleName(), pe.getName(),
                     pe.isExclusive(), pe.getPartitionCount()));
             StringBuilder partition = new StringBuilder();
             if (pe.isExclusive()) {
@@ -300,7 +359,7 @@ public abstract class App {
             } else {
                 partition.append("[0 ~ " + (pe.getPartitionCount() - 1) + "]");
             }
-            sb.append(String.format("%-20s%n", partition.toString()));
+            sb.append(String.format("%-25s%n", partition.toString()));
         }
         sb.append(line);
         logger.debug(sb.toString());
