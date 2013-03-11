@@ -31,7 +31,6 @@ import org.apache.s4.core.util.AppConfig;
 import org.apache.s4.deploy.DeploymentUtils;
 import org.apache.s4.fixtures.CommTestUtils;
 import org.apache.s4.fixtures.CoreTestUtils;
-import org.apache.s4.wordcount.IsolationWordCounterPE;
 import org.apache.s4.wordcount.SentenceKeyFinder;
 import org.apache.s4.wordcount.WordClassifierPE;
 import org.apache.s4.wordcount.WordCountEvent;

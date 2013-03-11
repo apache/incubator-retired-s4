@@ -60,16 +60,14 @@ public class RemoteSender {
         
         Set<Integer> partitions = new HashSet<Integer>();
 
-        logger.warn("Remote sending with hash: " + hashKey);
         int hashValue = (hashKey == null) ? targetPartition.incrementAndGet() : (int) hasher.hash(hashKey);
 
         for (String prototype : partitionDatas.keySet()) {
             PartitionData data = partitionDatas.get(prototype);
-            partitions.add(data.getGlobalePartitionId(hashValue % data.getPartitionCount()));
+            partitions.add(data.getGlobalPartitionId(hashValue % data.getPartitionCount()));
         }
 
         for (Integer partition : partitions) {
-            logger.warn("Remote sending to partition: " + partition);
             emitter.send(partition, message);
         }
     }

@@ -180,19 +180,19 @@ public abstract class ProcessingElement implements Cloneable {
 
     }
 
-    public void addGlobalPartitionId(int partitionId, int nodeId) {
+    void addGlobalPartitionId(int partitionId, int nodeId) {
         partitionData.addPartitionMappingInfo(partitionId, nodeId);
     }
 
-    public int getGlobalPartitionId(int partitionId) {
-        return partitionData.getGlobalePartitionId(partitionId);
+    int getGlobalPartitionId(int partitionId) {
+        return partitionData.getGlobalPartitionId(partitionId);
     }
 
-    public void addInputStream(String stream) {
+    void addInputStream(String stream) {
         partitionData.addStream(stream);
     }
 
-    public List<String> getInputStreams() {
+    List<String> getInputStreams() {
         return partitionData.getStreams();
     }
 
@@ -510,22 +510,25 @@ public abstract class ProcessingElement implements Cloneable {
         clearDirty();
     }
 
+    /**
+     * @return whether this PE runs exclusively on some partitions
+     */
     public boolean isExclusive() {
         return partitionData.isExclusive();
     }
 
     /**
-     * If set a PE to be exclusive, user need give the partition count of this PE
+     * Forces this PE to run on the given number of partitions exclusively, i.e., no other PE will share
+     * the same partition.
      * 
-     * @param isExclusive
-     * @param partitionCount
+     * @param partitionCount Number of partitions to run exclusively on
      */
     public void setExclusive(int partitionCount) {
         this.partitionData.setExclusive(true);
         this.partitionData.setPartitionCount(partitionCount);
     }
 
-    public void setPartitionCount(int partitionCount) {
+    void setPartitionCount(int partitionCount) {
 
         this.partitionData.setPartitionCount(partitionCount);
         for (int i = 0; i < partitionCount; i++) {
@@ -533,6 +536,12 @@ public abstract class ProcessingElement implements Cloneable {
         }
     }
 
+    /**
+     * Returns the number of partitions this PE runs on. It can be different than the total number of
+     * partitions for the application if some PE (this one or others) run exclusively on some partitions.
+     * 
+     * @return Number of partitions this PE runs on
+     */
     public int getPartitionCount() {
         return partitionData.getPartitionCount();
     }

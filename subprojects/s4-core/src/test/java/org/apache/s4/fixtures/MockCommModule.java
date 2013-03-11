@@ -32,10 +32,13 @@ import org.apache.s4.comm.topology.Cluster;
 import org.apache.s4.comm.topology.ClusterNode;
 import org.apache.s4.comm.topology.Clusters;
 import org.apache.s4.comm.topology.PhysicalCluster;
+import org.apache.s4.comm.topology.ZkClient;
+import org.apache.s4.core.ZkClientProvider;
 import org.mockito.Mockito;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Names;
 
@@ -68,6 +71,7 @@ public class MockCommModule extends AbstractModule {
         bind(Emitter.class).toInstance(Mockito.mock(Emitter.class));
         install(new FactoryModuleBuilder().implement(RemoteEmitter.class, Mockito.mock(RemoteEmitter.class).getClass())
                 .build(RemoteEmitterFactory.class));
+        bind(ZkClient.class).toInstance(Mockito.mock(ZkClient.class));
 
     }
 }

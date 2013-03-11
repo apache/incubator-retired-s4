@@ -79,14 +79,11 @@ public abstract class App {
     @Inject
     private Hasher hasher;
 
+    @Inject
     private ZkClient zkClient;
 
     @Inject
     private RemoteStreams remoteStreams;
-
-    public void setZkClient(ZkClient zkClient) {
-        this.zkClient = zkClient;
-    }
 
     @Inject
     private Cluster topology;
@@ -241,7 +238,7 @@ public abstract class App {
 
     public void schedule() {
         schedule(topology);
-        writeToZK();
+        writePartitionDataToZK();
     }
 
     /**
@@ -250,7 +247,7 @@ public abstract class App {
      * 
      * @param pes
      */
-    private void writeToZK() {
+    private void writePartitionDataToZK() {
         List<String> streamsOfNEPE = new ArrayList<String>();
         ProcessingElement NEPeInstance = null;
         for (int i = 0; i < getPePrototypes().size(); i++) {

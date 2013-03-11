@@ -18,7 +18,6 @@ public interface Sender {
      * @return true if the event was sent because the destination is <b>not</b> local.
      * 
      */
-    // boolean checkAndSendIfNotLocal(String hashKey, Event event);
     boolean checkAndSendIfNotLocal(int partition, Event event);
 
     /**
