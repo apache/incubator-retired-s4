@@ -53,8 +53,8 @@ sourceCompatibility = 1.6
 targetCompatibility = 1.6
 
     repositories {
-        mavenLocal()
         mavenCentral()
+        mavenLocal()
         maven { url 'http://google-gson.googlecode.com/svn/mavenrepo' }
         maven { url 'https://repo.springsource.org/libs-release' }
         maven { url 'http://repo.gradle.org/gradle/libs-releases-local' }
