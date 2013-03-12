@@ -77,10 +77,15 @@ dependencies {
    compile (libraries.s4_base)
    compile (libraries.s4_comm)
 
-
-
 }
 
+configurations.all {
+        exclude group: 'com.sun.jdmk', module: 'jmxtools'
+        exclude group: 'com.sun.jmx', module: 'jmxri'
+        exclude group: 'javax.jms', module: 'jms'
+        exclude group: 'javax.mail', module: 'mail'
+    }
+    
 /* Set the manifest attributes for the S4 archive here.
 *  TODO: separate custom properties from std ones and set custom properties at the top of the build script.
 */
