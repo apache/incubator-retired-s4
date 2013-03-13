@@ -75,9 +75,9 @@ public class TestProducerConsumer {
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/producer-app/build.gradle"), "s4r", new String[] { "-buildFile="
                 + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/producer-app/build.gradle",
-                "appClass=s4app.ProducerApp" });
+                "appClass=s4app.ProducerApp", "appName=producer" });
 
-        Assert.assertTrue(new File(producerS4rDir, "producer-app-0.0.0-SNAPSHOT.s4r").exists());
+        Assert.assertTrue(new File(producerS4rDir, "producer-0.0.0-SNAPSHOT.s4r").exists());
 
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/consumer-app/build.gradle"), "clean", new String[] { "-buildFile="
@@ -87,9 +87,9 @@ public class TestProducerConsumer {
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/consumer-app/build.gradle"), "s4r", new String[] { "-buildFile="
                 + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/consumer-app/build.gradle",
-                "appClass=s4app.ConsumerApp" });
+                "appClass=s4app.ConsumerApp", "appName=consumer" });
 
-        Assert.assertTrue(new File(consumerS4rDir, "consumer-app-0.0.0-SNAPSHOT.s4r").exists());
+        Assert.assertTrue(new File(consumerS4rDir, "consumer-0.0.0-SNAPSHOT.s4r").exists());
     }
 
     @Before
@@ -122,10 +122,10 @@ public class TestProducerConsumer {
     @Test
     public void testInitialDeploymentFromFileSystem() throws Exception {
 
-        File producerS4R = new File(producerS4rDir, "producer-app-0.0.0-SNAPSHOT.s4r");
+        File producerS4R = new File(producerS4rDir, "producer-0.0.0-SNAPSHOT.s4r");
         String uriProducer = producerS4R.toURI().toString();
 
-        File consumerS4R = new File(consumerS4rDir, "consumer-app-0.0.0-SNAPSHOT.s4r");
+        File consumerS4R = new File(consumerS4rDir, "consumer-0.0.0-SNAPSHOT.s4r");
         String uriConsumer = consumerS4R.toURI().toString();
 
         initializeS4Node();

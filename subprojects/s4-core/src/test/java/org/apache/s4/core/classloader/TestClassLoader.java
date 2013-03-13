@@ -73,9 +73,9 @@ public class TestClassLoader {
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/producer-app/build.gradle"), "s4r", new String[] { "-buildFile="
                 + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/producer-app/build.gradle",
-                "appClass=s4app.ProducerApp"});
+                "appClass=s4app.ProducerApp", "appName=testApp"});
 
-        Assert.assertTrue(new File(producerS4rDir, "producer-app-0.0.0-SNAPSHOT.s4r").exists());
+        Assert.assertTrue(new File(producerS4rDir, "testApp-0.0.0-SNAPSHOT.s4r").exists());
     }
 
     @Before
@@ -100,7 +100,7 @@ public class TestClassLoader {
     @Test
     public void testInitialDeploymentFromFileSystem() throws Exception {
 
-        File producerS4R = new File(producerS4rDir, "producer-app-0.0.0-SNAPSHOT.s4r");
+        File producerS4R = new File(producerS4rDir, "testApp-0.0.0-SNAPSHOT.s4r");
         String uriProducer = producerS4R.toURI().toString();
 
         initializeS4Node();

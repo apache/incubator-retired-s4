@@ -18,6 +18,7 @@
 
 
 project.ext["appClassName"] = hasProperty('appClass')? "$appClass": "UNDEFINED"
+project.ext["appName"] = hasProperty('appName')? "$appName": "UNDEFINED"
 
 project.ext["s4Version"] = '0.6.0-incubating'
 description = 'Apache S4 App'
@@ -109,6 +110,7 @@ task s4r(type: Jar) {
    dependsOn cleanCopyDependenciesToLib, copyDependenciesToLib, cleanBuildProjectJar, buildProjectJar
    from { project.libsDir }
    manifest = project.manifest
+   baseName = appName
    extension = 's4r'
    exclude '*.s4r'
    manifest.mainAttributes('S4-App-Class': appClassName)

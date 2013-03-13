@@ -38,6 +38,7 @@
 //s4AppInstallDir = "/tmp/s4Apps" // TODO: decide how to standarize dirs, use env var?
 
 project.ext["appClassName"] = hasProperty('appClass')? "$appClass": "UNDEFINED"
+project.ext["appName"] = hasProperty('appName')? "$appName": "UNDEFINED"
 
 project.ext["s4Version"] = '0.6.0-incubating'
 description = 'Apache S4 App'
@@ -46,7 +47,7 @@ project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
 
 // Append the suffix 'SNAPSHOT' when the build is not for release.
-//version = new Version(major: 0, minor: 0, bugfix: 0, isRelease: false)
+version = new Version(major: 0, minor: 0, bugfix: 0, isRelease: false)
 group = 'org.apache.s4'
 
 apply plugin: 'java'
@@ -131,6 +132,7 @@ task s4r(type: Jar) {
    dependsOn cleanCopyDependenciesToLib, copyDependenciesToLib, cleanBuildProjectJar, buildProjectJar
    from { project.libsDir }
    manifest = project.manifest
+   baseName = appName
    extension = 's4r'
    exclude '*.s4r'
    manifest.mainAttributes('S4-App-Class': appClassName)
