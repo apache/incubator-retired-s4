@@ -79,8 +79,8 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         CoreTestUtils.callGradleTask(new File(gradlewFile.getParentFile().getAbsolutePath()
                 + "/test-apps/simple-deployable-app-1/build.gradle"), "s4r", new String[] { "-buildFile="
                 + gradlewFile.getParentFile().getAbsolutePath() + "/test-apps/simple-deployable-app-1/build.gradle", 
-                "appClass=org.apache.s4.deploy.TestApp" });
-        Assert.assertTrue(new File(s4rDir, "simple-deployable-app-1-0.0.0-SNAPSHOT.s4r").exists());
+                "appClass=org.apache.s4.deploy.TestApp", "appName=simpleApp" });
+        Assert.assertTrue(new File(s4rDir, "simpleApp-0.0.0-SNAPSHOT.s4r").exists());
     }
 
     @Test
@@ -90,7 +90,7 @@ public class TestAutomaticDeployment extends ZkBasedTest {
 
         Assert.assertFalse(zkClient.exists(AppConstants.INITIALIZED_ZNODE_1));
 
-        final String uri = new File(s4rDir, "simple-deployable-app-1-0.0.0-SNAPSHOT.s4r").toURI().toString();
+        final String uri = new File(s4rDir, "simpleApp-0.0.0-SNAPSHOT.s4r").toURI().toString();
 
         assertDeployment(uri, zkClient, true);
 
@@ -147,7 +147,7 @@ public class TestAutomaticDeployment extends ZkBasedTest {
         File s4rToDeploy = new File(tmpDir, String.valueOf(System.currentTimeMillis()));
 
         Assert.assertTrue(ByteStreams.copy(
-                Files.newInputStreamSupplier(new File(s4rDir, "/simple-deployable-app-1-0.0.0-SNAPSHOT.s4r")),
+                Files.newInputStreamSupplier(new File(s4rDir, "/simpleApp-0.0.0-SNAPSHOT.s4r")),
                 Files.newOutputStreamSupplier(s4rToDeploy)) > 0);
 
         // we start a
