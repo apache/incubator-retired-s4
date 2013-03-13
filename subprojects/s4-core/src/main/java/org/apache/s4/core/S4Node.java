@@ -21,16 +21,18 @@ import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 
 import org.apache.s4.core.util.ArchiveFetchException;
+import org.apache.s4.core.util.ParametersInjectionModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
+import com.google.inject.util.Modules;
 
 /**
  * Entry point for starting an S4 node. It parses arguments and injects an {@link S4Bootstrap} based on the
@@ -66,8 +68,10 @@ public class S4Node {
             }
         });
 
-        Injector injector = Guice.createInjector(new Module[] { new BaseModule(Resources.getResource(
-                "default.s4.base.properties").openStream(), nodeArgs.clusterName) });
+        Injector injector = Guice.createInjector(Modules.override(
+                new BaseModule(Resources.getResource("default.s4.base.properties").openStream(), nodeArgs.clusterName))
+                .with(new ParametersInjectionModule(ImmutableMap.of("s4.cluster.zk_address",
+                        nodeArgs.zkConnectionString))));
         S4Bootstrap bootstrap = injector.getInstance(S4Bootstrap.class);
         try {
             bootstrap.start(injector);
@@ -90,7 +94,7 @@ public class S4Node {
         String baseConfigFilePath = null;
 
         @Parameter(names = "-zk", description = "Zookeeper connection string", required = false)
-        String zkConnectionString;
+        String zkConnectionString = "localhost:2181";
 
     }
 }
