@@ -43,15 +43,19 @@ We use gradle http://gradle.org as the build system.
 
 * From the root directory of the S4 project:
 
-./gradlew install
+		./gradlew install
 
 This will build the packages and install the artifacts in the local maven repository.
 
 * Then, build the tools:
 
-./gradlew s4-tools:installApp
+		./gradlew s4-tools:installApp
 
 This will build the tools so that you can drive the platform through the "s4" command.
+
+* You may also run regression tests, after artifacts are installed:
+
+		./gradlew test
 
 
 Directory structure
