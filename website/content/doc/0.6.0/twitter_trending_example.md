@@ -27,9 +27,9 @@ Have a look at the code in these directories. You'll note that:
 	user=<a twitter username>
 	password=<matching password>
 
-* Start a Zookeeper instance. From the S4 base directory, do:
+* Start a Zookeeper clean instance. From the S4 base directory, do:
 	
-		./s4 zkServer
+		./s4 zkServer -clean
 
 * Define 2 clusters : 1 for deploying the twitter-counter app, and 1 for the adapter app
 
@@ -42,15 +42,17 @@ Have a look at the code in these directories. You'll note that:
 
 * Start 1 node for the adapter app:
 
-		./s4 node -c=cluster2 -p=s4.adapter.output.stream=RawStatus
+		./s4 node -c=cluster2
 		
-* Deploy twitter-counter app (you may also first build the s4r then publish it, as described in the previous section)
+* Build and deploy twitter-counter app
 
-		./s4 deploy -appName=twitter-counter -c=cluster1 -b=`pwd`/test-apps/twitter-counter/build.gradle
+		./s4 s4r -b=`pwd`/test-apps/twitter-counter/build.gradle -appClass=org.apache.s4.example.twitter.TwitterCounterApp twitter-counter
+		./s4 deploy -appName=twitter-counter -c=cluster1 -s4r=`pwd`/test-apps/twitter-counter/build/libs/twitter-counter.s4r
 		
-* Deploy twitter-adapter app. In this example, we don't directly specify the app class of the adapter, we use the deployment approach for apps (remember, the adapter is also an app).
+* Build and deploy twitter-adapter app. In this example, we don't directly specify the app class of the adapter, we use the deployment approach for apps (remember, the adapter is also an app). Notice that the twitter-adapter package also has a different naming scheme. [^1]
 
-		./s4 deploy -appName=twitter-adapter -c=cluster2 -b=`pwd`/test-apps/twitter-adapter/build.gradle
+		./s4 s4r -b=`pwd`/test-apps/twitter-adapter/build.gradle -appClass=org.apache.s4.example.twitter.TwitterInputAdapter twitter-adapter
+		./s4 deploy -appName=twitter-adapter -c=cluster2 -s4r=`pwd`/test-apps/twitter-adapter/build/libs/twitter-adapter-0.0.0-SNAPSHOT.s4r -p=s4.adapter.output.stream=RawStatus
 		
 * Observe the current 10 most popular topics in file TopNTopics.txt. The file gets updated at regular intervals, and only outputs topics with a minimum of 10 occurrences, so you may have to wait a little before the file is updated :
 
@@ -75,3 +77,9 @@ You may also customize the communication and the core layers of S4 by tweaking c
 Last, the [javadoc](http://people.apache.org/~mmorel/apache-s4-0.6.0-incubating-doc/javadoc/) will help you when writing applications.
 
 We hope this will help you start rapidly, and remember: we're happy to help!
+
+----
+
+###Footnotes
+
+[^1]: Modifying the `build.gradle` script you can change several aspects of the build process. By default the name of the `s4r` package is the application name provided in the packaging step, but you can attach the version automatically as in this example.

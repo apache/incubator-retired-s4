@@ -65,7 +65,7 @@ S4 0.6 builds on this basis and brings plenty of exciting features, in particula
 	* by default, the size of the cluster is fixed
 	* the size of an S4 cluster corresponds to the number of logical **partitions** (sometimes referred to as **tasks**)
 	
-> an ongoing integration with [Apache Helix](http://helix.apache.org) will these limitations and allows a variable number of nodes and a rebalancing of partitions
+> an ongoing integration with [Apache Helix](http://helix.apache.org) will remove these limitations and allow a variable number of nodes and rebalancing the partitions
 
 **Applications**
 
