@@ -19,6 +19,8 @@ We also use pygments for code syntax highlighting. It's a python program, see [h
 
 # To upload the site to apache, commit the generated website to svn (site/ directory)
 
+The svn is located at [https://svn.apache.org/repos/asf/incubator/s4/](https://svn.apache.org/repos/asf/incubator/s4/)
+
 	cp -R output/* $S4_SVN_LOC/site
 	cd $S4_SVN_LOC
 	svn update
