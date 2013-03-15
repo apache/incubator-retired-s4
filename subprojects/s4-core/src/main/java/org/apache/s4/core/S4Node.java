@@ -19,16 +19,20 @@ package org.apache.s4.core;
 
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.s4.core.util.ArchiveFetchException;
 import org.apache.s4.core.util.ParametersInjectionModule;
+import org.apache.s4.core.util.ParsingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -68,10 +72,15 @@ public class S4Node {
             }
         });
 
+        // inject parameter from the command line, including zk string
+        Map<String, String> inlineParameters = Maps.newHashMap(ParsingUtils
+                .convertListArgsToMap(nodeArgs.extraNamedParameters));
+        inlineParameters.put("s4.cluster.zk_address", nodeArgs.zkConnectionString);
+
         Injector injector = Guice.createInjector(Modules.override(
                 new BaseModule(Resources.getResource("default.s4.base.properties").openStream(), nodeArgs.clusterName))
-                .with(new ParametersInjectionModule(ImmutableMap.of("s4.cluster.zk_address",
-                        nodeArgs.zkConnectionString))));
+                .with(new ParametersInjectionModule(inlineParameters)));
+
         S4Bootstrap bootstrap = injector.getInstance(S4Bootstrap.class);
         try {
             bootstrap.start(injector);
@@ -96,5 +105,11 @@ public class S4Node {
         @Parameter(names = "-zk", description = "Zookeeper connection string", required = false)
         String zkConnectionString = "localhost:2181";
 
+        @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of "
+                + "inline configuration parameters, taking precedence over homonymous configuration parameters from "
+                + "configuration files. Syntax: '-p=name1=value1,name2=value2 '. "
+                + "NOTE: application parameters should be injected in the application configuration/deployment step."
+                + "Only parameters relevant to the node should be injected here, e.g. metrics logging configuration", hidden = false, converter = ParsingUtils.InlineConfigParameterConverter.class)
+        List<String> extraNamedParameters = new ArrayList<String>();
     }
 }

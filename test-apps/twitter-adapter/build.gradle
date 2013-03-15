@@ -46,8 +46,6 @@ project.ext["archivesBaseName"] = "$project.name"
 project.ext["distRootFolder"] = "$archivesBaseName-${-> version}"
 
 
-// Append the suffix 'SNAPSHOT' when the build is not for release.
-version = new Version(major: 0, minor: 0, bugfix: 0, isRelease: false)
 group = 'org.apache.s4'
 
 apply plugin: 'java'

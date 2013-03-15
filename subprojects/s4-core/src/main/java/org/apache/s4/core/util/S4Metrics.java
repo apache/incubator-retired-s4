@@ -106,10 +106,10 @@ public class S4Metrics {
             } else {
                 String group1 = matcher.group(1);
 
-                if ("csv".equals(group1)) {
-                    String outputDir = matcher.group(2);
-                    long period = Long.valueOf(matcher.group(3));
-                    TimeUnit timeUnit = TimeUnit.valueOf(matcher.group(4));
+                if (group1.startsWith("csv")) {
+                    String outputDir = group1.substring("csv:".length());
+                    long period = Long.valueOf(matcher.group(2));
+                    TimeUnit timeUnit = TimeUnit.valueOf(matcher.group(3));
                     logger.info("Reporting metrics through csv files in directory [{}] with frequency of [{}] [{}]",
                             new String[] { outputDir, String.valueOf(period), timeUnit.name() });
                     CsvReporter.enable(new File(outputDir), period, timeUnit);

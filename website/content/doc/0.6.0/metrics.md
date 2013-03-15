@@ -24,14 +24,15 @@ You can also monitor your own PEs. Simply add new probes (`Meter`, `Gauge`, etc.
 
 By default, metrics are exposed by each node through JMX.
 
-The `s4.metrics.config` parameter enables periodic dumps of aggregated statistics to the **console** or to **files** in csv format. This parameter is specified as an application parameter, and must match the following regular expression: 
+The `s4.metrics.config` parameter enables periodic dumps of aggregated statistics to the **console** or to **files** in csv format. This parameter is specified as a node or application parameter [^1], and must match the following regular expression: 
 
 	(csv:.+|console):(\d+):(DAYS|HOURS|MICROSECONDS|MILLISECONDS|MINUTES|NANOSECONDS|SECONDS)
 
 Examples:
 	
 	# dump metrics to csv files to /path/to/directory every 10 seconds
-	csv:file://path/to/directory:10:SECONDS
+	# (recommendation: use a different and clean directory for each of the nodes)
+	csv:/path/to/directory:10:SECONDS
 	
 	# dump metrics to the console every minute
 	console:1:MINUTES
@@ -39,3 +40,6 @@ Examples:
 	
 
 Reporting to Ganglia or Graphite is not provided out of the box with S4, but it's quite easy to add. You simply have to add the corresponding dependencies to your project and enable reporting to these systems during the initialization of your application. See the [metrics](http://metrics.codahale.com) documentation for more information.
+
+
+[^1]: csv-based metrics logging are usually specified as a node configuration, and must point to a clean directory, different for each node. Otherwise the metrics logging system will try to create multiple new files with the same name, and depending on your setup, that may not be possible.

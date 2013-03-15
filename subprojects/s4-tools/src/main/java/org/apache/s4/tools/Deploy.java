@@ -23,13 +23,11 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.s4.comm.topology.ZNRecordSerializer;
 import org.apache.s4.core.util.AppConfig;
+import org.apache.s4.core.util.ParsingUtils;
 import org.apache.s4.deploy.DeploymentUtils;
 import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnector;
@@ -37,10 +35,8 @@ import org.gradle.tooling.ProgressListener;
 import org.gradle.tooling.ProjectConnection;
 import org.slf4j.LoggerFactory;
 
-import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-import com.beust.jcommander.internal.Maps;
 import com.google.common.base.Strings;
 
 /**
@@ -86,8 +82,8 @@ public class Deploy extends S4ArgsBase {
                             .appURI(s4rURI == null ? null : s4rURI.toString())
                             .customModulesNames(deployArgs.modulesClassesNames)
                             .customModulesURIs(deployArgs.modulesURIs).appClassName(deployArgs.appClass)
-                            .namedParameters(convertListArgsToMap(deployArgs.extraNamedParameters)).build(),
-                    deployArgs.clusterName, false, deployArgs.zkConnectionString);
+                            .namedParameters(ParsingUtils.convertListArgsToMap(deployArgs.extraNamedParameters))
+                            .build(), deployArgs.clusterName, false, deployArgs.zkConnectionString);
             // Explicitly shutdown the JVM since Gradle leaves non-daemon threads running that delay the termination
             if (!deployArgs.testMode) {
                 System.exit(0);
@@ -96,18 +92,6 @@ public class Deploy extends S4ArgsBase {
             LoggerFactory.getLogger(Deploy.class).error("Cannot deploy app", e);
         }
 
-    }
-
-    private static Map<String, String> convertListArgsToMap(List<String> args) {
-        Map<String, String> result = Maps.newHashMap();
-        for (String arg : args) {
-            String[] split = arg.split("[=]");
-            if (!(split.length == 2)) {
-                throw new RuntimeException("Invalid args: " + Arrays.toString(args.toArray(new String[] {})));
-            }
-            result.put(split[0], split[1]);
-        }
-        return result;
     }
 
     @Parameters(commandNames = "s4 deploy", commandDescription = "Package and deploy application to S4 cluster", separators = "=")
@@ -137,7 +121,7 @@ public class Deploy extends S4ArgsBase {
         @Parameter(names = { "-modulesClasses", "-emc", "-mc" }, description = "Fully qualified class names of custom modules")
         List<String> modulesClassesNames = new ArrayList<String>();
 
-        @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = InlineConfigParameterConverter.class)
+        @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = ParsingUtils.InlineConfigParameterConverter.class)
         List<String> extraNamedParameters = new ArrayList<String>();
 
         @Parameter(names = "-testMode", description = "Special mode for regression testing", hidden = true)
@@ -145,24 +129,6 @@ public class Deploy extends S4ArgsBase {
 
         @Parameter(names = "-debug", description = "Display debug information from the build system", arity = 0)
         boolean debug = false;
-    }
-
-    /**
-     * Parameters parsing utility.
-     * 
-     */
-    public static class InlineConfigParameterConverter implements IStringConverter<String> {
-
-        @Override
-        public String convert(String arg) {
-            Pattern parameterPattern = Pattern.compile("(\\S+=\\S+)");
-            logger.info("processing inline configuration parameter {}", arg);
-            Matcher parameterMatcher = parameterPattern.matcher(arg);
-            if (!parameterMatcher.find()) {
-                throw new IllegalArgumentException("Cannot understand parameter " + arg);
-            }
-            return parameterMatcher.group(1);
-        }
     }
 
     static class ExecGradle {
