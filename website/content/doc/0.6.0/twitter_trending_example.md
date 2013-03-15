@@ -47,12 +47,14 @@ Have a look at the code in these directories. You'll note that:
 * Build and deploy twitter-counter app
 
 		./s4 s4r -b=`pwd`/test-apps/twitter-counter/build.gradle -appClass=org.apache.s4.example.twitter.TwitterCounterApp twitter-counter
+		
 		./s4 deploy -appName=twitter-counter -c=cluster1 -s4r=`pwd`/test-apps/twitter-counter/build/libs/twitter-counter.s4r
 		
-* Build and deploy twitter-adapter app. In this example, we don't directly specify the app class of the adapter, we use the deployment approach for apps (remember, the adapter is also an app). Notice that the twitter-adapter package also has a different naming scheme. [^1]
+* Build and deploy twitter-adapter app. In this example, we don't directly specify the app class of the adapter, we use the deployment approach for apps (remember, the adapter is also an app). 
 
 		./s4 s4r -b=`pwd`/test-apps/twitter-adapter/build.gradle -appClass=org.apache.s4.example.twitter.TwitterInputAdapter twitter-adapter
-		./s4 deploy -appName=twitter-adapter -c=cluster2 -s4r=`pwd`/test-apps/twitter-adapter/build/libs/twitter-adapter-0.0.0-SNAPSHOT.s4r -p=s4.adapter.output.stream=RawStatus
+		
+		./s4 deploy -appName=twitter-adapter -c=cluster2 -s4r=`pwd`/test-apps/twitter-adapter/build/libs/twitter-adapter.s4r -p=s4.adapter.output.stream=RawStatus
 		
 * Observe the current 10 most popular topics in file TopNTopics.txt. The file gets updated at regular intervals, and only outputs topics with a minimum of 10 occurrences, so you may have to wait a little before the file is updated :
 
@@ -79,7 +81,3 @@ Last, the [javadoc](http://people.apache.org/~mmorel/apache-s4-0.6.0-incubating-
 We hope this will help you start rapidly, and remember: we're happy to help!
 
 ----
-
-###Footnotes
-
-[^1]: Modifying the `build.gradle` script you can change several aspects of the build process. By default the name of the `s4r` package is the application name provided in the packaging step, but you can attach the version automatically as in this example.

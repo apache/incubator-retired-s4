@@ -31,7 +31,8 @@ The `s4.metrics.config` parameter enables periodic dumps of aggregated statistic
 Examples:
 	
 	# dump metrics to csv files to /path/to/directory every 10 seconds
-	csv:file://path/to/directory:10:SECONDS
+	# (recommendation: use a clean directory)
+	csv:/path/to/directory:10:SECONDS
 	
 	# dump metrics to the console every minute
 	console:1:MINUTES
