@@ -296,6 +296,7 @@ task srcDist(dependsOn: ["javadoc"], type: Zip) {
     exclude ('**/tmp/**')
     exclude ('**/bin/**')
     exclude ('website/**')
+    exclude ('lib/apache-rat-0.8.jar')
     into (baseName+'-'+version+'-'+classifier)
 }
 

@@ -66,6 +66,11 @@ Therefore, for starting an S4 node on a given host, you only need to specify:
 Example:
 `./s4 node -c=cluster1 -zk=host.domain.com`
 
+## Overriding node configuration
+By default, nodes read configuration from configuration files in the classpath `default.s4.base.properties`, `default.s4.comm.properties` and `default.s4.core.properties`.
+
+It is possible to override these parameters by using the `-p` option when starting a node.
+
 
 # Application configuration
 
@@ -130,7 +135,7 @@ int port
 
 ~~~
 
-* specifying the parameter value at node startup (using `-p` inline with the node command, or with the '`@`' syntax)
+* specifying the parameter value when deploying the application (using `-p` inline with the node command, or with the '`@`' syntax)
 
 S4 uses an internal Guice module that automatically injects configuration parameters passed through the deploy command to matching `@Named` parameters.
 
@@ -139,6 +144,11 @@ Both application and platform parameters can be overriden. For instance, specify
 	./s4 deploy -s4r=uri/to/app.s4r -c=cluster1 -appName=myApp \
 	-emc=org.apache.s4.core.ft.FileSystemBackendCheckpointingModule \ 
 	-p=s4.checkpointing.filesystem.storageRootPath=/custom/path 
+
+
+> Make sure you pass overriding **platform** parameters through the `-p` option in the `node` command, and pass **application** parameters through the `-p` option in the `deploy` command.
+
+
 
 ## File-based configuration
 

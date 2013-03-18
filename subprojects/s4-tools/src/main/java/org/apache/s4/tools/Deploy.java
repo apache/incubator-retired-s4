@@ -121,7 +121,7 @@ public class Deploy extends S4ArgsBase {
         @Parameter(names = { "-modulesClasses", "-emc", "-mc" }, description = "Fully qualified class names of custom modules")
         List<String> modulesClassesNames = new ArrayList<String>();
 
-        @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters, taking precedence over homonymous configuration parameters from configuration files. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = ParsingUtils.InlineConfigParameterConverter.class)
+        @Parameter(names = { "-namedStringParameters", "-p" }, description = "Comma-separated list of inline configuration parameters. Syntax: '-p=name1=value1,name2=value2 '", hidden = false, converter = ParsingUtils.InlineConfigParameterConverter.class)
         List<String> extraNamedParameters = new ArrayList<String>();
 
         @Parameter(names = "-testMode", description = "Special mode for regression testing", hidden = true)
