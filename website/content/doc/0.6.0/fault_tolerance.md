@@ -107,8 +107,10 @@ When a message for a new key arrives in the recovered S4 node, a new PE instance
 A PE can be checkpointed if:
 
 
-- the PE class provides an empty no-arg constructor (that restriction should be lifted in next releases)
-- it has non transient serializable fields (and by opposition, transient fields will never be checkpointed)
+- **the PE class provides an empty no-arg constructor** (that restriction should be lifted in next releases)
+- **it has non transient serializable fields** (and by opposition, transient fields will never be checkpointed)
+
+> For example, one must make sure fields of type `Stream` (for sending messages downstream) are transient!
 
 
 ##### Checkpointing application configuration

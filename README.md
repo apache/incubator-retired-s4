@@ -1,3 +1,19 @@
+<!-- Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. -->
+
 Apache S4
 =========
 
@@ -20,7 +36,7 @@ Documentation
 
 For the latest information about S4, please visit our website at:
 
-   http://incubator.apache.org/s4
+	   http://incubator.apache.org/s4
 
 Source code is available here: https://git-wip-us.apache.org/repos/asf?p=incubator-s4.git
 
@@ -39,7 +55,21 @@ This only applies if you checkout from the source repository or if you download 
 released source package.
 
 
-We use gradle http://gradle.org as the build system.
+We use gradle `http://gradle.org` as the build system, and we use the gradle wrapper script (`gradlew`) in some of the S4 tools.
+
+
+### Installing the gradle wrapper
+
+> Instructions apply to source release downloads. When checking out from the git repository, the gradle wrapper is already available.
+
+
+Gradle is not shipped with the source distribution of S4, so you'll need to :
+
+1. Install gradle: follow the instructions in the [gradle web site](http://gradle.org). We tested S4 with gradle 1.4.
+2. Generate the gradle wrapper: from the root directory of the S4 project, execute: `/path/to/gradle wrapper`
+	* this will generate `gradlew` and `gradlew.bat` script and place `gradle-wrapper-1.4.jar` and `gradle-wrapper-1.4.properties` in the `lib` directory
+
+### Building the project 
 
 * From the root directory of the S4 project:
 
@@ -60,13 +90,24 @@ This will build the tools so that you can drive the platform through the "s4" co
 
 Directory structure
 -------------------
-* If you have a  source package:
+
+* If you checked out from the git repository:
 
 	- root directory contains build and utility scripts, as well as informative files
 	- config/ directory contains configuration files for source code formatting
+	- lib/ directory contains libraries for building the project and validating source headers
+	- subprojects/ directory contains the plaftorm subprojects: base, comm, core, tools, 
+	as well as example (example is not fully ported to 0.5.0+)
+	- test-apps/ directory contains some examples (some of them very trivial are used 
+	in regression tests)
+	- website/ directory contains the source of the website, including documentation
+
+
+
+* If you have a source package:
+
+	- root directory contains build and utility scripts, as well as informative files
 	- doc/ directory contains the javadoc
-	- gradle/ directory contains libraries used by the gradle build tool
-	- lib/ directory contains some other gradle libraries 
 	- subproject/ directory contains the plaftorm subprojects: base, comm, core, tools, 
 	as well as example (example is not fully ported to 0.5.0)
 	- test-apps/ directory contains some examples (some of them very trivial are used 
@@ -82,7 +123,6 @@ Directory structure
 		* the platform libraries (prefixed with "s4")
 		* the dependencies
 	- bin/ directory contains some scripts that are used by the s4 script
-	- gradle/ directory contains libraries used for building S4 projects
 
 
 

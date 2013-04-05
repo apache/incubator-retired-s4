@@ -92,3 +92,7 @@ The following diagram sums-up the key concepts in a hierarchical fashion:
 
 ![image](/images/doc/0.6.0/S4_hierarchical_archi.png)
 
+## Note
+
+S4 0.6 works exclusively with TCP
+

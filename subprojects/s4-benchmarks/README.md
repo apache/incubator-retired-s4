@@ -1,3 +1,19 @@
+<!-- Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. -->
+
 Simple S4 Benchmarking Framework
 ================================
 
@@ -31,9 +47,10 @@ Profiling options (e.g. YourKit) can easily be added to the injector or app node
 
 ## Parameters
 
-We provide a script for that purpose: `bench-cluster.sh`
+We provide a script for that purpose: `bench-cluster.sh`.
 
-You can use arbitrary numbers of injectors and processing nodes, in order to vary the load and the number of concurrent connections.
+
+We can use arbitrary numbers of injectors and processing nodes, in order to vary the load and the number of concurrent connections.
 
 
 Input parameters are:
@@ -44,7 +61,9 @@ Input parameters are:
 - node configuration (you __must__ specify the correct zookeeper connection string. By default, a server is created on the node where the `bench-cluster.sh` script is executed)
 
  
-Exmample configuration files are available in `/config` and you can configure :
+Example configuration files `config/injector.config` and `config/node.config` are not included in the source distribution but can be retrieved from the S4 git repository, in the `<root>/subprojects/s4-benchmarks/config` directory.
+
+You can configure :
 
 - the number of keys
 - the number of test iterations

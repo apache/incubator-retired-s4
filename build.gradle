@@ -157,7 +157,7 @@ subprojects {
     
     jar {
         from (rootDir) {
-            include "NOTICE.txt"
+            include "NOTICE"
             include "LICENSE"
             into "META-INF"
         }
@@ -223,9 +223,7 @@ task copyRequiredFilesForBinaryRelease (type: Copy) {
         from (rootDir) {
             include "README.md"
             include "DISCLAIMER"
-            include "RELEASE_NOTES.html"
             include "gradlew"
-            include "gradle.bat"
             include "s4"
         }
         into new File(project.rootDir.path+'/subprojects/s4-tools/src/dist/')
@@ -296,7 +294,12 @@ task srcDist(dependsOn: ["javadoc"], type: Zip) {
     exclude ('**/tmp/**')
     exclude ('**/bin/**')
     exclude ('website/**')
-    exclude ('lib/apache-rat-0.8.jar')
+    exclude ('lib')
+    exclude ('gradlew')
+    exclude ('RELEASE_NOTES.html')
+    exclude ('config')
+    exclude ('subprojects/s4-benchmarks/config/injector.config')
+    exclude ('subprojects/s4-benchmarks/config/node.config')
     into (baseName+'-'+version+'-'+classifier)
 }
 

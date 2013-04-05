@@ -1,6 +1,5 @@
 .rat-excludes
 rat.out
-README*
 .gitignore
 .git
 target
@@ -10,10 +9,4 @@ tmp
 .classpath
 .project
 build
-newApp.README
-RELEASE_NOTES.html
-README.md
 # note: pattern with * don't seem to work, even when properly escaped
-logback.xml
-s4-checkstyle.xml
-s4-eclipse-format.xml

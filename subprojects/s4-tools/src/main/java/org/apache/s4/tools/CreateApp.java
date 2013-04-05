@@ -112,7 +112,9 @@ public class CreateApp extends S4ArgsBase {
 
                 @Override
                 public boolean processLine(String line) throws IOException {
-                    System.out.println(line.replace("<appDir>", appArgs.getAppDir()));
+                    if (!line.startsWith("#")) {
+                        System.out.println(line.replace("<appDir>", appArgs.getAppDir()));
+                    }
                     return true;
                 }
 

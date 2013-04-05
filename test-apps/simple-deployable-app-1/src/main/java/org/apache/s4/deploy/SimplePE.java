@@ -45,9 +45,12 @@ public class SimplePE extends ProcessingElement {
         try {
             LoggerFactory.getLogger(getClass()).debug("processing envent {}", event.get("line"));
             // test s4r resource access
-            zk.create("/resourceData",
-                    new String(ByteStreams.toByteArray(getClass().getResourceAsStream("/resource.txt"))),
-                    CreateMode.PERSISTENT);
+            // need to strip ASL text from reference content file
+            String strippedContent = new String(
+                    ByteStreams.toByteArray(getClass().getResourceAsStream("/resource.txt"))).substring(new String(
+                    ByteStreams.toByteArray(getClass().getResourceAsStream("/ASL2.txt"))).length());
+
+            zk.create("/resourceData", strippedContent, CreateMode.PERSISTENT);
             // test event processing
             zk.create("/onEvent@" + event.get("line"), new byte[0], CreateMode.PERSISTENT);
             zk.close();
