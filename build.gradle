@@ -273,7 +273,7 @@ task binDist(dependsOn: ["s4-tools:clean", "javadocBinRelease", "copyRequiredFil
 }
 
 
-task srcDist(dependsOn: ["javadoc"], type: Zip) {
+task srcDist(type: Zip) {
     doFirst {
         platformProjects.collect { project ->
             project.tasks.clean.execute()
