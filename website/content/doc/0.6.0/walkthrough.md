@@ -131,9 +131,7 @@ In order to run an S4 application, you need :
 			[main] INFO  org.apache.s4.tools.ZKServer - Starting zookeeper server on port [2181]
 			[main] INFO  org.apache.s4.tools.ZKServer - cleaning existing data in [/var/folders/8V/8VdgKWU3HCiy2yV4dzFpDk+++TI/-Tmp-/tmp/zookeeper/data] and [/var/folders/8V/8VdgKWU3HCiy2yV4dzFpDk+++TI/-Tmp-/tmp/zookeeper/log]
 
-
-
-1. Define a new cluster. Say a cluster named "cluster1" with 2 partitions, nodes listening to ports starting from 12000:
+	1. Define a new cluster. Say a cluster named "cluster1" with 2 partitions, nodes listening to ports starting from 12000:
 
 		S4:myApp$ ./s4 newCluster -c=cluster1 -nbTasks=2 -flp=12000
 		calling referenced s4 script : /Users/S4/tmp/incubator-s4/s4

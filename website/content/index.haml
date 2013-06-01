@@ -5,13 +5,10 @@ title: Distributed Stream Computing Platform
   #about{:class=>"span-18 last"}
 
     #notice{:class=>"span-17 last"}
-      #notice_text= "March 2013: <b>S4 0.6.0 Release Candidate</b> <a href='http://people.apache.org/~mmorel/s4-0.6.0-incubating-release-candidate-3/'>available for download</a>. Check the <a href='/doc/0.6.0'>improved documentation</a>!."
+      #notice_text= "June 2013: <b>S4 0.6.0 Released</b> Get it <a href='/download'>here</a>!"
 
     #notice{:class=>"span-17 last"}
-      #notice_text= "August 2012: <b>S4 0.5.0 has been released!</b> Get it <a href='/download'>here</a>!."
-    
-    #notice{:class=>"span-17 last"}
-      #notice_text= "S4 0.5.0 \"Piper\" is a complete refactoring of the previous version of S4. It provides a clearer API and a more robust implementation. It features TCP based communications, state recovery, and a new set of tools. More information is available in an <a href='https://cwiki.apache.org/confluence/display/S4/S4+0.5.0+Overview'>overview</a> and you may also check the <a href='http://www.apache.org/dist/incubator/s4/s4-0.5.0-incubating/RELEASE_NOTES.html'>release notes</a>."
+      #notice_text= "S4 0.6.0 focuses on configurability and performance. More information is available in an <a href='http://incubator.apache.org/s4/doc/0.6.0/overview/'>overview</a> and you may also check the <a href='http://www.apache.org/dist/incubator/s4/s4-0.6.0-incubating/RELEASE_NOTES.html'>release notes</a>."
         
     %p{:class=>'large'}= "S4 is a <span class='high'>general-purpose</span>, <span class='high'>distributed</span>, <span class='high'>scalable</span>, <span class='high'>fault-tolerant</span>, <span class='high'>pluggable</span> platform that allows programmers to easily develop applications for processing continuous unbounded streams of data."
 
@@ -50,7 +47,7 @@ title: Distributed Stream Computing Platform
 
       #ov_4{:class=>"span-6"}
         %h4{:class=>"subsecheader"}= "extensible"
-        %p= "Applications can easily be written and deployed using a simple API. Many basic applications for stream processing are available out of the box and more are being written."
+        %p= "Applications can easily be written and deployed using a simple API. Building blocks of the platform (message queues and processors, serializer, checkpointing backend) can be replaced by custom implementations."
       #ov_5{:class=>"span-6"}
         %h4{:class=>"subsecheader"}= "cluster management"
         %p= "S4 hides all cluster management tasks using a communication layer built on top of  <a href='http://hadoop.apache.org/zookeeper'>ZooKeeper</a>, a distributed, open-source coordination service for distributed applications."
@@ -68,13 +65,13 @@ title: Distributed Stream Computing Platform
 #sidebar{:class=>"span-5 last"}
   #download
     #latest_head
-      %span= "S4 Piper release"
+      %span= "S4 release"
       %br
-      %span{:style=>"font-size: small;"}= "v0.5.0"
+      %span{:style=>"font-size: small;"}= "v0.6.0"
     #latest_link
-      %a{:href=>"https://cwiki.apache.org/confluence/display/S4/S4+piper+walkthrough", :style=>"border: none;"}= "Get Started"
+      %a{:href=>"http://incubator.apache.org/s4/doc/0.6.0/", :style=>"border: none;"}= "Get Started"
     #disclaimer
-      %p= "This is an alpha version. There's no guarantee of backwards-compatibility until the 1.0 release."
+      %p= "There is no guarantee of backwards-compatibility until the 1.0 release."
   #participate
     %h2{:class=>"secheader"}= "participate"
     %ul{:class=>'large greybar'}
