@@ -50,8 +50,8 @@ repositories {
 
 /* All project libraries must be defined here. */
 project.ext["libraries"] = [
-            // for instance, adding twitter4j 2.2.5 will be:
-            //twitter4j_core:     'org.twitter4j:twitter4j-core:2.2.5'
+            // for instance, adding twitter4j 3.0.3 will be:
+            //twitter4j_core:     'org.twitter4j:twitter4j-core:3.0.3'
             // http://mvnrepository.com/ is a good source
             // if you need to use a different repository, please specify it in the above "repositories" block
 

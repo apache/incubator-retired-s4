@@ -29,6 +29,7 @@ import org.apache.s4.core.adapter.AdapterApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import twitter4j.StallWarning;
 import twitter4j.Status;
 import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
@@ -66,17 +67,20 @@ public class TwitterInputAdapter extends AdapterApp {
         File twitter4jPropsFile = new File(System.getProperty("user.home") + "/twitter4j.properties");
         if (!twitter4jPropsFile.exists()) {
             logger.error(
-                    "Cannot find twitter4j.properties file in this location :[{}]. Make sure it is available at this place and includes user/password credentials",
+                    "Cannot find twitter4j.properties file in this location :[{}]. Make sure it is available at this place and includes oauth.consumerKey/oauth.consumerSecret/oauth.accessToken/oauth.accessTokenSecret credentials",
                     twitter4jPropsFile.getAbsolutePath());
             return;
         }
         twitterProperties.load(new FileInputStream(twitter4jPropsFile));
 
         cb.setDebugEnabled(Boolean.valueOf(twitterProperties.getProperty("debug")))
-                .setUser(twitterProperties.getProperty("user")).setPassword(twitterProperties.getProperty("password"));
+                .setOAuthConsumerKey(twitterProperties.getProperty("oauth.consumerKey"))
+                .setOAuthConsumerSecret(twitterProperties.getProperty("oauth.consumerSecret"))
+                .setOAuthAccessToken(twitterProperties.getProperty("oauth.accessToken"))
+                .setOAuthAccessTokenSecret(twitterProperties.getProperty("oauth.accessTokenSecret"));
+
         TwitterStream twitterStream = new TwitterStreamFactory(cb.build()).getInstance();
         StatusListener statusListener = new StatusListener() {
-
             @Override
             public void onException(Exception ex) {
                 logger.error("error", ex);
@@ -90,7 +94,6 @@ public class TwitterInputAdapter extends AdapterApp {
             @Override
             public void onStatus(Status status) {
                 messageQueue.add(status);
-
             }
 
             @Override
@@ -102,10 +105,14 @@ public class TwitterInputAdapter extends AdapterApp {
             public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {
                 logger.error("error");
             }
+
+            @Override
+            public void onStallWarning(StallWarning arg0) {
+                logger.error("error");
+            }
         };
         twitterStream.addListener(statusListener);
         twitterStream.sample();
-
     }
 
     @Override
@@ -119,7 +126,6 @@ public class TwitterInputAdapter extends AdapterApp {
     }
 
     class Dequeuer implements Runnable {
-
         @Override
         public void run() {
             while (true) {
@@ -129,10 +135,8 @@ public class TwitterInputAdapter extends AdapterApp {
                     event.put("statusText", String.class, status.getText());
                     getRemoteStream().put(event);
                 } catch (Exception e) {
-
                 }
             }
-
         }
     }
 }

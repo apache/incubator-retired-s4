@@ -71,8 +71,8 @@ repositories {
 
 /* All project libraries must be defined here. */
 project.ext["libraries"] = [
-           twitter4j_core:     'org.twitter4j:twitter4j-core:2.2.5',
-           twitter4j_stream:   'org.twitter4j:twitter4j-stream:2.2.5',
+           twitter4j_core:     'org.twitter4j:twitter4j-core:3.0.3',
+           twitter4j_stream:   'org.twitter4j:twitter4j-stream:3.0.3',
            s4_base:            'org.apache.s4:s4-base:0.6.0-incubating',
            s4_comm:            'org.apache.s4:s4-comm:0.6.0-incubating',
            s4_core:            'org.apache.s4:s4-core:0.6.0-incubating'

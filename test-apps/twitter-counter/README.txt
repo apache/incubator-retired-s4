@@ -23,8 +23,10 @@ Architecture:
 How to configure:
 - you need a twitter4j.properties file in your home dir, with the following properties filled:
 debug=true|false
-user=<a twitter user name>
-password=<the matching password>
+oauth.consumerKey=<a twitter app consumer key>
+oauth.consumerSecret=<the matching app consumer secret>
+oauth.accessToken=<a twitter account access token>
+oauth.accessTokenSecret=<the matching twitter account access token secret>
 
 How to run:
 
