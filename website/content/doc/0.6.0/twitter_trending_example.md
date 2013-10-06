@@ -24,8 +24,32 @@ Have a look at the code in these directories. You'll note that:
 > Note: You need a twitter4j.properties file in your home directory with the following content (debug is optional):
 
 	debug=true
+	// not valid since june 2013
 	user=<a twitter username>
 	password=<matching password>
+
+**UPDATE:** In June 2013 Twitter updated the way external consumers can use Twitter APIs: **external consumers must now use [OAuth](http://oauth.net/)**. 
+
+
+As a result, the twitter example shipped with S4 distribution *does not work out of the box*. The good news is there is a workaround and we applied a [patch](https://issues.apache.org/jira/browse/S4-138) on the `dev` branch.
+
+To make things work with the new Twitter access control scheme:
+
+1. get the code updates
+	* either by checking out the code from the `dev` branch
+	* or by applying the relevant [change](https://github.com/apache/incubator-s4/commit/276a49772f00a7880d270941a8e05c878ee2484e) e.g. by cherry-picking it
+
+1. get an OAuth token. [This page](https://dev.twitter.com/docs/auth/tokens-devtwittercom) may help
+
+1. use the token parameters in the twitter4j.properties file in the home directory:
+
+		oauth.consumerKey=<consumer key>
+		oauth.consumerSecret=<consumer secret>
+		oauth.accessToken=<access token>
+		oauth.accessTokenSecret=<access token secret>
+
+Once Twitter access is configured, we can start the S4 application.
+
 
 * Start a Zookeeper clean instance. From the S4 base directory, do:
 	
