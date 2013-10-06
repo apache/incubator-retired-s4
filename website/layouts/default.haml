@@ -21,7 +21,7 @@
             %img{:src=>'/images/s4_test.png'}
         #navbar= render 'nav'
     #wrapper
-      #container{:class=>"container"}= yield
+      #container{:class=>"container"}~ yield
     #footer
       .container
         %span{:class=>'copyright'}= "Apache S4 - Copyright 2013 The Apache Software Foundation"
